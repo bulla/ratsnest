@@ -4,8 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # ratnest
 
-Nothing is decided yet: what ratnest is, who it is for and what it is built with are all still
-open. The repository holds its working practice and nothing else, carried over from scratchpi
+*Graphical wiring for breadboards*, says the repository's description on GitHub, and that line is
+all that is settled: what exactly it is, who it is for and what it is built with are still open.
+The repository holds its working practice and nothing else, carried over from scratchpi
 (`bulla/scratchpi`) on 2026-11-20.
 
 ## Status
