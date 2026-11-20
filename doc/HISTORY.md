@@ -33,6 +33,31 @@ each record, and the traps they turned up are in `CLAUDE.md`'s Notes.
 - [x] The `circuit` skill, which keeps every circuit declarative and every page alike
 - [x] `CLAUDE.md`'s Status, Design and Stack from the records, and the roadmap
 
+### M1: the frame
+
+M1 is done: everything the code will stand on, and no engine yet. Every dependency is pinned at
+the Stack's versions, two patches that came out after the owner confirmed them taken as ADR 0009
+asks, and the first tests hold the repository's own rules. The workflow passed on its first run, on
+Linux, Windows and macOS, and its gate, `ci`, is the one check to require. Biome 2.6 turned out to
+format Markdown, and is kept off it.
+
+- [x] `package.json` with every dependency pinned exactly at the versions in `CLAUDE.md`'s Stack
+      (ADR 0009), `packageManager` naming Bun `1.4.5`, and `version` `0.0.0` (ADR 0017)
+- [x] `tsconfig.json`, `biome.json`, and the scripts: `lint`, `format`, `typecheck`, `test`
+- [x] A first test that runs, so `bun run test` has something to pass
+- [x] `.github/workflows/`, the workflow for every pull request: lint, typecheck and test, on Bun
+      alone, on Linux, Windows and macOS, which a public repository runs for free (ADR 0020)
+- [x] `CHANGELOG.md`, with an empty *Unreleased*, and the pull request check that a change users get
+      has its line there, unless labelled `no changelog` (ADR 0017, ADR 0020)
+- [x] `LICENSE`: MIT, held by bulla (ADR 0018), added as soon as the repository was public, since a
+      public repository with no licence reserves every right
+- [x] `CLAUDE.md`'s Commands table, with how to run a single test
+- [x] `CONTRIBUTING.md`, the walkthrough for working on ratsnest: what to install, each command with
+      what it should print, how work is done here (`develop`, records, the roadmap, the changelog,
+      the skills) and where to read next, every step run as it is written
+- [x] The `/setup` skill, which follows `CONTRIBUTING.md` step by step, runs each, checks what it
+      printed and explains what did not, and holds no steps of its own
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -54,3 +79,9 @@ each record, and the traps they turned up are in `CLAUDE.md`'s Notes.
   who reads Russian, is to read the engine's Russian table in M6, and signing the macOS executables
   is deferred. The onboarding, `CONTRIBUTING.md` and a `/setup` skill that follows it, is planned
   into M1, with the README's *Get started* in M7.
+- 2026-11-20: M1. The frame. Every dependency pinned exactly; `@types/bun` 1.4.5 and `@babel/parser`
+  8.1.3 came out after the versions were confirmed, and were taken. Biome 2.6 formats Markdown, which
+  scratchpi's 2.5 did not, and would have rewritten every record's emphasis and tables, so it is kept
+  to the code. The workflow passed first time on all three systems, its test of the running Bun
+  showing that `setup-bun` reads the version from `package.json`. Every step of `CONTRIBUTING.md` was
+  run as written, in a fresh clone, and printed what the file says.

@@ -13,8 +13,10 @@ under MIT (ADR 0018), and its repository has been public since 2026-11-20.
 
 ## Status
 
-The design is settled, in twenty records argued by interview on 2026-11-20 (M0), and there is no code
-yet. M1, the frame, is next, and the milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
+The design is settled, in records argued by interview on 2026-11-20 (M0), and the frame is built
+(M1): the package, the checks, continuous integration on three systems, the changelog and the
+onboarding. There is no engine yet. M2, the copy, is next, and the milestones after it are in
+[`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -113,8 +115,8 @@ as it can be at the start of a cloud session.
 ## Stack
 
 Ask before adding anything not in this table. Every version is pinned exactly, with no caret, and
-was the latest release when it was added (ADR 0009). None is installed yet: they go into
-`package.json` with the first code.
+was the latest release when it was added (ADR 0009): `package.json` holds them, and a test fails
+on a range or on a running Bun other than the one pinned.
 
 | Layer | Choice |
 | --- | --- |
@@ -122,9 +124,9 @@ was the latest release when it was added (ADR 0009). None is installed yet: they
 | Language | TypeScript `7.0.2`, checked with `tsc --noEmit`, run by Bun |
 | Framework | None, and no bundler: the engine writes each page as a string (ADR 0008) |
 | Tests | `bun test`, and jsdom `31.0.1` for the page's one script |
-| Types | `@types/bun` `1.4.4`, `@types/jsdom` `30.0.0` |
+| Types | `@types/bun` `1.4.5`, `@types/jsdom` `30.0.0` |
 | Lint and format | Biome `2.6.8` |
-| Declarative check | `@babel/parser` `8.1.2` (ADR 0007, ADR 0009) |
+| Declarative check | `@babel/parser` `8.1.3` (ADR 0007, ADR 0009) |
 | Font | Nunito `3.602`, cut by Google Fonts' subsetter into two variable WOFF2 files, committed in `fonts/` and carried by every page (ADR 0012) |
 | Measuring words | `fontkit` `3.0.0`, reading those same files (ADR 0012) |
 | Shipping | One executable per platform from `bun build --compile --conditions=browser`, on GitHub Releases (ADR 0016) |
@@ -143,9 +145,21 @@ Two standing constraints:
 
 ## Commands
 
-None yet: there is nothing to install, build, test or lint. When there is, the commands go in a
-table here, including how to run a single test, and every one of them is `bun run <script>`
-(ADR 0009).
+Every command is `bun run <script>` (ADR 0009). `CONTRIBUTING.md` walks through them in order, and
+`/setup` runs them with you.
+
+| Task | Command |
+| --- | --- |
+| Install | `bun install` |
+| Lint | `bun run lint`, and `bun run format` writes its fixes |
+| Typecheck | `bun run typecheck` |
+| Test | `bun run test` |
+| One test file | `bun run test scripts/changelog.test.ts` |
+| The tests whose name holds some words | `bun run test -t "pinned exactly"` |
+| The changelog check, as a pull request meets it | `bun scripts/changelog.ts origin/develop` |
+
+Say `bun run test`, never `bun test` alone: both work today, but a script changed in `package.json`
+changes only for the first.
 
 ## Layout
 
@@ -155,11 +169,12 @@ there.
 ```
 .
 ├── .github/
-│   └── workflows/     · One for every pull request and push to `develop`, one for every release
-│                        tag (ADR 0020)
+│   └── workflows/
+│       └── check.yml    Every pull request and push to `develop`: lint, typecheck, the changelog,
+│                        the tests on three systems, and the one gate to require, `ci` (ADR 0020)
 ├── .claude/
 │   └── skills/
-│       ├── setup/       · Walks a newcomer through `CONTRIBUTING.md`, checking each step
+│       ├── setup/       Walks a newcomer through `CONTRIBUTING.md`, checking each step
 │       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
@@ -178,12 +193,17 @@ there.
 ├── ATTRIBUTION.md     · The drawing's source and licence, and which folder it covers (ADR 0018)
 ├── api/               · The public surface as it was at the last release, written only by
 │                        `bun run release` (ADR 0017)
-├── package.json       · The one place the version lives (ADR 0017)
-├── CHANGELOG.md       · Every release, and *Unreleased* (ADR 0017)
-├── CONTRIBUTING.md    · The walkthrough for working on ratsnest, which `/setup` follows
+├── scripts/             The repository's own tools and their tests: the changelog check, and the
+│                        repository's rules (exact pins, the pinned Bun, no Node)
+├── package.json         The dependencies, the scripts, and the one place the version lives (ADR 0017)
+├── bun.lock             What `bun install` installs, exactly
+├── tsconfig.json, biome.json  Strict TypeScript; Biome for the code, never for Markdown
+├── CHANGELOG.md         Every release, and *Unreleased* (ADR 0017)
+├── CONTRIBUTING.md      The walkthrough for working on ratsnest, which `/setup` follows
 ├── README.md          · What ratsnest is, and how to start using it
 ├── install.sh         · Puts the right executable on the `PATH` (ADR 0016)
-├── .gitignore           The executables `bun run build` writes to `dist/` (ADR 0016)
+├── .gitattributes       LF on every system, so Biome reads the same bytes on Windows
+├── .gitignore           `node_modules/`, and the executables `bun run build` writes to `dist/`
 └── CLAUDE.md            This file
 ```
 
@@ -236,6 +256,10 @@ documentation, a test that passes while measuring the wrong thing, a failure tha
 loudly. Say what happened, why, and where the code now guards against it, so that the next session
 does not pay for it again.
 
+- **Biome 2.6 formats Markdown**, and would rewrite every `*emphasis*` in the records as `_emphasis_`
+  and pad every table to its widest cell. The records and the docs are written by hand, and a record
+  is only ever edited for a typo, so `biome.json` leaves `**/*.md` out. Taking that line out
+  reformats every file in `doc/` on the next `bun run format`.
 - **TypeScript 7 has no stable parser API.** `require("typescript").createSourceFile`, which 6.x
   had, is gone, and what is left sits under `typescript/unstable/*`, through the native compiler
   running as another process. That is why the declarative check parses with `@babel/parser`
