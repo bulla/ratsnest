@@ -92,3 +92,5 @@ Each new record adds a row here.
 | [0019](0019-publish-pages-only-from-circuits-projects.md)                                                        | Publish pages only from circuits projects                                                          |
 | [0020](0020-check-every-change-and-every-release-with-github-actions-on-bun-alone.md)                            | Check every change and every release with GitHub Actions, on Bun alone                             |
 | [0021](0021-keep-versions-at-0-y-z-until-ratsnest-is-done-though-its-repository-is-public.md)                    | Keep versions at 0.y.z until ratsnest is done, though its repository is public                     |
+| [0022](0022-write-the-circuit-format-as-one-file-of-types-apart-from-the-engines-model.md)                       | Write the circuit format as one file of types, apart from the engine's model                       |
+| [0023](0023-write-a-generated-page-into-pages-named-by-its-four-inputs.md)                                       | Write a generated page into `pages/`, named by its four inputs                                     |
