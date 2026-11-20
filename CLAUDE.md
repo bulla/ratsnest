@@ -130,6 +130,7 @@ was the latest release when it was added (ADR 0009). None is installed yet: they
 | Measuring words | `fontkit` `3.0.0`, reading those same files (ADR 0012) |
 | Shipping | One executable per platform from `bun build --compile --conditions=browser`, on GitHub Releases (ADR 0016) |
 | Versions | Strict SemVer, computed by `bun run release` and compared with `Bun.semver` (ADR 0017) |
+| Continuous integration | GitHub Actions on Bun alone: one workflow for every pull request and push to `develop`, one for every `v*` tag (ADR 0020) |
 | Looking at a page | The Playwright and Chromium installed where the work is done, never a dependency |
 
 Two standing constraints:
@@ -154,6 +155,9 @@ there.
 
 ```
 .
+├── .github/
+│   └── workflows/     · One for every pull request and push to `develop`, one for every release
+│                        tag (ADR 0020)
 ├── .claude/
 │   └── skills/
 │       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
@@ -193,7 +197,9 @@ there.
   leaves open into the roadmap's Open points or Backlog. The Status section of this file stays a
   short summary: no paragraph per milestone.
 - **A pull request that changes what users get adds its line to `CHANGELOG.md`, under
-  *Unreleased*** (ADR 0017). A release is made by `bun run release` and nothing else: never set the
+  *Unreleased*** (ADR 0017): anything in `src/` outside its tests, `fonts/`, the `circuit` skill or
+  `install.sh`. Continuous integration refuses one that does not, unless it is labelled
+  `no changelog` (ADR 0020). A release is made by `bun run release` and nothing else: never set the
   version, edit `api/` or push a tag by hand.
 
 ## Decisions
