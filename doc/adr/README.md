@@ -87,3 +87,4 @@ Each new record adds a row here.
 | [0018](0018-license-ratsnests-code-under-mit-and-carry-what-it-inherits.md) | License ratsnest's code under MIT, and carry what it inherits |
 | [0019](0019-publish-pages-only-from-circuits-projects.md) | Publish pages only from circuits projects |
 | [0020](0020-check-every-change-and-every-release-with-github-actions-on-bun-alone.md) | Check every change and every release with GitHub Actions, on Bun alone |
+| [0021](0021-keep-versions-at-0-y-z-until-ratsnest-is-done-though-its-repository-is-public.md) | Keep versions at 0.y.z until ratsnest is done, though its repository is public |
