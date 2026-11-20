@@ -110,14 +110,16 @@ another language instead. The generator refuses one too, but the skill asks firs
    correct, not that it is tidy, and parts that crowd each other send you back to step 2.
 7. **Hand over the file**, and say which four inputs made it. Publish it only if asked (below).
 
-## Publishing it as an Artifact (ADR 0013, ADR 0014)
+## Publishing it as an Artifact (ADR 0013, ADR 0014, ADR 0019)
 
-Only when the request asks for it. One Artifact holds one set of four inputs.
+Only when the request asks for it, and only in a circuits project. In ratsnest itself, say that its
+examples are published from a circuits project, which `ratsnest init` makes, and stop. One
+Artifact holds one set of four inputs.
 
 1. **Look for the link in `ARTIFACTS.md`**, at the root of the project, in a row with the same four
-   inputs. Make the file, with the header row below, if it is not there. In ratsnest's own repository
-   it is gitignored and never committed. In a circuits project, follow the project: commit the row
-   with the change if the file is tracked, and leave it if it is ignored.
+   inputs. Make the file, with the header row below, if it is not there. Follow the project: commit
+   the row with the change if the file is tracked, as `ratsnest init` leaves it, and leave it if the
+   project ignores it.
 2. **If there is no row, look through the person's own Artifacts before making a new one.** List the
    ones titled with the circuit's name in the page's language, read each, and take the one whose
    `<meta name="ratsnest">` names the same four inputs. A cloud session can start without the file,

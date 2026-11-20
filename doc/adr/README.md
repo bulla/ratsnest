@@ -85,3 +85,4 @@ Each new record adds a row here.
 | [0016](0016-ship-ratsnest-as-a-standalone-executable-built-by-bun-from-github-releases.md) | Ship ratsnest as a standalone executable, built by Bun, from GitHub Releases |
 | [0017](0017-number-every-release-by-strict-semver-computed-from-what-changed-and-refused-otherwise.md) | Number every release by strict SemVer, computed from what changed, and refused otherwise |
 | [0018](0018-license-ratsnests-code-under-mit-and-carry-what-it-inherits.md) | License ratsnest's code under MIT, and carry what it inherits |
+| [0019](0019-publish-pages-only-from-circuits-projects.md) | Publish pages only from circuits projects |

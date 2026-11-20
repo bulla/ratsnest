@@ -83,9 +83,10 @@ writes that they lack.
 
 **A page becomes an Artifact only when asked, one per set of four inputs** (ADR 0013), through the
 `circuit` skill. The links are kept in `ARTIFACTS.md` at the root of the circuits project, committed
-or not as its owner chooses (ADR 0014); ratsnest's own, for its examples, is gitignored and never
-committed. Every page names its inputs in a `<meta name="ratsnest">` tag, so the skill finds an
-existing Artifact even where the file is gone, as it can be at the start of a cloud session.
+or not as its owner chooses (ADR 0014), and tracked by default; ratsnest's own repository publishes
+nothing and keeps no `ARTIFACTS.md` (ADR 0019). Every page names its inputs in a
+`<meta name="ratsnest">` tag, so the skill finds an existing Artifact even where the file is gone,
+as it can be at the start of a cloud session.
 
 **A circuit is one TypeScript file that only declares, and everything that computes is outside it**
 (ADR 0006, ADR 0007). This is the rule every other part of ratsnest leans on:
@@ -176,10 +177,7 @@ there.
 ├── package.json       · The one place the version lives (ADR 0017)
 ├── CHANGELOG.md       · Every release, and *Unreleased* (ADR 0017)
 ├── install.sh         · Puts the right executable on the `PATH` (ADR 0016)
-├── ARTIFACTS.md       · Your own links to the Artifacts you published from the examples:
-│                        gitignored (ADR 0013, ADR 0014)
-├── .gitignore           What stays on one machine: each person's `ARTIFACTS.md`, and the
-│                        executables `bun run build` writes to `dist/`
+├── .gitignore           The executables `bun run build` writes to `dist/` (ADR 0016)
 └── CLAUDE.md            This file
 ```
 

@@ -1,6 +1,6 @@
 # ADR 0014: Make ratsnest a builder, and let circuits live in projects of their own
 
-**Status:** Accepted · 2026-11-20 · Amends ADR-0006, ADR-0007 and ADR-0013 · Amended by ADR-0016 (a project's ratsnest is the executable and `ratsnest.json`, its type in `.ratsnest/`)
+**Status:** Accepted · 2026-11-20 · Amends ADR-0006, ADR-0007 and ADR-0013 · Amended by ADR-0016 (a project's ratsnest is the executable and `ratsnest.json`, its type in `.ratsnest/`) · Amended by ADR-0019 (ratsnest's own repository publishes nothing, and keeps no `ARTIFACTS.md`)
 
 ## Context
 
