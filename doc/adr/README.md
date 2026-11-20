@@ -73,3 +73,4 @@ Each new record adds a row here.
 | [0004](0004-make-each-asset-one-self-contained-page-per-circuit.md) | Make each asset one self-contained page per circuit |
 | [0005](0005-fix-a-pages-theme-and-language-when-it-is-generated.md) | Fix a page's theme and language when it is generated |
 | [0006](0006-describe-each-circuit-in-one-typescript-file-with-what-it-is-and-where-it-goes.md) | Describe each circuit in one TypeScript file, with what it is and where it goes |
+| [0007](0007-keep-a-circuits-file-declarative-and-everything-that-computes-outside-it.md) | Keep a circuit's file declarative, and everything that computes outside it |

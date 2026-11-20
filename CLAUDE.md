@@ -4,15 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # ratsnest
 
-*Graphical wiring for breadboards*, says the repository's description on GitHub, and that line is
-all that is settled: what exactly it is, who it is for and what it is built with are still open.
-The repository holds its working practice and nothing else, carried over from scratchpi
-(`bulla/scratchpi`) on 2026-11-20.
+*Graphical wiring for breadboards.* ratsnest makes a wiring guide for each circuit: one
+self-contained page showing how to build it on a breadboard with a Pico 2 W, step by step. It
+started on 2026-11-20 from a copy of scratchpi's circuit pages (`bulla/scratchpi`), and evolves on
+its own from there.
 
 ## Status
 
-Started 2026-11-20, with no code. The first piece of work is to settle what ratsnest is: see
-**Next** in [`doc/ROADMAP.md`](doc/ROADMAP.md).
+Started 2026-11-20, and no code yet. The design is being settled by interview, a record per
+decision; what is settled so far is under Design below, and what is next is in
+[`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -20,10 +21,31 @@ of them belongs here.
 
 ## Design
 
-None yet. Design is settled before code, one decision at a time (`/interview` walks the tree), and
-each decision becomes a record in [`doc/adr/`](doc/adr/). Once there are some, this section states
-the root decisions, a paragraph each with the record that argues it, so that nobody proposes an
-architecture that has already been argued.
+Design is settled before code, one decision at a time (`/interview` walks the tree), and each
+decision becomes a record in [`doc/adr/`](doc/adr/). This section states the root decisions, a
+paragraph each with the records that argue them, so that nobody proposes an architecture that has
+already been argued.
+
+**One Pico 2 W, one half-size breadboard** (ADR 0002). Another board or breadboard is a record of its
+own, written when a circuit needs it.
+
+**One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
+pick out their parts, the parts list with its colour bands, a MicroPython test script and the
+drawing's attribution, with nothing else to load. **A page is a pure function of four inputs**: the
+circuit, an orientation of 0°, 90°, 180° or 270° clockwise (ADR 0003), a theme and a language
+(ADR 0005). Nothing on the page switches any of them, and the same inputs make the same file.
+
+**A circuit is one TypeScript file that only declares, and everything that computes is outside it**
+(ADR 0006, ADR 0007). This is the rule every other part of ratsnest leans on:
+
+- `circuits/<name>.ts` says what the circuit is and where its parts go, in pins, holes, parts,
+  values and words: `import type` lines and one `export default { … } satisfies Circuit`, whose
+  values are strings, numbers, booleans, and arrays and objects of those. No function, call,
+  variable, spread, condition or value import, and nothing about how anything looks.
+- The validator, the renderer and the post-processor are the engine, in `src/`, and nothing in
+  `src/` names a circuit, tests included.
+- A test holds both directions. When the validator refuses a circuit, move the part, never the
+  rule. A circuit is added or changed through the `circuit` skill (`.claude/skills/circuit/`).
 
 **Start here:**
 
@@ -46,16 +68,22 @@ table here, including how to run a single test.
 
 ## Layout
 
+Entries marked `·` do not exist yet: they are the intended shape, not a description of what is
+there.
+
 ```
 .
 ├── .claude/
 │   └── skills/
+│       ├── circuit/     Adds or changes a circuit, and makes its page (ADR 0007)
 │       └── interview/   Pressure-tests a plan one question at a time
+├── circuits/          · One declarative file per circuit, and nothing else (ADR 0006, ADR 0007)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
 │   ├── HISTORY.md       Every milestone's checklist, and the Log
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
+├── src/               · The engine: the validator, the renderer and the post-processor
 └── CLAUDE.md            This file
 ```
 
