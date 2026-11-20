@@ -68,3 +68,4 @@ Each new record adds a row here.
 | # | Title |
 | --- | --- |
 | [0001](0001-start-from-a-copy-of-scratchpis-wiring-pages-and-evolve-on-our-own.md) | Start from a copy of scratchpi's wiring pages, and evolve on our own |
+| [0002](0002-draw-a-pico-2-w-on-a-half-size-breadboard-and-nothing-else-yet.md) | Draw a Pico 2 W on a half-size breadboard, and nothing else yet |
