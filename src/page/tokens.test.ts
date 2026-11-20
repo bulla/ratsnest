@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { BUTTON_COLOURS, LED_COLOURS } from "../circuit";
 import { BREADBOARD_TOKENS } from "../drawing/breadboard-svg";
 import { CHIP_STYLES } from "../drawing/chips";
@@ -10,7 +11,7 @@ import { contrastRatio } from "./contrast";
  * held the same in both scales, because a drawing of an object does not repaint itself when the
  * room does.
  */
-const SRC = new URL("../", import.meta.url);
+const SRC = join(import.meta.dir, "..");
 const TOKENS = readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
 
 type Scope = "light" | "dark";
@@ -59,21 +60,24 @@ const colour = (name: string, scope: Scope = "light"): string => {
   return value;
 };
 
-/** Every file of the engine's own, tokens.css and the tests left out. */
+/**
+ * Every file of the engine's own, tokens.css and the tests left out. Walked as paths, never as a
+ * URL's `pathname`, which on Windows is `/D:/…` and opens nothing.
+ */
 function sources(): string[] {
   const found: string[] = [];
-  const walk = (dir: URL) => {
+  const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       if (entry.name === "__fixtures__") continue;
-      const url = new URL(entry.isDirectory() ? `${entry.name}/` : entry.name, dir);
-      if (entry.isDirectory()) walk(url);
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
       else if (/\.(ts|js|css)$/.test(entry.name) && !/\.test\.ts$/.test(entry.name)) {
-        found.push(url.pathname);
+        found.push(path);
       }
     }
   };
   walk(SRC);
-  return found.filter((path) => !path.endsWith("/page/tokens.css"));
+  return found.filter((path) => path !== join(SRC, "page", "tokens.css"));
 }
 
 const COLOUR_LITERAL =
@@ -82,8 +86,8 @@ const COLOUR_LITERAL =
 describe("the colour literal rule", () => {
   it("is looking at the engine and the drawing", () => {
     const files = sources();
-    expect(files.some((path) => path.endsWith("/drawing/breadboard-svg.ts"))).toBe(true);
-    expect(files.some((path) => path.endsWith("/page/page.css"))).toBe(true);
+    expect(files).toContain(join(SRC, "drawing", "breadboard-svg.ts"));
+    expect(files).toContain(join(SRC, "page", "page.css"));
   });
 
   it("finds a colour written anywhere but tokens.css nowhere", () => {
