@@ -63,7 +63,8 @@ What this makes easy, what it makes hard, and what it rules out.
 
 ## The records
 
-None yet. Each new record adds a row here.
+Each new record adds a row here.
 
 | # | Title |
 | --- | --- |
+| [0001](0001-start-from-a-copy-of-scratchpis-wiring-pages-and-evolve-on-our-own.md) | Start from a copy of scratchpi's wiring pages, and evolve on our own |
