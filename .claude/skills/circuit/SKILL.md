@@ -1,6 +1,6 @@
 ---
 name: circuit
-description: Adds or changes a ratsnest circuit, translates it, and makes its wiring page, keeping every circuit file declarative so that every page looks like every other. Use when asked to add a circuit, change one, add a language to one, or make a circuit's page in a given orientation, theme and language.
+description: Adds or changes a ratsnest circuit, translates it, makes its wiring page and publishes it as an Artifact, keeping every circuit file declarative so that every page looks like every other. Use when asked to add a circuit, change one, add a language to one, make a circuit's page in a given orientation, theme and language, or publish or republish one.
 argument-hint: [the circuit to add, change or translate, or the page to make]
 triggers:
   - add a circuit
@@ -8,6 +8,7 @@ triggers:
   - change a circuit
   - translate a circuit
   - make a wiring page
+  - publish a circuit as an artifact
 user-invocable: true
 ---
 
@@ -83,4 +84,28 @@ another language instead. The generator refuses one too, but the skill asks firs
 5. **Generate the page** from them.
 6. **Look at it in Chromium**, at its orientation and in its language. The checks say a circuit is
    correct, not that it is tidy, and parts that crowd each other send you back to step 2.
-7. **Hand over the file**, and say which four inputs made it.
+7. **Hand over the file**, and say which four inputs made it. Publish it only if asked (below).
+
+## Publishing it as an Artifact (ADR 0013)
+
+Only when the request asks for it. One Artifact holds one set of four inputs.
+
+1. **Look for the link in `doc/ARTIFACTS.md`**, a row with the same four inputs. The file is the
+   person's own and gitignored: never commit it, and make it, with the header row below, if it is
+   not there.
+2. **If there is no row, look through the person's own Artifacts before making a new one.** List the
+   ones titled with the circuit's name in the page's language, read each, and take the one whose
+   `<meta name="ratsnest">` names the same four inputs. A cloud session starts without the file, so
+   this is the usual case there, not a rare one.
+3. **Publish the generated file as it is**: to that Artifact's link when one was found, or as a new
+   Artifact, with a description that names the four inputs. Never edit the page to suit the Artifact
+   tool or its design guidance: a page is only ever the engine's output, and a disagreement is a
+   change to the engine, with a record.
+4. **Write the row**: the four inputs, the link, the commit the page was made from, and the date.
+
+```markdown
+| Circuit | Orientation | Theme | Language | Link | Made from | Published |
+| --- | --- | --- | --- | --- | --- | --- |
+```
+
+**Republishing after a change to the engine** is the same steps for every row, on request.

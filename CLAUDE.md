@@ -47,6 +47,11 @@ Latin on every page and Cyrillic on a Russian one, inlined under a family name o
 The engine measures every drawn word with the same files, and a test fails on a character a page
 writes that they lack.
 
+**A page becomes an Artifact only when asked, one per set of four inputs** (ADR 0013), through the
+`circuit` skill. Each person keeps their own links in `doc/ARTIFACTS.md`, which is gitignored and
+never committed; every page names its inputs in a `<meta name="ratsnest">` tag, so the skill finds an
+existing Artifact even where the file is gone, as it is at the start of every cloud session.
+
 **A circuit is one TypeScript file that only declares, and everything that computes is outside it**
 (ADR 0006, ADR 0007). This is the rule every other part of ratsnest leans on:
 
@@ -118,9 +123,11 @@ there.
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
 │   ├── HISTORY.md       Every milestone's checklist, and the Log
+│   ├── ARTIFACTS.md   · Your own links to the Artifacts you published: gitignored (ADR 0013)
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
 ├── src/               · The engine: the validator, the renderer and the post-processor
+├── .gitignore           What stays on one machine: each person's `doc/ARTIFACTS.md`
 └── CLAUDE.md            This file
 ```
 
