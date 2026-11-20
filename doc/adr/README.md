@@ -80,3 +80,4 @@ Each new record adds a row here.
 | [0011](0011-hold-every-languages-text-to-rules-a-test-can-check-cyrillic-included.md) | Hold every language's text to rules a test can check, Cyrillic included |
 | [0012](0012-set-every-page-in-nunito-carried-inside-it-and-measure-the-drawing-with-the-same-files.md) | Set every page in Nunito, carried inside it, and measure the drawing with the same files |
 | [0013](0013-publish-a-page-as-an-artifact-only-when-asked-one-per-set-of-inputs-its-link-kept-by-each-person.md) | Publish a page as an Artifact only when asked, one per set of inputs, its link kept by each person |
+| [0014](0014-make-ratsnest-a-builder-and-let-circuits-live-in-projects-of-their-own.md) | Make ratsnest a builder, and let circuits live in projects of their own |

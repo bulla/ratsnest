@@ -1,6 +1,6 @@
 # ADR 0013: Publish a page as an Artifact only when asked, one per set of inputs, its link kept by each person
 
-**Status:** Accepted · 2026-11-20
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0014 (the links file sits at the root of the circuits project, committed or not as its owner chooses)
 
 ## Context
 

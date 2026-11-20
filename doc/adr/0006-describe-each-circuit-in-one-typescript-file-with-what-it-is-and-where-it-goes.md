@@ -1,6 +1,6 @@
 # ADR 0006: Describe each circuit in one TypeScript file, with what it is and where it goes
 
-**Status:** Accepted · 2026-11-20
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0014 (a circuit file lives in a circuits project, not in ratsnest's `circuits/`)
 
 ## Context
 
