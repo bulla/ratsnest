@@ -1,4 +1,4 @@
-import type { ButtonColour, Circuit, Layout, PlainLed } from "../circuit";
+import type { ButtonColour, Layout, PlainLed, ShownCircuit } from "../circuit";
 import {
   type Hole,
   holeAt,
@@ -110,7 +110,7 @@ interface Names {
   readonly buzzer: (id: string) => string;
 }
 
-function namesOf(circuit: Circuit): Names {
+function namesOf(circuit: ShownCircuit): Names {
   const find = (list: readonly { id: string; name: string }[], id: string) =>
     list.find((item) => item.id === id)?.name ?? id;
   return {
@@ -125,7 +125,7 @@ function namesOf(circuit: Circuit): Names {
  * The colour of a button's cap (scratchpi's ADR 0174). A layout's button is one its circuit has, or the
  * wiring check fails first (ADR 0007), so the red is never reached by a page that is made.
  */
-const buttonColourOf = (circuit: Circuit, id: string): ButtonColour =>
+const buttonColourOf = (circuit: ShownCircuit, id: string): ButtonColour =>
   circuit.buttons.find((button) => button.id === id)?.colour ?? "red";
 
 /** One part, as the sentence that says where it goes. */
@@ -211,7 +211,7 @@ function tagsOf(layout: Layout): PinTag[] {
 }
 
 /** The GPIO each of the circuit's components is on, in the order the circuit lists them. */
-function componentPins(circuit: Circuit): { name: string; gpio: number }[] {
+function componentPins(circuit: ShownCircuit): { name: string; gpio: number }[] {
   return [
     ...circuit.leds.map((led) => ({ name: led.name, gpio: led.pin.gpio })),
     ...circuit.buttons.map((button) => ({ name: button.name, gpio: button.pin.gpio })),
@@ -219,7 +219,7 @@ function componentPins(circuit: Circuit): { name: string; gpio: number }[] {
   ];
 }
 
-function picoStep(circuit: Circuit, words: PageWords): string {
+function picoStep(circuit: ShownCircuit, words: PageWords): string {
   const lands = componentPins(circuit).flatMap(({ gpio }) => {
     const pin = headerPinOfGpio(gpio);
     return pin ? [words.land(gpio, `<span class="hole">${holeOfPin(pin.number)}</span>`)] : [];
@@ -310,11 +310,11 @@ function partsListHtml(parts: readonly Part[], names: Names, words: PageWords): 
  * reach if it went in turned round. A layout's light is one its circuit has, or the wiring check
  * fails first (ADR 0007), so the question mark is never reached by a page that is made.
  */
-function dataPinOf(circuit: Circuit, led: string): string {
+function dataPinOf(circuit: ShownCircuit, led: string): string {
   return `GP${circuit.leds.find((each) => each.id === led)?.pin.gpio ?? "?"}`;
 }
 
-function notesHtml(circuit: Circuit, parts: readonly Part[], words: PageWords): string {
+function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWords): string {
   const notes: string[] = [];
   if (parts.some((p) => p.kind === "led")) {
     const [low, high] = LIGHT_OHMS_RANGE;
@@ -330,7 +330,7 @@ function notesHtml(circuit: Circuit, parts: readonly Part[], words: PageWords): 
 
 /** The whole document for one circuit, laid out as its layout says, in one language. */
 export function wiringPage(
-  circuit: Circuit,
+  circuit: ShownCircuit,
   layout: Layout,
   files: PageFiles,
   language: Language = DEFAULT_LANGUAGE,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { FIXTURE_IDS, FIXTURES, type Fixture, type FixtureId } from "../__fixtures__/circuits";
-import type { Circuit, Layout } from "../circuit";
+import type { Layout, ShownCircuit } from "../circuit";
 import { PAGE_THEME, PAGE_WORDS, type PageFiles, wiringPage } from "./page";
 
 const read = (name: string) => readFileSync(new URL(name, import.meta.url), "utf8");
@@ -19,7 +19,7 @@ const page = (id: FixtureId, language: "en" | "fr" = "en") =>
 const steps = (html: string) => html.slice(html.indexOf('<ol class="steps">'));
 
 /** Every GPIO a circuit's components are on. */
-const gpiosOf = (circuit: Circuit): number[] => [
+const gpiosOf = (circuit: ShownCircuit): number[] => [
   ...circuit.leds.map((led) => led.pin.gpio),
   ...circuit.buttons.map((button) => button.pin.gpio),
   ...circuit.buzzers.map((buzzer) => buzzer.pin.gpio),
@@ -38,7 +38,7 @@ const FRENCH_NAMES: Readonly<Record<string, string>> = {
  * names, its steps and what its script does, all in French. Only its script stays as it is, since
  * it is code.
  */
-function inFrench({ circuit, layout }: Fixture): { circuit: Circuit; layout: Layout } {
+function inFrench({ circuit, layout }: Fixture): { circuit: ShownCircuit; layout: Layout } {
   const named = <T extends { readonly name: string }>(part: T): T => ({
     ...part,
     name: FRENCH_NAMES[part.name] ?? part.name,
@@ -209,7 +209,7 @@ describe("an RGB LED's page, on two breadboards (scratchpi's ADR 0226)", () => {
 
   it("warns of the pin the LED's data is on, wherever its circuit puts it", () => {
     const { circuit, layout } = FIXTURES["rgb-led-and-d-pad"];
-    const moved: Circuit = {
+    const moved: ShownCircuit = {
       ...circuit,
       leds: circuit.leds.map((led) =>
         led.colour === "rgb" ? { ...led, pin: { ...led.pin, gpio: 27 } } : led,

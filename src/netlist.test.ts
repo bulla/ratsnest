@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { FIXTURE_IDS, FIXTURES } from "./__fixtures__/circuits";
-import type { Circuit, Layout, Led } from "./circuit";
+import type { Layout, Led, ShownCircuit } from "./circuit";
 import type { Part } from "./drawing/breadboard";
 import { wiringProblems } from "./netlist";
 
@@ -73,7 +73,7 @@ describe("the wiring check", () => {
   });
 
   it("finds a light on a pin the circuit does not say", () => {
-    const moved: Circuit = {
+    const moved: ShownCircuit = {
       ...RED_GREEN,
       leds: RED_GREEN.leds.map(
         (led): Led =>
