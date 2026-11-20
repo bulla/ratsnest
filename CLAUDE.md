@@ -42,6 +42,11 @@ language's text is held to rules a test checks, Cyrillic included: NFC, one scri
 look-alikes folded before a hole is looked for, drawn words measured rather than counted, and plural
 forms (ADR 0011).
 
+**Every page is set in Nunito, and carries it** (ADR 0012): two variable WOFF2 files in `fonts/`,
+Latin on every page and Cyrillic on a Russian one, inlined under a family name of ratsnest's own.
+The engine measures every drawn word with the same files, and a test fails on a character a page
+writes that they lack.
+
 **A circuit is one TypeScript file that only declares, and everything that computes is outside it**
 (ADR 0006, ADR 0007). This is the rule every other part of ratsnest leans on:
 
@@ -78,6 +83,8 @@ was the latest release when it was added (ADR 0009). None is installed yet: they
 | Types | `@types/bun` `1.4.4`, `@types/jsdom` `30.0.0` |
 | Lint and format | Biome `2.6.8` |
 | Declarative check | `@babel/parser` `8.1.2` (ADR 0007, ADR 0009) |
+| Font | Nunito `3.602`, cut by Google Fonts' subsetter into two variable WOFF2 files, committed in `fonts/` and carried by every page (ADR 0012) |
+| Measuring words | `fontkit` `3.0.0`, reading those same files (ADR 0012) |
 | Looking at a page | The Playwright and Chromium installed where the work is done, never a dependency |
 
 Two standing constraints:
@@ -107,6 +114,7 @@ there.
 │       ├── circuit/     Adds or changes a circuit, and makes its page (ADR 0007)
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── circuits/          · One declarative file per circuit, and nothing else (ADR 0006, ADR 0007)
+├── fonts/             · Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
 │   ├── HISTORY.md       Every milestone's checklist, and the Log
@@ -167,6 +175,13 @@ does not pay for it again.
 - **A test copied from scratchpi passes `bun test` and fails the type check.** It imports from
   `vitest`, and Bun redirects the import to its own runner while it runs, but the types for
   `vitest` are not there. Change the import to `bun:test`.
+- **Nunito has no narrow no-break space**, U+202F, which every French `:`, `;`, `?` and `!` is
+  preceded by. A browser draws a character its font lacks from another font, at another width, and
+  nothing says so. The engine writes it as Nunito's thin space, U+2009, held to its neighbours by
+  `white-space: nowrap` (ADR 0012). Nunito has no `←` or `→` either.
+- **Google's ready-made Latin file of Nunito has no `Ω`**, though the font does. The files in
+  `fonts/` come from Google's subsetter, asked for ratsnest's characters by name; fetching the usual
+  `latin` file instead drops every resistor's unit.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

@@ -54,6 +54,8 @@ instead: a page is only ever the engine's output.
   language. Write a part's name as it stands, never inflected for its place in a sentence.
 - **Keep each language's typography**: in French, a narrow no-break space (U+202F) before `: ; ? !`
   and inside `« »`; in Russian, `« »` and no space before `: ; ? !`.
+- **Write only characters the page's font has** (ADR 0012). Nunito has no `←` or `→`, and a test
+  names any other it lacks. Never swap the font, or let a page fall back to another: change the word.
 
 ## The inputs (ADR 0003, ADR 0005, ADR 0010)
 

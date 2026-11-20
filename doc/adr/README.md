@@ -78,3 +78,4 @@ Each new record adds a row here.
 | [0009](0009-run-everything-on-bun-its-tests-included.md) | Run everything on Bun, its tests included |
 | [0010](0010-let-a-circuit-be-written-in-one-language-or-several-and-make-a-page-only-in-one-it-has.md) | Let a circuit be written in one language or several, and make a page only in one it has |
 | [0011](0011-hold-every-languages-text-to-rules-a-test-can-check-cyrillic-included.md) | Hold every language's text to rules a test can check, Cyrillic included |
+| [0012](0012-set-every-page-in-nunito-carried-inside-it-and-measure-the-drawing-with-the-same-files.md) | Set every page in Nunito, carried inside it, and measure the drawing with the same files |
