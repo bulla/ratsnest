@@ -30,10 +30,24 @@ already been argued.
 
 **ratsnest is a builder, and circuits live in projects of their own** (ADR 0014). The builder is the
 engine, a command-line tool, the `Circuit` type and the `circuit` skill. A circuits project is any
-folder with ratsnest pinned in it: `ratsnest init` makes one, `ratsnest check` and
-`ratsnest generate` are what the skill calls, and `ratsnest update` moves a project to a newer
-ratsnest. The skill has one copy, ratsnest's: `init` puts it in a project and `update` replaces it.
-ratsnest's own circuits are scratchpi's, ported, in `examples/`.
+folder with a `ratsnest.json`: `ratsnest init` makes one, `ratsnest check` and `ratsnest generate`
+are what the skill calls, and `ratsnest update` moves a project to a newer ratsnest. The skill has
+one copy, ratsnest's: `init` puts it in a project and `update` replaces it. ratsnest's own circuits
+are scratchpi's, ported, in `examples/`.
+
+**ratsnest reaches its users as one executable per platform, built by Bun** (ADR 0016): Linux,
+macOS and Windows, each carrying Bun and Nunito inside, attached to a GitHub Release with an install
+script, and no npm package. It reads a circuit file as data and never runs it, and checks every field
+itself. A project names the version it expects in `ratsnest.json`, gets the `Circuit` type in
+`.ratsnest/` for editors, and `ratsnest update` replaces the executable before it migrates.
+
+**Every release is numbered by strict SemVer, computed and never chosen** (ADR 0017). The public
+surface (the circuit format and its type, the commands and their options, `ratsnest.json`) is
+snapshotted in `api/` at each release: a format that rose or anything removed or changed is major,
+anything only added is minor, the rest is patch, and nothing may be lower or skipped. The version
+lives in `package.json` alone, versions are 0.y.z until the repository is public and 1.0.0 is its
+first public release, `bun run release` is the only way to make one, and continuous integration
+refuses a tag that breaks the rule.
 
 **Every circuit file says its format, and `ratsnest update` migrates it** (ADR 0015). `format: <n>`
 rises only when the circuit format breaks; the engine reads the current one alone, and refuses any
@@ -107,6 +121,8 @@ was the latest release when it was added (ADR 0009). None is installed yet: they
 | Declarative check | `@babel/parser` `8.1.2` (ADR 0007, ADR 0009) |
 | Font | Nunito `3.602`, cut by Google Fonts' subsetter into two variable WOFF2 files, committed in `fonts/` and carried by every page (ADR 0012) |
 | Measuring words | `fontkit` `3.0.0`, reading those same files (ADR 0012) |
+| Shipping | One executable per platform from `bun build --compile --conditions=browser`, on GitHub Releases (ADR 0016) |
+| Versions | Strict SemVer, computed by `bun run release` and compared with `Bun.semver` (ADR 0017) |
 | Looking at a page | The Playwright and Chromium installed where the work is done, never a dependency |
 
 Two standing constraints:
@@ -146,9 +162,15 @@ there.
 │       └── README.md      How records are written, and the index
 ├── src/               · The engine (the validator, the renderer and the post-processor) and the
 │                        command-line tool: `init`, `check`, `generate`, `update` (ADR 0014)
+├── api/               · The public surface as it was at the last release, written only by
+│                        `bun run release` (ADR 0017)
+├── package.json       · The one place the version lives (ADR 0017)
+├── CHANGELOG.md       · Every release, and *Unreleased* (ADR 0017)
+├── install.sh         · Puts the right executable on the `PATH` (ADR 0016)
 ├── ARTIFACTS.md       · Your own links to the Artifacts you published from the examples:
 │                        gitignored (ADR 0013, ADR 0014)
-├── .gitignore           What stays on one machine: each person's `ARTIFACTS.md`
+├── .gitignore           What stays on one machine: each person's `ARTIFACTS.md`, and the
+│                        executables `bun run build` writes to `dist/`
 └── CLAUDE.md            This file
 ```
 
@@ -163,6 +185,9 @@ there.
   `doc/HISTORY.md`, with a line in the roadmap's **Done** and an entry in the Log, and sorts what it
   leaves open into the roadmap's Open points or Backlog. The Status section of this file stays a
   short summary: no paragraph per milestone.
+- **A pull request that changes what users get adds its line to `CHANGELOG.md`, under
+  *Unreleased*** (ADR 0017). A release is made by `bun run release` and nothing else: never set the
+  version, edit `api/` or push a tag by hand.
 
 ## Decisions
 
@@ -210,6 +235,12 @@ does not pay for it again.
 - **Google's ready-made Latin file of Nunito has no `Ω`**, though the font does. The files in
   `fonts/` come from Google's subsetter, asked for ratsnest's characters by name; fetching the usual
   `latin` file instead drops every resistor's unit.
+- **A compiled ratsnest without `--conditions=browser` dies on its first word.** `fontkit` uses
+  `unicode-properties`, whose `node` loader reads `data.trie` from its own folder, and an executable
+  has no such folder: `ENOENT … /$bunfs/root/data.trie` (ADR 0016). The `browser` condition takes
+  the loader that carries the data in its code. Bun's compiler packs only what is imported, so any
+  dependency that reads a file beside itself fails the same way: run the examples with the compiled
+  executable, never only from source.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
