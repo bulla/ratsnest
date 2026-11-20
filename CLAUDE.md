@@ -13,9 +13,8 @@ open-sourced once done.
 
 ## Status
 
-Started 2026-11-20, and no code yet. The design is being settled by interview, a record per
-decision; what is settled so far is under Design below, and what is next is in
-[`doc/ROADMAP.md`](doc/ROADMAP.md).
+The design is settled, in twenty records argued by interview on 2026-11-20 (M0), and there is no code
+yet. M1, the frame, is next, and the milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
