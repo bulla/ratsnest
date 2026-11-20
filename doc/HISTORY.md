@@ -58,6 +58,25 @@ format Markdown as well, and at the owner's choice it formats every file, the re
 - [x] The `/setup` skill, which follows `CONTRIBUTING.md` step by step, runs each, checks what it
       printed and explains what did not, and holds no steps of its own
 
+### M2: the copy
+
+M2 is done: scratchpi's drawing, wiring check and page generator are in `src/`, and a page is made
+from a circuit and a layout handed in, in English or French, the same file every time. Nothing in
+`src/` names a circuit: the tests build on seven test circuits, scratchpi's renamed by what they
+hold. The drawing came over unchanged, and is the same, byte for byte, as on scratchpi's own pages.
+What tied the page to the app went, and with it the French of scratchpi's layouts, which belongs to a
+circuit now (M3).
+
+- [x] scratchpi's breadboard model, drawing, wiring check and page generator in `src/`, the drawing
+      in `src/drawing/` (ADR 0001, ADR 0018)
+- [x] `ATTRIBUTION.md`, as the drawing arrives: its source, its licence, what was changed, and the
+      folder it covers (ADR 0018)
+- [x] Its tests ported to `bun:test` and passing, jsdom running the page's script (ADR 0009)
+- [x] What tied it to scratchpi's app gone: the back link, the theme handed over, the language twin,
+      the app's words and records (ADR 0004)
+- [x] One page made from a circuit built in a test, in English, dark, at 0°, and looked at in
+      Chromium beside scratchpi's
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -86,3 +105,15 @@ format Markdown as well, and at the owner's choice it formats every file, the re
   commit of its own. The workflow passed first time on all three systems, its test of the running Bun
   showing that `setup-bun` reads the version from `package.json`. Every step of `CONTRIBUTING.md` was
   run as written, in a fresh clone, and printed what the file says.
+- 2026-11-20: M2. The copy. The drawing, the breadboard model and the wiring check came over as they
+  were, their comments citing scratchpi's records by name, since ratsnest's numbers mean other
+  things. Their tests were moved onto seven test circuits, scratchpi's renamed, so that no test in
+  `src/` names one that ships. The page lost the back link, the theme read from its address, its twin
+  in the other language and the aside about scratchpi's code view, and its two warnings about
+  addressable LEDs now name the pin the circuit puts their data on, where they had named scratchpi's.
+  The palette is plain custom properties, pruned to what a page draws; pruned by what the test
+  circuits drew, it lost the colour of a control pin's chip, which none of them wires, and the token
+  tests now read the drawing's own lists instead. Made from the test circuit copied from Red/Green
+  LEDs, the page matched scratchpi's live one but for what was taken out, and its drawing, and the
+  RGB LED's on two breadboards, were the same byte for byte. scratchpi's own generator does not run
+  under Bun alone, so the comparison was with its live pages.
