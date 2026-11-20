@@ -58,13 +58,35 @@ circuit, an orientation of 0°, 90°, 180° or 270° clockwise (ADR 0003), a the
 
 ## Stack
 
-Undecided. Ask before adding anything. Each layer, once chosen, goes in a table here with the record
-that chose it, and the table is then the list to ask before going beyond.
+Ask before adding anything not in this table. Every version is pinned exactly, with no caret, and
+was the latest release when it was added (ADR 0009). None is installed yet: they go into
+`package.json` with the first code.
+
+| Layer | Choice |
+| --- | --- |
+| Runtime | Bun `1.4.5`, and nothing else: it installs, runs the scripts and the generator, and tests with `bun test` (ADR 0009) |
+| Language | TypeScript `7.0.2`, checked with `tsc --noEmit`, run by Bun |
+| Framework | None, and no bundler: the engine writes each page as a string (ADR 0008) |
+| Tests | `bun test`, and jsdom `31.0.1` for the page's one script |
+| Types | `@types/bun` `1.4.4`, `@types/jsdom` `30.0.0` |
+| Lint and format | Biome `2.6.8` |
+| Declarative check | `@babel/parser` `8.1.2` (ADR 0007, ADR 0009) |
+| Looking at a page | The Playwright and Chromium installed where the work is done, never a dependency |
+
+Two standing constraints:
+
+- **Bun entirely: there is no Node.** Run every command as `bun run <script>`. A tool's launcher
+  asks for `node` by name and `bun run` stands in for it, so `./node_modules/.bin/biome` called
+  directly fails where Node is missing, and works where it is installed, which makes the mistake
+  easy to miss.
+- **No framework until something on a page has to change after it is made** (ADR 0008). Solid 2 is
+  the one in mind, and ADR 0008 says what adding it was found to need.
 
 ## Commands
 
 None yet: there is nothing to install, build, test or lint. When there is, the commands go in a
-table here, including how to run a single test.
+table here, including how to run a single test, and every one of them is `bun run <script>`
+(ADR 0009).
 
 ## Layout
 
@@ -126,7 +148,18 @@ A change that wants to contradict a record stops and becomes its own record firs
 
 ## Notes for Claude
 
-None yet. A trap goes here once someone has fallen into it: a library that behaves against its own
+A trap goes here once someone has fallen into it: a library that behaves against its own
 documentation, a test that passes while measuring the wrong thing, a failure that does not fail
 loudly. Say what happened, why, and where the code now guards against it, so that the next session
 does not pay for it again.
+
+- **TypeScript 7 has no stable parser API.** `require("typescript").createSourceFile`, which 6.x
+  had, is gone, and what is left sits under `typescript/unstable/*`, through the native compiler
+  running as another process. That is why the declarative check parses with `@babel/parser`
+  (ADR 0009). Taking Babel out to "use TypeScript's own parser" puts that back.
+- **A test copied from scratchpi passes `bun test` and fails the type check.** It imports from
+  `vitest`, and Bun redirects the import to its own runner while it runs, but the types for
+  `vitest` are not there. Change the import to `bun:test`.
+- **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
+  tests run as `bun test --conditions browser`, or a component's first call says a client-only API
+  was called on the server.
