@@ -1,7 +1,7 @@
 # ADR 0011: Hold every language's text to rules a test can check, Cyrillic included
 
-**Status:** Proposed · 2026-11-20 · *the owner asked for these rules; agreed once they have read
-them*
+**Status:** Accepted · 2026-11-20 · *proposed at the owner's request, and accepted by them the same
+day*
 
 ## Context
 
@@ -61,7 +61,7 @@ reader's.
 
 ## Considered options
 
-- **Rules a test can check, and one reader's review**: proposed. Every danger above except grammar
+- **Rules a test can check, and one reader's review**: chosen. Every danger above except grammar
   can be caught by a machine, and grammar is caught by the one person who can.
 - **Trust the translator**: rejected. A Latin `a` in a Russian word, or a word one letter too wide
   for the margin, is invisible on the screen and in review alike.
