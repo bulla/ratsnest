@@ -48,3 +48,9 @@ each record, and the traps they turned up are in `CLAUDE.md`'s Notes.
   compile made it the way ratsnest ships (ADR 0016). Strict SemVer, computed from a snapshot of the
   public surface, came out of wanting to publish safely (ADR 0017). The owner merged each batch of
   records as it was decided, from pull request 3 on.
+- 2026-11-20: The repository made public by the owner, before any code, and licensed MIT to bulla
+  at once, since a public repository with no licence reserves every right. Versions stay at 0.y.z
+  until ratsnest is done, rather than until the repository is public (ADR 0021). The owner's friend,
+  who reads Russian, is to read the engine's Russian table in M6, and signing the macOS executables
+  is deferred. The onboarding, `CONTRIBUTING.md` and a `/setup` skill that follows it, is planned
+  into M1, with the README's *Get started* in M7.

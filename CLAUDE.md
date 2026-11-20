@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 in one declarative file, it makes one self-contained page showing how to build it on a breadboard
 with a Pico 2 W, step by step. Circuits live in projects of their own, made by `ratsnest init`, and
 ratsnest itself holds only its examples (ADR 0014). It started on 2026-11-20 from a copy of
-scratchpi's circuit pages (`bulla/scratchpi`), evolves on its own from there, and is to be
-open-sourced once done.
+scratchpi's circuit pages (`bulla/scratchpi`), and evolves on its own from there. It is open source,
+under MIT (ADR 0018), and its repository has been public since 2026-11-20.
 
 ## Status
 
@@ -44,9 +44,9 @@ itself. A project names the version it expects in `ratsnest.json`, gets the `Cir
 surface (the circuit format and its type, the commands and their options, `ratsnest.json`) is
 snapshotted in `api/` at each release: a format that rose or anything removed or changed is major,
 anything only added is minor, the rest is patch, and nothing may be lower or skipped. The version
-lives in `package.json` alone, versions are 0.y.z until the repository is public and 1.0.0 is its
-first public release, `bun run release` is the only way to make one, and continuous integration
-refuses a tag that breaks the rule.
+lives in `package.json` alone, versions are 0.y.z until ratsnest is done and 1.0.0 is the release
+that says it is (ADR 0021), `bun run release` is the only way to make one, and continuous
+integration refuses a tag that breaks the rule.
 
 **ratsnest's code is MIT, and it carries what it inherits** (ADR 0018). The drawing's code, in
 `src/drawing/`, is CC BY-SA 4.0 as an adaptation of Raspberry Pi's datasheet figure, credited in
@@ -159,6 +159,7 @@ there.
 │                        tag (ADR 0020)
 ├── .claude/
 │   └── skills/
+│       ├── setup/       · Walks a newcomer through `CONTRIBUTING.md`, checking each step
 │       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
@@ -173,12 +174,14 @@ there.
 ├── src/               · The engine (the validator, the renderer and the post-processor) and the
 │   │                    command-line tool: `init`, `check`, `generate`, `update` (ADR 0014)
 │   └── drawing/       · The Pico and the breadboard, drawn: CC BY-SA 4.0, unlike the rest (ADR 0018)
-├── LICENSE            · MIT, for everything but `src/drawing/` and `fonts/` (ADR 0018)
+├── LICENSE              MIT, held by bulla, for everything but `src/drawing/` and `fonts/` (ADR 0018)
 ├── ATTRIBUTION.md     · The drawing's source and licence, and which folder it covers (ADR 0018)
 ├── api/               · The public surface as it was at the last release, written only by
 │                        `bun run release` (ADR 0017)
 ├── package.json       · The one place the version lives (ADR 0017)
 ├── CHANGELOG.md       · Every release, and *Unreleased* (ADR 0017)
+├── CONTRIBUTING.md    · The walkthrough for working on ratsnest, which `/setup` follows
+├── README.md          · What ratsnest is, and how to start using it
 ├── install.sh         · Puts the right executable on the `PATH` (ADR 0016)
 ├── .gitignore           The executables `bun run build` writes to `dist/` (ADR 0016)
 └── CLAUDE.md            This file
