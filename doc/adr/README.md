@@ -69,3 +69,6 @@ Each new record adds a row here.
 | --- | --- |
 | [0001](0001-start-from-a-copy-of-scratchpis-wiring-pages-and-evolve-on-our-own.md) | Start from a copy of scratchpi's wiring pages, and evolve on our own |
 | [0002](0002-draw-a-pico-2-w-on-a-half-size-breadboard-and-nothing-else-yet.md) | Draw a Pico 2 W on a half-size breadboard, and nothing else yet |
+| [0003](0003-turn-the-drawing-by-a-quarter-turn-chosen-when-it-is-generated.md) | Turn the drawing by a quarter turn, chosen when it is generated |
+| [0004](0004-make-each-asset-one-self-contained-page-per-circuit.md) | Make each asset one self-contained page per circuit |
+| [0005](0005-fix-a-pages-theme-and-language-when-it-is-generated.md) | Fix a page's theme and language when it is generated |
