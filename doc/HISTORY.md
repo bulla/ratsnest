@@ -39,7 +39,7 @@ M1 is done: everything the code will stand on, and no engine yet. Every dependen
 the Stack's versions, two patches that came out after the owner confirmed them taken as ADR 0009
 asks, and the first tests hold the repository's own rules. The workflow passed on its first run, on
 Linux, Windows and macOS, and its gate, `ci`, is the one check to require. Biome 2.6 turned out to
-format Markdown, and is kept off it.
+format Markdown as well, and at the owner's choice it formats every file, the records included.
 
 - [x] `package.json` with every dependency pinned exactly at the versions in `CLAUDE.md`'s Stack
       (ADR 0009), `packageManager` naming Bun `1.4.5`, and `version` `0.0.0` (ADR 0017)
@@ -81,7 +81,8 @@ format Markdown, and is kept off it.
   into M1, with the README's *Get started* in M7.
 - 2026-11-20: M1. The frame. Every dependency pinned exactly; `@types/bun` 1.4.5 and `@babel/parser`
   8.1.3 came out after the versions were confirmed, and were taken. Biome 2.6 formats Markdown, which
-  scratchpi's 2.5 did not, and would have rewritten every record's emphasis and tables, so it is kept
-  to the code. The workflow passed first time on all three systems, its test of the running Bun
+  scratchpi's 2.5 did not. It was first kept to the code, to leave the records as they were written;
+  the owner chose instead to let it format everything, the records included, which it did in a
+  commit of its own. The workflow passed first time on all three systems, its test of the running Bun
   showing that `setup-bun` reads the version from `package.json`. Every step of `CONTRIBUTING.md` was
   run as written, in a fresh clone, and printed what the file says.

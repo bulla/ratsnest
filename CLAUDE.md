@@ -197,7 +197,7 @@ there.
 │                        repository's rules (exact pins, the pinned Bun, no Node)
 ├── package.json         The dependencies, the scripts, and the one place the version lives (ADR 0017)
 ├── bun.lock             What `bun install` installs, exactly
-├── tsconfig.json, biome.json  Strict TypeScript; Biome for the code, never for Markdown
+├── tsconfig.json, biome.json  Strict TypeScript; Biome for the code and the Markdown alike
 ├── CHANGELOG.md         Every release, and *Unreleased* (ADR 0017)
 ├── CONTRIBUTING.md      The walkthrough for working on ratsnest, which `/setup` follows
 ├── README.md          · What ratsnest is, and how to start using it
@@ -256,10 +256,15 @@ documentation, a test that passes while measuring the wrong thing, a failure tha
 loudly. Say what happened, why, and where the code now guards against it, so that the next session
 does not pay for it again.
 
-- **Biome 2.6 formats Markdown**, and would rewrite every `*emphasis*` in the records as `_emphasis_`
-  and pad every table to its widest cell. The records and the docs are written by hand, and a record
-  is only ever edited for a typo, so `biome.json` leaves `**/*.md` out. Taking that line out
-  reformats every file in `doc/` on the next `bun run format`.
+- **Biome 2.6 formats Markdown, and formats all of it here, the records included**, at the owner's
+  choice. It writes emphasis with underscores, `_like this_`, and pads every table to its widest
+  cell, so `bun run lint` fails on a hand-written `*emphasis*` or a ragged table until
+  `bun run format` has run. Formatting a record is not rewriting it: nothing it decided changes.
+- **Biome 2.6.8 does not know frontmatter, and breaks every skill it formats.** It puts a blank line
+  after a `SKILL.md`'s opening `---` and turns the YAML's lists into Markdown's, so Claude Code reads
+  neither a name nor a description. `biome.json` leaves `.claude/skills/**/SKILL.md` out, the only
+  Markdown here with frontmatter, and `scripts/repository.test.ts` fails on a skill whose
+  frontmatter does not open on its first line with its own name.
 - **TypeScript 7 has no stable parser API.** `require("typescript").createSourceFile`, which 6.x
   had, is gone, and what is left sits under `typescript/unstable/*`, through the native compiler
   running as another process. That is why the declarative check parses with `@babel/parser`
