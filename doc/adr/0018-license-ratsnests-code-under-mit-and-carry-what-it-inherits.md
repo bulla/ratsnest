@@ -9,7 +9,7 @@ and only the first is a choice:
 
 - **ratsnest's own code.**
 - **The drawing of the Pico and the breadboard**, copied from scratchpi (ADR 0001). scratchpi's
-  ADR 0023 treats it as an adaptation of Figure 2 of the *Raspberry Pi Pico 2 W Datasheet*,
+  ADR 0023 treats it as an adaptation of Figure 2 of the _Raspberry Pi Pico 2 W Datasheet_,
   © Raspberry Pi Ltd, under Creative Commons Attribution-ShareAlike 4.0, and carries the attribution
   that licence asks for.
 - **Nunito**, under the SIL Open Font License 1.1 (ADR 0012).

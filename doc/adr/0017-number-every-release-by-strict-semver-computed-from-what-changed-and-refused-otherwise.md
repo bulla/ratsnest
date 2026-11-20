@@ -35,9 +35,9 @@ it, its tag is `v` followed by it, and `CHANGELOG.md`, in the form of Keep a Cha
 section with it. `Bun.semver` compares versions, so no package is added for it.
 
 **`bun run release` is the only way to make one.** It computes the version, moves the changelog's
-*Unreleased* section under it with the date, sets the version, writes the snapshot, commits and
+_Unreleased_ section under it with the date, sets the version, writes the snapshot, commits and
 tags. It refuses with uncommitted changes, anywhere but on `develop`, or with nothing under
-*Unreleased*.
+_Unreleased_.
 
 **Continuous integration refuses a tag that breaks the rule.** For a pushed tag, it checks that the
 tag is the version, recomputes the least bump against the previous release's snapshot, and only then
@@ -62,7 +62,7 @@ builds the executables and publishes them (ADR 0016). A tag pushed by hand meets
   one schema.
 - **A version promises that projects keep working, not that pages look the same.** A change to how
   pages are drawn leaves the surface as it was, and is a patch unless the owner asks for more.
-- **Every pull request that changes what users get adds its line under *Unreleased***, or the next
+- **Every pull request that changes what users get adds its line under _Unreleased_**, or the next
   release has nothing to say about it.
 - **`api/` is one more thing in the repository**, and only `bun run release` writes it.
 - **No pre-release versions yet**, such as `1.2.0-rc.1`. SemVer allows them; ratsnest adds them when a

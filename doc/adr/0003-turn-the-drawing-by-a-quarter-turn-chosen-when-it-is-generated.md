@@ -16,12 +16,12 @@ not rename a hole. So which way the board is drawn is a question for the drawing
 
 **The generator takes an orientation, in degrees clockwise from the copied drawing:**
 
-| Orientation | The board | The Pico's USB |
-| --- | --- | --- |
-| `0` (the default) | horizontal | on the left |
-| `90` | vertical | at the top |
-| `180` | horizontal | on the right |
-| `270` | vertical | at the bottom |
+| Orientation       | The board  | The Pico's USB |
+| ----------------- | ---------- | -------------- |
+| `0` (the default) | horizontal | on the left    |
+| `90`              | vertical   | at the top     |
+| `180`             | horizontal | on the right   |
+| `270`             | vertical   | at the bottom  |
 
 - **A layout is written once and drawn at any of the four.** The holes keep their names and the
   wiring check never sees the orientation.

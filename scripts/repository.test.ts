@@ -27,6 +27,24 @@ describe("the repository's own rules", () => {
     expect(Bun.version).toBe(version);
   });
 
+  test("every skill's frontmatter opens on its first line, with its own name and a description", () => {
+    // Biome 2.6.8 breaks frontmatter, which is why biome.json leaves every SKILL.md out.
+    const skills = join(ROOT, ".claude", "skills");
+    const names = readdirSync(skills);
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) {
+      const lines = readFileSync(join(skills, name, "SKILL.md"), "utf8").split("\n");
+      const close = lines.indexOf("---", 1);
+      expect({ name, opens: lines[0], named: lines[1] }).toEqual({
+        name,
+        opens: "---",
+        named: `name: ${name}`,
+      });
+      expect(close).toBeGreaterThan(1);
+      expect(lines.slice(1, close).some((line) => line.startsWith("description: "))).toBe(true);
+    }
+  });
+
   test("no workflow sets up Node (ADR 0009, ADR 0020)", () => {
     const folder = join(ROOT, ".github", "workflows");
     const workflows = readdirSync(folder).filter((name) => /\.ya?ml$/.test(name));

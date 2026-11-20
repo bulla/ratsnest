@@ -20,7 +20,7 @@ installed at the version `package.json` names, and no Node is set up.
 - `bun install`, then `bun run lint`, `bun run typecheck` and `bun run test`;
 - the Linux executable built with `bun run build`, and `ratsnest check` run with it on the examples;
 - a refusal when a pull request changes what users get, `src/` outside its tests, `fonts/`, the
-  `circuit` skill or `install.sh`, with no line under *Unreleased* in `CHANGELOG.md`. A pull request
+  `circuit` skill or `install.sh`, with no line under _Unreleased_ in `CHANGELOG.md`. A pull request
   labelled `no changelog` is let through, for a change no user can see.
 
 **On a pushed tag `v*`:**

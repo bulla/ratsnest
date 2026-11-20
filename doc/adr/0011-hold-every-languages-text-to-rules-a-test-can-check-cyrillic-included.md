@@ -1,7 +1,7 @@
 # ADR 0011: Hold every language's text to rules a test can check, Cyrillic included
 
-**Status:** Accepted · 2026-11-20 · *proposed at the owner's request, and accepted by them the same
-day*
+**Status:** Accepted · 2026-11-20 · _proposed at the owner's request, and accepted by them the same
+day_
 
 ## Context
 

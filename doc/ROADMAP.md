@@ -10,7 +10,9 @@ judgement the owner has to make goes in **Open points**, and comes out once they
 
 ## Where it stands
 
-The design is settled, in ADR 0001 to ADR 0021, and nothing is built. ratsnest is to be a builder of
+The design is settled, in ADR 0001 to ADR 0021, and the frame is built (M1): the package, the
+checks, continuous integration on three systems, the changelog and the onboarding. There is no engine
+yet. ratsnest is to be a builder of
 wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -20,26 +22,7 @@ SemVer (ADR 0017), and is open source under MIT: its repository has been public 
 ## Next
 
 The milestones, in order. Each needs the ones before it, and only the first is in flight. Its
-checklist moves to `HISTORY.md` when it lands.
-
-### M1: the frame
-
-- [ ] `package.json` with every dependency pinned exactly at the versions in `CLAUDE.md`'s Stack
-      (ADR 0009), `packageManager` naming Bun `1.4.5`, and `version` `0.0.0` (ADR 0017)
-- [ ] `tsconfig.json`, `biome.json`, and the scripts: `lint`, `format`, `typecheck`, `test`
-- [ ] A first test that runs, so `bun run test` has something to pass
-- [ ] `.github/workflows/`, the workflow for every pull request: lint, typecheck and test, on Bun
-      alone, on Linux, Windows and macOS, which a public repository runs for free (ADR 0020)
-- [ ] `CHANGELOG.md`, with an empty *Unreleased*, and the pull request check that a change users get
-      has its line there, unless labelled `no changelog` (ADR 0017, ADR 0020)
-- [x] `LICENSE`: MIT, held by bulla (ADR 0018), added as soon as the repository was public, since a
-      public repository with no licence reserves every right
-- [ ] `CLAUDE.md`'s Commands table, with how to run a single test
-- [ ] `CONTRIBUTING.md`, the walkthrough for working on ratsnest: what to install, each command with
-      what it should print, how work is done here (`develop`, records, the roadmap, the changelog,
-      the skills) and where to read next, every step run as it is written
-- [ ] The `/setup` skill, which follows `CONTRIBUTING.md` step by step, runs each, checks what it
-      printed and explains what did not, and holds no steps of its own
+checklist moves to `HISTORY.md` when it lands. M2 is next.
 
 ### M2: the copy
 
@@ -100,7 +83,7 @@ checklist moves to `HISTORY.md` when it lands.
 - [ ] An executable older or newer than its project's `ratsnest.json` saying so (ADR 0016)
 - [ ] `install.sh` (ADR 0016)
 - [ ] The owner's first circuits project, made by `init` from a local build
-- [ ] The README's *Get started*, for people using ratsnest: install it, `ratsnest init`, `/circuit`
+- [ ] The README's _Get started_, for people using ratsnest: install it, `ratsnest init`, `/circuit`
 
 ### M8: publishing
 
@@ -134,10 +117,18 @@ checklist moves to `HISTORY.md` when it lands.
 
 ## Open points
 
-- **Protecting `develop`** (ADR 0020): in the repository's settings, under Rules or Branches, require a
-  pull request and the pull request workflow's check before merging, and refuse force pushes. The
-  repository is public, so a free plan allows it; the check to require exists once M1's workflow
-  has run once.
+- **Protecting `develop`** (ADR 0020), which only the owner can do, in the repository's settings:
+  1. _Settings_, then _Rules_, then _Rulesets_, then _New ruleset_, then _New branch ruleset_.
+  2. Name it `develop`, set _Enforcement status_ to _Active_, and under _Target branches_ add the
+     default branch.
+  3. Tick _Restrict deletions_, _Block force pushes_, and _Require a pull request before merging_
+     with **0** required approvals: GitHub never lets an account approve its own pull request, so
+     one required approval would leave the owner unable to merge.
+  4. Tick _Require status checks to pass_, and add the check `ci` from GitHub Actions, the job that
+     passes only when every other has. It is listed since M1's pull request ran it.
+  5. _Create_.
+- **The `no changelog` label** (ADR 0020): made once, under _Issues_, then _Labels_, then _New label_,
+  before a pull request can wear it.
 
 ## Backlog
 
@@ -174,6 +165,7 @@ One line per milestone. Its checklist and the paragraph that summed it up are in
 [`HISTORY.md`](HISTORY.md), under the same name. Work that landed between milestones is only in that
 file's Log.
 
-| Milestone | What it gave the project | Records |
-| --- | --- | --- |
-| M0 | The design, by interview: what ratsnest is, how it is built, shipped and kept | 0001–0020 |
+| Milestone | What it gave the project                                                               | Records                      |
+| --------- | -------------------------------------------------------------------------------------- | ---------------------------- |
+| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept          | 0001–0020                    |
+| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding | 0009, 0017, 0018, 0020, 0021 |
