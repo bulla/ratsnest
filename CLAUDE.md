@@ -4,10 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # ratsnest
 
-*Graphical wiring for breadboards.* ratsnest makes a wiring guide for each circuit: one
-self-contained page showing how to build it on a breadboard with a Pico 2 W, step by step. It
-started on 2026-11-20 from a copy of scratchpi's circuit pages (`bulla/scratchpi`), and evolves on
-its own from there.
+*Graphical wiring for breadboards.* ratsnest is a builder of wiring guides: from a circuit described
+in one declarative file, it makes one self-contained page showing how to build it on a breadboard
+with a Pico 2 W, step by step. Circuits live in projects of their own, made by `ratsnest init`, and
+ratsnest itself holds only its examples (ADR 0014). It started on 2026-11-20 from a copy of
+scratchpi's circuit pages (`bulla/scratchpi`), evolves on its own from there, and is to be
+open-sourced once done.
 
 ## Status
 
@@ -25,6 +27,18 @@ Design is settled before code, one decision at a time (`/interview` walks the tr
 decision becomes a record in [`doc/adr/`](doc/adr/). This section states the root decisions, a
 paragraph each with the records that argue them, so that nobody proposes an architecture that has
 already been argued.
+
+**ratsnest is a builder, and circuits live in projects of their own** (ADR 0014). The builder is the
+engine, a command-line tool, the `Circuit` type and the `circuit` skill. A circuits project is any
+folder with ratsnest pinned in it: `ratsnest init` makes one, `ratsnest check` and
+`ratsnest generate` are what the skill calls, and `ratsnest update` moves a project to a newer
+ratsnest. The skill has one copy, ratsnest's: `init` puts it in a project and `update` replaces it.
+ratsnest's own circuits are scratchpi's, ported, in `examples/`.
+
+**Every circuit file says its format, and `ratsnest update` migrates it** (ADR 0015). `format: <n>`
+rises only when the circuit format breaks; the engine reads the current one alone, and refuses any
+other with what to do. A migration turns one format's object into the next's and nothing else, with a
+test on files of the format before; a change that breaks the format ships its migration with it.
 
 **One Pico 2 W, one half-size breadboard** (ADR 0002). Another board or breadboard is a record of its
 own, written when a circuit needs it.
@@ -48,19 +62,22 @@ The engine measures every drawn word with the same files, and a test fails on a 
 writes that they lack.
 
 **A page becomes an Artifact only when asked, one per set of four inputs** (ADR 0013), through the
-`circuit` skill. Each person keeps their own links in `doc/ARTIFACTS.md`, which is gitignored and
-never committed; every page names its inputs in a `<meta name="ratsnest">` tag, so the skill finds an
-existing Artifact even where the file is gone, as it is at the start of every cloud session.
+`circuit` skill. The links are kept in `ARTIFACTS.md` at the root of the circuits project, committed
+or not as its owner chooses (ADR 0014); ratsnest's own, for its examples, is gitignored and never
+committed. Every page names its inputs in a `<meta name="ratsnest">` tag, so the skill finds an
+existing Artifact even where the file is gone, as it can be at the start of a cloud session.
 
 **A circuit is one TypeScript file that only declares, and everything that computes is outside it**
 (ADR 0006, ADR 0007). This is the rule every other part of ratsnest leans on:
 
-- `circuits/<name>.ts` says what the circuit is and where its parts go, in pins, holes, parts,
-  values and words: `import type` lines and one `export default { … } satisfies Circuit`, whose
-  values are strings, numbers, booleans, and arrays and objects of those. No function, call,
-  variable, spread, condition or value import, and nothing about how anything looks.
+- A circuit file, `circuits/<name>.ts` in its project or `examples/<name>.ts` here, says what the
+  circuit is and where its parts go, in pins, holes, parts, values and words: `import type` lines
+  and one `export default { … } satisfies Circuit`, whose values are strings, numbers, booleans, and
+  arrays and objects of those. No function, call, variable, spread, condition or value import, and
+  nothing about how anything looks.
 - The validator, the renderer and the post-processor are the engine, in `src/`, and nothing in
-  `src/` names a circuit, tests included.
+  `src/` names a circuit, tests included. The examples are checked by the same `ratsnest check` as
+  anyone's circuits.
 - A test holds both directions. When the validator refuses a circuit, move the part, never the
   rule. A circuit is added or changed through the `circuit` skill (`.claude/skills/circuit/`).
 
@@ -116,18 +133,22 @@ there.
 .
 ├── .claude/
 │   └── skills/
-│       ├── circuit/     Adds or changes a circuit, and makes its page (ADR 0007)
+│       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
+│       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
-├── circuits/          · One declarative file per circuit, and nothing else (ADR 0006, ADR 0007)
+├── examples/          · scratchpi's circuits, ported: ratsnest's own, checked like anyone's, and
+│                        the old files its migrations are tested on (ADR 0014, ADR 0015)
 ├── fonts/             · Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
 │   ├── HISTORY.md       Every milestone's checklist, and the Log
-│   ├── ARTIFACTS.md   · Your own links to the Artifacts you published: gitignored (ADR 0013)
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
-├── src/               · The engine: the validator, the renderer and the post-processor
-├── .gitignore           What stays on one machine: each person's `doc/ARTIFACTS.md`
+├── src/               · The engine (the validator, the renderer and the post-processor) and the
+│                        command-line tool: `init`, `check`, `generate`, `update` (ADR 0014)
+├── ARTIFACTS.md       · Your own links to the Artifacts you published from the examples:
+│                        gitignored (ADR 0013, ADR 0014)
+├── .gitignore           What stays on one machine: each person's `ARTIFACTS.md`
 └── CLAUDE.md            This file
 ```
 
