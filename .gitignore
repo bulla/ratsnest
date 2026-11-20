@@ -1,3 +1,7 @@
 # Each person's own links to the Artifacts they published from ratsnest's examples
 # (ADR 0013, ADR 0014). In a circuits project of your own, committing it is your choice.
 ARTIFACTS.md
+
+# The executables `bun run build` makes, about 100 MB each: they go on GitHub Releases, never in
+# the repository (ADR 0016).
+dist/

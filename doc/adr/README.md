@@ -82,3 +82,4 @@ Each new record adds a row here.
 | [0013](0013-publish-a-page-as-an-artifact-only-when-asked-one-per-set-of-inputs-its-link-kept-by-each-person.md) | Publish a page as an Artifact only when asked, one per set of inputs, its link kept by each person |
 | [0014](0014-make-ratsnest-a-builder-and-let-circuits-live-in-projects-of-their-own.md) | Make ratsnest a builder, and let circuits live in projects of their own |
 | [0015](0015-give-every-circuit-file-a-format-number-and-migrate-it-with-ratsnest-update.md) | Give every circuit file a format number, and migrate it with `ratsnest update` |
+| [0016](0016-ship-ratsnest-as-a-standalone-executable-built-by-bun-from-github-releases.md) | Ship ratsnest as a standalone executable, built by Bun, from GitHub Releases |
