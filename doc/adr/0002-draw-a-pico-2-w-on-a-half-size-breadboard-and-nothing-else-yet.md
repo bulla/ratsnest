@@ -12,7 +12,7 @@ sits the same way in every layout, across the channel with its USB to the left a
 c and h, columns 2 to 21, and a second board of the same kind can be snapped onto the first one's
 top edge.
 
-*Graphical wiring for breadboards* promises more than that: an Arduino, an ESP32, a full-size
+_Graphical wiring for breadboards_ promises more than that: an Arduino, an ESP32, a full-size
 board.
 
 ## Decision

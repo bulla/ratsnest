@@ -47,7 +47,7 @@ format Markdown as well, and at the owner's choice it formats every file, the re
 - [x] A first test that runs, so `bun run test` has something to pass
 - [x] `.github/workflows/`, the workflow for every pull request: lint, typecheck and test, on Bun
       alone, on Linux, Windows and macOS, which a public repository runs for free (ADR 0020)
-- [x] `CHANGELOG.md`, with an empty *Unreleased*, and the pull request check that a change users get
+- [x] `CHANGELOG.md`, with an empty _Unreleased_, and the pull request check that a change users get
       has its line there, unless labelled `no changelog` (ADR 0017, ADR 0020)
 - [x] `LICENSE`: MIT, held by bulla (ADR 0018), added as soon as the repository was public, since a
       public repository with no licence reserves every right
@@ -78,7 +78,7 @@ format Markdown as well, and at the owner's choice it formats every file, the re
   until ratsnest is done, rather than until the repository is public (ADR 0021). The owner's friend,
   who reads Russian, is to read the engine's Russian table in M6, and signing the macOS executables
   is deferred. The onboarding, `CONTRIBUTING.md` and a `/setup` skill that follows it, is planned
-  into M1, with the README's *Get started* in M7.
+  into M1, with the README's _Get started_ in M7.
 - 2026-11-20: M1. The frame. Every dependency pinned exactly; `@types/bun` 1.4.5 and `@babel/parser`
   8.1.3 came out after the versions were confirmed, and were taken. Biome 2.6 formats Markdown, which
   scratchpi's 2.5 did not. It was first kept to the code, to leave the records as they were written;

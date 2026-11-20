@@ -97,7 +97,7 @@ That is everything. If a step printed something else, `/setup` can tell you why.
 - **The roadmap is the plan.** [`doc/ROADMAP.md`](doc/ROADMAP.md) says what is next. A pull request that
   finishes roadmap work updates it in the same pull request, and a milestone that lands moves to
   [`doc/HISTORY.md`](doc/HISTORY.md).
-- **A change users get has its line in [`CHANGELOG.md`](CHANGELOG.md)**, under *Unreleased*: anything
+- **A change users get has its line in [`CHANGELOG.md`](CHANGELOG.md)**, under _Unreleased_: anything
   in `src/` but its tests, `fonts/`, the `circuit` skill or `install.sh`. Continuous integration
   refuses a pull request that has none, unless it is labelled `no changelog`.
 - **Releases are made by `bun run release` alone** (ADR 0017), from the milestone that writes it.

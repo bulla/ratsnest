@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # ratsnest
 
-*Graphical wiring for breadboards.* ratsnest is a builder of wiring guides: from a circuit described
+_Graphical wiring for breadboards._ ratsnest is a builder of wiring guides: from a circuit described
 in one declarative file, it makes one self-contained page showing how to build it on a breadboard
 with a Pico 2 W, step by step. Circuits live in projects of their own, made by `ratsnest init`, and
 ratsnest itself holds only its examples (ADR 0014). It started on 2026-11-20 from a copy of
@@ -118,21 +118,21 @@ Ask before adding anything not in this table. Every version is pinned exactly, w
 was the latest release when it was added (ADR 0009): `package.json` holds them, and a test fails
 on a range or on a running Bun other than the one pinned.
 
-| Layer | Choice |
-| --- | --- |
-| Runtime | Bun `1.4.5`, and nothing else: it installs, runs the scripts and the generator, and tests with `bun test` (ADR 0009) |
-| Language | TypeScript `7.0.2`, checked with `tsc --noEmit`, run by Bun |
-| Framework | None, and no bundler: the engine writes each page as a string (ADR 0008) |
-| Tests | `bun test`, and jsdom `31.0.1` for the page's one script |
-| Types | `@types/bun` `1.4.5`, `@types/jsdom` `30.0.0` |
-| Lint and format | Biome `2.6.8` |
-| Declarative check | `@babel/parser` `8.1.3` (ADR 0007, ADR 0009) |
-| Font | Nunito `3.602`, cut by Google Fonts' subsetter into two variable WOFF2 files, committed in `fonts/` and carried by every page (ADR 0012) |
-| Measuring words | `fontkit` `3.0.0`, reading those same files (ADR 0012) |
-| Shipping | One executable per platform from `bun build --compile --conditions=browser`, on GitHub Releases (ADR 0016) |
-| Versions | Strict SemVer, computed by `bun run release` and compared with `Bun.semver` (ADR 0017) |
-| Continuous integration | GitHub Actions on Bun alone: one workflow for every pull request and push to `develop`, one for every `v*` tag (ADR 0020) |
-| Looking at a page | The Playwright and Chromium installed where the work is done, never a dependency |
+| Layer                  | Choice                                                                                                                                   |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime                | Bun `1.4.5`, and nothing else: it installs, runs the scripts and the generator, and tests with `bun test` (ADR 0009)                     |
+| Language               | TypeScript `7.0.2`, checked with `tsc --noEmit`, run by Bun                                                                              |
+| Framework              | None, and no bundler: the engine writes each page as a string (ADR 0008)                                                                 |
+| Tests                  | `bun test`, and jsdom `31.0.1` for the page's one script                                                                                 |
+| Types                  | `@types/bun` `1.4.5`, `@types/jsdom` `30.0.0`                                                                                            |
+| Lint and format        | Biome `2.6.8`                                                                                                                            |
+| Declarative check      | `@babel/parser` `8.1.3` (ADR 0007, ADR 0009)                                                                                             |
+| Font                   | Nunito `3.602`, cut by Google Fonts' subsetter into two variable WOFF2 files, committed in `fonts/` and carried by every page (ADR 0012) |
+| Measuring words        | `fontkit` `3.0.0`, reading those same files (ADR 0012)                                                                                   |
+| Shipping               | One executable per platform from `bun build --compile --conditions=browser`, on GitHub Releases (ADR 0016)                               |
+| Versions               | Strict SemVer, computed by `bun run release` and compared with `Bun.semver` (ADR 0017)                                                   |
+| Continuous integration | GitHub Actions on Bun alone: one workflow for every pull request and push to `develop`, one for every `v*` tag (ADR 0020)                |
+| Looking at a page      | The Playwright and Chromium installed where the work is done, never a dependency                                                         |
 
 Two standing constraints:
 
@@ -148,15 +148,15 @@ Two standing constraints:
 Every command is `bun run <script>` (ADR 0009). `CONTRIBUTING.md` walks through them in order, and
 `/setup` runs them with you.
 
-| Task | Command |
-| --- | --- |
-| Install | `bun install` |
-| Lint | `bun run lint`, and `bun run format` writes its fixes |
-| Typecheck | `bun run typecheck` |
-| Test | `bun run test` |
-| One test file | `bun run test scripts/changelog.test.ts` |
-| The tests whose name holds some words | `bun run test -t "pinned exactly"` |
-| The changelog check, as a pull request meets it | `bun scripts/changelog.ts origin/develop` |
+| Task                                            | Command                                               |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| Install                                         | `bun install`                                         |
+| Lint                                            | `bun run lint`, and `bun run format` writes its fixes |
+| Typecheck                                       | `bun run typecheck`                                   |
+| Test                                            | `bun run test`                                        |
+| One test file                                   | `bun run test scripts/changelog.test.ts`              |
+| The tests whose name holds some words           | `bun run test -t "pinned exactly"`                    |
+| The changelog check, as a pull request meets it | `bun scripts/changelog.ts origin/develop`             |
 
 Say `bun run test`, never `bun test` alone: both work today, but a script changed in `package.json`
 changes only for the first.
@@ -219,7 +219,7 @@ there.
   leaves open into the roadmap's Open points or Backlog. The Status section of this file stays a
   short summary: no paragraph per milestone.
 - **A pull request that changes what users get adds its line to `CHANGELOG.md`, under
-  *Unreleased*** (ADR 0017): anything in `src/` outside its tests, `fonts/`, the `circuit` skill or
+  _Unreleased_** (ADR 0017): anything in `src/` outside its tests, `fonts/`, the `circuit` skill or
   `install.sh`. Continuous integration refuses one that does not, unless it is labelled
   `no changelog` (ADR 0020). A release is made by `bun run release` and nothing else: never set the
   version, edit `api/` or push a tag by hand.
@@ -234,7 +234,7 @@ The rules that matter day to day:
 - **Write the record when the decision is made**, not when the code lands. A record that waits for
   the implementation turns into a description of the implementation.
 - **One decision per record.** If it needs the word "also", it is two records.
-- **Never rewrite a record in place.** A decision that reverses an earlier one gets a *new* record,
+- **Never rewrite a record in place.** A decision that reverses an earlier one gets a _new_ record,
   and the old one is marked `Superseded by ADR-00NN` at the top and otherwise left alone. Editing a
   record to say what you now believe erases the reasoning someone may be relying on. Fixing a typo
   is fine; changing what it decided is not.

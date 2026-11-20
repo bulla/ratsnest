@@ -83,7 +83,7 @@ checklist moves to `HISTORY.md` when it lands. M2 is next.
 - [ ] An executable older or newer than its project's `ratsnest.json` saying so (ADR 0016)
 - [ ] `install.sh` (ADR 0016)
 - [ ] The owner's first circuits project, made by `init` from a local build
-- [ ] The README's *Get started*, for people using ratsnest: install it, `ratsnest init`, `/circuit`
+- [ ] The README's _Get started_, for people using ratsnest: install it, `ratsnest init`, `/circuit`
 
 ### M8: publishing
 
@@ -118,16 +118,16 @@ checklist moves to `HISTORY.md` when it lands. M2 is next.
 ## Open points
 
 - **Protecting `develop`** (ADR 0020), which only the owner can do, in the repository's settings:
-  1. *Settings*, then *Rules*, then *Rulesets*, then *New ruleset*, then *New branch ruleset*.
-  2. Name it `develop`, set *Enforcement status* to *Active*, and under *Target branches* add the
+  1. _Settings_, then _Rules_, then _Rulesets_, then _New ruleset_, then _New branch ruleset_.
+  2. Name it `develop`, set _Enforcement status_ to _Active_, and under _Target branches_ add the
      default branch.
-  3. Tick *Restrict deletions*, *Block force pushes*, and *Require a pull request before merging*
+  3. Tick _Restrict deletions_, _Block force pushes_, and _Require a pull request before merging_
      with **0** required approvals: GitHub never lets an account approve its own pull request, so
      one required approval would leave the owner unable to merge.
-  4. Tick *Require status checks to pass*, and add the check `ci` from GitHub Actions, the job that
+  4. Tick _Require status checks to pass_, and add the check `ci` from GitHub Actions, the job that
      passes only when every other has. It is listed since M1's pull request ran it.
-  5. *Create*.
-- **The `no changelog` label** (ADR 0020): made once, under *Issues*, then *Labels*, then *New label*,
+  5. _Create_.
+- **The `no changelog` label** (ADR 0020): made once, under _Issues_, then _Labels_, then _New label_,
   before a pull request can wear it.
 
 ## Backlog
@@ -165,7 +165,7 @@ One line per milestone. Its checklist and the paragraph that summed it up are in
 [`HISTORY.md`](HISTORY.md), under the same name. Work that landed between milestones is only in that
 file's Log.
 
-| Milestone | What it gave the project | Records |
-| --- | --- | --- |
-| M0 | The design, by interview: what ratsnest is, how it is built, shipped and kept | 0001–0020 |
-| M1 | The frame: the package, the checks, CI on three systems, the changelog, the onboarding | 0009, 0017, 0018, 0020, 0021 |
+| Milestone | What it gave the project                                                               | Records                      |
+| --------- | -------------------------------------------------------------------------------------- | ---------------------------- |
+| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept          | 0001–0020                    |
+| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding | 0009, 0017, 0018, 0020, 0021 |
