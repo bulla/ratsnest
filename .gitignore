@@ -1,3 +1,6 @@
+# What `bun install` puts there, from bun.lock.
+node_modules/
+
 # The executables `bun run build` makes, about 100 MB each: they go on GitHub Releases, never in
 # the repository (ADR 0016).
 dist/

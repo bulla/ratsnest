@@ -1,0 +1,3 @@
+# Every text file is checked out with LF endings, on Windows too, so that Biome's formatting check
+# reads the same bytes on every system continuous integration runs on (ADR 0020).
+* text=auto eol=lf
