@@ -76,3 +76,4 @@ Each new record adds a row here.
 | [0007](0007-keep-a-circuits-file-declarative-and-everything-that-computes-outside-it.md) | Keep a circuit's file declarative, and everything that computes outside it |
 | [0008](0008-write-the-engine-in-plain-typescript-with-no-framework-and-no-bundler.md) | Write the engine in plain TypeScript, with no framework and no bundler |
 | [0009](0009-run-everything-on-bun-its-tests-included.md) | Run everything on Bun, its tests included |
+| [0010](0010-let-a-circuit-be-written-in-one-language-or-several-and-make-a-page-only-in-one-it-has.md) | Let a circuit be written in one language or several, and make a page only in one it has |

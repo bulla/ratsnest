@@ -35,6 +35,13 @@ drawing's attribution, with nothing else to load. **A page is a pure function of
 circuit, an orientation of 0°, 90°, 180° or 270° clockwise (ADR 0003), a theme and a language
 (ADR 0005). Nothing on the page switches any of them, and the same inputs make the same file.
 
+**A circuit is written in English, French or Russian, one language at least, and a page is made only
+in a language its circuit has** (ADR 0010). Every text a reader sees is keyed by language, a circuit's
+languages are those of its name, and the generator refuses any other before it draws anything. Every
+language's text is held to rules a test checks, Cyrillic included: NFC, one script to a word,
+look-alikes folded before a hole is looked for, drawn words measured rather than counted, and plural
+forms (ADR 0011, proposed).
+
 **A circuit is one TypeScript file that only declares, and everything that computes is outside it**
 (ADR 0006, ADR 0007). This is the rule every other part of ratsnest leans on:
 
