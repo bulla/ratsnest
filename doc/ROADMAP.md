@@ -10,11 +10,12 @@ judgement the owner has to make goes in **Open points**, and comes out once they
 
 ## Where it stands
 
-The design is settled, in twenty records, and nothing is built. ratsnest is to be a builder of
+The design is settled, in ADR 0001 to ADR 0021, and nothing is built. ratsnest is to be a builder of
 wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
-SemVer (ADR 0017), and is to be open-sourced under MIT once done (ADR 0018).
+SemVer (ADR 0017), and is open source under MIT: its repository has been public since 2026-11-20
+(ADR 0018, ADR 0021).
 
 ## Next
 
@@ -28,17 +29,24 @@ checklist moves to `HISTORY.md` when it lands.
 - [ ] `tsconfig.json`, `biome.json`, and the scripts: `lint`, `format`, `typecheck`, `test`
 - [ ] A first test that runs, so `bun run test` has something to pass
 - [ ] `.github/workflows/`, the workflow for every pull request: lint, typecheck and test, on Bun
-      alone (ADR 0020)
+      alone, on Linux, Windows and macOS, which a public repository runs for free (ADR 0020)
 - [ ] `CHANGELOG.md`, with an empty *Unreleased*, and the pull request check that a change users get
       has its line there, unless labelled `no changelog` (ADR 0017, ADR 0020)
-- [ ] `LICENSE` (MIT) and `ATTRIBUTION.md` (ADR 0018), once the owner has given the name `LICENSE`
-      holds
+- [x] `LICENSE`: MIT, held by bulla (ADR 0018), added as soon as the repository was public, since a
+      public repository with no licence reserves every right
 - [ ] `CLAUDE.md`'s Commands table, with how to run a single test
+- [ ] `CONTRIBUTING.md`, the walkthrough for working on ratsnest: what to install, each command with
+      what it should print, how work is done here (`develop`, records, the roadmap, the changelog,
+      the skills) and where to read next, every step run as it is written
+- [ ] The `/setup` skill, which follows `CONTRIBUTING.md` step by step, runs each, checks what it
+      printed and explains what did not, and holds no steps of its own
 
 ### M2: the copy
 
 - [ ] scratchpi's breadboard model, drawing, wiring check and page generator in `src/`, the drawing
       in `src/drawing/` (ADR 0001, ADR 0018)
+- [ ] `ATTRIBUTION.md`, as the drawing arrives: its source, its licence, what was changed, and the
+      folder it covers (ADR 0018)
 - [ ] Its tests ported to `bun:test` and passing, jsdom running the page's script (ADR 0009)
 - [ ] What tied it to scratchpi's app gone: the back link, the theme handed over, the language twin,
       the app's words and records (ADR 0004)
@@ -79,6 +87,8 @@ checklist moves to `HISTORY.md` when it lands.
 - [ ] ADR 0011's rules: NFC, one script to a word, look-alikes folded, plural forms, values written
       by the engine, each language's typography, the page's `lang`, and the Russian test circuit
 - [ ] Every page's `<meta name="ratsnest">` naming its four inputs (ADR 0013)
+- [ ] The engine's Russian table read by the owner's friend, who reads Russian, before it ships
+      (ADR 0010, ADR 0011)
 
 ### M7: the executable, and circuits projects
 
@@ -90,6 +100,7 @@ checklist moves to `HISTORY.md` when it lands.
 - [ ] An executable older or newer than its project's `ratsnest.json` saying so (ADR 0016)
 - [ ] `install.sh` (ADR 0016)
 - [ ] The owner's first circuits project, made by `init` from a local build
+- [ ] The README's *Get started*, for people using ratsnest: install it, `ratsnest init`, `/circuit`
 
 ### M8: publishing
 
@@ -104,7 +115,7 @@ checklist moves to `HISTORY.md` when it lands.
       commit and the tag (ADR 0017)
 - [ ] The workflow for every `v*` tag: the rule checked, five executables built, each run on its own
       system, and only then the GitHub Release (ADR 0020)
-- [ ] The first release, `0.1.0`, from the private repository
+- [ ] The first release, `0.1.0`, which says by its number that anything may still change (ADR 0021)
 
 ### M10: updating
 
@@ -114,26 +125,19 @@ checklist moves to `HISTORY.md` when it lands.
       (ADR 0015)
 - [ ] A printer for writing a circuit file back with its comments (ADR 0015)
 
-### M11: open source
+### M11: done, and 1.0.0
 
-- [ ] The repository public, and `1.0.0` its first public release (ADR 0017, ADR 0018)
-- [ ] The macOS executables running on Apple silicon, signed if they must be (ADR 0016)
-- [ ] The README, for people who will use ratsnest and people who will work on it
-- [ ] The workflow for pull requests running on Linux, Windows and macOS, now that the minutes are
-      free (ADR 0020)
+- [ ] Every milestone before it landed, and nothing in Open points that blocks a stable release
+- [ ] The README finished, for people who use ratsnest and people who work on it
+- [ ] `1.0.0`, the release that says ratsnest is done, after which ADR 0017's full rule holds
+      (ADR 0021)
 
 ## Open points
 
-- **The name `LICENSE` holds** (ADR 0018): the owner's to give, before M1 can write the file.
 - **Protecting `develop`** (ADR 0020): in the repository's settings, under Rules or Branches, require a
-  pull request and the pull request workflow's check before merging, and refuse force pushes. On a
-  free plan, GitHub protects branches only in public repositories, so until ratsnest is public this
-  needs GitHub Pro, or waits for M11.
-- **A reader of Russian** (ADR 0010, ADR 0011): the engine's Russian table is checked by one before it
-  ships in M6, and again whenever it changes.
-- **macOS signing** (ADR 0016): if the release workflow finds that an unsigned executable will not run
-  on Apple silicon, signing and notarizing need an Apple Developer account, which is the owner's
-  decision.
+  pull request and the pull request workflow's check before merging, and refuse force pushes. The
+  repository is public, so a free plan allows it; the check to require exists once M1's workflow
+  has run once.
 
 ## Backlog
 
@@ -159,6 +163,10 @@ checklist moves to `HISTORY.md` when it lands.
   four inputs and shows the result (ADR 0008)
 - **More languages**, each a table of the engine's sentences and its typography's rules (ADR 0010,
   ADR 0011)
+- **Signing and notarizing the macOS executables**, deferred by the owner (ADR 0016). Until then the
+  macOS executables are for `install.sh`: a file downloaded in a browser is quarantined, and
+  Gatekeeper refuses an unsigned one, where one fetched by `curl` is not. If the release workflow
+  finds they do not run at all, releases stop until this is decided.
 
 ## Done
 
