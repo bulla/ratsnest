@@ -4,10 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # ratsnest
 
-*Graphical wiring for breadboards.* ratsnest makes a wiring guide for each circuit: one
-self-contained page showing how to build it on a breadboard with a Pico 2 W, step by step. It
-started on 2026-11-20 from a copy of scratchpi's circuit pages (`bulla/scratchpi`), and evolves on
-its own from there.
+*Graphical wiring for breadboards.* ratsnest is a builder of wiring guides: from a circuit described
+in one declarative file, it makes one self-contained page showing how to build it on a breadboard
+with a Pico 2 W, step by step. Circuits live in projects of their own, made by `ratsnest init`, and
+ratsnest itself holds only its examples (ADR 0014). It started on 2026-11-20 from a copy of
+scratchpi's circuit pages (`bulla/scratchpi`), evolves on its own from there, and is to be
+open-sourced once done.
 
 ## Status
 
@@ -26,6 +28,32 @@ decision becomes a record in [`doc/adr/`](doc/adr/). This section states the roo
 paragraph each with the records that argue them, so that nobody proposes an architecture that has
 already been argued.
 
+**ratsnest is a builder, and circuits live in projects of their own** (ADR 0014). The builder is the
+engine, a command-line tool, the `Circuit` type and the `circuit` skill. A circuits project is any
+folder with a `ratsnest.json`: `ratsnest init` makes one, `ratsnest check` and `ratsnest generate`
+are what the skill calls, and `ratsnest update` moves a project to a newer ratsnest. The skill has
+one copy, ratsnest's: `init` puts it in a project and `update` replaces it. ratsnest's own circuits
+are scratchpi's, ported, in `examples/`.
+
+**ratsnest reaches its users as one executable per platform, built by Bun** (ADR 0016): Linux,
+macOS and Windows, each carrying Bun and Nunito inside, attached to a GitHub Release with an install
+script, and no npm package. It reads a circuit file as data and never runs it, and checks every field
+itself. A project names the version it expects in `ratsnest.json`, gets the `Circuit` type in
+`.ratsnest/` for editors, and `ratsnest update` replaces the executable before it migrates.
+
+**Every release is numbered by strict SemVer, computed and never chosen** (ADR 0017). The public
+surface (the circuit format and its type, the commands and their options, `ratsnest.json`) is
+snapshotted in `api/` at each release: a format that rose or anything removed or changed is major,
+anything only added is minor, the rest is patch, and nothing may be lower or skipped. The version
+lives in `package.json` alone, versions are 0.y.z until the repository is public and 1.0.0 is its
+first public release, `bun run release` is the only way to make one, and continuous integration
+refuses a tag that breaks the rule.
+
+**Every circuit file says its format, and `ratsnest update` migrates it** (ADR 0015). `format: <n>`
+rises only when the circuit format breaks; the engine reads the current one alone, and refuses any
+other with what to do. A migration turns one format's object into the next's and nothing else, with a
+test on files of the format before; a change that breaks the format ships its migration with it.
+
 **One Pico 2 W, one half-size breadboard** (ADR 0002). Another board or breadboard is a record of its
 own, written when a circuit needs it.
 
@@ -42,15 +70,28 @@ language's text is held to rules a test checks, Cyrillic included: NFC, one scri
 look-alikes folded before a hole is looked for, drawn words measured rather than counted, and plural
 forms (ADR 0011).
 
+**Every page is set in Nunito, and carries it** (ADR 0012): two variable WOFF2 files in `fonts/`,
+Latin on every page and Cyrillic on a Russian one, inlined under a family name of ratsnest's own.
+The engine measures every drawn word with the same files, and a test fails on a character a page
+writes that they lack.
+
+**A page becomes an Artifact only when asked, one per set of four inputs** (ADR 0013), through the
+`circuit` skill. The links are kept in `ARTIFACTS.md` at the root of the circuits project, committed
+or not as its owner chooses (ADR 0014); ratsnest's own, for its examples, is gitignored and never
+committed. Every page names its inputs in a `<meta name="ratsnest">` tag, so the skill finds an
+existing Artifact even where the file is gone, as it can be at the start of a cloud session.
+
 **A circuit is one TypeScript file that only declares, and everything that computes is outside it**
 (ADR 0006, ADR 0007). This is the rule every other part of ratsnest leans on:
 
-- `circuits/<name>.ts` says what the circuit is and where its parts go, in pins, holes, parts,
-  values and words: `import type` lines and one `export default { … } satisfies Circuit`, whose
-  values are strings, numbers, booleans, and arrays and objects of those. No function, call,
-  variable, spread, condition or value import, and nothing about how anything looks.
+- A circuit file, `circuits/<name>.ts` in its project or `examples/<name>.ts` here, says what the
+  circuit is and where its parts go, in pins, holes, parts, values and words: `import type` lines
+  and one `export default { … } satisfies Circuit`, whose values are strings, numbers, booleans, and
+  arrays and objects of those. No function, call, variable, spread, condition or value import, and
+  nothing about how anything looks.
 - The validator, the renderer and the post-processor are the engine, in `src/`, and nothing in
-  `src/` names a circuit, tests included.
+  `src/` names a circuit, tests included. The examples are checked by the same `ratsnest check` as
+  anyone's circuits.
 - A test holds both directions. When the validator refuses a circuit, move the part, never the
   rule. A circuit is added or changed through the `circuit` skill (`.claude/skills/circuit/`).
 
@@ -78,6 +119,10 @@ was the latest release when it was added (ADR 0009). None is installed yet: they
 | Types | `@types/bun` `1.4.4`, `@types/jsdom` `30.0.0` |
 | Lint and format | Biome `2.6.8` |
 | Declarative check | `@babel/parser` `8.1.2` (ADR 0007, ADR 0009) |
+| Font | Nunito `3.602`, cut by Google Fonts' subsetter into two variable WOFF2 files, committed in `fonts/` and carried by every page (ADR 0012) |
+| Measuring words | `fontkit` `3.0.0`, reading those same files (ADR 0012) |
+| Shipping | One executable per platform from `bun build --compile --conditions=browser`, on GitHub Releases (ADR 0016) |
+| Versions | Strict SemVer, computed by `bun run release` and compared with `Bun.semver` (ADR 0017) |
 | Looking at a page | The Playwright and Chromium installed where the work is done, never a dependency |
 
 Two standing constraints:
@@ -104,15 +149,28 @@ there.
 .
 ├── .claude/
 │   └── skills/
-│       ├── circuit/     Adds or changes a circuit, and makes its page (ADR 0007)
+│       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
+│       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
-├── circuits/          · One declarative file per circuit, and nothing else (ADR 0006, ADR 0007)
+├── examples/          · scratchpi's circuits, ported: ratsnest's own, checked like anyone's, and
+│                        the old files its migrations are tested on (ADR 0014, ADR 0015)
+├── fonts/             · Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
 │   ├── HISTORY.md       Every milestone's checklist, and the Log
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
-├── src/               · The engine: the validator, the renderer and the post-processor
+├── src/               · The engine (the validator, the renderer and the post-processor) and the
+│                        command-line tool: `init`, `check`, `generate`, `update` (ADR 0014)
+├── api/               · The public surface as it was at the last release, written only by
+│                        `bun run release` (ADR 0017)
+├── package.json       · The one place the version lives (ADR 0017)
+├── CHANGELOG.md       · Every release, and *Unreleased* (ADR 0017)
+├── install.sh         · Puts the right executable on the `PATH` (ADR 0016)
+├── ARTIFACTS.md       · Your own links to the Artifacts you published from the examples:
+│                        gitignored (ADR 0013, ADR 0014)
+├── .gitignore           What stays on one machine: each person's `ARTIFACTS.md`, and the
+│                        executables `bun run build` writes to `dist/`
 └── CLAUDE.md            This file
 ```
 
@@ -127,6 +185,9 @@ there.
   `doc/HISTORY.md`, with a line in the roadmap's **Done** and an entry in the Log, and sorts what it
   leaves open into the roadmap's Open points or Backlog. The Status section of this file stays a
   short summary: no paragraph per milestone.
+- **A pull request that changes what users get adds its line to `CHANGELOG.md`, under
+  *Unreleased*** (ADR 0017). A release is made by `bun run release` and nothing else: never set the
+  version, edit `api/` or push a tag by hand.
 
 ## Decisions
 
@@ -167,6 +228,19 @@ does not pay for it again.
 - **A test copied from scratchpi passes `bun test` and fails the type check.** It imports from
   `vitest`, and Bun redirects the import to its own runner while it runs, but the types for
   `vitest` are not there. Change the import to `bun:test`.
+- **Nunito has no narrow no-break space**, U+202F, which every French `:`, `;`, `?` and `!` is
+  preceded by. A browser draws a character its font lacks from another font, at another width, and
+  nothing says so. The engine writes it as Nunito's thin space, U+2009, held to its neighbours by
+  `white-space: nowrap` (ADR 0012). Nunito has no `←` or `→` either.
+- **Google's ready-made Latin file of Nunito has no `Ω`**, though the font does. The files in
+  `fonts/` come from Google's subsetter, asked for ratsnest's characters by name; fetching the usual
+  `latin` file instead drops every resistor's unit.
+- **A compiled ratsnest without `--conditions=browser` dies on its first word.** `fontkit` uses
+  `unicode-properties`, whose `node` loader reads `data.trie` from its own folder, and an executable
+  has no such folder: `ENOENT … /$bunfs/root/data.trie` (ADR 0016). The `browser` condition takes
+  the loader that carries the data in its code. Bun's compiler packs only what is imported, so any
+  dependency that reads a file beside itself fails the same way: run the examples with the compiled
+  executable, never only from source.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

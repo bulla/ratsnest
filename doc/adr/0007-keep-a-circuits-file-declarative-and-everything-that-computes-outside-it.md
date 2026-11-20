@@ -1,6 +1,6 @@
 # ADR 0007: Keep a circuit's file declarative, and everything that computes outside it
 
-**Status:** Accepted · 2026-11-20
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0014 (the circuits checked are a project's, through `ratsnest check`, and ratsnest's own are its examples)
 
 ## Context
 
