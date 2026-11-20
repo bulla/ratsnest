@@ -14,4 +14,11 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 - The wiring page, copied from scratchpi's circuit pages: a Pico 2 W on a half-size breadboard,
   drawn from its datasheet, with the steps that build a circuit, the parts it needs and a script to
-  test it, in English or French. Only the engine's own tests make one yet.
+  test it, in English or French.
+- The circuit format, format 1: one TypeScript file per circuit that only declares, every text
+  keyed by language, read as data and never run.
+- `ratsnest check`, which holds every circuit in `circuits/`, or the files and folders named, to
+  the declarative check, its format, its fields, its languages and its wiring, and says each problem
+  on its line.
+- `ratsnest generate <file>`, which checks a circuit and writes its page into `pages/`, named by its
+  orientation, theme and language. So far it draws at 0° and in the dark theme.

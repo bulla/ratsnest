@@ -10,9 +10,10 @@ judgement the owner has to make goes in **Open points**, and comes out once they
 
 ## Where it stands
 
-The design is settled, in ADR 0001 to ADR 0021, the frame is built (M1), and scratchpi's drawing,
-wiring check and page generator are copied in (M2): the engine makes a page from a circuit a test
-hands it, and nothing else can yet. ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
+The design is settled, in ADR 0001 to ADR 0023, the frame is built (M1), scratchpi's drawing,
+wiring check and page generator are copied in (M2), and circuits are data (M3): `ratsnest check` and
+`ratsnest generate` run from source, on format 1, with scratchpi's seven circuits as the examples.
+ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
 SemVer (ADR 0017), and is open source under MIT: its repository has been public since 2026-11-20
@@ -21,18 +22,7 @@ SemVer (ADR 0017), and is open source under MIT: its repository has been public 
 ## Next
 
 The milestones, in order. Each needs the ones before it, and only the first is in flight. Its
-checklist moves to `HISTORY.md` when it lands. M3 is next.
-
-### M3: circuits as data
-
-- [ ] The `Circuit` type, format 1: what a circuit is, where its parts go and its test script, every
-      text keyed by language (ADR 0006, ADR 0010, ADR 0015)
-- [ ] A circuit file read as data, parsed and never run, with its fields checked and its format
-      refused when it is not the current one (ADR 0007, ADR 0015, ADR 0016)
-- [ ] The declarative check, and the check that nothing in `src/` names a circuit (ADR 0007)
-- [ ] scratchpi's seven circuits ported to `examples/` as declarative files, each passing the wiring
-      check (ADR 0014)
-- [ ] `bun run ratsnest check` and `bun run ratsnest generate`, from source (ADR 0014)
+checklist moves to `HISTORY.md` when it lands. M4 is next.
 
 ### M4: the font
 
@@ -155,8 +145,9 @@ One line per milestone. Its checklist and the paragraph that summed it up are in
 [`HISTORY.md`](HISTORY.md), under the same name. Work that landed between milestones is only in that
 file's Log.
 
-| Milestone | What it gave the project                                                               | Records                      |
-| --------- | -------------------------------------------------------------------------------------- | ---------------------------- |
-| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept          | 0001–0020                    |
-| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding | 0009, 0017, 0018, 0020, 0021 |
-| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app             | 0001, 0004, 0007, 0018       |
+| Milestone | What it gave the project                                                               | Records                                 |
+| --------- | -------------------------------------------------------------------------------------- | --------------------------------------- |
+| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept          | 0001–0020                               |
+| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding | 0009, 0017, 0018, 0020, 0021            |
+| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app             | 0001, 0004, 0007, 0018                  |
+| M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples   | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
