@@ -45,15 +45,15 @@ export function checkSource(source: string, file: string): Checked {
   return { circuit, problems: [] };
 }
 
-/** Checks a circuit file on disk. */
-export function checkFile(path: string): Checked {
+/** Checks a circuit file on disk, named `file` in what it says: the path as a person gave it. */
+export function checkFile(path: string, file = path): Checked {
   let source: string;
   try {
     source = readFileSync(path, "utf8");
   } catch {
-    return { problems: [{ file: path, message: "cannot be read" }] };
+    return { problems: [{ file, message: "cannot be read" }] };
   }
-  return checkSource(source, path);
+  return checkSource(source, file);
 }
 
 /** A problem as a line, the way a compiler says one: `file:line:column: message`. */

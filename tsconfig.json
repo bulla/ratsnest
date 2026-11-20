@@ -15,7 +15,9 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+
+    "paths": { "ratsnest": ["./src/format.ts"] }
   },
   "include": ["src", "scripts", "examples"]
 }
