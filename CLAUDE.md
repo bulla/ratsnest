@@ -49,6 +49,12 @@ lives in `package.json` alone, versions are 0.y.z until the repository is public
 first public release, `bun run release` is the only way to make one, and continuous integration
 refuses a tag that breaks the rule.
 
+**ratsnest's code is MIT, and it carries what it inherits** (ADR 0018). The drawing's code, in
+`src/drawing/`, is CC BY-SA 4.0 as an adaptation of Raspberry Pi's datasheet figure, credited in
+`ATTRIBUTION.md` and in every page's footer; Nunito's licence sits in `fonts/`; every release
+carries a `NOTICES` file for what the executable contains, Bun and its LGPL JavaScriptCore among it.
+The circuits people write, and their pages' words, are theirs.
+
 **Every circuit file says its format, and `ratsnest update` migrates it** (ADR 0015). `format: <n>`
 rises only when the circuit format breaks; the engine reads the current one alone, and refuses any
 other with what to do. A migration turns one format's object into the next's and nothing else, with a
@@ -161,7 +167,10 @@ there.
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
 ├── src/               · The engine (the validator, the renderer and the post-processor) and the
-│                        command-line tool: `init`, `check`, `generate`, `update` (ADR 0014)
+│   │                    command-line tool: `init`, `check`, `generate`, `update` (ADR 0014)
+│   └── drawing/       · The Pico and the breadboard, drawn: CC BY-SA 4.0, unlike the rest (ADR 0018)
+├── LICENSE            · MIT, for everything but `src/drawing/` and `fonts/` (ADR 0018)
+├── ATTRIBUTION.md     · The drawing's source and licence, and which folder it covers (ADR 0018)
 ├── api/               · The public surface as it was at the last release, written only by
 │                        `bun run release` (ADR 0017)
 ├── package.json       · The one place the version lives (ADR 0017)
@@ -235,6 +244,10 @@ does not pay for it again.
 - **Google's ready-made Latin file of Nunito has no `Ω`**, though the font does. The files in
   `fonts/` come from Google's subsetter, asked for ratsnest's characters by name; fetching the usual
   `latin` file instead drops every resistor's unit.
+- **The drawing's licence follows its folder, not its file** (ADR 0018). Everything in
+  `src/drawing/` is CC BY-SA 4.0 and everything else MIT, so a helper moved out of the folder for
+  convenience takes the adaptation into MIT code, and a file moved in takes MIT code under
+  ShareAlike. Move drawing code in or out only with `ATTRIBUTION.md` in mind.
 - **A compiled ratsnest without `--conditions=browser` dies on its first word.** `fontkit` uses
   `unicode-properties`, whose `node` loader reads `data.trie` from its own folder, and an executable
   has no such folder: `ENOENT … /$bunfs/root/data.trie` (ADR 0016). The `browser` condition takes
