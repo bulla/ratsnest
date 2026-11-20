@@ -14,7 +14,7 @@ Nothing is built. The repository holds its working practice and nothing else.
 
 ## Next
 
-- [ ] Settle what ratnest is, who it is for and what it is built with, by `/interview`, with a
+- [ ] Settle what ratsnest is, who it is for and what it is built with, by `/interview`, with a
       record in `adr/` for each decision
 - [ ] Fill in the Status, Design, Stack and Commands sections of `CLAUDE.md` from those records
 
