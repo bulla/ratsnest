@@ -4,8 +4,8 @@ import type { PinKind } from "./geometry";
  * How a header label is drawn. Figure 2 writes white on every chip including a pale green
  * and a pale pink, which measure 2.3:1 and 1.8:1 against it. scratchpi's ADR 0015 is a project rule
  * and outranks fidelity, so the two chips that keep white labels are shaded until they
- * clear 4.5:1, and the two that stay the figure's pale colour take dark text and a border
- * instead — a pale chip with no outline has no visible extent on a white panel.
+ * clear 4.5:1, and the one that stays the figure's pale colour takes dark text and a
+ * border instead — a pale chip with no outline has no visible extent on a white panel.
  *
  * Neither the fill nor the ink changes with the page's theme, and the ink is the half that
  * was got wrong: it used to be `surface` and `ink`, which both flip (scratchpi's ADR 0028), so the
@@ -28,7 +28,8 @@ export interface ChipStyle {
   readonly bordered: boolean;
 }
 
-export const CHIP_STYLES: Record<PinKind | "onboard" | "number", ChipStyle> = {
+/** Each kind of header pin, as the chip that names a pin a circuit uses beside its hole. */
+export const CHIP_STYLES: Record<PinKind, ChipStyle> = {
   gpio: { fill: "pin-gpio", ink: "on-chip", bordered: false },
   /* Outlined for the dark scale's sake: on a dark panel a near-black chip measures 1.5:1
      and has no edge, which is the same complaint scratchpi's ADR 0015 makes about a pale chip on a
@@ -36,10 +37,6 @@ export const CHIP_STYLES: Record<PinKind | "onboard" | "number", ChipStyle> = {
   ground: { fill: "pin-ground", ink: "on-chip", bordered: true },
   power: { fill: "pin-power", ink: "on-chip", bordered: false },
   control: { fill: "pin-control", ink: "on-pale-chip", bordered: true },
-  /** WL_GPIO0's callout, in the yellow Figure 2 gives the Infineon part. */
-  onboard: { fill: "pin-onboard", ink: "on-pale-chip", bordered: true },
-  /** The physical pin number, in the grey the figure sets it in. */
-  number: { fill: "board-number", ink: "on-pale-chip", bordered: false },
 };
 
 export const chipFill = (style: ChipStyle): string => `var(--color-${style.fill})`;

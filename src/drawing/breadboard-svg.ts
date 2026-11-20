@@ -893,8 +893,8 @@ function drawButton(part: Extract<Part, { kind: "button" }>, cap: ButtonColour):
       `rx="0.35" fill="${token("board-metal")}"`,
     ),
   );
-  // The cap, in the colour the app draws it in (scratchpi's ADR 0174), so the adult fits the one the
-  // blocks and the board's pane show.
+  // The cap, in the colour its circuit gives the button (scratchpi's ADR 0174), so the reader fits
+  // the one the steps and the parts list name.
   out.push(
     circle(
       mid,

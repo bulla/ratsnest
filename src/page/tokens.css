@@ -1,0 +1,160 @@
+/*
+ * The page's palette, and the one file in ratsnest that writes a colour literal. Every colour the
+ * page and its drawing use is a custom property here, inlined into each page before `page.css`.
+ *
+ * A `--color-*` token is plain six-digit hex, so that `tokens.test.ts` can measure it: what must be
+ * read is measured against WCAG rather than asserted, and what the drawing draws is held the same
+ * in both scales.
+ *
+ * The values came from scratchpi, whose app the page was part of (scratchpi's ADR 0015), so the
+ * pages look as its pages did.
+ */
+
+:root {
+  /* Surfaces: panels sit on the page. */
+  --color-surface: #ffffff;
+  --color-canvas: #f2f5fb;
+
+  /* Text. `ink` is for anything that must be read; `ink-muted` for labels. */
+  --color-ink: #10182b;
+  --color-ink-muted: #3d4a63;
+
+  /* Structural lines. Carries information, so it clears 3:1 on every surface. */
+  --color-line: #74839f;
+
+  /* The one interactive hue: links and focus. It is deliberately not an LED's, so that a link
+     never reads as a lit light. */
+  --color-accent: #0b57c7;
+
+  /* The step a reader has picked: its number on a light orange disc, and its edge in amber. A
+     light orange cannot clear 3:1 against a white panel, so the edge carries the shape. The glyph
+     on the disc is a literal dark rather than `ink`, which flips, because a white number on a
+     light orange disc does not read. */
+  --color-picked: #f7c88a;
+  --color-on-picked: #10182b;
+  --color-picked-edge: #b06d00;
+
+  /* One per LED colour a circuit can name. A light carries information rather than text, so the
+     bar is the 3:1 WCAG asks of a UI component. They are the colours of real LEDs rather than a
+     palette's, because the point of the drawing is the thing on the desk. Yellow, aqua and white
+     cannot clear 3:1 on the light surfaces, and are carried there by the rim the drawing gives
+     every light. */
+  --color-led-red: #c81e1e;
+  --color-led-green: #17843a;
+  --color-led-amber: #b06d00;
+  --color-led-blue: #0e6fb8;
+  --color-led-yellow: #f5c400;
+  --color-led-pink: #d6337f;
+  --color-led-purple: #a259e0;
+  --color-led-orange: #e0560c;
+  --color-led-aqua: #45d6e4;
+  --color-led-white: #ffffff;
+
+  /* The board, sampled from Figure 2 of the Pico 2 W datasheet and drawn rather than traced
+     (ADR 0018). These are the colours of an object: a green PCB, its copper pads, its gold plated
+     mounting rings, the shield cans over its radio and its USB socket. */
+  --color-board: #0a6939;
+  --color-board-pad: #958763;
+  --color-board-metal: #dbddda;
+  --color-board-chip: #323230;
+  /* Everything Figure 2 leaves white that is really white: the silkscreen legend, the BOOTSEL
+     cap, the LED package. Not `surface`, which flips with the scale and would print the legend
+     dark on green. */
+  --color-board-silk: #ffffff;
+  /* The two capacitors the pinout draws in blue, the only spot of it on the board. */
+  --color-board-blue: #5aa8d1;
+
+  /* The breadboard, and the parts plugged in beside the Pico. Objects again: white plastic with
+     dark holes, a red strip along each + rail and a blue one along each −. The print is the row
+     letters and column numbers, dark enough to read at 4.5:1 on the plastic, because a reader
+     matches holes by them. */
+  --color-breadboard: #edede7;
+  --color-breadboard-edge: #c8c8bf;
+  --color-breadboard-hole: #3d3d3a;
+  --color-breadboard-groove: #dadad2;
+  --color-breadboard-print: #5e5e57;
+  --color-rail-plus: #d7322b;
+  --color-rail-minus: #2c62c4;
+
+  /* A component's tinned legs, and the metal end of a jumper. */
+  --color-lead: #a5a5a1;
+  /* Jumpers in the colours a kit's are sorted by: black to ground, red to 3V3, yellow for a
+     signal. The page names them by these colours, so they are what they are. */
+  --color-wire-ground: #262624;
+  --color-wire-power: #cf2a24;
+  --color-wire-signal: #e8b31c;
+  /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
+     9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
+     part by these. */
+  --color-resistor: #dcc18a;
+  --color-resistor-edge: #9c814c;
+  --color-band-0: #1d1d1b;
+  --color-band-1: #7a4722;
+  --color-band-2: #d02a22;
+  --color-band-3: #e2731c;
+  --color-band-4: #f2c511;
+  --color-band-5: #2f8f3a;
+  --color-band-6: #2c5fc2;
+  --color-band-7: #7d3fb2;
+  --color-band-8: #8a8a86;
+  --color-band-9: #f4f4f0;
+  --color-band-gold: #c9a233;
+  /* Light and shadow on a drawn object, a lens's highlight or the shade under an LED's rim,
+     always laid over something else at an opacity, never used as a colour on its own. */
+  --color-shine: #ffffff;
+  --color-shade: #000000;
+
+  /* The header's colour coding, in the figure's hues but not its values: "a part can go here",
+     "this is ground", "this carries volts" and "this one is not for parts". The figure writes
+     white on a pale green and a pale pink, so the chips that carry white labels are shaded until
+     they clear 4.5:1, and the pale one carries dark ink and a border instead. */
+  --color-pin-gpio: #578130;
+  --color-pin-ground: #363a44;
+  --color-pin-power: #e52525;
+  --color-pin-control: #f5adae;
+  /* The ink on a header label. Not `surface` or `ink`, which flip: the chips do not change
+     between the scales, so what is written on them must not either. */
+  --color-on-chip: #ffffff;
+  --color-on-pale-chip: #10182b;
+
+  /* The page's type, until Nunito is carried by every page (ADR 0012), and its code's. */
+  --font-page: ui-rounded, "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-code: ui-monospace, "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+
+  /* Corners, named for what they are on rather than for how big they are. */
+  --radius-control: 0.875rem;
+  --radius-panel: 1.25rem;
+  --radius-pill: 9999px;
+
+  /* A panel sitting on the page. A shadow carries its own alpha, which is why it is not a
+     colour: a `--color-*` token has to be plain hex so that it can be measured. */
+  --shadow-panel: 0 1px 2px rgb(11 15 23 / 0.06), 0 1px 3px rgb(11 15 23 / 0.04);
+
+  /* Motion: a step's edge as it is picked out. */
+  --ease-swift: cubic-bezier(0.2, 0, 0, 1);
+  --duration-quick: 140ms;
+}
+
+/*
+ * The dark scale, which overrides only what changes. The board keeps its colours because a green
+ * PCB is green in both, and so do the lights, the breadboard and the parts, because a red light is
+ * red. Everything left out is inherited from the scale above, and `tokens.test.ts` reads it that
+ * way: as a layer, not a replacement.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-surface: #161b26;
+  --color-canvas: #0b0f17;
+
+  --color-ink: #eef2f9;
+  --color-ink-muted: #b3bed1;
+  --color-line: #7b879c;
+
+  /* Lightened until it clears 4.5:1 on both dark surfaces: the light accent measures under 2:1
+     there and would read as disabled. */
+  --color-accent: #7db1ff;
+
+  /* Shadows on a dark surface work by being darker still, not by being softer. */
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.35);
+}
