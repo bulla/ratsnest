@@ -36,9 +36,9 @@ no SVG or CSS, and no place for a label.
 needs, and the circuits that ship are checked by walking `circuits/`. So the engine has no case for
 one circuit, and a circuit has no code.
 
-**A test holds both directions.** It reads every file in `circuits/` with TypeScript's own parser and
-fails on anything this record does not allow, naming the file and the line, and it fails on any
-file in `src/` that names a circuit. `circuits/` holds circuit files and nothing else. The `circuit`
+**A test holds both directions.** It parses every file in `circuits/` as TypeScript and fails on
+anything this record does not allow, naming the file and the line, and it fails on any file in
+`src/` that names a circuit. Which parser does it is the stack's choice. `circuits/` holds circuit files and nothing else. The `circuit`
 skill (`.claude/skills/circuit/`) writes to these rules, and `CLAUDE.md` states them.
 
 ## Considered options
