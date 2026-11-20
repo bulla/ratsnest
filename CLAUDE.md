@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# ratnest
+# ratsnest
 
 *Graphical wiring for breadboards*, says the repository's description on GitHub, and that line is
 all that is settled: what exactly it is, who it is for and what it is built with are still open.
@@ -11,7 +11,7 @@ The repository holds its working practice and nothing else, carried over from sc
 
 ## Status
 
-Started 2026-11-20, with no code. The first piece of work is to settle what ratnest is: see
+Started 2026-11-20, with no code. The first piece of work is to settle what ratsnest is: see
 **Next** in [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
