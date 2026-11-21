@@ -54,7 +54,7 @@ Every page is set in **Nunito 3.602**, by the Nunito Project Authors
 ## The picture of Ernest
 
 The picture at the top of the README, [`doc/ernest.webp`](doc/ernest.webp), is a photo of **Baby**, a
-pet rat, taken by Maaique in 2015. It is a still from her video _Baby
+pet rat, taken by Maaique. It is a still from her video _Baby
 eating spaghetti_, which went round the world in October 2015 as "Spaghetti Rat", often reposted
 with another credit.
 
