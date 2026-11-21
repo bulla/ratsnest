@@ -437,3 +437,9 @@ footer {
     display: none;
   }
 }
+
+/* Two words joined by a narrow no-break space, which Nunito draws as its thin space: kept on one
+   line, as the narrow one would be (ADR 0012). */
+.nowrap {
+  white-space: nowrap;
+}

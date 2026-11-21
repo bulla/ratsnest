@@ -117,8 +117,9 @@
   --color-on-chip: #ffffff;
   --color-on-pale-chip: #10182b;
 
-  /* The page's type, until Nunito is carried by every page (ADR 0012), and its code's. */
-  --font-page: ui-rounded, "Nunito", "Segoe UI", system-ui, sans-serif;
+  /* The page's type, Nunito, which every page carries under a family name of ratsnest's own
+     (ADR 0012), and its code's, which is the device's own monospace. */
+  --font-page: "ratsnest Nunito", sans-serif;
   --font-code: ui-monospace, "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
 
   /* Corners, named for what they are on rather than for how big they are. */

@@ -1,4 +1,5 @@
 import type { ButtonColour, LedColour } from "../circuit";
+import { widthOf } from "../fonts";
 import { PIE_WEDGES, wedgePath } from "../rgb";
 import {
   BREADBOARD_HEIGHT_MM,
@@ -431,8 +432,8 @@ function drawPico(): string {
 const TAG_CHIP_HEIGHT_MM = 1.95;
 const TAG_ROW_MM = TAG_CHIP_HEIGHT_MM + 0.3;
 
-/** A pin's tag's width: its label's, and a little either side. */
-const tagChipWidthOf = (label: string): number => label.length * 0.98 + 1.2;
+/** A pin's tag's width: its label's as Nunito draws it, and a little either side (ADR 0012). */
+const tagChipWidthOf = (label: string): number => widthOf(label, 1.35, 800) + 1.2;
 
 /**
  * Which row each tag goes in: the first, against its header, unless that would put it on a
@@ -582,13 +583,13 @@ const PRINTED_NUMBERS: readonly Point[] = NUMBERED_COLUMNS.flatMap((column) => [
 ]);
 
 /**
- * A resistor's value tag, in millimetres: its height, and its width for a label. A character
- * is a digit's width at the tag's 1.6 mm bold, except a full stop, which is little more than
- * half of one: counted whole, `4.7 kΩ` had no room between Four buttons' jumpers (scratchpi's ADR 0159).
+ * A resistor's value tag, in millimetres: its height, and its width for a label, as Nunito draws it
+ * at the tag's 1.6 mm bold (ADR 0012). scratchpi counted characters, a full stop as little more than
+ * half of one, because counted whole, `4.7 kΩ` had no room between Four buttons' jumpers
+ * (scratchpi's ADR 0159); measuring says the same of every character.
  */
 const TAG_HEIGHT_MM = 2.3;
-const tagWidthOf = (label: string): number =>
-  [...label].reduce((width, character) => width + (character === "." ? 0.6 : 1.05), 0) + 1.8;
+const tagWidthOf = (label: string): number => widthOf(label, 1.6, 800) + 1.8;
 
 /** Whether a segment, widened by `reach` either side, touches a rectangle. */
 function segmentTouches(
@@ -1180,6 +1181,10 @@ function anchorOf(part: Part): { x: number; y: number } | undefined {
 
 /** Where the labels start: a little past the board's right-hand edge. */
 const MARGIN_X = BREADBOARD_WIDTH_MM + 3;
+/** A label's title and the line under it, as `page.css` sets them: their size in millimetres, and weight. */
+export const CALLOUT_TITLE = { size: 2.5, weight: 900 } as const;
+export const CALLOUT_DETAIL = { size: 1.85, weight: 600 } as const;
+
 /** A label is a title and a line under it; the next one starts at least this far down. */
 const LABEL_PITCH_MM = 5.8;
 
@@ -1288,7 +1293,19 @@ export function drawBreadboard(drawing: Breadboard): string {
   const second = usesSecondBoard(drawing.parts.map(({ part }) => part));
   const rows = tagRows(drawing.tags);
   const left = -14;
-  const width = BREADBOARD_WIDTH_MM - left + 26;
+  // The margin is as wide as it always was, or as its widest label measures, whichever is wider.
+  const widest = Math.max(
+    0,
+    ...drawing.parts.flatMap(({ label }) =>
+      label
+        ? [
+            widthOf(label.title, CALLOUT_TITLE.size, CALLOUT_TITLE.weight),
+            widthOf(label.detail, CALLOUT_DETAIL.size, CALLOUT_DETAIL.weight),
+          ]
+        : [],
+    ),
+  );
+  const width = Math.max(BREADBOARD_WIDTH_MM + 26, MARGIN_X + widest + 2) - left;
   // Room past an edge an arching jumper rises over, and the same margin as ever where none does.
   const arches = drawing.parts.flatMap(({ part }) =>
     part.kind === "wire" && part.arch ? [part] : [],
