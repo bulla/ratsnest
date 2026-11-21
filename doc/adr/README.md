@@ -96,3 +96,5 @@ Each new record adds a row here.
 | [0023](0023-write-a-generated-page-into-pages-named-by-its-four-inputs.md)                                       | Write a generated page into `pages/`, named by its four inputs                                     |
 | [0024](0024-put-the-labels-past-the-boards-far-end-whichever-way-it-is-turned.md)                                | Put the labels past the board's far end, whichever way it is turned                                |
 | [0025](0025-let-init-ignore-pages-in-a-projects-git.md)                                                          | Let `init` ignore `pages/` in a project's git                                                      |
+| [0026](0026-give-each-button-blocked-on-the-channel-a-lane-of-its-own-alternating-sides.md)                      | Give each button blocked on the channel a lane of its own, alternating sides                       |
+| [0027](0027-put-a-second-board-parts-label-past-the-end-nearer-to-it.md)                                         | Put a second board's part's label past the end nearer to it                                        |
