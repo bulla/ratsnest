@@ -17,9 +17,9 @@ by step: the drawing, the steps that pick out their parts, the parts list and a 
 test it with. A page is drawn at any quarter turn, in a dark or a light theme, and in English, French
 or Russian.
 
-> ⚠️ **ratsnest is still very much a work in progress, and can occasionally break.** Its circuit
-> format and its commands still change. Run `ratsnest update` in your circuits project to move it to
-> the latest ratsnest: it upgrades every circuit to the latest format and checks them.
+> ⚠️ **ratsnest is still very much a work in progress.** It can occasionally and unexpectedly break.
+> Run `ratsnest update` in your circuits project to move it to the latest ratsnest version. The
+> command upgrades every circuit to the latest format and checks them.
 
 ratsnest is not released yet: its first release, 0.1.0, is M9 in [the roadmap](doc/ROADMAP.md), and
 until then the steps below work with a build of your own.
