@@ -213,7 +213,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   wire: ["kind", "from", "to", "role", "arch"],
   resistor: ["kind", "ohms", "from", "to"],
   led: ["kind", "led", "anode", "cathode"],
-  button: ["kind", "button", "columns", "rows"],
+  button: ["kind", "button", "columns", "rows", "board"],
   buzzer: ["kind", "buzzer", "plus", "minus"],
   rgbLed: ["kind", "led", "power", "dataOut", "ground", "dataIn"],
   ring: ["kind", "led", "dataIn", "power", "ground", "dataOut"],
@@ -287,6 +287,9 @@ function partProblems(part: Record_, fields: Fields, ids: Ids): void {
             )}, or left out for across the channel`,
           );
         }
+      }
+      if (Object.hasOwn(part, "board") && part.board !== 2) {
+        fields.problem("board", "is not 2, the second breadboard, or left out for the first");
       }
       return;
     }

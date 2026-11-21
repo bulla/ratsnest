@@ -126,3 +126,36 @@ describe("the engine's test circuit in three languages (ADR 0011, rule 10)", () 
     );
   });
 });
+
+describe("a button on the second board (ADR 0028)", () => {
+  /** The light-and-button test circuit, its button moved to the second board and wired there. */
+  const moved = (board: boolean) => {
+    const data = structuredClone(fileOf(FIXTURES["light-and-button"])) as unknown as {
+      steps: { parts: unknown[] }[];
+    };
+    const [, , button, pullDown] = data.steps;
+    if (!button || !pullDown) throw new Error("The test circuit has changed");
+    button.parts = [
+      { kind: "wire", from: "a21", to: "2:j23", role: "signal" },
+      { kind: "button", button: "button", columns: [23, 25], ...(board ? { board: 2 } : {}) },
+      { kind: "wire", from: "top+26", to: "2:j25", role: "power" },
+    ];
+    pullDown.parts = [
+      { kind: "resistor", ohms: 4700, from: "2:i23", to: "2:i27" },
+      { kind: "wire", from: "2:j27", to: "top-27", role: "ground" },
+    ];
+    return data as unknown as Circuit;
+  };
+
+  it("passes every check when it says so, and is drawn there", () => {
+    const checked = checkSource(sourceOf(moved(true)), "moved.ts");
+    expect(checked.problems.map(problemLine)).toEqual([]);
+  });
+
+  it("is a button on the first board when it does not say so, which the wiring refuses", () => {
+    const checked = checkSource(sourceOf(moved(false)), "moved.ts");
+    expect(checked.problems.map(problemLine)).toContain(
+      "moved.ts: BTN1 is not between GP16 and 3V3(OUT)",
+    );
+  });
+});

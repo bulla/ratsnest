@@ -83,6 +83,8 @@ export interface PageWords {
     cap: ButtonColour,
     where: ButtonPlacement,
     legs: readonly string[],
+    /** Whether its legs are on the second breadboard (ADR 0028), said once rather than for each. */
+    second: boolean,
   ) => string;
   readonly buzzer: (name: string, plus: Place, minus: Place) => string;
   /**
@@ -236,8 +238,8 @@ export const ENGLISH_PAGE: PageWords = {
   resistor: (ohms, from, to) => `A ${ohms} resistor ${englishFrom(from)} ${englishTo(to)}.`,
   led: (name, anode, cathode) =>
     `The ${name}: its long leg ${englishIn(anode)}, its short leg ${englishIn(cathode)}.`,
-  button: (name, cap, where, legs) =>
-    `${name}, the ${ENGLISH_CAPS[cap]} button, ${ENGLISH_PLACEMENT[where]}, its legs in ${englishList(legs)}.`,
+  button: (name, cap, where, legs, second) =>
+    `${name}, the ${ENGLISH_CAPS[cap]} button, ${ENGLISH_PLACEMENT[where]}, its legs in ${englishList(legs)}${second ? " on the second breadboard" : ""}.`,
   buzzer: (name, plus, minus) =>
     `The ${name}: its + leg ${englishIn(plus)}, its other leg ${englishIn(minus)}.`,
   rgbLed: (name, legs, second) =>
@@ -429,8 +431,8 @@ export const FRENCH_PAGE: PageWords = {
   resistor: (ohms, from, to) => `Une résistance de ${ohms} ${frenchFrom(from)} ${frenchTo(to)}.`,
   led: (name, anode, cathode) =>
     `${the("led", name)}${NNBSP}: sa grande patte ${frenchIn(anode)}, sa petite patte ${frenchIn(cathode)}.`,
-  button: (name, cap, where, legs) =>
-    `${name}, le bouton ${FRENCH_CAPS[cap]}, ${FRENCH_PLACEMENT[where]}, ses pattes en ${frenchList(legs)}.`,
+  button: (name, cap, where, legs, second) =>
+    `${name}, le bouton ${FRENCH_CAPS[cap]}, ${FRENCH_PLACEMENT[where]}, ses pattes en ${frenchList(legs)}${second ? " de la seconde plaque" : ""}.`,
   buzzer: (name, plus, minus) =>
     `${the("buzzer", name)}${NNBSP}: sa patte + ${frenchIn(plus)}, son autre patte ${frenchIn(minus)}.`,
   rgbLed: (name, legs, second) =>
@@ -633,8 +635,8 @@ export const RUSSIAN_PAGE: PageWords = {
   resistor: (ohms, from, to) => `Резистор ${ohms} ${russianFrom(from)} ${russianTo(to)}.`,
   led: (name, anode, cathode) =>
     `${name}: длинная ножка ${russianIn(anode)}, короткая ножка ${russianIn(cathode)}.`,
-  button: (name, cap, where, legs) =>
-    `${name}: кнопка с ${RUSSIAN_CAPS[cap].with} колпачком, ${RUSSIAN_PLACEMENT[where]}, ножки в ${russianList(legs)}.`,
+  button: (name, cap, where, legs, second) =>
+    `${name}: кнопка с ${RUSSIAN_CAPS[cap].with} колпачком, ${RUSSIAN_PLACEMENT[where]}, ножки в ${russianList(legs)}${second ? " на второй плате" : ""}.`,
   buzzer: (name, plus, minus) =>
     `${name}: ножка + ${russianIn(plus)}, другая ножка ${russianIn(minus)}.`,
   rgbLed: (name, legs, second) =>

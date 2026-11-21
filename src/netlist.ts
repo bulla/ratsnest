@@ -1,6 +1,7 @@
 import type { Layout } from "./circuit";
 import { isRing, type ShownCircuit } from "./circuit";
 import {
+  buttonHole,
   coveredBy,
   type Hole,
   holeAt,
@@ -9,6 +10,7 @@ import {
   legsOf,
   type Part,
   parseHole,
+  type Row,
   rowsOf,
   stripOf,
 } from "./drawing/breadboard";
@@ -76,9 +78,10 @@ function wireUp(parts: readonly Part[], pressed: boolean): Nets {
     if (part.kind === "button") {
       const [left, right] = part.columns;
       const [first, second] = rowsOf(part);
-      nets.join(stripOf(`${first}${left}`), stripOf(`${second}${left}`));
-      nets.join(stripOf(`${first}${right}`), stripOf(`${second}${right}`));
-      if (pressed) nets.join(stripOf(`${first}${left}`), stripOf(`${first}${right}`));
+      const hole = (row: Row, column: number) => stripOf(buttonHole(part, row, column));
+      nets.join(hole(first, left), hole(second, left));
+      nets.join(hole(first, right), hole(second, right));
+      if (pressed) nets.join(hole(first, left), hole(first, right));
     }
   }
   return nets;
@@ -131,7 +134,7 @@ const ROW_ORDER = "abcdefghij";
 
 /** A button's two columns, as the holes of its first row: one per side of the switch. */
 const sidesOf = (part: Extract<Part, { kind: "button" }>): Hole[] =>
-  part.columns.map((column) => `${rowsOf(part)[0]}${column}`);
+  part.columns.map((column) => buttonHole(part, rowsOf(part)[0], column));
 
 /** Holes a part's shape fixes: an LED's legs are one hole apart, a buzzer's three. */
 function shapeProblems(part: Part, name: string): string[] {

@@ -164,6 +164,16 @@ describe("a file's fields (ADR 0016)", () => {
     ]);
   });
 
+  it("put a button on the second board with 2, and on no other (ADR 0028)", () => {
+    const [stepIndex, partIndex] = buttonAt(changed(() => {}));
+    const second = changed((data) => (part(data, stepIndex, partIndex).board = 2));
+    expect(said(second)).toEqual([]);
+    const first = changed((data) => (part(data, stepIndex, partIndex).board = 1));
+    expect(said(first)).toEqual([
+      `steps[${stepIndex}].parts[${partIndex}].board is not 2, the second breadboard, or left out for the first`,
+    ]);
+  });
+
   it("put a button on one half only in the rows that are a half", () => {
     const [stepIndex, partIndex] = buttonAt(changed(() => {}));
     const data = changed((data) => (part(data, stepIndex, partIndex).rows = ["a", "e"]));

@@ -282,6 +282,25 @@ describe("a button on one half of the board (scratchpi's ADR 0154)", () => {
   });
 });
 
+describe("a button on the second board (ADR 0028)", () => {
+  const second: Part = { kind: "button", button: "b", columns: [10, 12], board: 2 };
+  const halfSecond: Part = { ...second, rows: ["b", "e"] } as Part;
+
+  it("has its legs, and the holes under it, on the second board", () => {
+    expect(legsOf(second)).toEqual(["2:e10", "2:f10", "2:e12", "2:f12"]);
+    if (halfSecond.kind === "button") {
+      expect(coveredBy(halfSecond)).toEqual(["2:c10", "2:c11", "2:c12", "2:d10", "2:d11", "2:d12"]);
+    }
+  });
+
+  it("has its leader leave from where it is drawn, on the second board", () => {
+    const leader = leaderOf(second, [second]);
+    // Columns 10 to 12 are the second board's near half (ADR 0027).
+    expect(leader?.end).toBe("near");
+    expect(leader?.dot.y).toBeCloseTo(holeCentre("2:e10").y + (rowY("f") - rowY("e")) / 2, 9);
+  });
+});
+
 describe("a resistor's value tag", () => {
   const everyLayout = FIXTURE_IDS.map(
     (id) => [id, FIXTURES[id].layout.steps.flatMap((s) => s.parts)] as const,
