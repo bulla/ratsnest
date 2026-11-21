@@ -72,9 +72,9 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 - [ ] `ratsnest update`: the newer executable fetched and put in place, renamed first on Windows,
       then the migrations, the skill and the type replaced, and the checks (ADR 0015, ADR 0016)
-- [ ] The migrations' runner and their test harness, proven on a migration made for the purpose
+- [x] The migrations' runner and their test harness, proven on a migration made for the purpose
       (ADR 0015)
-- [ ] A printer for writing a circuit file back with its comments (ADR 0015)
+- [x] A printer for writing a circuit file back with its comments (ADR 0015)
 
 ### M11: done, and 1.0.0
 

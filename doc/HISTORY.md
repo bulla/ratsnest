@@ -225,3 +225,9 @@ a word that crowds at any of the four, and the examples moved two pull-downs so 
   each tag meeting the workflow's check against the previous, and refused an empty _Unreleased_ and a
   branch other than `develop`. That last rule meets ADR 0020's protected `develop`, which takes changes
   only by pull request: an open point for the owner, before the first release.
+- 2026-11-21: M10, the printer and the migrations' runner. Format 1 is the only format, so the runner
+  ships empty, and its harness proves it on migrations made for the purpose, over every example: a
+  field renamed, its comment following it, the header kept, and a migration that cannot decide leaving
+  the file as it was. Every example prints back as the same data with the same comments, and printing
+  it again changes nothing. `ratsnest update` itself, which fetches the newer executable from a
+  release, is M10's last item, and the first release is what it will fetch.
