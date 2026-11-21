@@ -95,6 +95,19 @@ page is written into `pages/`, named by its four inputs (ADR 0023).
       check (ADR 0014)
 - [x] `bun run ratsnest check` and `bun run ratsnest generate`, from source (ADR 0014)
 
+### M4: the font
+
+M4 is done: every page carries Nunito, cut by Google's subsetter to ratsnest's characters, under a
+family name of ratsnest's own, and the drawing measures every word it writes in the same files with
+fontkit. The narrow no-break space is drawn as Nunito's thin space, and a character Nunito lacks is
+refused in a circuit's words and fails a test in the engine's.
+
+- [x] `fonts/`: Nunito's Latin and Cyrillic files from Google's subsetter, the address that made each,
+      and the font's licence (ADR 0012)
+- [x] Every drawn word measured with `fontkit`, replacing the count of characters (ADR 0011, ADR 0012)
+- [x] The test that fails on a character a page writes and the files lack, and the narrow no-break
+      space written as Nunito's thin space (ADR 0012)
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -145,3 +158,14 @@ page is written into `pages/`, named by its four inputs (ADR 0023).
   not show. The examples kept scratchpi's steps and scripts, French included, but not its
   descriptions, which spoke of its app and its games, addressed a child as _tu_, and gave values
   such as 5 V in words a circuit should leave to the engine.
+- 2026-11-21: M3's pull request failed on Windows, and so had M2's: a file URL's `pathname` is
+  `/D:/…` there, which nothing can open, and the command joined paths with backslashes where its
+  tests expected forward slashes. The test walks paths now, and the command says every path with
+  forward slashes, which Windows reads too. Biome, linting a generated page, found `aria-labelledby`
+  on the script's `<pre>`, whose role may not be named, which scratchpi's page had always had.
+- 2026-11-21: M4. The font. Google's subsetter gave the cuts ADR 0012 measured, within a kilobyte,
+  and both are Nunito 3.602 with the weight axis whole. Measured rather than counted, the chips and
+  the resistor tags are a little narrower and every tag kept its place, so no test of where they go
+  moved; the margin widens only for a label wider than it, which none is yet. fontkit has no types,
+  and five declared members cost less than a dependency. A check now refuses a circuit's words
+  holding a character Nunito lacks, which the `circuit` skill already promised.

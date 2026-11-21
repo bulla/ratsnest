@@ -11,8 +11,9 @@ judgement the owner has to make goes in **Open points**, and comes out once they
 ## Where it stands
 
 The design is settled, in ADR 0001 to ADR 0023, the frame is built (M1), scratchpi's drawing,
-wiring check and page generator are copied in (M2), and circuits are data (M3): `ratsnest check` and
-`ratsnest generate` run from source, on format 1, with scratchpi's seven circuits as the examples.
+wiring check and page generator are copied in (M2), circuits are data (M3): `ratsnest check` and
+`ratsnest generate` run from source, on format 1, with scratchpi's seven circuits as the examples,
+and every page carries Nunito, the drawing measured in it (M4).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -22,15 +23,7 @@ SemVer (ADR 0017), and is open source under MIT: its repository has been public 
 ## Next
 
 The milestones, in order. Each needs the ones before it, and only the first is in flight. Its
-checklist moves to `HISTORY.md` when it lands. M4 is next.
-
-### M4: the font
-
-- [ ] `fonts/`: Nunito's Latin and Cyrillic files from Google's subsetter, the address that made each,
-      and the font's licence (ADR 0012)
-- [ ] Every drawn word measured with `fontkit`, replacing the count of characters (ADR 0011, ADR 0012)
-- [ ] The test that fails on a character a page writes and the files lack, and the narrow no-break
-      space written as Nunito's thin space (ADR 0012)
+checklist moves to `HISTORY.md` when it lands. M5 is next.
 
 ### M5: four orientations
 
@@ -151,3 +144,4 @@ file's Log.
 | M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding | 0009, 0017, 0018, 0020, 0021            |
 | M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app             | 0001, 0004, 0007, 0018                  |
 | M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples   | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
+| M4        | The font: Nunito carried by every page, every drawn word measured in it                | 0011, 0012                              |

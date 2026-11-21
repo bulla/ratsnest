@@ -16,9 +16,9 @@ under MIT (ADR 0018), and its repository has been public since 2026-11-20.
 The design is settled, in records argued by interview on 2026-11-20 (M0), the frame is built (M1),
 scratchpi's drawing, wiring check and page generator are copied in (M2), and circuits are data
 (M3): format 1, read and never run, checked by `bun run ratsnest check` and drawn by
-`bun run ratsnest generate`, with scratchpi's seven circuits as the examples. Pages are drawn at 0°
-and dark, in the reader's own fonts until Nunito comes in. M4, the font, is next, and the milestones after it are in
-[`doc/ROADMAP.md`](doc/ROADMAP.md).
+`bun run ratsnest generate`, with scratchpi's seven circuits as the examples. Every page carries
+Nunito and the drawing is measured in it (M4), so far at 0° and dark. M5, four orientations, is
+next, and the milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -161,6 +161,7 @@ Every command is `bun run <script>` (ADR 0009). `CONTRIBUTING.md` walks through 
 | The changelog check, as a pull request meets it | `bun scripts/changelog.ts origin/develop`                         |
 | Check the examples                              | `bun run ratsnest check examples`                                 |
 | Make an example's page                          | `bun run ratsnest generate examples/push-button.ts --language en` |
+| Fetch Nunito again, after adding a character    | `bun run fonts`                                                   |
 
 Say `bun run test`, never `bun test` alone: both work today, but a script changed in `package.json`
 changes only for the first.
@@ -184,7 +185,7 @@ there.
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported: ratsnest's own, checked like anyone's,
 │                        and · the old files its migrations are tested on (ADR 0014, ADR 0015)
-├── fonts/             · Nunito's two files, its licence, and the address that made each (ADR 0012)
+├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
 │   ├── HISTORY.md       Every milestone's checklist, and the Log
@@ -198,6 +199,7 @@ there.
 │   ├── fields.ts        Every field checked, the format first, then the languages and the words
 │   ├── check.ts         Every check in order, the wiring last: what `check` and `generate` run
 │   ├── shown.ts         A checked circuit taken into one language, as the engine's model
+│   ├── fonts.ts         Nunito's files, and every drawn word's width measured in them (ADR 0012)
 │   ├── circuit.ts       The engine's model: a circuit shown in one language, and its layout
 │   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
 │   ├── language.ts      The languages a page is written in
@@ -211,8 +213,9 @@ there.
 ├── ATTRIBUTION.md       The drawing's source and licence, and which folder it covers (ADR 0018)
 ├── api/               · The public surface as it was at the last release, written only by
 │                        `bun run release` (ADR 0017)
-├── scripts/             The repository's own tools and their tests: the changelog check, and the
-│                        repository's rules (exact pins, the pinned Bun, no Node)
+├── scripts/             The repository's own tools and their tests: the changelog check, the
+│                        repository's rules (exact pins, the pinned Bun, no Node), the examples'
+│                        checks, and `fonts.ts`, which fetches Nunito's files
 ├── package.json         The dependencies, the scripts, and the one place the version lives (ADR 0017)
 ├── bun.lock             What `bun install` installs, exactly
 ├── tsconfig.json, biome.json  Strict TypeScript; Biome for the code and the Markdown alike
@@ -323,6 +326,11 @@ does not pay for it again.
 - **A circuit's name can also be one of its parts' names**, as the RGB LED example's is. The test that
   nothing in `src/` names an example leaves such a name out, since `"RGB LED"` in the engine names the
   part. Every other name, in every language, and every `examples/<file>`, it still catches.
+- **Google's subsetter answers 400 to a character not percent-encoded, and CSS without WOFF2 to a
+  client it does not know.** `scripts/fonts.ts` builds the address with `URLSearchParams` and says it
+  is a browser. Run it only to add a character: a page is made from the committed files.
+- **fontkit ships no types.** `src/fontkit.d.ts` declares the members the engine uses and nothing
+  else, so a new one is declared there first, or `tsc` says it does not exist.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
