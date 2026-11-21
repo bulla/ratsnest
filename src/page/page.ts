@@ -23,6 +23,7 @@ import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN } from "../fonts";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
 import { LIGHT_OHMS_RANGE } from "../netlist";
+import { isStanding, type Orientation } from "../orientation";
 import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place } from "./words";
 
 /**
@@ -220,12 +221,12 @@ function componentPins(circuit: ShownCircuit): { name: string; gpio: number }[] 
   ];
 }
 
-function picoStep(circuit: ShownCircuit, words: PageWords): string {
+function picoStep(circuit: ShownCircuit, words: PageWords, orientation: Orientation): string {
   const lands = componentPins(circuit).flatMap(({ gpio }) => {
     const pin = headerPinOfGpio(gpio);
     return pin ? [words.land(gpio, `<span class="hole">${holeOfPin(pin.number)}</span>`)] : [];
   });
-  return words.picoBody(`<span class="hole">${holeOfPin(1)}</span>`, lands);
+  return words.picoBody(`<span class="hole">${holeOfPin(1)}</span>`, lands, orientation);
 }
 
 function stepHtml(options: {
@@ -335,6 +336,7 @@ export function wiringPage(
   layout: Layout,
   files: PageFiles,
   language: Language = DEFAULT_LANGUAGE,
+  orientation: Orientation = 0,
 ): string {
   const words = PAGE_WORDS[language];
   const names = namesOf(circuit);
@@ -353,13 +355,14 @@ export function wiringPage(
   const ledColour = (led: string) =>
     circuit.leds.find((l): l is PlainLed => l.id === led && l.colour !== "rgb")?.colour ?? "red";
   const svg = drawBreadboard({
+    orientation,
     parts: drawn,
     tags: tagsOf(layout),
     ledColour,
     buttonColour: (button) => buttonColourOf(circuit, button),
     title: words.drawingTitle(circuit.name, usesSecondBoard(parts) ? 2 : 1),
     description: [
-      words.drawingIntro,
+      words.drawingIntro(orientation),
       ...layout.steps.flatMap((step) =>
         step.parts.map((part) => plain(sentenceOf(part, names, words))),
       ),
@@ -370,7 +373,7 @@ export function wiringPage(
     stepHtml({
       number: 1,
       title: words.picoTitle,
-      body: picoStep(circuit, words),
+      body: picoStep(circuit, words, orientation),
       groups: PICO_GROUP,
     }),
     ...layout.steps.map((step, index) =>
@@ -406,7 +409,7 @@ export function wiringPage(
 <style>${files.css}</style>
 </head>
 <body>
-<main class="page">
+<main class="page${isStanding(orientation) ? " standing" : ""}">
   <header>
     <p class="eyebrow">${escaped(words.eyebrow)}</p>
     <h1>${escaped(circuit.name)}</h1>

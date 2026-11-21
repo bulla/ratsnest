@@ -4,6 +4,7 @@ import { version } from "../package.json";
 import { type Checked, checkFile, problemLine } from "./check";
 import { FORMAT, languagesOf } from "./fields";
 import { LANGUAGES, type Language } from "./language";
+import type { Orientation } from "./orientation";
 import { PAGE_FILES } from "./page/files";
 import { wiringPage } from "./page/page";
 import { shownIn } from "./shown";
@@ -22,7 +23,7 @@ export interface Io {
 
 /** The orientations ADR 0003 names, and the ones the engine draws so far. */
 const ORIENTATIONS = ["0", "90", "180", "270"];
-const DRAWN_ORIENTATIONS = ["0"];
+const DRAWN_ORIENTATIONS = ORIENTATIONS;
 
 /** The themes ADR 0005 names, and the ones the engine draws so far. */
 const THEMES = ["dark", "light"];
@@ -188,7 +189,13 @@ function generate(args: readonly string[], cwd: string, io: Io): number {
   if (!language) throw new Usage(`${file} is written in ${written}: say which with --language`);
 
   const shown = shownIn(circuit, language);
-  const html = wiringPage(shown.circuit, shown.layout, PAGE_FILES, language);
+  const html = wiringPage(
+    shown.circuit,
+    shown.layout,
+    PAGE_FILES,
+    language,
+    Number(orientation) as Orientation,
+  );
   const name = basename(file).replace(/\.ts$/, "");
   const out = resolve(
     cwd,

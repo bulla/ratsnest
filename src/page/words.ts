@@ -1,6 +1,7 @@
 import type { ButtonColour } from "../circuit";
 import type { WireRole } from "../drawing/breadboard";
 import { type Band, formatOhms } from "../drawing/breadboard-svg";
+import type { Orientation } from "../orientation";
 
 /**
  * Everything a page says of its own, in each language the engine writes (ADR 0010): the sentences it
@@ -51,7 +52,8 @@ export interface PageWords {
 
   /** The drawing's own title, on one breadboard or two (scratchpi's ADR 0226), and its description's start. */
   readonly drawingTitle: (circuit: string, boards: number) => string;
-  readonly drawingIntro: string;
+  /** Where the Pico sits and which way its USB points, at the drawing's quarter turn (ADR 0003). */
+  readonly drawingIntro: (orientation: Orientation) => string;
 
   /** A hole's pin, after the hole: `(GP16, pin 21)`. */
   readonly pinNote: (label: string, number: number) => string;
@@ -108,7 +110,7 @@ export interface PageWords {
 
   /** The first step and the last, which every circuit has. */
   readonly picoTitle: string;
-  readonly picoBody: (pinOne: string, lands: readonly string[]) => string;
+  readonly picoBody: (pinOne: string, lands: readonly string[], orientation: Orientation) => string;
   /** Where one of the circuit's pins lands once the Pico is in. */
   readonly land: (gpio: number, hole: string) => string;
   readonly testTitle: string;
@@ -169,6 +171,14 @@ const ENGLISH_PLACEMENT: Record<ButtonPlacement, string> = {
   below: "below the channel",
 };
 
+/** Where the USB is, at each quarter turn: on the left at 0°, then round clockwise. */
+const ENGLISH_USB: Record<Orientation, string> = {
+  0: "to the left",
+  90: "to the top",
+  180: "to the right",
+  270: "to the bottom",
+};
+
 const capitalised = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** `the top − rail`, or the hole as the page marked it up, and which board it is on. */
@@ -206,7 +216,8 @@ export const ENGLISH_PAGE: PageWords = {
 
   drawingTitle: (circuit, boards) =>
     `${circuit}, on ${boards > 1 ? "two half-size breadboards" : "a half-size breadboard"}`,
-  drawingIntro: "A Pico 2 W across the middle of the breadboard, its USB to the left.",
+  drawingIntro: (orientation) =>
+    `A Pico 2 W across the middle of the breadboard, its USB ${ENGLISH_USB[orientation]}.`,
 
   pinNote: (label, number) => `(${label}, pin ${number})`,
   from: englishFrom,
@@ -239,8 +250,8 @@ export const ENGLISH_PAGE: PageWords = {
   rgbLedLabel: (dataIn) => `data in at ${dataIn}`,
 
   picoTitle: "Put the Pico across the middle",
-  picoBody: (pinOne, lands) =>
-    `The USB goes to the left. Its pins go in rows <span class="hole">c</span> and <span class="hole">h</span>, from column 2 to column 21, and pin 1 goes in ${pinOne}.` +
+  picoBody: (pinOne, lands, orientation) =>
+    `The USB goes ${ENGLISH_USB[orientation]}. Its pins go in rows <span class="hole">c</span> and <span class="hole">h</span>, from column 2 to column 21, and pin 1 goes in ${pinOne}.` +
     (lands.length > 0 ? ` That puts ${englishList(lands)}.` : ""),
   land: (gpio, hole) => `GP${gpio} in ${hole}`,
   testTitle: "Plug in and test",
@@ -285,6 +296,14 @@ export const ENGLISH_PAGE: PageWords = {
 
 /** The narrow no-break space French puts before `: ; ? !` (ADR 0011). */
 const NNBSP = " ";
+
+/** Où est le port USB, à chaque quart de tour. */
+const FRENCH_USB: Record<Orientation, string> = {
+  0: "à gauche",
+  90: "en haut",
+  180: "à droite",
+  270: "en bas",
+};
 
 const FRENCH_BANDS = [
   "noir",
@@ -385,7 +404,8 @@ export const FRENCH_PAGE: PageWords = {
 
   drawingTitle: (circuit, boards) =>
     `${circuit}, sur ${boards > 1 ? "deux plaques d’essai demi-taille" : "une plaque d’essai demi-taille"}`,
-  drawingIntro: "Un Pico 2 W au milieu de la plaque d’essai, son port USB à gauche.",
+  drawingIntro: (orientation) =>
+    `Un Pico 2 W au milieu de la plaque d’essai, son port USB ${FRENCH_USB[orientation]}.`,
 
   pinNote: (label, number) => `(${label}, broche ${number})`,
   from: frenchFrom,
@@ -418,8 +438,8 @@ export const FRENCH_PAGE: PageWords = {
   rgbLedLabel: (dataIn) => `entrée en ${dataIn}`,
 
   picoTitle: "Placez le Pico à cheval sur la rainure centrale",
-  picoBody: (pinOne, lands) =>
-    `Le port USB va à gauche. Ses broches vont dans les rangées <span class="hole">c</span> et <span class="hole">h</span>, de la colonne 2 à la colonne 21, et la broche 1 va en ${pinOne}.` +
+  picoBody: (pinOne, lands, orientation) =>
+    `Le port USB va ${FRENCH_USB[orientation]}. Ses broches vont dans les rangées <span class="hole">c</span> et <span class="hole">h</span>, de la colonne 2 à la colonne 21, et la broche 1 va en ${pinOne}.` +
     (lands.length > 0 ? ` Ainsi, ${frenchList(lands)}.` : ""),
   land: (gpio, hole) => `GP${gpio} est en ${hole}`,
   testTitle: "Branchez et testez",
