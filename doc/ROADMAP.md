@@ -61,11 +61,11 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 ### M9: releases
 
-- [ ] The public surface as data, and its snapshot in `api/` (ADR 0017)
-- [ ] `bun run release`: the version computed, the changelog moved, the snapshot written, the
+- [x] The public surface as data, and its snapshot in `api/` (ADR 0017)
+- [x] `bun run release`: the version computed, the changelog moved, the snapshot written, the
       commit and the tag (ADR 0017)
-- [ ] The workflow for every `v*` tag: the rule checked, five executables built, each run on its own
-      system, and only then the GitHub Release (ADR 0020)
+- [x] The workflow for every `v*` tag: the rule checked, five executables built, each run on its own
+      system, and only then the GitHub Release (ADR 0020), written and waiting for its first tag
 - [ ] The first release, `0.1.0`, which says by its number that anything may still change (ADR 0021)
 
 ### M10: updating
@@ -101,6 +101,13 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 - **The owner's first circuits project**, M7's last item: build ratsnest with `bun run build`,
   install it with `RATSNEST_FROM=dist/ratsnest-<system> sh install.sh`, and run `ratsnest init` in a
   folder of the owner's own, as the README's _Get started_ says.
+- **The first release, `0.1.0`** (ADR 0021), M9's last item, and **how a release reaches `develop`**.
+  `bun run release` commits and tags on `develop` (ADR 0017), and a protected `develop` takes changes
+  only by pull request (ADR 0020), so the two records meet here. Either the owner is on the ruleset's
+  bypass list and pushes `git push origin develop v0.1.0` as the release says, or releases are made on
+  a branch, merged by pull request, and tagged after the merge, which is a change to ADR 0017 and a
+  record of its own. Tried in a scratch clone, the release made `0.1.0` and then `0.1.1`, and each tag
+  met its check.
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
   A test cannot check its grammar. The parts list is written as a bill of materials, and every part's

@@ -12,6 +12,9 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Added
 
+- Every release's version is computed from what changed on ratsnest's public surface since the last
+  release, the circuit format, the commands and `ratsnest.json`, and checked again when it is tagged,
+  before its executables are built and released on GitHub.
 - ratsnest as one executable per platform, Linux, macOS and Windows, with a `NOTICES` file for what
   it carries, and `install.sh` to put it on the `PATH`.
 - `ratsnest init`, which makes a circuits project: `ratsnest.json`, the `Circuit` type for editors in

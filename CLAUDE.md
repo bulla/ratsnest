@@ -20,8 +20,9 @@ scratchpi's drawing, wiring check and page generator are copied in (M2), and cir
 Nunito and the drawing is measured in it (M4), and is drawn at any quarter turn, every word
 upright and nothing crowding at any (M5), in either theme, and in English, French or Russian, every
 language held to ADR 0011's rules (M6). It builds into one executable per platform, and
-`ratsnest init` makes circuits projects (M7). M6 waits on a reader of Russian and M7 on the owner's
-first project; M8, publishing, is next, and the milestones after it are in
+`ratsnest init` makes circuits projects (M7), and every release's version is computed and checked
+(M9). M6, M7 and M9 each wait on the owner (a reader of Russian, a first project, the first release),
+and M8, publishing, on a circuits project; the roadmap's Open points say what each needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
@@ -181,8 +182,11 @@ there.
 .
 ├── .github/
 │   └── workflows/
-│       └── check.yml    Every pull request and push to `develop`: lint, typecheck, the changelog,
-│                        the tests on three systems, and the one gate to require, `ci` (ADR 0020)
+│       ├── check.yml    Every pull request and push to `develop`: lint, typecheck, the changelog,
+│       │                the tests on three systems, the examples compiled, and the one gate to
+│       │                require, `ci` (ADR 0020)
+│       └── release.yml  Every `v*` tag: the version rule, the executables built and run on three
+│                        systems, then the GitHub Release (ADR 0017, ADR 0020)
 ├── .claude/
 │   └── skills/
 │       ├── setup/       Walks a newcomer through `CONTRIBUTING.md`, checking each step
@@ -222,11 +226,12 @@ there.
 ├── LICENSE              MIT, held by bulla, for everything but `src/drawing/` and `fonts/` (ADR 0018)
 ├── ATTRIBUTION.md       The drawing's source and licence, and which folder it covers (ADR 0018)
 ├── api/               · The public surface as it was at the last release, written only by
-│                        `bun run release` (ADR 0017)
+│                        `bun run release` (ADR 0017), from `scripts/surface.ts`
 ├── scripts/             The repository's own tools and their tests: the changelog check, the
 │                        repository's rules (exact pins, the pinned Bun, no Node), the examples'
 │                        checks, `fonts.ts`, which fetches Nunito's files, `build.ts`, which makes
-│                        the executables and `NOTICES`, and `compiled.ts`, which runs one
+│                        the executables and `NOTICES`, `compiled.ts`, which runs one, `surface.ts`,
+│                        the public surface as data, and `release.ts`, the release and a tag's check
 ├── package.json         The dependencies, the scripts, and the one place the version lives (ADR 0017)
 ├── bun.lock             What `bun install` installs, exactly
 ├── tsconfig.json, biome.json  Strict TypeScript; Biome for the code and the Markdown alike
