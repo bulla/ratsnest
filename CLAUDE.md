@@ -14,9 +14,11 @@ under MIT (ADR 0018), and its repository has been public since 2026-11-20.
 ## Status
 
 The design is settled, in records argued by interview on 2026-11-20 (M0), the frame is built (M1),
-and scratchpi's drawing, wiring check and page generator are copied in (M2): the engine makes a page
-from a circuit a test hands it, and there is no command yet. M3, circuits as data, is next, and the
-milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
+scratchpi's drawing, wiring check and page generator are copied in (M2), and circuits are data
+(M3): format 1, read and never run, checked by `bun run ratsnest check` and drawn by
+`bun run ratsnest generate`, with scratchpi's seven circuits as the examples. Pages are drawn at 0°
+and dark, in the reader's own fonts until Nunito comes in. M4, the font, is next, and the milestones after it are in
+[`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -148,15 +150,17 @@ Two standing constraints:
 Every command is `bun run <script>` (ADR 0009). `CONTRIBUTING.md` walks through them in order, and
 `/setup` runs them with you.
 
-| Task                                            | Command                                               |
-| ----------------------------------------------- | ----------------------------------------------------- |
-| Install                                         | `bun install`                                         |
-| Lint                                            | `bun run lint`, and `bun run format` writes its fixes |
-| Typecheck                                       | `bun run typecheck`                                   |
-| Test                                            | `bun run test`                                        |
-| One test file                                   | `bun run test scripts/changelog.test.ts`              |
-| The tests whose name holds some words           | `bun run test -t "pinned exactly"`                    |
-| The changelog check, as a pull request meets it | `bun scripts/changelog.ts origin/develop`             |
+| Task                                            | Command                                                           |
+| ----------------------------------------------- | ----------------------------------------------------------------- |
+| Install                                         | `bun install`                                                     |
+| Lint                                            | `bun run lint`, and `bun run format` writes its fixes             |
+| Typecheck                                       | `bun run typecheck`                                               |
+| Test                                            | `bun run test`                                                    |
+| One test file                                   | `bun run test scripts/changelog.test.ts`                          |
+| The tests whose name holds some words           | `bun run test -t "pinned exactly"`                                |
+| The changelog check, as a pull request meets it | `bun scripts/changelog.ts origin/develop`                         |
+| Check the examples                              | `bun run ratsnest check examples`                                 |
+| Make an example's page                          | `bun run ratsnest generate examples/push-button.ts --language en` |
 
 Say `bun run test`, never `bun test` alone: both work today, but a script changed in `package.json`
 changes only for the first.
@@ -178,18 +182,23 @@ there.
 │       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
-├── examples/          · scratchpi's circuits, ported: ratsnest's own, checked like anyone's, and
-│                        the old files its migrations are tested on (ADR 0014, ADR 0015)
+├── examples/            scratchpi's seven circuits, ported: ratsnest's own, checked like anyone's,
+│                        and · the old files its migrations are tested on (ADR 0014, ADR 0015)
 ├── fonts/             · Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
 │   ├── HISTORY.md       Every milestone's checklist, and the Log
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
-├── src/               The engine, and · the command-line tool: `init`, `check`, `generate`,
-│   │                    `update` (ADR 0014). Nothing in it names a circuit (ADR 0007)
-│   ├── circuit.ts       What a circuit is and where its parts go, as scratchpi's pages knew it,
-│   │                    until M3 makes it the circuit format
+├── src/               The engine and the command-line tool. Nothing in it names a circuit (ADR 0007)
+│   ├── cli.ts           `ratsnest check` and `generate`, and · `init` and `update` (ADR 0014)
+│   ├── format.ts        The circuit format: the type a circuit file satisfies, and only that. It
+│   │                    imports nothing, because `init` copies it alone (ADR 0022)
+│   ├── read.ts          A circuit file read as data, never run, held to the declarative check
+│   ├── fields.ts        Every field checked, the format first, then the languages and the words
+│   ├── check.ts         Every check in order, the wiring last: what `check` and `generate` run
+│   ├── shown.ts         A checked circuit taken into one language, as the engine's model
+│   ├── circuit.ts       The engine's model: a circuit shown in one language, and its layout
 │   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
 │   ├── language.ts      The languages a page is written in
 │   ├── pins.ts, rgb.ts  The GPIO a Pico 2 W breaks out, and an RGB LED's colours
@@ -197,6 +206,7 @@ there.
 │   ├── drawing/         The Pico and the breadboard, drawn: CC BY-SA 4.0, unlike the rest (ADR 0018)
 │   └── page/            The page: its generator, its words, its stylesheet, its one script, and
 │                        `tokens.css`, the only file that writes a colour (ADR 0004)
+├── pages/               What `bun run ratsnest generate` writes (ADR 0023), ignored by git
 ├── LICENSE              MIT, held by bulla, for everything but `src/drawing/` and `fonts/` (ADR 0018)
 ├── ATTRIBUTION.md       The drawing's source and licence, and which folder it covers (ADR 0018)
 ├── api/               · The public surface as it was at the last release, written only by
@@ -306,6 +316,13 @@ does not pay for it again.
   `Ring.tsx`, and Bun stops on a `ring.tsx` that does not exist. To set a page beside scratchpi's,
   fetch scratchpi's from `https://scratchpi.bulla.io/circuits/<slug>/`, which redirects to the
   trailing slash, so `curl` needs `-L`.
+- **The page's stylesheets and script are imported as text, never read from disk**
+  (`src/page/files.ts`). Read from disk, they work under `bun run` and are missing from a compiled
+  ratsnest, which carries only what is imported. TypeScript is told what such an import is by
+  `text.d.ts` for `*.css`, and by `steps.d.ts` beside `steps.js`, which it takes for the script.
+- **A circuit's name can also be one of its parts' names**, as the RGB LED example's is. The test that
+  nothing in `src/` names an example leaves such a name out, since `"RGB LED"` in the engine names the
+  part. Every other name, in every language, and every `examples/<file>`, it still catches.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

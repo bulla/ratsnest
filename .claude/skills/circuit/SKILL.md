@@ -37,7 +37,7 @@ instead: a page is only ever the engine's output.
 
 | To | In a circuits project | In ratsnest itself |
 | --- | --- | --- |
-| Check every circuit | `ratsnest check` | `bun run ratsnest check` |
+| Check every circuit | `ratsnest check` | `bun run ratsnest check examples` |
 | Make a page | `ratsnest generate <file> --orientation <0, 90, 180 or 270> --theme <dark or light> --language <en, fr or ru>` | the same, after `bun run` |
 | Move to a newer ratsnest | `ratsnest update` | not needed: it is the newest |
 

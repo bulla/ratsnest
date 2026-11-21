@@ -81,6 +81,17 @@ them.
    The first runs one file, the second every test whose name contains those words. Each ends with
    `0 fail`.
 
+6. **Check the examples, and make a page from one**, as a circuits project's owner would with the
+   `ratsnest` executable (ADR 0014).
+
+   ```sh
+   bun run ratsnest check examples
+   bun run ratsnest generate examples/push-button.ts --language en
+   ```
+
+   The first ends with `7 circuits checked: all well.` The second prints the page it wrote,
+   `pages/push-button.0.dark.en.html`, which opens in any browser. `pages/` is ignored by git.
+
 That is everything. If a step printed something else, `/setup` can tell you why.
 
 ## How work is done here

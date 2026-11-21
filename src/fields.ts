@@ -1,0 +1,495 @@
+import { BUTTON_COLOURS, LED_COLOURS } from "./circuit";
+import { parseHole } from "./drawing/breadboard";
+import type { Circuit, Language, Text } from "./format";
+import { LANGUAGES } from "./language";
+import { isUsableGpio } from "./pins";
+import { pathOf } from "./read";
+
+/**
+ * Every field of a circuit's data checked by the engine itself, because a circuits project may never
+ * run a type checker (ADR 0016): its format first (ADR 0015), then the shape of every field, then
+ * its languages (ADR 0010), then what its words may say (ADR 0006). What the wiring means is the
+ * wiring check's (`netlist.ts`), which runs once these pass.
+ *
+ * A problem names the path of the field it is about, so that it can be pointed at in the file.
+ */
+
+/** The circuit format this engine reads, and the only one. */
+export const FORMAT = 1;
+
+/** Something wrong with a field, by its path: `steps[2].parts[0].from`. */
+export interface FieldProblem {
+  readonly path: string;
+  readonly message: string;
+}
+
+const ROLES = ["ground", "power", "signal"] as const;
+const ONE_HALF_ROWS = ["a,d", "b,e", "f,i", "g,j"];
+
+type Record_ = Readonly<Record<string, unknown>>;
+
+const isRecord = (value: unknown): value is Record_ =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const quoted = (values: readonly (string | number)[]): string => {
+  const words = values.map((value) => `\`${value}\``);
+  return words.length <= 1
+    ? words.join("")
+    : `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;
+};
+
+/**
+ * The format a file says it is in, and whether this engine reads it. Asked before anything else: a
+ * file of another format is refused whole, with what to do about it (ADR 0015).
+ */
+export function formatProblem(data: unknown): FieldProblem | undefined {
+  const format = isRecord(data) ? data.format : undefined;
+  if (format === FORMAT) return undefined;
+  if (typeof format !== "number" || !Number.isInteger(format) || format < 1) {
+    return {
+      path: "format",
+      message: `says no format: a circuit file says which it is written in, \`format: ${FORMAT}\` (ADR 0015)`,
+    };
+  }
+  return format > FORMAT
+    ? {
+        path: "format",
+        message: `is written in format ${format}, newer than this ratsnest reads (${FORMAT}): run \`ratsnest update\``,
+      }
+    : {
+        path: "format",
+        message: `is written in format ${format}, older than this ratsnest reads (${FORMAT}): run \`ratsnest update\``,
+      };
+}
+
+/** A checker of one object: its fields by name, each required unless asked otherwise. */
+class Fields {
+  constructor(
+    private readonly object: Record_,
+    private readonly path: string,
+    private readonly problems: FieldProblem[],
+  ) {}
+
+  private at(key: string): string {
+    return pathOf(this.path, key);
+  }
+
+  problem(key: string, message: string): void {
+    this.problems.push({ path: this.at(key), message });
+  }
+
+  /** The value of a field, or a problem saying it is missing. */
+  required(key: string, what: string): unknown {
+    if (!Object.hasOwn(this.object, key)) {
+      this.problems.push({ path: this.path, message: `has no \`${key}\`, ${what}` });
+      return undefined;
+    }
+    return this.object[key];
+  }
+
+  /** Every field the object has that it may not. */
+  only(keys: readonly string[], what: string): void {
+    for (const key of Object.keys(this.object)) {
+      if (!keys.includes(key)) {
+        this.problem(key, `is not a field of ${what}: it has ${quoted(keys)}`);
+      }
+    }
+  }
+
+  text(key: string, optional = false): void {
+    if (optional && !Object.hasOwn(this.object, key)) return;
+    const value = this.required(key, "a text");
+    if (value !== undefined) textProblems(value, this.at(key), this.problems);
+  }
+
+  string(key: string): string | undefined {
+    const value = this.required(key, "a string");
+    if (value === undefined) return undefined;
+    if (typeof value !== "string" || value.length === 0) {
+      this.problem(key, "is not a string with something in it");
+      return undefined;
+    }
+    return value;
+  }
+
+  hole(key: string): void {
+    const value = this.required(key, "a hole");
+    if (value === undefined) return;
+    if (typeof value !== "string" || !parseHole(value)) {
+      this.problem(
+        key,
+        `is not a hole on a half-size breadboard: holes are named as it prints them, \`a21\` or \`top-19\`, and \`2:f5\` on a second one`,
+      );
+    }
+  }
+
+  oneOf(key: string, values: readonly string[]): void {
+    const value = this.required(key, "a choice");
+    if (value === undefined) return;
+    if (typeof value !== "string" || !values.includes(value)) {
+      this.problem(key, `is not one of ${quoted(values)}`);
+    }
+  }
+
+  integer(key: string, from: number): number | undefined {
+    const value = this.required(key, "a whole number");
+    if (value === undefined) return undefined;
+    if (typeof value !== "number" || !Number.isInteger(value) || value < from) {
+      this.problem(key, `is not a whole number of ${from} or more`);
+      return undefined;
+    }
+    return value;
+  }
+
+  /** The array at a key, each item checked as an object; `optional` lists may be left out. */
+  list(key: string, optional: boolean, item: (fields: Fields, index: number) => void): void {
+    if (optional && !Object.hasOwn(this.object, key)) return;
+    const value = this.required(key, "a list");
+    if (value === undefined) return;
+    if (!Array.isArray(value)) {
+      this.problem(key, "is not a list");
+      return;
+    }
+    value.forEach((each, index) => {
+      const path = pathOf(this.at(key), index);
+      if (!isRecord(each)) {
+        this.problems.push({ path, message: "is not an object" });
+        return;
+      }
+      item(new Fields(each, path, this.problems), index);
+    });
+  }
+}
+
+/** A text: an object keyed by language, one at least, each a string with something in it. */
+function textProblems(value: unknown, path: string, problems: FieldProblem[]): void {
+  if (!isRecord(value)) {
+    problems.push({
+      path,
+      message: `is not a text keyed by language, such as \`{ en: "…" }\` (ADR 0010)`,
+    });
+    return;
+  }
+  const keys = Object.keys(value);
+  if (keys.length === 0) {
+    problems.push({ path, message: "is in no language: a text needs one at least (ADR 0010)" });
+  }
+  for (const key of keys) {
+    if (!(LANGUAGES as readonly string[]).includes(key)) {
+      problems.push({
+        path: pathOf(path, key),
+        message: `is not a language ratsnest writes: it writes ${quoted(LANGUAGES)} (ADR 0010)`,
+      });
+    } else if (typeof value[key] !== "string" || (value[key] as string).trim() === "") {
+      problems.push({ path: pathOf(path, key), message: "is not a string with something in it" });
+    }
+  }
+}
+
+function pinProblems(fields: Fields, kind: "gpio" | "rgb"): void {
+  fields.oneOf("kind", [kind]);
+  const gpio = fields.integer("gpio", 0);
+  if (gpio !== undefined && !isUsableGpio(gpio)) {
+    fields.problem("gpio", `is GP${gpio}, which the Pico 2 W does not break out`);
+  }
+  if (kind === "rgb") fields.integer("count", 1);
+}
+
+/** The pin at `pin`, of the kind given. */
+function pinField(fields: Fields, kind: "gpio" | "rgb", path: string, problems: FieldProblem[]) {
+  const pin = fields.required("pin", "a pin");
+  if (pin === undefined) return;
+  if (!isRecord(pin)) {
+    fields.problem("pin", 'is not a pin, such as `{ kind: "gpio", gpio: 15 }`');
+    return;
+  }
+  const pinFields = new Fields(pin, pathOf(path, "pin"), problems);
+  pinFields.only(kind === "rgb" ? ["kind", "gpio", "count"] : ["kind", "gpio"], "a pin");
+  pinProblems(pinFields, kind);
+}
+
+const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  wire: ["kind", "from", "to", "role", "arch"],
+  resistor: ["kind", "ohms", "from", "to"],
+  led: ["kind", "led", "anode", "cathode"],
+  button: ["kind", "button", "columns", "rows"],
+  buzzer: ["kind", "buzzer", "plus", "minus"],
+  rgbLed: ["kind", "led", "power", "dataOut", "ground", "dataIn"],
+  ring: ["kind", "led", "dataIn", "power", "ground", "dataOut"],
+};
+
+function partProblems(part: Record_, fields: Fields, ids: Ids): void {
+  const kind = part.kind;
+  if (typeof kind !== "string" || !Object.hasOwn(PART_FIELDS, kind)) {
+    fields.problem("kind", `is not a part ratsnest knows: ${quoted(Object.keys(PART_FIELDS))}`);
+    return;
+  }
+  fields.only(PART_FIELDS[kind] ?? [], `a ${kind}`);
+  const reference = (key: string, known: ReadonlySet<string>, what: string) => {
+    const id = fields.string(key);
+    if (id !== undefined && !known.has(id)) {
+      fields.problem(key, `is \`${id}\`, which is not the id of any of the circuit's ${what}`);
+    }
+  };
+  switch (kind) {
+    case "wire":
+      fields.hole("from");
+      fields.hole("to");
+      fields.oneOf("role", ROLES);
+      if (Object.hasOwn(part, "arch") && part.arch !== true) {
+        fields.problem("arch", "is `true` when it is there: leave it out for a flat jumper");
+      }
+      return;
+    case "resistor": {
+      const ohms = fields.required("ohms", "a value in ohms");
+      if (
+        ohms !== undefined &&
+        (typeof ohms !== "number" || !(ohms > 0) || !Number.isFinite(ohms))
+      ) {
+        fields.problem("ohms", "is not a value in ohms above 0");
+      }
+      fields.hole("from");
+      fields.hole("to");
+      return;
+    }
+    case "led":
+      reference("led", ids.plainLeds, "plain lights");
+      fields.hole("anode");
+      fields.hole("cathode");
+      return;
+    case "button": {
+      reference("button", ids.buttons, "buttons");
+      const columns = fields.required("columns", "two columns");
+      if (
+        columns !== undefined &&
+        !(
+          Array.isArray(columns) &&
+          columns.length === 2 &&
+          columns.every((column) => Number.isInteger(column) && column >= 1 && column <= 30)
+        )
+      ) {
+        fields.problem("columns", "is not two columns, each from 1 to 30");
+      }
+      if (Object.hasOwn(part, "rows")) {
+        const rows = part.rows;
+        if (!Array.isArray(rows) || !ONE_HALF_ROWS.includes(rows.join(","))) {
+          fields.problem(
+            "rows",
+            `is not the rows of one half of the board: ${quoted(
+              ONE_HALF_ROWS.map(
+                (pair) =>
+                  `[${pair
+                    .split(",")
+                    .map((row) => `"${row}"`)
+                    .join(", ")}]`,
+              ),
+            )}, or left out for across the channel`,
+          );
+        }
+      }
+      return;
+    }
+    case "buzzer":
+      reference("buzzer", ids.buzzers, "buzzers");
+      fields.hole("plus");
+      fields.hole("minus");
+      return;
+    case "rgbLed":
+    case "ring":
+      reference("led", ids.rgbLeds, "RGB lights");
+      for (const leg of ["power", "dataOut", "ground", "dataIn"]) fields.hole(leg);
+      return;
+  }
+}
+
+/** The ids a circuit declares, by what they are, for the parts to refer to. */
+interface Ids {
+  readonly plainLeds: Set<string>;
+  readonly rgbLeds: Set<string>;
+  readonly buttons: Set<string>;
+  readonly buzzers: Set<string>;
+}
+
+/**
+ * Every problem with the shape of a circuit's data, its format already the current one. No problems
+ * means the data is a `Circuit`.
+ */
+export function shapeProblems(data: unknown): FieldProblem[] {
+  const problems: FieldProblem[] = [];
+  if (!isRecord(data)) return [{ path: "", message: "is not an object" }];
+  const circuit = new Fields(data, "", problems);
+  circuit.only(
+    [
+      "format",
+      "name",
+      "description",
+      "leds",
+      "buttons",
+      "buzzers",
+      "steps",
+      "script",
+      "scriptDoes",
+    ],
+    "a circuit",
+  );
+  circuit.text("name");
+  circuit.text("description");
+
+  const ids: Ids = {
+    plainLeds: new Set(),
+    rgbLeds: new Set(),
+    buttons: new Set(),
+    buzzers: new Set(),
+  };
+  const seen = new Map<string, string>();
+  const declare = (fields: Fields, path: string, into: Set<string>) => {
+    const id = fields.string("id");
+    if (id === undefined) return;
+    const before = seen.get(id);
+    if (before) fields.problem("id", `is \`${id}\`, which ${before} is already`);
+    else seen.set(id, path);
+    into.add(id);
+  };
+
+  circuit.list("leds", true, (fields, index) => {
+    const path = pathOf("leds", index);
+    const led = (data.leds as Record_[])[index] as Record_;
+    fields.only(["id", "name", "pin", "colour"], "a light");
+    const rgb = led.colour === "rgb";
+    declare(fields, path, rgb ? ids.rgbLeds : ids.plainLeds);
+    fields.text("name");
+    fields.oneOf("colour", [...LED_COLOURS, "rgb"]);
+    pinField(fields, rgb ? "rgb" : "gpio", path, problems);
+  });
+  circuit.list("buttons", true, (fields, index) => {
+    const path = pathOf("buttons", index);
+    fields.only(["id", "name", "pin", "colour"], "a button");
+    declare(fields, path, ids.buttons);
+    fields.text("name");
+    fields.oneOf("colour", BUTTON_COLOURS);
+    pinField(fields, "gpio", path, problems);
+  });
+  circuit.list("buzzers", true, (fields, index) => {
+    const path = pathOf("buzzers", index);
+    fields.only(["id", "name", "pin"], "a buzzer");
+    declare(fields, path, ids.buzzers);
+    fields.text("name");
+    pinField(fields, "gpio", path, problems);
+  });
+
+  circuit.list("steps", false, (fields, index) => {
+    fields.only(["title", "note", "parts"], "a step");
+    fields.text("title");
+    fields.text("note", true);
+    const step = (data.steps as Record_[])[index] as Record_;
+    fields.list("parts", false, (partFields, partIndex) => {
+      partProblems((step.parts as Record_[])[partIndex] as Record_, partFields, ids);
+    });
+  });
+  if (Array.isArray(data.steps) && data.steps.length === 0) {
+    circuit.problem("steps", "is empty: a circuit has a step at least");
+  }
+
+  circuit.text("script");
+  circuit.text("scriptDoes");
+  return problems;
+}
+
+/** Every text a circuit has, by its path. */
+export function textsOf(circuit: Circuit): [string, Text][] {
+  return [
+    ["name", circuit.name],
+    ["description", circuit.description],
+    ...(["leds", "buttons", "buzzers"] as const).flatMap((list) =>
+      (circuit[list] ?? []).map((part, index): [string, Text] => [
+        pathOf(pathOf(list, index), "name"),
+        part.name,
+      ]),
+    ),
+    ...circuit.steps.flatMap((step, index): [string, Text][] => [
+      [pathOf(pathOf("steps", index), "title"), step.title],
+      ...(step.note ? [[pathOf(pathOf("steps", index), "note"), step.note] as [string, Text]] : []),
+    ]),
+    ["script", circuit.script],
+    ["scriptDoes", circuit.scriptDoes],
+  ];
+}
+
+/** A circuit's languages: the languages of its name (ADR 0010), in the engine's order. */
+export const languagesOf = (circuit: Circuit): Language[] =>
+  LANGUAGES.filter((language) => circuit.name[language] !== undefined);
+
+/** Every text not in exactly the circuit's languages (ADR 0010). */
+export function languageProblems(circuit: Circuit): FieldProblem[] {
+  const languages = languagesOf(circuit);
+  const problems: FieldProblem[] = [];
+  for (const [path, text] of textsOf(circuit)) {
+    for (const language of languages) {
+      if (text[language] === undefined) {
+        problems.push({ path, message: `has no \`${language}\`, which the circuit's name has` });
+      }
+    }
+    for (const language of LANGUAGES) {
+      if (text[language] !== undefined && !languages.includes(language)) {
+        problems.push({
+          path: pathOf(path, language),
+          message: `is in a language the circuit's name is not: a circuit's languages are its name's`,
+        });
+      }
+    }
+  }
+  return problems;
+}
+
+/** A hole's name as a word: `a21`, `top-19`, `2:f5`. */
+const HOLE_NAME =
+  /(?<![\p{L}\p{N}])(?:2:)?(?:[a-j]\d{1,2}|(?:top|bottom)[+-]\d{1,2})(?![\p{L}\p{N}])/u;
+
+/**
+ * What a step's words may not say (ADR 0006): a hole, which the engine names from the parts so that
+ * a page never names one the drawing does not show, or a GPIO no part of the circuit is on.
+ */
+export function wordProblems(circuit: Circuit): FieldProblem[] {
+  const used = new Set([
+    ...(circuit.leds ?? []).map((led) => led.pin.gpio),
+    ...(circuit.buttons ?? []).map((button) => button.pin.gpio),
+    ...(circuit.buzzers ?? []).map((buzzer) => buzzer.pin.gpio),
+  ]);
+  const problems: FieldProblem[] = [];
+  circuit.steps.forEach((step, index) => {
+    for (const [key, text] of [
+      ["title", step.title],
+      ["note", step.note],
+    ] as const) {
+      for (const [language, words] of Object.entries(text ?? {})) {
+        const path = pathOf(pathOf(pathOf("steps", index), key), language);
+        const hole = HOLE_NAME.exec(words ?? "");
+        if (hole) {
+          problems.push({
+            path,
+            message: `names a hole, \`${hole[0]}\`: the engine names holes from the parts, so a step's words never do (ADR 0006)`,
+          });
+        }
+        for (const [, gpio] of (words ?? "").matchAll(/\bGP(\d+)\b/g)) {
+          if (!used.has(Number(gpio))) {
+            problems.push({ path, message: `names GP${gpio}, which no part of the circuit is on` });
+          }
+        }
+      }
+    }
+  });
+  return problems;
+}
+
+/**
+ * Every problem with a circuit's data but its wiring, in the order a person would fix them: its
+ * format alone if that is not this engine's, then its shape, then its languages and words.
+ */
+export function fieldProblems(data: unknown): FieldProblem[] {
+  const format = formatProblem(data);
+  if (format) return [format];
+  const shape = shapeProblems(data);
+  if (shape.length > 0) return shape;
+  const circuit = data as Circuit;
+  return [...languageProblems(circuit), ...wordProblems(circuit)];
+}

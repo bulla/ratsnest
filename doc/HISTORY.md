@@ -77,6 +77,24 @@ circuit now (M3).
 - [x] One page made from a circuit built in a test, in English, dark, at 0°, and looked at in
       Chromium beside scratchpi's
 
+### M3: circuits as data
+
+M3 is done: a circuit is one declarative file in format 1, every text keyed by language, read as
+data with Babel and never run, and checked field by field, its format first and its wiring last.
+`bun run ratsnest check` and `bun run ratsnest generate` run from source, and scratchpi's seven
+circuits are the examples, in English and French. Two records came out of it: the format is one file
+of types of its own, apart from the engine's model, which `init` will copy alone (ADR 0022), and a
+page is written into `pages/`, named by its four inputs (ADR 0023).
+
+- [x] The `Circuit` type, format 1: what a circuit is, where its parts go and its test script, every
+      text keyed by language (ADR 0006, ADR 0010, ADR 0015)
+- [x] A circuit file read as data, parsed and never run, with its fields checked and its format
+      refused when it is not the current one (ADR 0007, ADR 0015, ADR 0016)
+- [x] The declarative check, and the check that nothing in `src/` names a circuit (ADR 0007)
+- [x] scratchpi's seven circuits ported to `examples/` as declarative files, each passing the wiring
+      check (ADR 0014)
+- [x] `bun run ratsnest check` and `bun run ratsnest generate`, from source (ADR 0014)
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -117,3 +135,13 @@ circuit now (M3).
   LEDs, the page matched scratchpi's live one but for what was taken out, and its drawing, and the
   RGB LED's on two breadboards, were the same byte for byte. scratchpi's own generator does not run
   under Bun alone, so the comparison was with its live pages.
+- 2026-11-20: M3. Circuits as data, worked on autonomously at the owner's request, each milestone a
+  pull request stacked on the one before. Where the format's type lives was the one question left
+  open, and became ADR 0022: written anew, by ratsnest, apart from the engine's model, which kept
+  its shape under a new name, `ShownCircuit`. Where a page is written became ADR 0023. The reader
+  takes its node types from the parser's own signature, so `@babel/types`, the parser's dependency,
+  did not become ratsnest's. The command's tests found that it read files from the process's own
+  folder rather than the one it ran for, which running it by hand from the repository's root could
+  not show. The examples kept scratchpi's steps and scripts, French included, but not its
+  descriptions, which spoke of its app and its games, addressed a child as _tu_, and gave values
+  such as 5 V in words a circuit should leave to the engine.

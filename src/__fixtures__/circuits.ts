@@ -1,4 +1,4 @@
-import type { Circuit, Layout } from "../circuit";
+import type { Layout, ShownCircuit } from "../circuit";
 
 /**
  * The engine's own circuits, for its tests to build on and break on purpose. They are copies of
@@ -18,7 +18,7 @@ export const FIXTURE_IDS = [
 export type FixtureId = (typeof FIXTURE_IDS)[number];
 
 export interface Fixture {
-  readonly circuit: Circuit;
+  readonly circuit: ShownCircuit;
   readonly layout: Layout;
 }
 

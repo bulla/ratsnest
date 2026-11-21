@@ -1,5 +1,5 @@
 import type { Layout } from "./circuit";
-import { type Circuit, isRing } from "./circuit";
+import { isRing, type ShownCircuit } from "./circuit";
 import {
   coveredBy,
   type Hole,
@@ -104,7 +104,7 @@ function componentOf(part: Part): string | undefined {
 }
 
 /** How a problem names a part: the way the page would, with its holes. */
-function describe(part: Part, circuit: Circuit): string {
+function describe(part: Part, circuit: ShownCircuit): string {
   switch (part.kind) {
     case "wire":
       return `the ${WIRE_COLOUR[part.role]} wire from ${part.from} to ${part.to}`;
@@ -183,7 +183,7 @@ function shapeProblems(part: Part, name: string): string[] {
   }
 }
 
-export function wiringProblems(circuit: Circuit, layout: Layout): string[] {
+export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] {
   const parts = layout.steps.flatMap((step) => step.parts);
   const problems: string[] = [];
 
