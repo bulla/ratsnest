@@ -51,6 +51,22 @@ Every page is set in **Nunito 3.602**, by the Nunito Project Authors
   the subsets may keep it. Every page names the font under a family of ratsnest's own,
   `ratsnest Nunito`, only to tell it apart from a Nunito installed on the reader's device.
 
+## The picture of Ernest
+
+The picture at the top of the README, [`doc/ernest.webp`](doc/ernest.webp), is a photo of **Baby**, a
+pet rat from the Netherlands, **courtesy of Maaique**, his owner. It is a still from her video _Baby
+eating spaghetti_, which went round the world in October 2015 as "Spaghetti Rat", often reposted
+with another credit.
+
+- **Source:** <https://www.youtube.com/watch?v=bQ1nR-mf-qI>, on her YouTube channel,
+  <https://www.youtube.com/@maaique>
+- **Copyright:** Maaique
+- **Licence:** none published. The photo is not under ratsnest's MIT licence, and is not ratsnest's
+  to license.
+
+**Changes were made:** the spaghetti in his paws became a bundle of jumper wires, and the picture was
+resized and saved as WebP. The README calls him Ernest.
+
 ## What a release carries
 
 Every release of ratsnest attaches a `NOTICES` file, made by `bun run build` from the licences of

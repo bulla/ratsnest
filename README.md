@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="doc/ernest.webp" alt="Ernest, a grey rat, holding a bundle of jumper wires" width="260" height="408">
+  <img src="doc/ernest.webp" alt="Ernest, a grey rat, holding a bundle of jumper wires" width="260" height="408"><br>
+  <sub>Photo of Baby, courtesy of <a href="https://www.youtube.com/@maaique">Maaique</a>, rewired</sub>
 </p>
 
 <p align="center"><em>
@@ -70,5 +71,6 @@ Why it is built the way it is, one decision at a time, is in [`doc/adr/`](doc/ad
 
 ratsnest's code is MIT, held by bulla. The drawing of the Pico and the breadboard, in
 `src/drawing/`, is CC BY-SA 4.0, as an adaptation of Raspberry Pi's datasheet figure, and every page
-is set in Nunito, under the SIL Open Font License 1.1: [`ATTRIBUTION.md`](ATTRIBUTION.md) says what
-each is and what changed.
+is set in Nunito, under the SIL Open Font License 1.1. The picture of Ernest is a photo of Baby, a
+rat, courtesy of Maaique, his owner, and is not under the MIT licence. [`ATTRIBUTION.md`](ATTRIBUTION.md)
+says what each is and what changed.
