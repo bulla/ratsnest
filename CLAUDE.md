@@ -18,8 +18,9 @@ scratchpi's drawing, wiring check and page generator are copied in (M2), and cir
 (M3): format 1, read and never run, checked by `bun run ratsnest check` and drawn by
 `bun run ratsnest generate`, with scratchpi's seven circuits as the examples. Every page carries
 Nunito and the drawing is measured in it (M4), and is drawn at any quarter turn, every word
-upright and nothing crowding at any (M5), in either theme. M6's Russian and the rules every
-language is held to are next, and the milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
+upright and nothing crowding at any (M5), in either theme, and in English, French or Russian, every
+language held to ADR 0011's rules (M6). M6 waits only on a reader of Russian; M7, the executable and
+circuits projects, is next, and the milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -344,6 +345,13 @@ does not pay for it again.
   `ratsnest check` runs it. A tag goes onto two lines before it is refused; when it is refused, move the
   part, as the examples' pull-downs moved to the rail in M5. Searching further for a place only finds
   one too far from its resistor to read as its own.
+- **A value is as wide as its language writes it**, `4,7 кОм` wider than `4.7 kΩ`, so the crowding
+  check runs in every language a circuit has, and a problem met in some only names them. The test
+  circuit in three languages is refused in Russian at all four orientations, on purpose (ADR 0011,
+  rule 10): if a change to placing makes it pass, the test says so, and the Backlog's line on a
+  Russian Four buttons changes with it.
+- **`\s` matches the narrow no-break space**, so a typography check for English or Russian sees
+  U+202F before a colon as a space, which is right: only French writes one there.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

@@ -25,7 +25,7 @@ import { DEFAULT_LANGUAGE, type Language } from "../language";
 import { LIGHT_OHMS_RANGE } from "../netlist";
 import { isStanding, type Orientation } from "../orientation";
 import { DEFAULT_THEME, type Theme } from "../theme";
-import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place } from "./words";
+import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place, RUSSIAN_PAGE } from "./words";
 
 /**
  * A circuit's wiring page (ADR 0004): the breadboard drawing, the steps to build it, the parts to
@@ -42,6 +42,7 @@ import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place } from "./words";
 export const PAGE_WORDS: Readonly<Record<Language, PageWords>> = {
   en: ENGLISH_PAGE,
   fr: FRENCH_PAGE,
+  ru: RUSSIAN_PAGE,
 };
 
 /** What the page is made from that lives in files rather than in code. */
@@ -383,6 +384,7 @@ export function wiringPage(
     circuit.leds.find((l): l is PlainLed => l.id === led && l.colour !== "rgb")?.colour ?? "red";
   const svg = drawBreadboard({
     orientation,
+    ohms: words.ohms,
     parts: drawn,
     tags: tagsOf(layout),
     ledColour,

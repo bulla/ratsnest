@@ -38,8 +38,8 @@ export default {
     {
       title: { en: "Connect 3V3 to the top + rail", fr: "Reliez le 3V3 au rail + du haut" },
       note: {
-        en: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry 5 V from the USB, which a GPIO pin must never see.",
-        fr: "Prenez-le sur 3V3(OUT). VBUS et VSYS, au même bout du Pico, portent les 5 V de l’USB, qu’une broche GPIO ne doit jamais recevoir.",
+        en: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry the USB's full voltage, which a GPIO pin must never see.",
+        fr: "Prenez-le sur 3V3(OUT). VBUS et VSYS, au même bout du Pico, portent toute la tension de l’USB, qu’une broche GPIO ne doit jamais recevoir.",
       },
       parts: [{ kind: "wire", from: "a6", to: "top+7", role: "power" }],
     },

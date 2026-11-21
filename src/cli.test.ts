@@ -158,7 +158,7 @@ describe("ratsnest generate (ADR 0023)", () => {
     expect(run(folder, "generate", "circuits/lights.ts", "--language", "de")).toEqual({
       status: 2,
       out: "",
-      err: "ratsnest: --language is a language ratsnest writes, `en` or `fr`, not `de`",
+      err: "ratsnest: --language is a language ratsnest writes, `en`, `fr` or `ru`, not `de`",
     });
   });
 

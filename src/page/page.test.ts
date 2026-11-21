@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { FIXTURE_IDS, FIXTURES, type Fixture, type FixtureId } from "../__fixtures__/circuits";
+import { TRILINGUAL } from "../__fixtures__/trilingual";
 import type { Layout, ShownCircuit } from "../circuit";
 import { CYRILLIC, FONT_FAMILY, fileOf } from "../fonts";
+import { shownIn } from "../shown";
 import { PAGE_WORDS, type PageFiles, wiringPage } from "./page";
 
 const read = (name: string) => readFileSync(new URL(name, import.meta.url), "utf8");
@@ -544,5 +546,50 @@ describe("a page's inputs (ADR 0004, ADR 0005, ADR 0013)", () => {
 
   it("is titled by its circuit's name alone, as an Artifact's page is (ADR 0013)", () => {
     expect(wiringPage(circuit, layout, FILES)).toContain(`<title>${circuit.name}</title>`);
+  });
+});
+
+describe("a page in Russian (ADR 0010, ADR 0011)", () => {
+  const { circuit, layout } = shownIn(TRILINGUAL, "ru");
+  const html = wiringPage(circuit, layout, FILES, { language: "ru" });
+  /** What a reader reads, without the markup, the script or the styles. */
+  const prose = html
+    .slice(html.indexOf("<body>"))
+    .replace(/<(script|style|pre)[\s\S]*?<\/\1>/g, "")
+    .replace(/<[^>]+>/g, " ");
+
+  it("says its language, and carries the Cyrillic file it needs (rule 9, ADR 0012)", () => {
+    expect(html).toContain('<html lang="ru"');
+    expect(html.match(/@font-face/g)).toHaveLength(2);
+  });
+
+  it("says nothing in English that a reader would read", () => {
+    for (const words of [
+      "jumper",
+      "resistor",
+      "leg",
+      "Build it",
+      "Parts",
+      "breadboard",
+      " the ",
+      " and ",
+    ]) {
+      expect(prose).not.toContain(words);
+    }
+  });
+
+  it("writes Russian typography: no space before : ; ? !, and no straight quotes (rule 8)", () => {
+    expect(prose).not.toMatch(/\s[:;?!]/);
+    expect(prose).not.toContain('"');
+  });
+
+  it("writes its values in Russian, the drawing's included (rule 7)", () => {
+    expect(prose).toContain("4,7 кОм");
+    expect(html).not.toContain("4.7 kΩ");
+  });
+
+  it("writes every letter in Nunito's files", () => {
+    const lacking = new Set([...written(html)].filter((c) => !fileOf(c)));
+    expect([...lacking]).toEqual([]);
   });
 });

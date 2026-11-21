@@ -82,6 +82,8 @@ export interface PinTag {
 export interface Breadboard {
   /** The quarter turn it is drawn at, 0 by default: the USB on the left (ADR 0003). */
   readonly orientation?: Orientation;
+  /** How a value in ohms is said in the page's language, English by default (ADR 0011). */
+  readonly ohms?: (value: number) => string;
   readonly parts: readonly DrawnPart[];
   readonly tags: readonly PinTag[];
   /** The colour of a circuit's light, by its id. */
@@ -160,6 +162,12 @@ function text(x: number, y: number, body: string, attributes: string): string {
  * so that it stays upright. Set for the length of `drawBreadboard`, and 0 otherwise.
  */
 let turn: Orientation = 0;
+
+/**
+ * How the page says a value in ohms, in its own language (ADR 0011): `4.7 kΩ`, `4,7 kΩ`, `4,7 кОм`.
+ * Set for the length of `drawBreadboard` and `crowdingProblems`, and English otherwise.
+ */
+let sayOhms: (value: number) => string = (value) => formatOhms(value);
 
 /** What turns an element back about a point, so that it stands upright on the page. */
 const upright = (x: number, y: number): string =>
@@ -667,10 +675,14 @@ const standingTagOf = (label: string): { lines: string[]; w: number; h: number }
  * back. A tag on a board that lies flat is always on one line.
  */
 const tagFootprintOf = (label: string, lines = 1): { w: number; h: number } => {
-  if (!isStanding(turn)) return { w: tagWidthOf(label), h: TAG_HEIGHT_MM };
-  if (lines === 1) return { w: TAG_HEIGHT_MM, h: tagWidthOf(label) };
+  const standing = isStanding(turn);
+  if (lines === 1) {
+    return standing
+      ? { w: TAG_HEIGHT_MM, h: tagWidthOf(label) }
+      : { w: tagWidthOf(label), h: TAG_HEIGHT_MM };
+  }
   const { w, h } = standingTagOf(label);
-  return { w: h, h: w };
+  return standing ? { w: h, h: w } : { w, h };
 };
 
 /** Whether a segment, widened by `reach` either side, touches a rectangle. */
@@ -721,10 +733,18 @@ function placeTag(
   const along = (t: number) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
   // The tag's footprint on the board's own drawing: upright on a standing board, it is as wide
   // there as it is tall on the page. At 0° the distances are the ones it has always had.
-  const label = formatOhms(part.ohms);
+  const label = sayOhms(part.ohms);
   const standing = isStanding(turn);
-  const out = standing ? tagFootprintOf(label).h / 2 + 1.65 : 2.8;
-  const aside = standing ? [2.8, -2.8, 3.9, -3.9] : [5, -5, 6.5, -6.5];
+  // On a flat board, the places a tag on one line has always had, then the same for two lines, as
+  // far out as their depth needs: a value written wider, as Russian writes it, may need them.
+  const flatOut = (lines: number) => (lines === 1 ? 2.8 : tagFootprintOf(label, 2).h / 2 + 1.65);
+  const flatAside = (lines: number) => {
+    if (lines === 1) return [5, -5, 6.5, -6.5];
+    const side = tagFootprintOf(label, 2).w / 2 + 1.6;
+    return [side, -side, side + 1.5, -side - 1.5];
+  };
+  const out = standing ? tagFootprintOf(label).h / 2 + 1.65 : flatOut(1);
+  const aside = standing ? [2.8, -2.8, 3.9, -3.9] : flatAside(1);
   const towards = mid.y < CHANNEL_Y_MM ? out : -out;
   // Where it has always gone first, then the other side, then further along and further out.
   // On a standing board, everywhere within three holes of the resistor's middle, nearest first, on
@@ -819,12 +839,30 @@ function placeTag(
     }
     return true;
   };
-  for (const at of candidates) {
-    for (const lines of standing ? [1, 2] : [1]) {
-      const { w, h } = tagFootprintOf(label, lines);
-      if (clear(at, w, h)) return { at, lines };
+  if (standing) {
+    for (const at of candidates) {
+      for (const lines of [1, 2]) {
+        const { w, h } = tagFootprintOf(label, lines);
+        if (clear(at, w, h)) return { at, lines };
+      }
     }
+    return undefined;
   }
+  const one = tagFootprintOf(label, 1);
+  for (const at of candidates) if (clear(at, one.w, one.h)) return { at, lines: 1 };
+  const two = tagFootprintOf(label, 2);
+  const deeper = mid.y < CHANNEL_Y_MM ? flatOut(2) : -flatOut(2);
+  const twoLine: Point[] = horizontal
+    ? [0.5, 0.35, 0.65].flatMap((t) =>
+        [deeper, -deeper, deeper * 1.3, -deeper * 1.3].map((dy) => ({
+          x: along(t).x,
+          y: along(t).y + dy,
+        })),
+      )
+    : [0.5, 0.35, 0.65, 0.2, 0.8].flatMap((t) =>
+        flatAside(2).map((dx) => ({ x: along(t).x + dx, y: along(t).y })),
+      );
+  for (const at of twoLine) if (clear(at, two.w, two.h)) return { at, lines: 2 };
   return undefined;
 }
 
@@ -897,7 +935,7 @@ function drawResistor(from: Hole, to: Hole, ohms: number, tag: Point, lines = 1)
   );
 
   // The value, on a tag where `tagOf` found room for it: never over a rail.
-  const label = formatOhms(ohms);
+  const label = sayOhms(ohms);
   const tagWidth = tagWidthOf(label);
 
   return (
@@ -1542,10 +1580,12 @@ function glowGradient(colour: LedColour): string {
 /** The whole picture, as one `<svg>` element, at the quarter turn it asks for (ADR 0003). */
 export function drawBreadboard(drawing: Breadboard): string {
   turn = drawing.orientation ?? 0;
+  sayOhms = drawing.ohms ?? formatOhms;
   try {
     return drawTurned(drawing);
   } finally {
     turn = 0;
+    sayOhms = formatOhms;
   }
 }
 
@@ -1671,8 +1711,13 @@ const resistorName = (part: Extract<Part, { kind: "resistor" }>): string =>
  * tag or a chip on a chip. The words printed on the board itself and the labels in the margin are
  * placed where nothing else is, and are not asked about.
  */
-export function crowdingProblems(parts: readonly Part[], orientation: Orientation): string[] {
+export function crowdingProblems(
+  parts: readonly Part[],
+  orientation: Orientation,
+  ohms: (value: number) => string = formatOhms,
+): string[] {
   turn = orientation;
+  sayOhms = ohms;
   try {
     const problems: string[] = [];
     const resistors = parts.flatMap((part) => (part.kind === "resistor" ? [part] : []));
@@ -1684,7 +1729,7 @@ export function crowdingProblems(parts: readonly Part[], orientation: Orientatio
         continue;
       }
       const clear = placed.at;
-      const { w, h } = tagFootprintOf(formatOhms(resistor.ohms), placed.lines);
+      const { w, h } = tagFootprintOf(sayOhms(resistor.ohms), placed.lines);
       tags.push({
         name: `${resistorName(resistor)}'s value tag`,
         box: { x: clear.x - w / 2, y: clear.y - h / 2, w, h },
@@ -1709,5 +1754,6 @@ export function crowdingProblems(parts: readonly Part[], orientation: Orientatio
     return problems;
   } finally {
     turn = 0;
+    sayOhms = formatOhms;
   }
 }

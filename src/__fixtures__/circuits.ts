@@ -87,7 +87,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
         {
           title: "Connect 3V3 to the top + rail",
-          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry 5 V from the USB, which a GPIO pin must never see.",
+          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry the USB's full voltage, which a GPIO pin must never see.",
           parts: [{ kind: "wire", from: "a6", to: "top+7", role: "power" }],
         },
         {
@@ -141,7 +141,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
         {
           title: "Connect 3V3 to the top + rail",
-          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry 5 V from the USB, which a GPIO pin must never see.",
+          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry the USB's full voltage, which a GPIO pin must never see.",
           parts: [{ kind: "wire", from: "a6", to: "top+7", role: "power" }],
         },
         {
@@ -174,7 +174,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       script:
         "from machine import Pin, PWM\nfrom time import sleep\n\nbuzzer = PWM(Pin(15))\nbtn1 = Pin(16, Pin.IN)\n\ntry:\n    while True:\n        if btn1.value():\n            buzzer.freq(880)\n            buzzer.duty_u16(32768)\n        else:\n            buzzer.duty_u16(0)\n        sleep(0.02)\nfinally:\n    buzzer.duty_u16(0)",
       scriptDoes:
-        "Hold the button down and the buzzer plays LA, 880 Hz. Let go and it stops. Press Stop in Thonny to end the script.",
+        "Hold the button down and the buzzer plays a high A. Let go and it stops. Press Stop in Thonny to end the script.",
     },
   },
   "button-each-side": {
@@ -196,7 +196,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
         {
           title: "Connect 3V3 to the top + rail",
-          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry 5 V from the USB, which a GPIO pin must never see.",
+          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry the USB's full voltage, which a GPIO pin must never see.",
           parts: [{ kind: "wire", from: "a6", to: "top+7", role: "power" }],
         },
         {
@@ -255,7 +255,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       steps: [
         {
           title: "Connect 3V3 to the top + rail",
-          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry 5 V from the USB, which a GPIO pin must never see.",
+          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry the USB's full voltage, which a GPIO pin must never see.",
           parts: [{ kind: "wire", from: "a6", to: "top+7", role: "power" }],
         },
         {
@@ -354,7 +354,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       steps: [
         {
           title: "Connect 3V3 to the top + rail",
-          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry 5 V from the USB, which a GPIO pin must never see.",
+          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry the USB's full voltage, which a GPIO pin must never see.",
           parts: [{ kind: "wire", from: "a6", to: "top+7", role: "power" }],
         },
         {
@@ -427,8 +427,8 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
           parts: [{ kind: "resistor", ohms: 4700, from: "h28", to: "bottom-28" }],
         },
         {
-          title: "Take 5 V, ground and GP28 up to a second breadboard",
-          note: "Snap a second half-size breadboard onto the top edge of the first, column 1 over column 1: they are made to join along their long sides. The LED takes 5 V from VBUS rather than 3V3, and 5 V must never reach a GPIO pin.",
+          title: "Take VBUS, ground and GP28 up to a second breadboard",
+          note: "Snap a second half-size breadboard onto the top edge of the first, column 1 over column 1: they are made to join along their long sides. The LED takes its power from VBUS rather than 3V3, and VBUS must never reach a GPIO pin.",
           parts: [
             { kind: "wire", from: "a2", to: "2:j2", role: "power" },
             { kind: "wire", from: "a4", to: "2:j4", role: "ground" },
@@ -475,7 +475,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
         {
           title: "Connect 3V3 to the top + rail",
-          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry 5 V from the USB, which a GPIO pin must never see.",
+          note: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry the USB's full voltage, which a GPIO pin must never see.",
           parts: [{ kind: "wire", from: "a6", to: "top+7", role: "power" }],
         },
         {
@@ -496,12 +496,12 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
           ],
         },
         {
-          title: "Take 5 V from VBUS over the board",
-          note: "A long jumper that arches over the top of the board, since everything along the top rows is taken. The ring takes 5 V from VBUS rather than 3V3, and 5 V must never reach a GPIO pin or the button.",
+          title: "Take VBUS over the board",
+          note: "A long jumper that arches over the top of the board, since everything along the top rows is taken. The ring takes its power from VBUS rather than 3V3, and VBUS must never reach a GPIO pin or the button.",
           parts: [{ kind: "wire", from: "a2", to: "a28", role: "power", arch: true }],
         },
         {
-          title: "Bring 5 V and ground across the channel",
+          title: "Bring VBUS and ground across the channel",
           note: "Ground comes from the strip BTN1's pull-down already joins to the − rail.",
           parts: [
             { kind: "wire", from: "e27", to: "f27", role: "ground" },

@@ -32,8 +32,8 @@ export default {
     {
       title: { en: "Connect 3V3 to the top + rail", fr: "Reliez le 3V3 au rail + du haut" },
       note: {
-        en: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry 5 V from the USB, which a GPIO pin must never see.",
-        fr: "Prenez-le sur 3V3(OUT). VBUS et VSYS, au même bout du Pico, portent les 5 V de l’USB, qu’une broche GPIO ne doit jamais recevoir.",
+        en: "Take it from 3V3(OUT). VBUS and VSYS, at the same end of the Pico, carry the USB's full voltage, which a GPIO pin must never see.",
+        fr: "Prenez-le sur 3V3(OUT). VBUS et VSYS, au même bout du Pico, portent toute la tension de l’USB, qu’une broche GPIO ne doit jamais recevoir.",
       },
       parts: [{ kind: "wire", from: "a6", to: "top+7", role: "power" }],
     },
@@ -65,19 +65,19 @@ export default {
     },
     {
       title: {
-        en: "Take 5 V from VBUS over the board",
-        fr: "Amenez le 5 V de VBUS par-dessus la plaque",
+        en: "Take VBUS over the board",
+        fr: "Amenez VBUS par-dessus la plaque",
       },
       note: {
-        en: "A long jumper that arches over the top of the board, since everything along the top rows is taken. The ring takes 5 V from VBUS rather than 3V3, and 5 V must never reach a GPIO pin or the button.",
-        fr: "Un long fil qui passe par-dessus le haut de la plaque, car tout est pris le long des rangées du haut. L’anneau prend le 5 V sur VBUS plutôt que le 3V3, et le 5 V ne doit jamais atteindre une broche GPIO ni le bouton.",
+        en: "A long jumper that arches over the top of the board, since everything along the top rows is taken. The ring takes its power from VBUS rather than 3V3, and VBUS must never reach a GPIO pin or the button.",
+        fr: "Un long fil qui passe par-dessus le haut de la plaque, car tout est pris le long des rangées du haut. L’anneau prend son alimentation sur VBUS plutôt que sur le 3V3, et VBUS ne doit jamais atteindre une broche GPIO ni le bouton.",
       },
       parts: [{ kind: "wire", from: "a2", to: "a28", role: "power", arch: true }],
     },
     {
       title: {
-        en: "Bring 5 V and ground across the channel",
-        fr: "Amenez le 5 V et la masse de l’autre côté de la rainure centrale",
+        en: "Bring VBUS and ground across the channel",
+        fr: "Amenez VBUS et la masse de l’autre côté de la rainure centrale",
       },
       note: {
         en: "Ground comes from the strip BTN1's pull-down already joins to the − rail.",

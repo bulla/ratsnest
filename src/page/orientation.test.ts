@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { JSDOM } from "jsdom";
 import { FIXTURE_IDS, FIXTURES, type FixtureId } from "../__fixtures__/circuits";
+import { TRILINGUAL } from "../__fixtures__/trilingual";
 import { ORIENTATIONS, type Orientation } from "../orientation";
+import { shownIn } from "../shown";
 import { PAGE_FILES } from "./files";
 import { wiringPage } from "./page";
 
@@ -177,4 +179,24 @@ describe("a value tag on a standing board", () => {
     expect(standing).toContain("4.7");
     expect(standing).toContain("kΩ");
   });
+});
+
+describe("the engine's three-language test circuit in Russian, at every orientation (ADR 0011)", () => {
+  const { circuit, layout } = shownIn(TRILINGUAL, "ru");
+
+  it.each([...ORIENTATIONS])(
+    "writes every word upright, inside the picture, at %i°",
+    (orientation) => {
+      const html = wiringPage(circuit, layout, PAGE_FILES, { language: "ru", orientation });
+      const { svg, view } = drawingOf(html);
+      for (const word of svg.querySelectorAll("text")) {
+        const at = placed(word);
+        expect(at.degrees).toBe(0);
+        expect(at.x).toBeGreaterThanOrEqual(view.x);
+        expect(at.x).toBeLessThanOrEqual(view.x + view.w);
+        expect(at.y).toBeGreaterThanOrEqual(view.y);
+        expect(at.y).toBeLessThanOrEqual(view.y + view.h);
+      }
+    },
+  );
 });

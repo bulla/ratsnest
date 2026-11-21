@@ -11,8 +11,8 @@
  * share a hole, the checks say.
  */
 
-/** A language ratsnest writes a page in: English or French (ADR 0010). */
-export type Language = "en" | "fr";
+/** A language ratsnest writes a page in: English, French or Russian (ADR 0010). */
+export type Language = "en" | "fr" | "ru";
 
 /**
  * Words a reader sees, in each language the circuit is written in: one at least, and the same

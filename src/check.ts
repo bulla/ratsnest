@@ -4,6 +4,7 @@ import { fieldProblems, languagesOf } from "./fields";
 import type { Circuit } from "./format";
 import { wiringProblems } from "./netlist";
 import { ORIENTATIONS } from "./orientation";
+import { PAGE_WORDS } from "./page/page";
 import { type Problem, readCircuit } from "./read";
 import { shownIn } from "./shown";
 
@@ -45,11 +46,28 @@ export function checkSource(source: string, file: string): Checked {
   const wiring = wiringProblems(shown.circuit, shown.layout);
   if (wiring.length > 0) return { problems: wiring.map((message) => ({ file, message })) };
 
-  // Every word the engine places, clear at every quarter turn the page can be drawn at (ADR 0003).
+  // Every word the engine places, clear at every quarter turn the page can be drawn at (ADR 0003),
+  // in every language the circuit has, since a value is as wide as its language writes it (ADR 0011).
   const parts = circuit.steps.flatMap((step) => step.parts);
-  const crowding = ORIENTATIONS.flatMap((orientation) =>
-    crowdingProblems(parts, orientation).map((problem) => `at ${orientation}°, ${problem}`),
-  );
+  // A problem met in some of the circuit's languages only says which.
+  const languages = languagesOf(circuit);
+  const met = new Map<string, Set<string>>();
+  for (const each of languages) {
+    for (const orientation of ORIENTATIONS) {
+      for (const problem of crowdingProblems(parts, orientation, PAGE_WORDS[each].ohms)) {
+        const key = `${orientation}°|${problem}`;
+        met.set(key, (met.get(key) ?? new Set()).add(each));
+      }
+    }
+  }
+  const crowding = [...met].map(([key, inWhich]) => {
+    const [orientation, problem] = key.split("|");
+    const where =
+      inWhich.size === languages.length
+        ? ""
+        : ` in ${[...inWhich].map((each) => `\`${each}\``).join(" and ")}`;
+    return `at ${orientation}${where}, ${problem}`;
+  });
   if (crowding.length > 0) return { problems: crowding.map((message) => ({ file, message })) };
 
   return { circuit, problems: [] };

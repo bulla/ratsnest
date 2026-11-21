@@ -442,6 +442,50 @@ export function languageProblems(circuit: Circuit): FieldProblem[] {
   return problems;
 }
 
+/**
+ * The Cyrillic letters Unicode's list of confusables pairs with a Latin one, folded to it before a hole
+ * or a pin is looked for (ADR 0011): in Russian, `а21` with a Cyrillic `а` is a whole Cyrillic word,
+ * and reads as the hole `a21`.
+ */
+const LOOK_ALIKES: Readonly<Record<string, string>> = {
+  а: "a",
+  в: "b",
+  с: "c",
+  ԁ: "d",
+  е: "e",
+  һ: "h",
+  і: "i",
+  ј: "j",
+  к: "k",
+  м: "m",
+  н: "h",
+  о: "o",
+  р: "p",
+  т: "t",
+  у: "y",
+  х: "x",
+  ԍ: "g",
+  А: "A",
+  В: "B",
+  С: "C",
+  Е: "E",
+  Ԍ: "G",
+  Н: "H",
+  І: "I",
+  Ј: "J",
+  К: "K",
+  М: "M",
+  О: "O",
+  Р: "P",
+  Т: "T",
+  Х: "X",
+  У: "Y",
+};
+
+/** A text with every Cyrillic look-alike folded to its Latin letter. */
+export const folded = (text: string): string =>
+  [...text].map((character) => LOOK_ALIKES[character] ?? character).join("");
+
 /** A hole's name as a word: `a21`, `top-19`, `2:f5`. */
 const HOLE_NAME =
   /(?<![\p{L}\p{N}])(?:2:)?(?:[a-j]\d{1,2}|(?:top|bottom)[+-]\d{1,2})(?![\p{L}\p{N}])/u;
@@ -464,14 +508,14 @@ export function wordProblems(circuit: Circuit): FieldProblem[] {
     ] as const) {
       for (const [language, words] of Object.entries(text ?? {})) {
         const path = pathOf(pathOf(pathOf("steps", index), key), language);
-        const hole = HOLE_NAME.exec(words ?? "");
+        const hole = HOLE_NAME.exec(folded(words ?? ""));
         if (hole) {
           problems.push({
             path,
             message: `names a hole, \`${hole[0]}\`: the engine names holes from the parts, so a step's words never do (ADR 0006)`,
           });
         }
-        for (const [, gpio] of (words ?? "").matchAll(/\bGP(\d+)\b/g)) {
+        for (const [, gpio] of folded(words ?? "").matchAll(/\bGP(\d+)\b/g)) {
           if (!used.has(Number(gpio))) {
             problems.push({ path, message: `names GP${gpio}, which no part of the circuit is on` });
           }
@@ -479,6 +523,88 @@ export function wordProblems(circuit: Circuit): FieldProblem[] {
       }
     }
   });
+  return problems;
+}
+
+/**
+ * A number followed by a unit, which a circuit's own words never write: the engine writes every value,
+ * in the page's language (ADR 0011). `3V3`, a pin's name, has no space and a digit after, and passes.
+ */
+const VALUE =
+  /(?<![\p{L}\d])\d+(?:[.,]\d+)?\s?(?:k?Ω|к?Ом|[mм]?[AА]|[VВ]|mm|мм|cm|см|kHz|Hz|кГц|Гц|ms|мс)(?![\p{L}\d])/u;
+
+/** What each language's typography asks of the punctuation in a text (ADR 0011). */
+function typographyProblems(language: string, words: string): string[] {
+  const problems: string[] = [];
+  const punctuation = /[:;?!]/g;
+  for (const match of words.matchAll(punctuation)) {
+    const at = match.index ?? 0;
+    const before = words[at - 1] ?? "";
+    const after = words[at + 1] ?? "";
+    // A colon between two digits, as in a time, is not punctuation after a word.
+    if (/\d/.test(before) && /\d/.test(after)) continue;
+    if (language === "fr" && before !== "\u202F") {
+      problems.push(
+        `puts no narrow no-break space (U+202F) before \`${match[0]}\`, as French does`,
+      );
+    }
+    if (language !== "fr" && /\s/.test(before)) {
+      problems.push(
+        `puts a space before \`${match[0]}\`, which ${language === "ru" ? "Russian" : "English"} does not`,
+      );
+    }
+  }
+  if (language === "fr") {
+    if (/«(?!\u202F)/.test(words) || /(?<!\u202F)»/.test(words)) {
+      problems.push("puts no narrow no-break space (U+202F) inside `« »`, as French does");
+    }
+  }
+  if ((language === "fr" || language === "ru") && words.includes('"')) {
+    problems.push("writes straight quotes, where it writes `« »`");
+  }
+  return [...new Set(problems)];
+}
+
+/**
+ * Every rule ADR 0011 holds a circuit's words to that a test can check: NFC, one script to a word, no
+ * value written out, and each language's typography. The script is code, and only NFC applies to it.
+ */
+export function writingProblems(circuit: Circuit): FieldProblem[] {
+  const problems: FieldProblem[] = [];
+  for (const [path, text] of textsOf(circuit)) {
+    for (const [language, words] of Object.entries(text)) {
+      if (words === undefined) continue;
+      const at = pathOf(path, language);
+      if (words.normalize("NFC") !== words) {
+        problems.push({
+          path: at,
+          message:
+            "is not written in Unicode's NFC form: write each letter composed, and the ohm sign as Ω (U+03A9) (ADR 0011)",
+        });
+      }
+      if (path === "script") continue;
+      const said = (message: string) =>
+        problems.push({ path: at, message: `${message} (ADR 0011)` });
+      if (language === "ru") {
+        const mixed = words.match(
+          /\p{L}*(?:\p{Script=Latin}\p{L}*\p{Script=Cyrillic}|\p{Script=Cyrillic}\p{L}*\p{Script=Latin})\p{L}*/u,
+        );
+        if (mixed) said(`mixes Latin and Cyrillic letters in one word, \`${mixed[0]}\``);
+      } else {
+        const cyrillic = words.match(/\p{Script=Cyrillic}/u);
+        if (cyrillic)
+          said(
+            `has a Cyrillic letter, \`${cyrillic[0]}\`, in ${language === "fr" ? "French" : "English"}`,
+          );
+      }
+      const value = VALUE.exec(words);
+      if (value)
+        said(
+          `writes a value, \`${value[0]}\`: the engine writes every value, in the page's language`,
+        );
+      for (const message of typographyProblems(language, words)) said(message);
+    }
+  }
   return problems;
 }
 
@@ -521,5 +647,10 @@ export function fieldProblems(data: unknown): FieldProblem[] {
   const shape = shapeProblems(data);
   if (shape.length > 0) return shape;
   const circuit = data as Circuit;
-  return [...languageProblems(circuit), ...wordProblems(circuit), ...characterProblems(circuit)];
+  return [
+    ...languageProblems(circuit),
+    ...wordProblems(circuit),
+    ...writingProblems(circuit),
+    ...characterProblems(circuit),
+  ];
 }

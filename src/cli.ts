@@ -177,7 +177,9 @@ function generate(args: readonly string[], cwd: string, io: Io): number {
   const written = has.map((each) => `\`${each}\``).join(" and ");
   if (asked !== undefined && !(LANGUAGES as readonly string[]).includes(asked)) {
     throw new Usage(
-      `--language is a language ratsnest writes, ${LANGUAGES.map((each) => `\`${each}\``).join(" or ")}, not \`${asked}\``,
+      `--language is a language ratsnest writes, ${LANGUAGES.slice(0, -1)
+        .map((each) => `\`${each}\``)
+        .join(", ")} or \`${LANGUAGES.at(-1)}\`, not \`${asked}\``,
     );
   }
   if (asked !== undefined && !has.includes(asked as Language)) {
