@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="doc/ernest.webp" alt="Ernest, a grey rat, holding a bundle of jumper wires" width="260" height="408"><br>
-  <sub>Photo of Baby, courtesy of <a href="https://www.youtube.com/@maaique">Maaique</a>, rewired</sub>
+  <img src="doc/ernest.webp" alt="Ernest, a grey rat, holding a bundle of jumper wires" width="260" height="408">
 </p>
 
 <p align="center"><em>
@@ -17,6 +16,10 @@ one self-contained page showing how to build it on a breadboard with a Raspberry
 by step: the drawing, the steps that pick out their parts, the parts list and a MicroPython script to
 test it with. A page is drawn at any quarter turn, in a dark or a light theme, and in English, French
 or Russian.
+
+> ⚠️ **ratsnest is still very much a work in progress, and can occasionally break.** Its circuit
+> format and its commands still change. Run `ratsnest update` in your circuits project to move it to
+> the latest ratsnest: it upgrades every circuit to the latest format and checks them.
 
 ratsnest is not released yet: its first release, 0.1.0, is M9 in [the roadmap](doc/ROADMAP.md), and
 until then the steps below work with a build of your own.
