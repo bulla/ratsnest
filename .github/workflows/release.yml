@@ -1,0 +1,118 @@
+# Every pushed tag v* (ADR 0017, ADR 0020), on Bun alone: the tag is checked against the version
+# rule before anything else, the five executables and NOTICES are built, each executable makes the
+# examples' pages on its own system, and only then is the GitHub Release made, with the version's
+# section of the changelog. A tag pushed by hand meets the same check.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  rule:
+    name: the version rule
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The previous release's tag, and its snapshot, are what this one is checked against.
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun scripts/release.ts --check ${{ github.ref_name }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notes
+          path: dist/notes.md
+
+  build:
+    name: the executables
+    needs: rule
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: executables
+          path: |
+            dist/ratsnest-*
+            dist/NOTICES
+
+  run:
+    name: run on ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            executable: ratsnest-linux-x64
+          - os: windows-latest
+            executable: ratsnest-windows-x64.exe
+          - os: macos-latest
+            executable: ratsnest-darwin-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - run: bun install --frozen-lockfile
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: executables
+          path: dist
+
+      - name: let it run
+        if: runner.os != 'Windows'
+        run: chmod +x dist/${{ matrix.executable }}
+
+      - run: bun scripts/compiled.ts dist/${{ matrix.executable }}
+
+  publish:
+    name: the GitHub Release
+    needs: run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: executables
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: notes
+          path: notes
+
+      - name: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/ratsnest-* dist/NOTICES \
+            --repo "${{ github.repository }}" \
+            --title "ratsnest ${TAG#v}" \
+            --notes-file notes/notes.md
