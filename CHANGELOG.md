@@ -55,3 +55,6 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 - Every page is set in Nunito and carries it, so it looks the same on every device, and every word
   the drawing writes is measured in it. `ratsnest check` refuses a circuit whose words hold a
   character Nunito lacks, such as `→`.
+- Three or more buttons in a line on the channel each have a leader of their own to their label,
+  on alternating sides of the channel, so no two share a line. A part on the second board's near
+  half, such as the RGB LED by the USB, has its label past that end of the board, not the far one.

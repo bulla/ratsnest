@@ -95,13 +95,19 @@ describe.each([...ORIENTATIONS])("every test circuit's drawing at %i°", (orient
 });
 
 describe("the labels (ADR 0024)", () => {
+  /** A label's title, where it lands in the picture. */
+  type Placed = { readonly x: number; readonly y: number };
+
   /** Where the board's picture and its labels' titles are, in the picture. */
-  const layoutOf = (orientation: Orientation) => {
-    const { svg } = drawingOf(page("d-pad", orientation));
+  const layoutOf = (orientation: Orientation, id: FixtureId = "d-pad") => {
+    const { svg } = drawingOf(page(id, orientation));
     const board = [...svg.querySelectorAll("text")]
       .filter((each) => /^(?:[a-j]|\d+)$/.test(each.textContent ?? ""))
       .map(placed);
-    const titles = [...svg.querySelectorAll(".callout-title")].map(placed);
+    const titles = [...svg.querySelectorAll(".callout-title")].map((title) => ({
+      ...placed(title),
+      word: title.textContent ?? "",
+    }));
     const extent = (values: number[]) => ({ min: Math.min(...values), max: Math.max(...values) });
     return {
       board: { x: extent(board.map((p) => p.x)), y: extent(board.map((p) => p.y)) },
@@ -118,6 +124,25 @@ describe("the labels (ADR 0024)", () => {
     for (const title of left.titles) expect(title.x).toBeLessThan(left.board.x.min);
     const above = layoutOf(270);
     for (const title of above.titles) expect(title.y).toBeLessThan(above.board.y.min);
+  });
+
+  it("stand past the near end for a part on the second board's near half (ADR 0027)", () => {
+    // The RGB LED is at columns 2 to 5 of the second board; the buttons are on the first.
+    for (const orientation of ORIENTATIONS) {
+      const { board, titles } = layoutOf(orientation, "rgb-led-and-d-pad");
+      const led = titles.filter((title) => title.word === "RGB LED");
+      const buttons = titles.filter((title) => title.word !== "RGB LED");
+      expect(led).toHaveLength(1);
+      expect(buttons).toHaveLength(4);
+      const past = {
+        0: { near: (t: Placed) => t.x < board.x.min, far: (t: Placed) => t.x > board.x.max },
+        90: { near: (t: Placed) => t.y < board.y.min, far: (t: Placed) => t.y > board.y.max },
+        180: { near: (t: Placed) => t.x > board.x.max, far: (t: Placed) => t.x < board.x.min },
+        270: { near: (t: Placed) => t.y > board.y.max, far: (t: Placed) => t.y < board.y.min },
+      }[orientation];
+      for (const title of led) expect(past.near(title), `${orientation}°`).toBe(true);
+      for (const title of buttons) expect(past.far(title), `${orientation}°`).toBe(true);
+    }
   });
 
   it("keep apart in a row on a standing board, each as wide as its words", () => {
