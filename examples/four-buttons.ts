@@ -105,8 +105,11 @@ export default {
         en: "Hold GP13 low with a resistor",
         fr: "Maintenez GP13 au niveau bas avec une résistance",
       },
-      note: { en: "By the pin, as BTN3's is.", fr: "Près de la broche, comme celle de BTN3." },
-      parts: [{ kind: "resistor", ohms: 4700, from: "i18", to: "i14" }],
+      note: {
+        en: "Straight from the pin to the − rail: between the Pico and the rail there is no room for it to lie flat.",
+        fr: "Directement de la broche au rail − : entre le Pico et le rail, il n’y a pas la place de la coucher.",
+      },
+      parts: [{ kind: "resistor", ohms: 4700, from: "i18", to: "bottom-17" }],
     },
     {
       title: { en: "BTN2 on GP15", fr: "BTN2 sur GP15" },
