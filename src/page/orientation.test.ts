@@ -153,3 +153,28 @@ describe("the page around a turned drawing (ADR 0003)", () => {
     }
   });
 });
+
+describe("a value tag on a standing board", () => {
+  /** Every value tag's lines, as the page writes them. */
+  const tags = (html: string) => {
+    const { svg } = drawingOf(html);
+    return [...svg.querySelectorAll("text")]
+      .filter(
+        (each) =>
+          each.getAttribute("font-size") === "1.6" && each.getAttribute("font-weight") === "800",
+      )
+      .map((each) => each.textContent);
+  };
+
+  it("is on one line wherever the board lies flat", () => {
+    for (const orientation of [0, 180] as const) {
+      expect(tags(page("d-pad", orientation)).every((each) => each?.includes("Ω"))).toBe(true);
+    }
+  });
+
+  it("goes onto two lines, the number over its unit, where one line has no room", () => {
+    const standing = tags(page("d-pad", 90));
+    expect(standing).toContain("4.7");
+    expect(standing).toContain("kΩ");
+  });
+});

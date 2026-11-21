@@ -59,10 +59,7 @@ export default {
         en: "Without it the pin floats while the button is up, and reads a press nobody made.",
         fr: "Sans elle, la broche flotte tant que le bouton est relâché, et lit un appui que personne n’a fait.",
       },
-      parts: [
-        { kind: "resistor", ohms: 4700, from: "i23", to: "i26" },
-        { kind: "wire", from: "j26", to: "bottom-26", role: "ground" },
-      ],
+      parts: [{ kind: "resistor", ohms: 4700, from: "i23", to: "bottom-22" }],
     },
     {
       title: { en: "BTN1 on GP16", fr: "BTN1 sur GP16" },

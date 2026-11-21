@@ -15,6 +15,8 @@ import {
   legsOf,
   type Part,
   PICO_ORIGIN_MM,
+  pinOfStrip,
+  printedName,
   RAIL_COLUMNS,
   RAILS,
   type Rail,
@@ -493,20 +495,37 @@ export function tagRows(tags: readonly PinTag[]): Map<PinTag, number> {
 }
 
 /** A pin's name on a chip beside it, in the header's own colour coding (`chips.ts`). */
-function drawTag(tag: PinTag, row: number): string {
-  const pin = HEADER_PINS.find((header) => header.number === tag.pin);
-  if (!pin) throw new Error(`The Pico has no pin ${tag.pin}`);
-  const style = CHIP_STYLES[pin.kind];
-  const { x, y } = holeCentre(holeOfPin(pin.number));
-  const width = tagChipWidthOf(pin.label);
+/**
+ * Where a pin's chip goes, in the board's own drawing: its centre, and the box it covers there, which
+ * on a standing board is as deep as the upright chip is wide.
+ */
+function chipOf(pin: number, row: number): { x: number; centre: number; width: number; box: Box } {
+  const header = HEADER_PINS.find((each) => each.number === pin);
+  if (!header) throw new Error(`The Pico has no pin ${pin}`);
+  const { x, y } = holeCentre(holeOfPin(header.number));
+  const width = tagChipWidthOf(header.label);
   const height = TAG_CHIP_HEIGHT_MM;
   // Inside the board, just past the pads: below the top row, above the bottom one, and a row
   // further in for one that would sit on its neighbour's. On a standing board the chip, upright,
   // reaches in by its width rather than its height.
   const reach = isStanding(turn) ? width : height;
+  const across = isStanding(turn) ? height : width;
   const inward = row * TAG_ROW_MM;
-  const top = pin.side === "right" ? y + 0.95 + inward : y - 0.95 - reach - inward;
-  const centre = top + reach / 2;
+  const top = header.side === "right" ? y + 0.95 + inward : y - 0.95 - reach - inward;
+  return {
+    x,
+    centre: top + reach / 2,
+    width,
+    box: { x: x - across / 2, y: top, w: across, h: reach },
+  };
+}
+
+function drawTag(tag: PinTag, row: number): string {
+  const pin = HEADER_PINS.find((header) => header.number === tag.pin);
+  if (!pin) throw new Error(`The Pico has no pin ${tag.pin}`);
+  const style = CHIP_STYLES[pin.kind];
+  const { x, centre, width } = chipOf(tag.pin, row);
+  const height = TAG_CHIP_HEIGHT_MM;
   const edge = style.bordered ? `stroke="${chipInk(style)}" stroke-width="0.14"` : "";
   return (
     `<g class="part" data-g="${tag.group}"${upright(x, centre)}>` +
@@ -631,6 +650,29 @@ const PRINTED_NUMBERS: readonly Point[] = NUMBERED_COLUMNS.flatMap((column) => [
 const TAG_HEIGHT_MM = 2.3;
 const tagWidthOf = (label: string): number => widthOf(label, 1.6, 800) + 1.8;
 
+/**
+ * A value tag on a standing board, where it is upright and so as deep across the rows as it is wide:
+ * the value on two lines, the number over its unit, `4.7` over `kΩ`, so that it is deep by its longer
+ * line rather than by both. Its box, as the page shows it: across, then down.
+ */
+const STANDING_LINE_MM = 1.95;
+const standingTagOf = (label: string): { lines: string[]; w: number; h: number } => {
+  const lines = label.split(" ");
+  const w = Math.max(...lines.map((line) => widthOf(line, 1.6, 800))) + 1.6;
+  return { lines, w, h: lines.length * STANDING_LINE_MM + 0.5 };
+};
+
+/**
+ * A value tag's footprint on the board's own drawing, on one line or two: what the page shows, turned
+ * back. A tag on a board that lies flat is always on one line.
+ */
+const tagFootprintOf = (label: string, lines = 1): { w: number; h: number } => {
+  if (!isStanding(turn)) return { w: tagWidthOf(label), h: TAG_HEIGHT_MM };
+  if (lines === 1) return { w: TAG_HEIGHT_MM, h: tagWidthOf(label) };
+  const { w, h } = standingTagOf(label);
+  return { w: h, h: w };
+};
+
 /** Whether a segment, widened by `reach` either side, touches a rectangle. */
 function segmentTouches(
   a: Point,
@@ -661,6 +703,17 @@ export function clearTagOf(
   part: Extract<Part, { kind: "resistor" }>,
   others: readonly Part[],
 ): Point | undefined {
+  return placeTag(part, others)?.at;
+}
+
+/**
+ * Where a value tag goes and on how many lines: the first place that is clear, nearest first, and on a
+ * standing board on one line if that is clear there, or else on two.
+ */
+function placeTag(
+  part: Extract<Part, { kind: "resistor" }>,
+  others: readonly Part[],
+): { at: Point; lines: number } | undefined {
   const a = holeCentre(part.from);
   const b = holeCentre(part.to);
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -670,9 +723,7 @@ export function clearTagOf(
   // there as it is tall on the page. At 0° the distances are the ones it has always had.
   const label = formatOhms(part.ohms);
   const standing = isStanding(turn);
-  const width = standing ? TAG_HEIGHT_MM : tagWidthOf(label);
-  const height = standing ? tagWidthOf(label) : TAG_HEIGHT_MM;
-  const out = standing ? height / 2 + 1.65 : 2.8;
+  const out = standing ? tagFootprintOf(label).h / 2 + 1.65 : 2.8;
   const aside = standing ? [2.8, -2.8, 3.9, -3.9] : [5, -5, 6.5, -6.5];
   const towards = mid.y < CHANNEL_Y_MM ? out : -out;
   // Where it has always gone first, then the other side, then further along and further out.
@@ -704,7 +755,7 @@ export function clearTagOf(
     const y = rail.y < CHANNEL_Y_MM ? railY("top+") - 2.4 : railY("bottom+") + 2.4;
     candidates.push(...[0, -1, 1, -2, 2, -3, 3].map((dx) => ({ x: rail.x + dx, y })));
   }
-  const clear = (tag: Point): boolean => {
+  const clear = (tag: Point, width: number, height: number): boolean => {
     const box = {
       x: tag.x - width / 2 - 0.3,
       y: tag.y - height / 2 - 0.3,
@@ -768,7 +819,13 @@ export function clearTagOf(
     }
     return true;
   };
-  return candidates.find(clear);
+  for (const at of candidates) {
+    for (const lines of standing ? [1, 2] : [1]) {
+      const { w, h } = tagFootprintOf(label, lines);
+      if (clear(at, w, h)) return { at, lines };
+    }
+  }
+  return undefined;
 }
 
 /** The same, falling back to where a tag has always gone if nowhere is clear. */
@@ -787,7 +844,7 @@ function defaultTagOf(part: Extract<Part, { kind: "resistor" }>): Point {
     : { x: mid.x + 5, y: mid.y };
 }
 
-function drawResistor(from: Hole, to: Hole, ohms: number, tag: Point): string {
+function drawResistor(from: Hole, to: Hole, ohms: number, tag: Point, lines = 1): string {
   const a = holeCentre(from);
   const b = holeCentre(to);
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -848,20 +905,34 @@ function drawResistor(from: Hole, to: Hole, ohms: number, tag: Point): string {
     legEnd(a.x, a.y) +
     legEnd(b.x, b.y) +
     (turn === 0 ? "" : `<g${upright(tag.x, tag.y)}>`) +
-    rect(
-      tag.x - tagWidth / 2,
-      tag.y - TAG_HEIGHT_MM / 2,
-      tagWidth,
-      TAG_HEIGHT_MM,
-      `rx="1.15" fill="${token("board-silk")}" stroke="${token("breadboard-print")}" stroke-width="0.15"`,
-    ) +
-    text(
-      tag.x,
-      tag.y + 0.05,
-      label,
-      `font-size="1.6" font-weight="800" fill="${token("on-pale-chip")}"`,
-    ) +
+    (lines === 1 ? oneLineTag(tag, label, tagWidth) : twoLineTag(tag, label)) +
     (turn === 0 ? "" : "</g>")
+  );
+}
+
+const TAG_FRAME = `fill="${token("board-silk")}" stroke="${token("breadboard-print")}" stroke-width="0.15"`;
+const TAG_INK = `font-size="1.6" font-weight="800" fill="${token("on-pale-chip")}"`;
+
+/** A value tag on one line, as it has always been. */
+function oneLineTag(tag: Point, label: string, width: number): string {
+  return (
+    rect(
+      tag.x - width / 2,
+      tag.y - TAG_HEIGHT_MM / 2,
+      width,
+      TAG_HEIGHT_MM,
+      `rx="1.15" ${TAG_FRAME}`,
+    ) + text(tag.x, tag.y + 0.05, label, TAG_INK)
+  );
+}
+
+/** A value tag on two lines, the number over its unit: on a standing board, where one line is too deep. */
+function twoLineTag(tag: Point, label: string): string {
+  const { lines, w, h } = standingTagOf(label);
+  const first = tag.y - ((lines.length - 1) * STANDING_LINE_MM) / 2 + 0.05;
+  return (
+    rect(tag.x - w / 2, tag.y - h / 2, w, h, `rx="1.15" ${TAG_FRAME}`) +
+    lines.map((line, i) => text(tag.x, first + i * STANDING_LINE_MM, line, TAG_INK)).join("")
   );
 }
 
@@ -1423,7 +1494,13 @@ function drawPart(
       body = drawWire(part);
       break;
     case "resistor":
-      body = drawResistor(part.from, part.to, part.ohms, tagOf(part, others));
+      body = drawResistor(
+        part.from,
+        part.to,
+        part.ohms,
+        tagOf(part, others),
+        placeTag(part, others)?.lines ?? 1,
+      );
       break;
     case "led":
       body = drawLed(part.anode, part.cathode, colours.ledColour(part.led));
@@ -1569,4 +1646,68 @@ function drawTurned(drawing: Breadboard): string {
     (turn === 0 ? "" : "</g>") +
     "</svg>"
   );
+}
+
+// --- What crowds. ---
+
+/** A box in the board's own drawing. */
+interface Box {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
+
+const overlap = (a: Box, b: Box): boolean =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/** A resistor as a person finds it on the page: its value and its two holes. */
+const resistorName = (part: Extract<Part, { kind: "resistor" }>): string =>
+  `the ${formatOhms(part.ohms)} resistor from ${printedName(part.from)} to ${printedName(part.to)}`;
+
+/**
+ * Every word the engine places that crowds something at a quarter turn (ADR 0003, ADR 0007): a value
+ * tag with nowhere clear of the wires, the parts, the Pico and the print, two tags on each other, or a
+ * tag or a chip on a chip. The words printed on the board itself and the labels in the margin are
+ * placed where nothing else is, and are not asked about.
+ */
+export function crowdingProblems(parts: readonly Part[], orientation: Orientation): string[] {
+  turn = orientation;
+  try {
+    const problems: string[] = [];
+    const resistors = parts.flatMap((part) => (part.kind === "resistor" ? [part] : []));
+    const tags: { name: string; box: Box }[] = [];
+    for (const resistor of resistors) {
+      const placed = placeTag(resistor, parts);
+      if (!placed) {
+        problems.push(`${resistorName(resistor)} has nowhere clear for its value tag`);
+        continue;
+      }
+      const clear = placed.at;
+      const { w, h } = tagFootprintOf(formatOhms(resistor.ohms), placed.lines);
+      tags.push({
+        name: `${resistorName(resistor)}'s value tag`,
+        box: { x: clear.x - w / 2, y: clear.y - h / 2, w, h },
+      });
+    }
+    const pins = [
+      ...new Set(parts.flatMap((part) => legsOf(part).flatMap((hole) => pinOfStrip(hole) ?? []))),
+    ];
+    const pinTags = pins.map((pin) => ({ pin, group: "" }));
+    const rows = tagRows(pinTags);
+    const chips = pinTags.map((tag) => {
+      const label = HEADER_PINS.find((header) => header.number === tag.pin)?.label ?? "";
+      return { name: `${label}'s chip`, box: chipOf(tag.pin, rows.get(tag) ?? 0).box };
+    });
+    const words = [...tags, ...chips];
+    for (let i = 0; i < words.length; i++) {
+      for (let j = i + 1; j < words.length; j++) {
+        const [a, b] = [words[i], words[j]];
+        if (a && b && overlap(a.box, b.box)) problems.push(`${a.name} is on ${b.name}`);
+      }
+    }
+    return problems;
+  } finally {
+    turn = 0;
+  }
 }

@@ -65,3 +65,34 @@ describe("every check, over a circuit file", () => {
     );
   });
 });
+
+describe("what crowds at a quarter turn (ADR 0003, ADR 0007)", () => {
+  it("refuses a value tag with nowhere clear, at the orientation where it has none", () => {
+    // Before M5, this pull-down lay in row i between the two buttons: tidy at 0° and 180°, with no
+    // room for its upright value on a standing board.
+    const data = fileOf(FIXTURES["button-each-side"]);
+    const crowded: Circuit = {
+      ...data,
+      steps: data.steps.map((step) => ({
+        ...step,
+        parts: step.parts.flatMap((part) =>
+          part.kind === "resistor" && part.from === "i23"
+            ? [
+                { ...part, to: "i26" as const },
+                {
+                  kind: "wire" as const,
+                  from: "j26" as const,
+                  to: "bottom-26" as const,
+                  role: "ground" as const,
+                },
+              ]
+            : [part],
+        ),
+      })),
+    };
+    expect(checkSource(sourceOf(crowded), "crowded.ts").problems.map(problemLine)).toEqual([
+      "crowded.ts: at 90°, the 4.7 kΩ resistor from i23 to i26 has nowhere clear for its value tag",
+      "crowded.ts: at 270°, the 4.7 kΩ resistor from i23 to i26 has nowhere clear for its value tag",
+    ]);
+  });
+});

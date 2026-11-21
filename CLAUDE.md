@@ -18,8 +18,8 @@ scratchpi's drawing, wiring check and page generator are copied in (M2), and cir
 (M3): format 1, read and never run, checked by `bun run ratsnest check` and drawn by
 `bun run ratsnest generate`, with scratchpi's seven circuits as the examples. Every page carries
 Nunito and the drawing is measured in it (M4), and is drawn at any quarter turn, every word
-upright, so far dark. M5's overlap checks are next, and the milestones after it are in
-[`doc/ROADMAP.md`](doc/ROADMAP.md).
+upright and nothing crowding at any (M5), so far dark. M6, themes and languages, is next, and the
+milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -338,6 +338,11 @@ does not pay for it again.
   turns each word back about its own point. A word written with `text()` turns with the board, and
   `src/page/orientation.test.ts`, which composes every transform down to each word, fails on it at
   90°, 180° and 270°.
+- **A layout tidy at 0° can crowd on a standing board**, as ADR 0003 foresaw: an upright value tag is
+  deep across the rows. `crowdingProblems` in `breadboard-svg.ts` asks at all four orientations, and
+  `ratsnest check` runs it. A tag goes onto two lines before it is refused; when it is refused, move the
+  part, as the examples' pull-downs moved to the rail in M5. Searching further for a place only finds
+  one too far from its resistor to read as its own.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

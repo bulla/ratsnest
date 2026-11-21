@@ -108,6 +108,17 @@ refused in a circuit's words and fails a test in the engine's.
 - [x] The test that fails on a character a page writes and the files lack, and the narrow no-break
       space written as Nunito's thin space (ADR 0012)
 
+### M5: four orientations
+
+M5 is done: the drawing turns by any quarter turn, never mirrored, every word upright, the labels past
+the board's far end (ADR 0024), and a standing board stands beside the steps. `ratsnest check` refuses
+a word that crowds at any of the four, and the examples moved two pull-downs so that none does.
+
+- [x] The drawing turned by 0°, 90°, 180° or 270°, never mirrored, every word upright (ADR 0003),
+      its labels past the board's far end (ADR 0024)
+- [x] The page arranged around a vertical drawing
+- [x] The overlap checks run at all four orientations (ADR 0003, ADR 0007)
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -177,3 +188,10 @@ refused in a circuit's words and fails a test in the engine's.
   LED's pull-downs have nowhere clear within three holes and fall back where they overlap, which a
   search of five holes only moved off the board. That is what M5's overlap check is for, and the
   layouts move then, as ADR 0007 says.
+- 2026-11-21: M5's overlap check. Run over the examples at all four orientations, it found fourteen
+  value tags with nowhere clear on a standing board, all of them pull-downs, and none at 0° or 180°.
+  Searching further only moved the problem, since nothing on the plastic was clear within five holes.
+  Two lines, the number over its unit, took a tag from 6.8 mm deep to 4.4 and cleared eight; no shape
+  could clear the other six, two resistors in three examples, so those moved, as ADR 0007 says:
+  straight from the pin to the − rail. The examples are no longer scratchpi's layouts exactly, and the
+  test circuits copied from them moved with them.

@@ -211,10 +211,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         {
           title: "Hold GP15 low with a resistor",
           note: "Without it the pin floats while the button is up, and reads a press nobody made.",
-          parts: [
-            { kind: "resistor", ohms: 4700, from: "i23", to: "i26" },
-            { kind: "wire", from: "j26", to: "bottom-26", role: "ground" },
-          ],
+          parts: [{ kind: "resistor", ohms: 4700, from: "i23", to: "bottom-22" }],
         },
         {
           title: "BTN1 on GP16",
@@ -299,8 +296,8 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
         {
           title: "Hold GP13 low with a resistor",
-          note: "By the pin, as BTN3's is.",
-          parts: [{ kind: "resistor", ohms: 4700, from: "i18", to: "i14" }],
+          note: "Straight from the pin to the − rail: between the Pico and the rail there is no room for it to lie flat.",
+          parts: [{ kind: "resistor", ohms: 4700, from: "i18", to: "bottom-17" }],
         },
         {
           title: "BTN2 on GP15",
@@ -398,8 +395,8 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
         {
           title: "Hold GP13 low with a resistor",
-          note: "By the pin, as BTN3's is.",
-          parts: [{ kind: "resistor", ohms: 4700, from: "i18", to: "i14" }],
+          note: "Straight from the pin to the − rail: between the Pico and the rail there is no room for it to lie flat.",
+          parts: [{ kind: "resistor", ohms: 4700, from: "i18", to: "bottom-17" }],
         },
         {
           title: "BTN2 on GP15",

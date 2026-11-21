@@ -209,11 +209,16 @@ describe("a resistor's value tag", () => {
     }
   });
 
-  it("stays where it always was on every page without a d-pad", () => {
+  it("stays where it always was on every page without a d-pad, but for one down to a rail", () => {
+    // A resistor down to a rail has places of its own past the outer rail (scratchpi's ADR 0166), and
+    // since M5 a pull-down goes straight to the rail where a standing board leaves no room beside it.
+    let held = 0;
     for (const [id, parts] of everyLayout) {
       if (id === "d-pad" || id === "rgb-led-and-d-pad") continue;
       for (const part of parts) {
         if (part.kind !== "resistor") continue;
+        if ([part.from, part.to].some((hole) => /^(?:2:)?(?:top|bottom)/.test(hole))) continue;
+        held += 1;
         const a = holeCentre(part.from);
         const b = holeCentre(part.to);
         const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -224,6 +229,7 @@ describe("a resistor's value tag", () => {
         expect(tagOf(part, parts), `${id}: ${part.from} to ${part.to}`).toEqual(always);
       }
     }
+    expect(held).toBeGreaterThan(3);
   });
 });
 

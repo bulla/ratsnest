@@ -1,14 +1,17 @@
 import { readFileSync } from "node:fs";
+import { crowdingProblems } from "./drawing/breadboard-svg";
 import { fieldProblems, languagesOf } from "./fields";
 import type { Circuit } from "./format";
 import { wiringProblems } from "./netlist";
+import { ORIENTATIONS } from "./orientation";
 import { type Problem, readCircuit } from "./read";
 import { shownIn } from "./shown";
 
 /**
  * Every check a circuit file is held to, in order, each only once the one before has passed: the
  * declarative check as it is read (ADR 0007), its format, fields, languages and words (ADR 0015,
- * ADR 0016, ADR 0010, ADR 0006), then its wiring (ADR 0007). What `ratsnest check` runs, and what
+ * ADR 0016, ADR 0010, ADR 0006), then its wiring and what crowds at any quarter turn (ADR 0003,
+ * ADR 0007). What `ratsnest check` runs, and what
  * `ratsnest generate` runs before it draws anything.
  */
 
@@ -41,6 +44,13 @@ export function checkSource(source: string, file: string): Checked {
   const shown = shownIn(circuit, language);
   const wiring = wiringProblems(shown.circuit, shown.layout);
   if (wiring.length > 0) return { problems: wiring.map((message) => ({ file, message })) };
+
+  // Every word the engine places, clear at every quarter turn the page can be drawn at (ADR 0003).
+  const parts = circuit.steps.flatMap((step) => step.parts);
+  const crowding = ORIENTATIONS.flatMap((orientation) =>
+    crowdingProblems(parts, orientation).map((problem) => `at ${orientation}°, ${problem}`),
+  );
+  if (crowding.length > 0) return { problems: crowding.map((message) => ({ file, message })) };
 
   return { circuit, problems: [] };
 }
