@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { version } from "../package.json";
 import { type Checked, checkFile, problemLine } from "./check";
@@ -11,11 +11,21 @@ import { wiringPage } from "./page/page";
 import { findProject, PROJECT_FILE, versionProblem } from "./project";
 import { shownIn } from "./shown";
 import { THEMES, type Theme } from "./theme";
+import {
+  assetOf,
+  besideOf,
+  fetchExecutable,
+  install,
+  isCompiled,
+  latestVersion,
+  stage,
+  updateProject,
+} from "./update";
 
 /**
- * ratsnest's command-line tool (ADR 0014): `check` and `generate` for now, `init` and `update` to
- * come. Written as a function of its arguments, its folder and where it prints, so that the tests
- * run it as a person would.
+ * ratsnest's command-line tool (ADR 0014): `init`, `check`, `generate` and `update`. Written as a
+ * function of its arguments, its folder and where it prints, so that the tests run it as a person
+ * would.
  */
 
 /** Where the command prints: what it made, and what went wrong. */
@@ -44,6 +54,7 @@ export const COMMANDS = {
       out: "<file>",
     },
   },
+  update: { arguments: "", options: { version: "<version>", from: "<file>" } },
 } as const;
 
 const optionNames = (command: keyof typeof COMMANDS): string[] =>
@@ -76,6 +87,13 @@ Usage:
       --orientation  0, 90, 180 or 270 degrees clockwise: the USB left, top, right or bottom
       --theme        dark or light
       --language     one of the circuit's languages; needed when it has more than one
+
+  ratsnest update [--version <version>] [--from <file>]
+      Moves the project to a newer ratsnest, the latest release by default: puts that version's
+      executable in place of this one, then migrates every circuit to its format, replaces the
+      Circuit type and the circuit skill, sets ${PROJECT_FILE}, and checks every circuit.
+      --version  the release to move to
+      --from     that release's executable, already fetched, rather than fetching it
 
   ratsnest --version
   ratsnest --help
@@ -257,6 +275,150 @@ function initialise(args: readonly string[], cwd: string, io: Io): number {
   return 0;
 }
 
+/** A release's version as the command takes it, `0.2.0` or `v0.2.0`. */
+const releaseOf = (given: string): string => {
+  const release = given.replace(/^v/, "");
+  if (!/^\d+\.\d+\.\d+$/.test(release)) {
+    throw new Usage(`--version is a release's version, such as \`0.2.0\`, not \`${given}\``);
+  }
+  return release;
+};
+
+/** What a staged executable says its version is, or that it is no ratsnest that runs here. */
+function versionOfExecutable(file: string, shown: string): string {
+  let said = "";
+  try {
+    const ran = Bun.spawnSync({ cmd: [file, "--version"], stdout: "pipe", stderr: "pipe" });
+    if (ran.exitCode === 0) said = ran.stdout.toString().trim();
+  } catch {
+    // Not a program this system runs at all.
+  }
+  if (!/^\d+\.\d+\.\d+/.test(said)) throw new Usage(`${shown} is not a ratsnest that runs here`);
+  return said;
+}
+
+/**
+ * `ratsnest update` (ADR 0015, ADR 0016). A compiled ratsnest asked for a newer version puts that
+ * version's executable in place of itself and runs it, as `update --version <it>`; the version
+ * asked moves the project on. Run from its source, ratsnest is Bun, which is never replaced, and it
+ * moves the project on to its own version alone. A project is never moved back, since a migration
+ * goes forward only.
+ */
+async function update(args: readonly string[], cwd: string, io: Io): Promise<number> {
+  const { values, rest } = optionsOf(args, optionNames("update"));
+  if (rest.length > 0) throw new Usage("update moves the project it is run in, and takes no file");
+  const project = findProject(cwd);
+  if (!project) {
+    throw new Usage(
+      `update moves a circuits project, and this folder is in none: \`ratsnest init\` makes one`,
+    );
+  }
+  const asked =
+    values.get("version") === undefined ? undefined : releaseOf(values.get("version") ?? "");
+  const from = values.get("from");
+  const forward = (target: string): void => {
+    if (Bun.semver.order(project.version, target) > 0) {
+      throw new Usage(
+        `the project expects ratsnest ${project.version}, newer than ${target}: a project is never moved back`,
+      );
+    }
+  };
+
+  if (!isCompiled()) {
+    if (from !== undefined || (asked !== undefined && asked !== version)) {
+      throw new Usage(
+        `this ratsnest is run from its source, at ${version}, and moves a project to that version alone: check out another to move to it`,
+      );
+    }
+    forward(version);
+    return updateProject(project.root, io);
+  }
+
+  const current = process.execPath;
+  const windows = process.platform === "win32";
+  // What the last update renamed out of the way on Windows, which no longer runs.
+  if (windows) rmSync(besideOf(current, "old"), { force: true });
+  let target = asked;
+  let fresh: Uint8Array | undefined;
+  // The executable as the person knows it: the file they gave, or the release's file.
+  let shown = from ?? "";
+  if (from !== undefined) {
+    if (!statSync(resolve(cwd, from), { throwIfNoEntry: false })?.isFile()) {
+      throw new Usage(`${from} is not a file`);
+    }
+    fresh = new Uint8Array(readFileSync(resolve(cwd, from)));
+  } else if (target === undefined) {
+    try {
+      target = await latestVersion();
+    } catch (error) {
+      io.err(`ratsnest: ${(error as Error).message}`);
+      return 1;
+    }
+    if (Bun.semver.order(target, version) < 0) target = version;
+  }
+  if (target === version && fresh === undefined) {
+    forward(version);
+    return updateProject(project.root, io);
+  }
+  if (target !== undefined && Bun.semver.order(target, version) < 0) {
+    throw new Usage(
+      `this ratsnest is ${version}, and ${target} is older: ratsnest is never moved back`,
+    );
+  }
+  if (target !== undefined) forward(target);
+
+  if (fresh === undefined) {
+    const asset = assetOf(process.platform, process.arch);
+    if (!asset) {
+      io.err(
+        `ratsnest: no release of ratsnest is built for ${process.platform} on ${process.arch}`,
+      );
+      return 1;
+    }
+    shown = `ratsnest ${target}'s ${asset}`;
+    try {
+      fresh = await fetchExecutable(target ?? version, asset);
+    } catch (error) {
+      io.err(`ratsnest: ${(error as Error).message}`);
+      return 1;
+    }
+  }
+  // Staged beside this one and run before it takes this one's place, so that an executable that
+  // does not run here, or is not the version asked, replaces nothing.
+  const incoming = stage(current, fresh);
+  let staged: string;
+  try {
+    staged = versionOfExecutable(incoming, shown);
+    if (target !== undefined && staged !== target) {
+      throw new Usage(`${shown} is ratsnest ${staged}, not ${target}`);
+    }
+    if (Bun.semver.order(staged, version) < 0) {
+      throw new Usage(
+        `${shown} is ratsnest ${staged}, older than this one: ratsnest is never moved back`,
+      );
+    }
+    forward(staged);
+  } catch (error) {
+    rmSync(incoming, { force: true });
+    throw error;
+  }
+  install(current, incoming, windows);
+  io.out(
+    staged === version
+      ? `ratsnest ${version} is put in place again, at ${slashed(current)}.`
+      : `ratsnest ${version} is now ratsnest ${staged}, at ${slashed(current)}.`,
+  );
+  const ran = Bun.spawnSync({
+    cmd: [current, "update", "--version", staged],
+    cwd,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  for (const line of ran.stdout.toString().split("\n").filter(Boolean)) io.out(line);
+  for (const line of ran.stderr.toString().split("\n").filter(Boolean)) io.err(line);
+  return ran.exitCode ?? 1;
+}
+
 /** Refuses to run in a project that expects another version of ratsnest (ADR 0016). */
 function sameVersion(cwd: string): void {
   const project = findProject(cwd);
@@ -264,9 +426,17 @@ function sameVersion(cwd: string): void {
   if (problem) throw new Usage(problem);
 }
 
-/** Runs the command with its arguments, from a folder, and says how it went as an exit status. */
-export function main(args: readonly string[], cwd: string, io: Io): number {
+/**
+ * Runs the command with its arguments, from a folder, and says how it went as an exit status: at
+ * once, or once `update` has fetched what it needs.
+ */
+export function main(args: readonly string[], cwd: string, io: Io): number | Promise<number> {
   const [command, ...rest] = args;
+  const failed = (error: unknown): number => {
+    if (!(error instanceof Usage)) throw error;
+    io.err(`ratsnest: ${error.message}`);
+    return 2;
+  };
   try {
     switch (command) {
       case "init":
@@ -277,6 +447,9 @@ export function main(args: readonly string[], cwd: string, io: Io): number {
       case "generate":
         sameVersion(cwd);
         return generate(rest, cwd, io);
+      // Exempt from the version check: moving the project on is what it is for.
+      case "update":
+        return update(rest, cwd, io).catch(failed);
       case "--version":
       case "-v":
         io.out(version);
@@ -291,19 +464,17 @@ export function main(args: readonly string[], cwd: string, io: Io): number {
         return 2;
       default:
         throw new Usage(
-          `\`${command}\` is not a command: init, check, generate, --version or --help`,
+          `\`${command}\` is not a command: init, check, generate, update, --version or --help`,
         );
     }
   } catch (error) {
-    if (!(error instanceof Usage)) throw error;
-    io.err(`ratsnest: ${error.message}`);
-    return 2;
+    return failed(error);
   }
 }
 
 if (import.meta.main) {
-  process.exitCode = main(process.argv.slice(2), process.cwd(), {
-    out: (line) => console.log(line),
-    err: (line) => console.error(line),
+  const io: Io = { out: (line) => console.log(line), err: (line) => console.error(line) };
+  Promise.resolve(main(process.argv.slice(2), process.cwd(), io)).then((code) => {
+    process.exitCode = code;
   });
 }

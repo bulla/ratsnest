@@ -41,6 +41,15 @@ until then the steps below work with a build of your own.
 
    The page is written into `pages/`, named by its four inputs.
 
+4. **Move to a newer ratsnest** when one is released, from anywhere in the project:
+
+   ```sh
+   ratsnest update
+   ```
+
+   It puts the latest release in place of the ratsnest you have, moves every circuit to its format,
+   and checks them, saying which, if any, need you to decide something.
+
 ## Working on ratsnest
 
 [`CONTRIBUTING.md`](CONTRIBUTING.md) walks through setting it up, and `/setup` does it with you.

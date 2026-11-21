@@ -12,6 +12,11 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Added
 
+- `ratsnest update`, which moves a circuits project to a newer ratsnest, the latest release by
+  default or the one `--version` names: it puts that version's executable in place of the running
+  one, run first to be sure it is that version and runs on the system, then migrates every circuit to
+  its format, replaces the `Circuit` type and the `circuit` skill, sets `ratsnest.json` and checks
+  every circuit. `--from` takes an executable already fetched. A project is never moved back.
 - A circuit file can be taken from one format to the next with its comments kept, written back in one
   style, which `ratsnest update` will run when the format first changes.
 - Every release's version is computed from what changed on ratsnest's public surface since the last

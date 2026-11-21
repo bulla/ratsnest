@@ -20,8 +20,8 @@ scratchpi's drawing, wiring check and page generator are copied in (M2), and cir
 Nunito and the drawing is measured in it (M4), and is drawn at any quarter turn, every word
 upright and nothing crowding at any (M5), in either theme, and in English, French or Russian, every
 language held to ADR 0011's rules (M6). It builds into one executable per platform, and
-`ratsnest init` makes circuits projects (M7), and every release's version is computed and checked
-(M9). M6, M7 and M9 each wait on the owner (a reader of Russian, a first project, the first release),
+`ratsnest init` makes circuits projects (M7), every release's version is computed and checked (M9),
+and `ratsnest update` moves a project and its executable to a newer ratsnest (M10). M6, M7 and M9 each wait on the owner (a reader of Russian, a first project, the first release),
 and M8, publishing, on a circuits project; the roadmap's Open points say what each needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -202,7 +202,9 @@ there.
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
 ├── src/               The engine and the command-line tool. Nothing in it names a circuit (ADR 0007)
-│   ├── cli.ts           `ratsnest init`, `check` and `generate`, and · `update` (ADR 0014)
+│   ├── cli.ts           `ratsnest init`, `check`, `generate` and `update` (ADR 0014)
+│   ├── update.ts        A project moved on, and the executable fetched, staged and put in place
+│   │                    of the running one (ADR 0015, ADR 0016)
 │   ├── init.ts          A circuits project made, the type and the skill carried as text (ADR 0016)
 │   ├── project.ts       The project a folder is in, and the version it expects (ADR 0016)
 │   ├── format.ts        The circuit format: the type a circuit file satisfies, and only that. It
@@ -375,6 +377,17 @@ does not pay for it again.
   the path of the value it stands before, so one written after a value, on the same line, comes back
   on its own line before the next value. A migration's file is the same data, and the same comments,
   in the printer's one style.
+- **Run from its source, ratsnest's `process.execPath` is Bun itself**, so an `update` that put a
+  release in place of it would replace the developer's Bun. `isCompiled` in `src/update.ts` reads
+  `Bun.main` instead, which a compiled ratsnest has under `/$bunfs/`, `B:/~BUN/` on Windows, and a
+  source run never does. A source run only moves the project, to its own version.
+- **`Bun.spawnSync` throws on a file the system cannot run**, `ENOEXEC`, rather than giving an exit
+  status. `update` runs the executable it fetched, staged beside the running one, before it takes
+  that one's place, and catches both, so that a download that is not a ratsnest replaces nothing.
+- **Only a compiled ratsnest can put an executable in place of itself**, so the tests cannot. The
+  compiled check, `scripts/compiled.ts`, has a copy of the executable update a project `--from` the
+  executable itself: on Linux in every pull request, and on Windows, where the running file is renamed
+  out of the way first, only in the release workflow.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
