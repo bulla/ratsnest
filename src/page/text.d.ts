@@ -7,3 +7,9 @@ declare module "*.css" {
   const text: string;
   export default text;
 }
+
+/** A Markdown file imported `with { type: "text" }`, such as the `circuit` skill `init` copies. */
+declare module "*.md" {
+  const text: string;
+  export default text;
+}

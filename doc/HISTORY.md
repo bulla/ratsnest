@@ -210,3 +210,11 @@ a word that crowds at any of the four, and the examples moved two pull-downs so 
   board's tag may now take two lines after one, which keeps English and French as they were, but
   does not clear Russian there; the test holds that result rather than the circuit being tuned until
   it passes.
+- 2026-11-21: M7, all but the owner's own project. Bun cross-compiled all five executables here, about
+  100 MB each, and the Linux one made the examples' pages byte for byte as the source does, all 112 of
+  them, which the pull request workflow now checks every time. `NOTICES` is written from the licence of
+  everything an executable carries, Bun's fetched at its pinned version. `init` copies the format's
+  own file, which imports nothing, as ADR 0022 meant it to be, and tsc in a new project resolved
+  `ratsnest` to it and refused a wrong colour. Whether `init` ignores `pages/` became ADR 0025. With no
+  release until M9, `install.sh` also takes a local build, which is how the owner's first project is
+  to be made.

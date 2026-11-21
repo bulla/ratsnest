@@ -12,6 +12,11 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Added
 
+- ratsnest as one executable per platform, Linux, macOS and Windows, with a `NOTICES` file for what
+  it carries, and `install.sh` to put it on the `PATH`.
+- `ratsnest init`, which makes a circuits project: `ratsnest.json`, the `Circuit` type for editors in
+  `.ratsnest/`, a `tsconfig.json`, `circuits/`, the `circuit` skill and `ARTIFACTS.md`. `check` and
+  `generate` refuse a project that expects another version of ratsnest.
 - The wiring page, copied from scratchpi's circuit pages: a Pico 2 W on a half-size breadboard,
   drawn from its datasheet, with the steps that build a circuit, the parts it needs and a script to
   test it, in English or French.

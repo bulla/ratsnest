@@ -62,13 +62,32 @@ jobs:
 
       - run: bun run test
 
+  compiled:
+    name: the examples, compiled
+    # A compiled ratsnest carries only what is imported, so the examples run with the Linux
+    # executable as a circuits project runs them, every page compared with the source's (ADR 0016).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build linux-x64
+
+      - run: bun scripts/compiled.ts dist/ratsnest-linux-x64
+
   ci:
     name: ci
     if: always()
-    needs: [lint, test]
+    needs: [lint, test, compiled]
     runs-on: ubuntu-latest
     steps:
       - name: every other job passed
         run: |
           test "${{ needs.lint.result }}" = success
           test "${{ needs.test.result }}" = success
+          test "${{ needs.compiled.result }}" = success
