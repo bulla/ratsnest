@@ -2,14 +2,25 @@
  * The examples run with a compiled ratsnest, as a circuits project runs them (ADR 0016, ADR 0020): its
  * `check`, then every example's page in every language, orientation and theme, each the same file,
  * byte for byte, as the source makes. Bun's compiler packs only what is imported, so a file read from
- * beside the source works from it and is missing from the executable; this is what finds that.
+ * beside the source works from it and is missing from the executable; this is what finds that. Then
+ * a copy of it updates a project of its own `--from` the executable, so that it stages, runs and puts
+ * in place an executable over itself, which on Windows means renaming itself while it runs.
  *
  *   bun scripts/compiled.ts dist/ratsnest-linux-x64
  */
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  chmodSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { $ } from "bun";
+import { version } from "../package.json";
 import { checkFile } from "../src/check";
 import { languagesOf } from "../src/fields";
 import { ORIENTATIONS } from "../src/orientation";
@@ -51,6 +62,18 @@ try {
     }
   }
   console.log(`${made} pages made by ${executable}, each the source's own.`);
+
+  const bin = join(out, "bin");
+  mkdirSync(bin);
+  const copy = join(bin, basename(executable));
+  copyFileSync(executable, copy);
+  chmodSync(copy, 0o755);
+  const project = join(out, "project");
+  await $`${copy} init ${project}`.quiet();
+  await $`${copy} update --from ${executable}`.cwd(project).quiet();
+  const after = (await $`${copy} --version`.text()).trim();
+  if (after !== version) throw new Error(`the updated executable says ${after}, not ${version}`);
+  console.log(`${copy} updated a project, and put an executable in place over itself.`);
 } finally {
   rmSync(out, { recursive: true, force: true });
 }
