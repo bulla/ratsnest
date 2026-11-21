@@ -177,6 +177,7 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         names.cap(part.button),
         placementOf(part),
         legsOf(part).map((leg) => holeHtml(leg, words)),
+        part.board === 2,
       );
     case "buzzer":
       return words.buzzer(escaped(names.buzzer(part.buzzer)), at(part.plus), at(part.minus));

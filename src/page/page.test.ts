@@ -445,11 +445,18 @@ describe("French's grammar, where a sentence is built", () => {
   });
 
   it("starts a button with its name, which takes no article, then its cap", () => {
-    expect(fr.button("BTN1", "red", "across", ["a23"])).toMatch(
+    expect(fr.button("BTN1", "red", "across", ["a23"], false)).toMatch(
       /^BTN1, le bouton rouge, à cheval sur la rainure centrale/,
     );
-    expect(fr.button("BTN2", "green", "above", ["a23"])).toMatch(/^BTN2, le bouton vert/);
+    expect(fr.button("BTN2", "green", "above", ["a23"], false)).toMatch(/^BTN2, le bouton vert/);
     expect(fr.listButton("BTN3", "blue")).toMatch(/avec un capuchon bleu\.$/);
+  });
+
+  it("says once that a button's legs are on the second breadboard (ADR 0028)", () => {
+    expect(fr.button("BTN1", "red", "across", ["e5", "f5"], true)).toMatch(
+      /ses pattes en e5 et f5 de la seconde plaque\.$/,
+    );
+    expect(fr.button("BTN1", "red", "across", ["e5", "f5"], false)).toMatch(/en e5 et f5\.$/);
   });
 
   it("agrees a wire's colour with how many there are, and writes a decimal with a comma", () => {

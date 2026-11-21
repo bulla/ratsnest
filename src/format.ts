@@ -145,6 +145,8 @@ export interface ButtonPart {
   readonly button: string;
   readonly columns: readonly [number, number];
   readonly rows?: ButtonRows;
+  /** `2` puts it on the second breadboard, snapped onto the first one's top edge. */
+  readonly board?: 2;
 }
 
 /** A passive buzzer, standing up. `buzzer` is the buzzer's id. */

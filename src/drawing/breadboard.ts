@@ -240,6 +240,8 @@ export type Part =
        * are then in one strip, and the holes between them are under its body.
        */
       readonly rows?: ButtonRows;
+      /** `2` when it is on the second board (ADR 0028), whose holes its legs are then in. */
+      readonly board?: 2;
     }
   /** A passive buzzer, standing up, its legs three holes apart. */
   | { readonly kind: "buzzer"; readonly buzzer: string; readonly plus: Hole; readonly minus: Hole }
@@ -293,6 +295,13 @@ export function placementOf(part: { readonly rows?: ButtonRows }): "across" | "a
 }
 
 /**
+ * The hole of a button's at a row and a column, on the board it is on (ADR 0028): every hole a button
+ * has is made here.
+ */
+export const buttonHole = (part: { readonly board?: 2 }, row: Row, column: number): Hole =>
+  `${part.board === 2 ? SECOND : ""}${row}${column}`;
+
+/**
  * The holes under a button's body, which nothing else can go in: every row between its legs,
  * across its three columns. None, across the channel, where the channel is what is between.
  */
@@ -300,7 +309,9 @@ export function coveredBy(part: Extract<Part, { kind: "button" }>): Hole[] {
   const [first, second] = rowsOf(part);
   const between = ROWS.slice(ROWS.indexOf(first) + 1, ROWS.indexOf(second));
   const [left] = part.columns;
-  return between.flatMap((row) => [left, left + 1, left + 2].map((column) => `${row}${column}`));
+  return between.flatMap((row) =>
+    [left, left + 1, left + 2].map((column) => buttonHole(part, row, column)),
+  );
 }
 
 /** Every hole a part has a leg (or a wire an end) in. */
@@ -313,7 +324,7 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.anode, part.cathode];
     case "button": {
       const rows = rowsOf(part);
-      return part.columns.flatMap((column) => rows.map((row) => `${row}${column}`));
+      return part.columns.flatMap((column) => rows.map((row) => buttonHole(part, row, column)));
     }
     case "buzzer":
       return [part.plus, part.minus];

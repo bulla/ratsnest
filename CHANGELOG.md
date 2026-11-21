@@ -58,3 +58,5 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 - Three or more buttons in a line on the channel each have a leader of their own to their label,
   on alternating sides of the channel, so no two share a line. A part on the second board's near
   half, such as the RGB LED by the USB, has its label past that end of the board, not the far one.
+- A button can sit on the second breadboard: `board: 2` on its part puts its legs there, and its
+  step says so once. Left out, it is on the first board, as before.

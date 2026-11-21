@@ -5,6 +5,7 @@ import { PIE_WEDGES, wedgePath } from "../rgb";
 import {
   BREADBOARD_HEIGHT_MM,
   BREADBOARD_WIDTH_MM,
+  buttonHole,
   CHANNEL_Y_MM,
   COLUMNS,
   columnX,
@@ -1027,7 +1028,7 @@ function buttonCentre(part: Extract<Part, { kind: "button" }>): { x: number; y: 
   const [first, second] = rowsOf(part);
   return {
     x: (columnX(part.columns[0]) + columnX(part.columns[1])) / 2,
-    y: (rowY(first) + rowY(second)) / 2,
+    y: (rowY(first) + rowY(second)) / 2 + (part.board === 2 ? SECOND_BOARD_Y_MM : 0),
   };
 }
 
@@ -1037,7 +1038,7 @@ function drawButton(part: Extract<Part, { kind: "button" }>, cap: ButtonColour):
   const out: string[] = [];
   for (const column of part.columns) {
     for (const row of rowsOf(part)) {
-      const y = rowY(row);
+      const y = holeCentre(buttonHole(part, row, column)).y;
       const edge = y < cy ? cy - half : cy + half;
       out.push(
         line(
