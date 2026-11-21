@@ -201,3 +201,12 @@ a word that crowds at any of the four, and the examples moved two pull-downs so 
   tag's format open; it is `circuit=…;orientation=…;theme=…;language=…`, the circuit by its file's
   name, as `pages/` names it. The same record says a page is titled by its circuit's name alone, which
   the copy's `· ratsnest` was not, and that changed with it.
+- 2026-11-21: M6, Russian and ADR 0011's rules. The engine's Russian is written for a reader, names
+  never inflected, the parts list as a bill of materials; it waits for the owner's friend to read it.
+  The rules found two kinds of value in the examples' own words, `5 V` and `880 Hz`, which now say VBUS
+  and a high A. Values on the drawing had been English on every page, `4.7 kΩ` on a French one; they
+  follow the page's language now, and that made rule 10 bite at once: the test circuit in three
+  languages, drawn in Russian, has no room for two pull-downs' values at any orientation. A flat
+  board's tag may now take two lines after one, which keeps English and French as they were, but
+  does not clear Russian there; the test holds that result rather than the circuit being tuned until
+  it passes.

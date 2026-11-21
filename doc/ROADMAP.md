@@ -29,10 +29,10 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 ### M6: themes and languages
 
 - [x] The theme as an input, dark or light, the board alike in both (ADR 0005)
-- [ ] The engine's sentences in English, French and Russian, in typed tables (ADR 0010)
-- [ ] A circuit's languages read from its name, every text checked against them, and a language it
-      lacks refused before anything is drawn (ADR 0010)
-- [ ] ADR 0011's rules: NFC, one script to a word, look-alikes folded, plural forms, values written
+- [x] The engine's sentences in English, French and Russian, in typed tables (ADR 0010)
+- [x] A circuit's languages read from its name, every text checked against them, and a language it
+      lacks refused before anything is drawn (ADR 0010), since M3
+- [x] ADR 0011's rules: NFC, one script to a word, look-alikes folded, plural forms, values written
       by the engine, each language's typography, the page's `lang`, and the Russian test circuit
 - [x] Every page's `<meta name="ratsnest">` naming its four inputs (ADR 0013), and its title the
       circuit's name alone, as ADR 0013 says
@@ -96,6 +96,11 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 - **The `no changelog` label** (ADR 0020): made once, under _Issues_, then _Labels_, then _New label_,
   before a pull request can wear it.
 
+- **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
+  the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
+  A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
+  name stands where it is written as it is, so that none is inflected.
+
 ## Backlog
 
 - **Standard steps the engine knows by name**, if writing out common steps in every circuit file
@@ -108,6 +113,9 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 - **An npm package**, beside the executables, if people ask for one (ADR 0016)
 - **The `circuit` skill as a Claude Code plugin**, if one can be versioned with the builder
   (ADR 0014)
+- **A Russian Four buttons or RGB LED**: translated, each would be refused, since `4,7 кОм` is wider
+  than `4.7 kΩ` and two of its pull-downs then have no room for their values. The engine's test
+  circuit in three languages holds that, and those pull-downs would move.
 - **Where a part can be bought, said by its circuit**: the parts list's lines for an RGB LED and a
   ring still name The Pi Hut's Let it Glow calendar, as scratchpi's did, which is the engine
   recommending a shop

@@ -28,6 +28,11 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 - `ratsnest generate --theme light` draws the page light around a board that looks the same in
   both themes. Every page names its four inputs in a `<meta name="ratsnest">` tag, and its title is
   the circuit's name alone.
+- Pages in Russian, as `--language ru`, for a circuit written in it, every count in every language
+  through its own plural rules, and every value written in the page's language, on the drawing too.
+- `ratsnest check` holds every language to its rules: Unicode's NFC, one script to a word, no hole
+  named with Cyrillic look-alikes, no value written out in a circuit's own words, and each
+  language's typography.
 - `ratsnest check` refuses a circuit whose value tags or pin names crowd each other, or have nowhere
   clear, at any of the four orientations. On a standing board a value may go onto two lines.
 - Four buttons, RGB LED and Two buttons each have a pull-down that runs straight to the − rail, which
