@@ -62,7 +62,7 @@ describe("ratsnest", () => {
     expect(bare.status).toBe(2);
     expect(bare.err).toContain("Usage:");
     expect(run(folder, "draw").err).toBe(
-      "ratsnest: `draw` is not a command: check, generate, --version or --help",
+      "ratsnest: `draw` is not a command: init, check, generate, --version or --help",
     );
   });
 });
@@ -191,5 +191,89 @@ describe("ratsnest generate (ADR 0023)", () => {
     expect(run(folder, "generate", "circuits/lights.ts", "--theme").err).toBe(
       "ratsnest: --theme needs a value",
     );
+  });
+});
+
+describe("ratsnest init (ADR 0014, ADR 0016)", () => {
+  /** An empty folder of its own. */
+  const empty = () => {
+    const folder = mkdtempSync(join(tmpdir(), "ratsnest-init-"));
+    made.push(folder);
+    return folder;
+  };
+
+  it("makes a circuits project, and says what it wrote", () => {
+    const folder = empty();
+    const result = run(folder, "init");
+    expect(result.status).toBe(0);
+    expect(result.out.split("\n").slice(0, -1)).toEqual([
+      "ratsnest.json",
+      ".ratsnest/ratsnest.d.ts",
+      "tsconfig.json",
+      ".claude/skills/circuit/SKILL.md",
+      "ARTIFACTS.md",
+      ".gitignore",
+    ]);
+    expect(JSON.parse(readFileSync(join(folder, "ratsnest.json"), "utf8"))).toEqual({
+      ratsnest: version,
+    });
+    expect(readFileSync(join(folder, ".ratsnest/ratsnest.d.ts"), "utf8")).toBe(
+      readFileSync(new URL("./format.ts", import.meta.url), "utf8"),
+    );
+    expect(readFileSync(join(folder, ".claude/skills/circuit/SKILL.md"), "utf8")).toStartWith(
+      "---\nname: circuit\n",
+    );
+    expect(readFileSync(join(folder, ".gitignore"), "utf8")).toContain("pages/");
+    expect(existsSync(join(folder, "circuits"))).toBe(true);
+  });
+
+  it("adds pages/ to a .gitignore that is there, and leaves everything else as it was (ADR 0025)", () => {
+    const folder = empty();
+    writeFileSync(join(folder, ".gitignore"), "node_modules/");
+    writeFileSync(join(folder, "ARTIFACTS.md"), "mine");
+    run(folder, "init");
+    expect(readFileSync(join(folder, ".gitignore"), "utf8")).toStartWith("node_modules/\n");
+    expect(readFileSync(join(folder, "ARTIFACTS.md"), "utf8")).toBe("mine");
+  });
+
+  it("refuses a folder that is a project already", () => {
+    const folder = empty();
+    run(folder, "init");
+    expect(run(folder, "init").err).toStartWith("ratsnest: ");
+    expect(run(folder, "init").status).toBe(2);
+  });
+
+  it("makes a project whose circuits check from anywhere in it", () => {
+    const folder = empty();
+    run(folder, "init");
+    writeFileSync(join(folder, "circuits", "lights.ts"), sourceOf(LIGHTS));
+    mkdirSync(join(folder, "notes"));
+    expect(run(join(folder, "notes"), "check").out).toBe("1 circuit checked: all well.");
+  });
+});
+
+describe("a project expecting another version (ADR 0016)", () => {
+  const expecting = (expected: string) => {
+    const folder = project({ "lights.ts": LIGHTS });
+    writeFileSync(join(folder, "ratsnest.json"), JSON.stringify({ ratsnest: expected }));
+    return folder;
+  };
+
+  it("is refused by an older ratsnest, which says to update", () => {
+    const result = run(expecting("99.0.0"), "check");
+    expect(result.status).toBe(2);
+    expect(result.err).toBe(
+      `ratsnest: this ratsnest is ${version}, older than the 99.0.0 the project expects: run \`ratsnest update\``,
+    );
+  });
+
+  it("is refused by a newer ratsnest, which says to move the project on", () => {
+    const result = run(expecting("0.0.0-alpha"), "generate", "circuits/lights.ts");
+    expect(result.status).toBe(2);
+    expect(result.err).toContain("newer than the 0.0.0-alpha the project expects");
+  });
+
+  it("runs as usual for the version it expects", () => {
+    expect(run(expecting(version), "check").status).toBe(0);
   });
 });

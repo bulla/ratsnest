@@ -3,10 +3,12 @@ import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { version } from "../package.json";
 import { type Checked, checkFile, problemLine } from "./check";
 import { FORMAT, languagesOf } from "./fields";
+import { init } from "./init";
 import { LANGUAGES, type Language } from "./language";
 import type { Orientation } from "./orientation";
 import { PAGE_FILES } from "./page/files";
 import { wiringPage } from "./page/page";
+import { findProject, PROJECT_FILE, versionProblem } from "./project";
 import { shownIn } from "./shown";
 import { THEMES, type Theme } from "./theme";
 
@@ -37,9 +39,13 @@ const PAGES = "pages";
 const HELP = `ratsnest ${version}: graphical wiring for breadboards.
 
 Usage:
+  ratsnest init [<folder>]
+      Makes a circuits project in a folder, the current one by default: ${PROJECT_FILE}, the Circuit
+      type in .ratsnest/, a tsconfig.json, circuits/, the circuit skill and ARTIFACTS.md.
+
   ratsnest check [<file or folder> ...]
       Checks circuit files: each file named, and every .ts file in each folder.
-      With none, every circuit in ${CIRCUITS}/.
+      With none, every circuit in the project's ${CIRCUITS}/.
 
   ratsnest generate <file> [--orientation 0] [--theme dark] [--language <language>] [--out <file>]
       Checks a circuit, then makes its page, written to
@@ -108,7 +114,9 @@ function report(checked: Checked, io: Io): void {
 
 function check(args: readonly string[], cwd: string, io: Io): number {
   const { rest } = optionsOf(args, []);
-  const paths = rest.length > 0 ? rest : [CIRCUITS];
+  const project = findProject(cwd);
+  const home = project ? relative(cwd, join(project.root, CIRCUITS)) || "." : CIRCUITS;
+  const paths = rest.length > 0 ? rest : [home.split(sep).join("/")];
   const files = paths.flatMap((path) => {
     const files = filesIn(path, cwd);
     if (files.length === 0) throw new Usage(`${path} holds no circuit file`);
@@ -209,14 +217,42 @@ function generate(args: readonly string[], cwd: string, io: Io): number {
   return 0;
 }
 
+function initialise(args: readonly string[], cwd: string, io: Io): number {
+  const { rest } = optionsOf(args, []);
+  if (rest.length > 1) throw new Usage("init makes one project, in one folder");
+  const folder = resolve(cwd, rest[0] ?? ".");
+  let written: string[];
+  try {
+    written = init(folder, version);
+  } catch (error) {
+    throw new Usage((error as Error).message);
+  }
+  for (const file of written) io.out(slashed(relative(cwd, join(folder, file))));
+  io.out(
+    `A circuits project for ratsnest ${version}: write circuits in circuits/, then \`ratsnest check\`.`,
+  );
+  return 0;
+}
+
+/** Refuses to run in a project that expects another version of ratsnest (ADR 0016). */
+function sameVersion(cwd: string): void {
+  const project = findProject(cwd);
+  const problem = project && versionProblem(version, project.version);
+  if (problem) throw new Usage(problem);
+}
+
 /** Runs the command with its arguments, from a folder, and says how it went as an exit status. */
 export function main(args: readonly string[], cwd: string, io: Io): number {
   const [command, ...rest] = args;
   try {
     switch (command) {
+      case "init":
+        return initialise(rest, cwd, io);
       case "check":
+        sameVersion(cwd);
         return check(rest, cwd, io);
       case "generate":
+        sameVersion(cwd);
         return generate(rest, cwd, io);
       case "--version":
       case "-v":
@@ -231,7 +267,9 @@ export function main(args: readonly string[], cwd: string, io: Io): number {
         io.err(HELP);
         return 2;
       default:
-        throw new Usage(`\`${command}\` is not a command: check, generate, --version or --help`);
+        throw new Usage(
+          `\`${command}\` is not a command: init, check, generate, --version or --help`,
+        );
     }
   } catch (error) {
     if (!(error instanceof Usage)) throw error;
