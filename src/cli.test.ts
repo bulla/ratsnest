@@ -162,11 +162,12 @@ describe("ratsnest generate (ADR 0023)", () => {
     });
   });
 
-  it("draws every orientation, refuses a theme it does not draw yet, and what does not exist", () => {
+  it("draws every orientation and both themes, and refuses what does not exist", () => {
     const folder = project({ "lights.ts": LIGHTS });
     expect(run(folder, "generate", "circuits/lights.ts", "--orientation", "90").status).toBe(0);
-    expect(run(folder, "generate", "circuits/lights.ts", "--theme", "light").err).toBe(
-      "ratsnest: --theme `light` is not drawn yet: so far ratsnest draws `dark`",
+    expect(run(folder, "generate", "circuits/lights.ts", "--theme", "light").status).toBe(0);
+    expect(run(folder, "generate", "circuits/lights.ts", "--theme", "grey").err).toBe(
+      "ratsnest: --theme is `dark`, `light`, not `grey`",
     );
     expect(run(folder, "generate", "circuits/lights.ts", "--orientation", "45").err).toBe(
       "ratsnest: --orientation is `0`, `90`, `180`, `270`, not `45`",

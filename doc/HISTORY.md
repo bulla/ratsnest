@@ -195,3 +195,9 @@ a word that crowds at any of the four, and the examples moved two pull-downs so 
   could clear the other six, two resistors in three examples, so those moved, as ADR 0007 says:
   straight from the pin to the − rail. The examples are no longer scratchpi's layouts exactly, and the
   test circuits copied from them moved with them.
+- 2026-11-21: M6, the theme and the page's tag. A page takes its four inputs as one object now, and
+  the light theme needed only the attribute: the token layer had carried both scales since the copy,
+  and the board was already the same in both, which a test now holds byte for byte. ADR 0013 left the
+  tag's format open; it is `circuit=…;orientation=…;theme=…;language=…`, the circuit by its file's
+  name, as `pages/` names it. The same record says a page is titled by its circuit's name alone, which
+  the copy's `· ratsnest` was not, and that changed with it.

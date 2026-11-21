@@ -11,6 +11,8 @@
  */
 
 :root {
+  color-scheme: light;
+
   /* Surfaces: panels sit on the page. */
   --color-surface: #ffffff;
   --color-canvas: #f2f5fb;

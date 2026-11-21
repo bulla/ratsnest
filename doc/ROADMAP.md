@@ -28,13 +28,14 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 ### M6: themes and languages
 
-- [ ] The theme as an input, dark or light, the board alike in both (ADR 0005)
+- [x] The theme as an input, dark or light, the board alike in both (ADR 0005)
 - [ ] The engine's sentences in English, French and Russian, in typed tables (ADR 0010)
 - [ ] A circuit's languages read from its name, every text checked against them, and a language it
       lacks refused before anything is drawn (ADR 0010)
 - [ ] ADR 0011's rules: NFC, one script to a word, look-alikes folded, plural forms, values written
       by the engine, each language's typography, the page's `lang`, and the Russian test circuit
-- [ ] Every page's `<meta name="ratsnest">` naming its four inputs (ADR 0013)
+- [x] Every page's `<meta name="ratsnest">` naming its four inputs (ADR 0013), and its title the
+      circuit's name alone, as ADR 0013 says
 - [ ] The engine's Russian table read by the owner's friend, who reads Russian, before it ships
       (ADR 0010, ADR 0011)
 

@@ -8,6 +8,7 @@ import type { Orientation } from "./orientation";
 import { PAGE_FILES } from "./page/files";
 import { wiringPage } from "./page/page";
 import { shownIn } from "./shown";
+import { THEMES, type Theme } from "./theme";
 
 /**
  * ratsnest's command-line tool (ADR 0014): `check` and `generate` for now, `init` and `update` to
@@ -26,8 +27,8 @@ const ORIENTATIONS = ["0", "90", "180", "270"];
 const DRAWN_ORIENTATIONS = ORIENTATIONS;
 
 /** The themes ADR 0005 names, and the ones the engine draws so far. */
-const THEMES = ["dark", "light"];
-const DRAWN_THEMES = ["dark"];
+
+const DRAWN_THEMES = THEMES;
 
 /** Where a project keeps its circuits, and where `generate` writes a page (ADR 0023). */
 const CIRCUITS = "circuits";
@@ -189,14 +190,13 @@ function generate(args: readonly string[], cwd: string, io: Io): number {
   if (!language) throw new Usage(`${file} is written in ${written}: say which with --language`);
 
   const shown = shownIn(circuit, language);
-  const html = wiringPage(
-    shown.circuit,
-    shown.layout,
-    PAGE_FILES,
-    language,
-    Number(orientation) as Orientation,
-  );
   const name = basename(file).replace(/\.ts$/, "");
+  const html = wiringPage(shown.circuit, shown.layout, PAGE_FILES, {
+    circuit: name,
+    language,
+    orientation: Number(orientation) as Orientation,
+    theme: theme as Theme,
+  });
   const out = resolve(
     cwd,
     values.get("out") ?? join(PAGES, `${name}.${orientation}.${theme}.${language}.html`),

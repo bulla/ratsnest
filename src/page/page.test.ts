@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { FIXTURE_IDS, FIXTURES, type Fixture, type FixtureId } from "../__fixtures__/circuits";
 import type { Layout, ShownCircuit } from "../circuit";
 import { CYRILLIC, FONT_FAMILY, fileOf } from "../fonts";
-import { PAGE_THEME, PAGE_WORDS, type PageFiles, wiringPage } from "./page";
+import { PAGE_WORDS, type PageFiles, wiringPage } from "./page";
 
 const read = (name: string) => readFileSync(new URL(name, import.meta.url), "utf8");
 
@@ -14,7 +14,7 @@ const FILES: PageFiles = {
 };
 
 const page = (id: FixtureId, language: "en" | "fr" = "en") =>
-  wiringPage(FIXTURES[id].circuit, FIXTURES[id].layout, FILES, language);
+  wiringPage(FIXTURES[id].circuit, FIXTURES[id].layout, FILES, { language });
 
 /** The steps, not the drawing's description, which says every sentence again. */
 const steps = (html: string) => html.slice(html.indexOf('<ol class="steps">'));
@@ -68,7 +68,7 @@ function inFrench({ circuit, layout }: Fixture): { circuit: ShownCircuit; layout
 
 const frenchPage = (id: FixtureId) => {
   const french = inFrench(FIXTURES[id]);
-  return wiringPage(french.circuit, french.layout, FILES, "fr");
+  return wiringPage(french.circuit, french.layout, FILES, { language: "fr" });
 };
 
 describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
@@ -76,7 +76,7 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
   const html = page(id);
 
   it("is headed by the circuit, and links nowhere else on the site", () => {
-    expect(html).toContain(`<title>${circuit.name} · ratsnest</title>`);
+    expect(html).toContain(`<title>${circuit.name}</title>`);
     expect(html).toContain(`<h1>${circuit.name}</h1>`);
     expect(html).toContain(circuit.description);
     // No back link, no twin in another language: a page is one asset (ADR 0004).
@@ -86,7 +86,7 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
   });
 
   it("is drawn in one scale, which nothing on it switches (ADR 0005)", () => {
-    expect(html).toContain(`<html lang="en" data-theme="${PAGE_THEME}">`);
+    expect(html).toContain('<html lang="en" data-theme="dark">');
     expect(html).not.toContain("location");
   });
 
@@ -374,7 +374,7 @@ describe.each([...FIXTURE_IDS])("the French page for %s", (id) => {
 
   it("is in French, headed by the circuit's own name", () => {
     expect(html).toContain('<html lang="fr"');
-    expect(html).toContain(`<title>${circuit.name} · ratsnest</title>`);
+    expect(html).toContain(`<title>${circuit.name}</title>`);
     expect(html).toContain(`<h1>${circuit.name}</h1>`);
     expect(html).toContain(circuit.description);
   });
@@ -509,5 +509,40 @@ describe("the page's font (ADR 0012)", () => {
     // In the drawing nothing wraps, so the thin space stands alone there.
     const drawing = french.slice(french.indexOf("<svg"), french.indexOf("</svg>"));
     expect(drawing).not.toContain("nowrap");
+  });
+});
+
+describe("a page's inputs (ADR 0004, ADR 0005, ADR 0013)", () => {
+  const { circuit, layout } = FIXTURES["two-lights"];
+
+  it("names all four in its meta tag, so a page whose file is gone can still be found", () => {
+    const html = wiringPage(circuit, layout, FILES, {
+      circuit: "two-lights",
+      orientation: 270,
+      theme: "light",
+      language: "fr",
+    });
+    expect(html).toContain(
+      '<meta name="ratsnest" content="circuit=two-lights;orientation=270;theme=light;language=fr">',
+    );
+  });
+
+  it("is drawn in the theme it is given, which nothing on it switches", () => {
+    const light = wiringPage(circuit, layout, FILES, { theme: "light" });
+    expect(light).toContain('<html lang="en" data-theme="light">');
+    // The light scale is the root's own; only the dark one overrides it.
+    expect(FILES.tokens).toMatch(/:root \{\s*color-scheme: light;/);
+  });
+
+  it("draws the board the same in both themes, since it is a drawing of an object", () => {
+    const drawing = (theme: "dark" | "light") => {
+      const html = wiringPage(circuit, layout, FILES, { theme });
+      return html.slice(html.indexOf("<svg"), html.indexOf("</svg>"));
+    };
+    expect(drawing("light")).toBe(drawing("dark"));
+  });
+
+  it("is titled by its circuit's name alone, as an Artifact's page is (ADR 0013)", () => {
+    expect(wiringPage(circuit, layout, FILES)).toContain(`<title>${circuit.name}</title>`);
   });
 });

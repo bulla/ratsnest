@@ -18,8 +18,8 @@ scratchpi's drawing, wiring check and page generator are copied in (M2), and cir
 (M3): format 1, read and never run, checked by `bun run ratsnest check` and drawn by
 `bun run ratsnest generate`, with scratchpi's seven circuits as the examples. Every page carries
 Nunito and the drawing is measured in it (M4), and is drawn at any quarter turn, every word
-upright and nothing crowding at any (M5), so far dark. M6, themes and languages, is next, and the
-milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
+upright and nothing crowding at any (M5), in either theme. M6's Russian and the rules every
+language is held to are next, and the milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -202,6 +202,7 @@ there.
 │   ├── shown.ts         A checked circuit taken into one language, as the engine's model
 │   ├── fonts.ts         Nunito's files, and every drawn word's width measured in them (ADR 0012)
 │   ├── orientation.ts   The four quarter turns, and where a point lands at each (ADR 0003)
+│   ├── theme.ts         The two themes a page is drawn in (ADR 0005)
 │   ├── circuit.ts       The engine's model: a circuit shown in one language, and its layout
 │   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
 │   ├── language.ts      The languages a page is written in
