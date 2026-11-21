@@ -24,6 +24,7 @@ import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN } from "../font
 import { DEFAULT_LANGUAGE, type Language } from "../language";
 import { LIGHT_OHMS_RANGE } from "../netlist";
 import { isStanding, type Orientation } from "../orientation";
+import { DEFAULT_THEME, type Theme } from "../theme";
 import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place } from "./words";
 
 /**
@@ -53,8 +54,33 @@ export interface PageFiles {
   readonly script: string;
 }
 
-/** The scale every page is drawn in, until the theme is an input of its own (ADR 0005). */
-export const PAGE_THEME = "dark";
+/**
+ * What a page is made from besides its circuit: the four inputs it is a pure function of (ADR 0004,
+ * ADR 0005, ADR 0003, ADR 0010), the circuit named by its file, as `pages/` and the page's own tag
+ * name it (ADR 0013, ADR 0023).
+ */
+export interface PageInputs {
+  /** The circuit file's name, without `.ts`: `push-button`. */
+  readonly circuit: string;
+  readonly orientation: Orientation;
+  readonly theme: Theme;
+  readonly language: Language;
+}
+
+/** The inputs a page is made with when nothing says otherwise, as `generate` defaults them. */
+export const DEFAULT_INPUTS: PageInputs = {
+  circuit: "circuit",
+  orientation: 0,
+  theme: DEFAULT_THEME,
+  language: DEFAULT_LANGUAGE,
+};
+
+/**
+ * The page's four inputs as its `<meta name="ratsnest">` says them (ADR 0013), so that a page whose
+ * file is gone can still be matched to the Artifact made from it: `circuit=push-button;orientation=0;…`.
+ */
+export const inputsTag = (inputs: PageInputs): string =>
+  `circuit=${inputs.circuit};orientation=${inputs.orientation};theme=${inputs.theme};language=${inputs.language}`;
 
 const escaped = (text: string): string =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -335,9 +361,10 @@ export function wiringPage(
   circuit: ShownCircuit,
   layout: Layout,
   files: PageFiles,
-  language: Language = DEFAULT_LANGUAGE,
-  orientation: Orientation = 0,
+  given: Partial<PageInputs> = {},
 ): string {
+  const inputs: PageInputs = { ...DEFAULT_INPUTS, ...given };
+  const { language, orientation, theme } = inputs;
   const words = PAGE_WORDS[language];
   const names = namesOf(circuit);
   const parts = layout.steps.flatMap((step) => step.parts);
@@ -399,11 +426,12 @@ export function wiringPage(
   const usesPower = parts.some((p) => p.kind === "wire" && p.role === "power");
 
   return finished(`<!doctype html>
-<html lang="${words.tag}" data-theme="${PAGE_THEME}">
+<html lang="${words.tag}" data-theme="${theme}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escaped(words.title(circuit.name))}</title>
+<title>${escaped(circuit.name)}</title>
+<meta name="ratsnest" content="${escaped(inputsTag(inputs))}">
 <meta name="description" content="${escaped(circuit.description)}">
 <style>${files.tokens}</style>
 <style>${files.css}</style>

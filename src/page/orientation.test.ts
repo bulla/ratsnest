@@ -12,7 +12,7 @@ import { wiringPage } from "./page";
  */
 
 const page = (id: FixtureId, orientation: Orientation, language: "en" | "fr" = "en") =>
-  wiringPage(FIXTURES[id].circuit, FIXTURES[id].layout, PAGE_FILES, language, orientation);
+  wiringPage(FIXTURES[id].circuit, FIXTURES[id].layout, PAGE_FILES, { language, orientation });
 
 /** A 2D affine transform, as SVG's matrix(a b c d e f). */
 type Matrix = readonly [number, number, number, number, number, number];

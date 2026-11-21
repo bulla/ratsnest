@@ -36,7 +36,6 @@ export type ButtonPlacement = "across" | "above" | "below";
 export interface PageWords {
   /** For `<html lang>`. */
   readonly tag: string;
-  readonly title: (circuit: string) => string;
   readonly eyebrow: string;
   readonly tapStep: string;
   readonly railMinus: string;
@@ -197,7 +196,6 @@ const englishList = (items: readonly string[]): string =>
 
 export const ENGLISH_PAGE: PageWords = {
   tag: "en",
-  title: (circuit) => `${circuit} · ratsnest`,
   eyebrow: "ratsnest · wiring guide",
   tapStep: "Tap a step to pick out its parts.",
   railMinus: "− rail: ground",
@@ -385,7 +383,6 @@ function the(kind: PartKind, name: string): string {
 
 export const FRENCH_PAGE: PageWords = {
   tag: "fr",
-  title: (circuit) => `${circuit} · ratsnest`,
   eyebrow: "ratsnest · guide de câblage",
   tapStep: "Touchez une étape pour faire ressortir ses composants.",
   railMinus: `rail −${NNBSP}: masse`,

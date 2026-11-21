@@ -21,10 +21,13 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   the declarative check, its format, its fields, its languages and its wiring, and says each problem
   on its line.
 - `ratsnest generate <file>`, which checks a circuit and writes its page into `pages/`, named by its
-  orientation, theme and language. So far it draws in the dark theme only.
+  orientation, theme and language.
 - `ratsnest generate --orientation 90`, `180` and `270` draw the board turned, its USB at the top,
   on the right or at the bottom, every word on it upright and its labels past its far end. A standing
   board stands in a column beside the steps on a wide screen.
+- `ratsnest generate --theme light` draws the page light around a board that looks the same in
+  both themes. Every page names its four inputs in a `<meta name="ratsnest">` tag, and its title is
+  the circuit's name alone.
 - `ratsnest check` refuses a circuit whose value tags or pin names crowd each other, or have nowhere
   clear, at any of the four orientations. On a standing board a value may go onto two lines.
 - Four buttons, RGB LED and Two buttons each have a pull-down that runs straight to the − rail, which
