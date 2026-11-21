@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/ernest.jpg" alt="Ernest, a grey rat, chewing on a bundle of spaghetti" width="260">
+  <img src="doc/ernest.webp" alt="Ernest, a grey rat, holding a bundle of jumper wires" width="260" height="408">
 </p>
 
 <p align="center"><em>
