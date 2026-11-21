@@ -25,6 +25,10 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 - `ratsnest generate --orientation 90`, `180` and `270` draw the board turned, its USB at the top,
   on the right or at the bottom, every word on it upright and its labels past its far end. A standing
   board stands in a column beside the steps on a wide screen.
+- `ratsnest check` refuses a circuit whose value tags or pin names crowd each other, or have nowhere
+  clear, at any of the four orientations. On a standing board a value may go onto two lines.
+- Four buttons, RGB LED and Two buttons each have a pull-down that runs straight to the − rail, which
+  leaves room for every value at every orientation.
 - Every page is set in Nunito and carries it, so it looks the same on every device, and every word
   the drawing writes is measured in it. `ratsnest check` refuses a circuit whose words hold a
   character Nunito lacks, such as `→`.

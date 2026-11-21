@@ -13,7 +13,8 @@ judgement the owner has to make goes in **Open points**, and comes out once they
 The design is settled, in ADR 0001 to ADR 0023, the frame is built (M1), scratchpi's drawing,
 wiring check and page generator are copied in (M2), circuits are data (M3): `ratsnest check` and
 `ratsnest generate` run from source, on format 1, with scratchpi's seven circuits as the examples,
-and every page carries Nunito, the drawing measured in it (M4).
+every page carries Nunito, the drawing measured in it (M4), and the drawing turns by any quarter
+turn, every word upright and nothing crowding at any of them (M5).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -23,14 +24,7 @@ SemVer (ADR 0017), and is open source under MIT: its repository has been public 
 ## Next
 
 The milestones, in order. Each needs the ones before it, and only the first is in flight. Its
-checklist moves to `HISTORY.md` when it lands. M5 is next.
-
-### M5: four orientations
-
-- [x] The drawing turned by 0°, 90°, 180° or 270°, never mirrored, every word upright (ADR 0003),
-      its labels past the board's far end (ADR 0024)
-- [x] The page arranged around a vertical drawing
-- [ ] The overlap checks run at all four orientations (ADR 0003, ADR 0007)
+checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 ### M6: themes and languages
 
@@ -146,3 +140,4 @@ file's Log.
 | M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app             | 0001, 0004, 0007, 0018                  |
 | M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples   | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
 | M4        | The font: Nunito carried by every page, every drawn word measured in it                | 0011, 0012                              |
+| M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any     | 0003, 0007, 0024                        |
