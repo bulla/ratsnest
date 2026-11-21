@@ -27,8 +27,9 @@ checklist moves to `HISTORY.md` when it lands. M5 is next.
 
 ### M5: four orientations
 
-- [ ] The drawing turned by 0°, 90°, 180° or 270°, never mirrored, every word upright (ADR 0003)
-- [ ] The page arranged around a vertical drawing
+- [x] The drawing turned by 0°, 90°, 180° or 270°, never mirrored, every word upright (ADR 0003),
+      its labels past the board's far end (ADR 0024)
+- [x] The page arranged around a vertical drawing
 - [ ] The overlap checks run at all four orientations (ADR 0003, ADR 0007)
 
 ### M6: themes and languages

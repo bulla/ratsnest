@@ -17,8 +17,9 @@ The design is settled, in records argued by interview on 2026-11-20 (M0), the fr
 scratchpi's drawing, wiring check and page generator are copied in (M2), and circuits are data
 (M3): format 1, read and never run, checked by `bun run ratsnest check` and drawn by
 `bun run ratsnest generate`, with scratchpi's seven circuits as the examples. Every page carries
-Nunito and the drawing is measured in it (M4), so far at 0° and dark. M5, four orientations, is
-next, and the milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
+Nunito and the drawing is measured in it (M4), and is drawn at any quarter turn, every word
+upright, so far dark. M5's overlap checks are next, and the milestones after it are in
+[`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -200,6 +201,7 @@ there.
 │   ├── check.ts         Every check in order, the wiring last: what `check` and `generate` run
 │   ├── shown.ts         A checked circuit taken into one language, as the engine's model
 │   ├── fonts.ts         Nunito's files, and every drawn word's width measured in them (ADR 0012)
+│   ├── orientation.ts   The four quarter turns, and where a point lands at each (ADR 0003)
 │   ├── circuit.ts       The engine's model: a circuit shown in one language, and its layout
 │   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
 │   ├── language.ts      The languages a page is written in
@@ -331,6 +333,11 @@ does not pay for it again.
   is a browser. Run it only to add a character: a page is made from the committed files.
 - **fontkit ships no types.** `src/fontkit.d.ts` declares the members the engine uses and nothing
   else, so a new one is declared there first, or `tsc` says it does not exist.
+- **A word on the drawing is written through `word()`, never `text()`, unless it is in a chip or a
+  tag that is set upright whole.** The board is drawn as at 0° inside one turned group, and `word()`
+  turns each word back about its own point. A word written with `text()` turns with the board, and
+  `src/page/orientation.test.ts`, which composes every transform down to each word, fails on it at
+  90°, 180° and 270°.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
