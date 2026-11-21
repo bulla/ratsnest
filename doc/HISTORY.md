@@ -218,3 +218,10 @@ a word that crowds at any of the four, and the examples moved two pull-downs so 
   `ratsnest` to it and refused a wrong colour. Whether `init` ignores `pages/` became ADR 0025. With no
   release until M9, `install.sh` also takes a local build, which is how the owner's first project is
   to be made.
+- 2026-11-21: M9, all but the first release. The public surface is a flat record of named sets, read
+  from the format's own file and from the table the command itself reads, so that a part, a language or
+  an option added is a gain and one removed a change, and a required field added to a type a file
+  already declares counts as major. In a scratch clone, `bun run release` made `0.1.0` and then `0.1.1`,
+  each tag meeting the workflow's check against the previous, and refused an empty _Unreleased_ and a
+  branch other than `develop`. That last rule meets ADR 0020's protected `develop`, which takes changes
+  only by pull request: an open point for the owner, before the first release.

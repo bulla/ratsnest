@@ -17,7 +17,8 @@
     "test": "bun test",
     "ratsnest": "bun src/cli.ts",
     "fonts": "bun scripts/fonts.ts",
-    "build": "bun scripts/build.ts"
+    "build": "bun scripts/build.ts",
+    "release": "bun scripts/release.ts"
   },
   "dependencies": {
     "@babel/parser": "8.1.3",

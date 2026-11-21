@@ -26,6 +26,29 @@ export interface Io {
 
 /** The orientations ADR 0003 names, and the ones the engine draws so far. */
 const ORIENTATIONS = ["0", "90", "180", "270"];
+
+/**
+ * The commands and the options each takes, with the values an option allows: part of ratsnest's
+ * public surface, which every release snapshots (ADR 0017). A command or an option is read from here,
+ * so the snapshot is what the command does.
+ */
+export const COMMANDS = {
+  init: { arguments: "[<folder>]", options: {} },
+  check: { arguments: "[<file or folder> ...]", options: {} },
+  generate: {
+    arguments: "<file>",
+    options: {
+      orientation: ORIENTATIONS,
+      theme: [...THEMES],
+      language: [...LANGUAGES],
+      out: "<file>",
+    },
+  },
+} as const;
+
+const optionNames = (command: keyof typeof COMMANDS): string[] =>
+  Object.keys(COMMANDS[command].options);
+
 const DRAWN_ORIENTATIONS = ORIENTATIONS;
 
 /** The themes ADR 0005 names, and the ones the engine draws so far. */
@@ -160,7 +183,7 @@ function choice(
 }
 
 function generate(args: readonly string[], cwd: string, io: Io): number {
-  const { values, rest } = optionsOf(args, ["orientation", "theme", "language", "out"]);
+  const { values, rest } = optionsOf(args, optionNames("generate"));
   const [file, ...more] = rest;
   if (!file) throw new Usage("generate needs the circuit file to make a page of");
   if (more.length > 0) throw new Usage("generate makes one page at a time, from one circuit file");
