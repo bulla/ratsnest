@@ -41,15 +41,17 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 ### M7: the executable, and circuits projects
 
-- [ ] `bun run build`: the five executables with `--conditions=browser`, and `NOTICES` (ADR 0016,
+- [x] `bun run build`: the five executables with `--conditions=browser`, and `NOTICES` (ADR 0016,
       ADR 0018)
-- [ ] The pull request workflow checking the examples with the compiled Linux executable (ADR 0020)
-- [ ] `ratsnest init`: `ratsnest.json`, the `Circuit` type in `.ratsnest/`, `tsconfig.json`,
-      `circuits/`, the `circuit` skill, and a tracked `ARTIFACTS.md` (ADR 0014, ADR 0016, ADR 0019)
-- [ ] An executable older or newer than its project's `ratsnest.json` saying so (ADR 0016)
-- [ ] `install.sh` (ADR 0016)
+- [x] The pull request workflow checking the examples with the compiled Linux executable (ADR 0020),
+      every page compared byte for byte with the source's
+- [x] `ratsnest init`: `ratsnest.json`, the `Circuit` type in `.ratsnest/`, `tsconfig.json`,
+      `circuits/`, the `circuit` skill, and a tracked `ARTIFACTS.md` (ADR 0014, ADR 0016, ADR 0019),
+      and `pages/` ignored (ADR 0025)
+- [x] An executable older or newer than its project's `ratsnest.json` saying so (ADR 0016)
+- [x] `install.sh` (ADR 0016)
 - [ ] The owner's first circuits project, made by `init` from a local build
-- [ ] The README's _Get started_, for people using ratsnest: install it, `ratsnest init`, `/circuit`
+- [x] The README's _Get started_, for people using ratsnest: install it, `ratsnest init`, `/circuit`
 
 ### M8: publishing
 
@@ -96,6 +98,9 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 - **The `no changelog` label** (ADR 0020): made once, under _Issues_, then _Labels_, then _New label_,
   before a pull request can wear it.
 
+- **The owner's first circuits project**, M7's last item: build ratsnest with `bun run build`,
+  install it with `RATSNEST_FROM=dist/ratsnest-<system> sh install.sh`, and run `ratsnest init` in a
+  folder of the owner's own, as the README's _Get started_ says.
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
   A test cannot check its grammar. The parts list is written as a bill of materials, and every part's

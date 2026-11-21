@@ -19,8 +19,10 @@ scratchpi's drawing, wiring check and page generator are copied in (M2), and cir
 `bun run ratsnest generate`, with scratchpi's seven circuits as the examples. Every page carries
 Nunito and the drawing is measured in it (M4), and is drawn at any quarter turn, every word
 upright and nothing crowding at any (M5), in either theme, and in English, French or Russian, every
-language held to ADR 0011's rules (M6). M6 waits only on a reader of Russian; M7, the executable and
-circuits projects, is next, and the milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
+language held to ADR 0011's rules (M6). It builds into one executable per platform, and
+`ratsnest init` makes circuits projects (M7). M6 waits on a reader of Russian and M7 on the owner's
+first project; M8, publishing, is next, and the milestones after it are in
+[`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -164,6 +166,8 @@ Every command is `bun run <script>` (ADR 0009). `CONTRIBUTING.md` walks through 
 | Check the examples                              | `bun run ratsnest check examples`                                 |
 | Make an example's page                          | `bun run ratsnest generate examples/push-button.ts --language en` |
 | Fetch Nunito again, after adding a character    | `bun run fonts`                                                   |
+| Build the executables, and `dist/NOTICES`       | `bun run build`, or `bun run build linux-x64` for one             |
+| Run the examples with a compiled executable     | `bun scripts/compiled.ts dist/ratsnest-linux-x64`                 |
 
 Say `bun run test`, never `bun test` alone: both work today, but a script changed in `package.json`
 changes only for the first.
@@ -194,7 +198,9 @@ there.
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
 ├── src/               The engine and the command-line tool. Nothing in it names a circuit (ADR 0007)
-│   ├── cli.ts           `ratsnest check` and `generate`, and · `init` and `update` (ADR 0014)
+│   ├── cli.ts           `ratsnest init`, `check` and `generate`, and · `update` (ADR 0014)
+│   ├── init.ts          A circuits project made, the type and the skill carried as text (ADR 0016)
+│   ├── project.ts       The project a folder is in, and the version it expects (ADR 0016)
 │   ├── format.ts        The circuit format: the type a circuit file satisfies, and only that. It
 │   │                    imports nothing, because `init` copies it alone (ADR 0022)
 │   ├── read.ts          A circuit file read as data, never run, held to the declarative check
@@ -219,14 +225,15 @@ there.
 │                        `bun run release` (ADR 0017)
 ├── scripts/             The repository's own tools and their tests: the changelog check, the
 │                        repository's rules (exact pins, the pinned Bun, no Node), the examples'
-│                        checks, and `fonts.ts`, which fetches Nunito's files
+│                        checks, `fonts.ts`, which fetches Nunito's files, `build.ts`, which makes
+│                        the executables and `NOTICES`, and `compiled.ts`, which runs one
 ├── package.json         The dependencies, the scripts, and the one place the version lives (ADR 0017)
 ├── bun.lock             What `bun install` installs, exactly
 ├── tsconfig.json, biome.json  Strict TypeScript; Biome for the code and the Markdown alike
 ├── CHANGELOG.md         Every release, and *Unreleased* (ADR 0017)
 ├── CONTRIBUTING.md      The walkthrough for working on ratsnest, which `/setup` follows
-├── README.md          · What ratsnest is, and how to start using it
-├── install.sh         · Puts the right executable on the `PATH` (ADR 0016)
+├── README.md            What ratsnest is, and how to start using it
+├── install.sh           Puts the right executable on the `PATH` (ADR 0016)
 ├── .gitattributes       LF on every system, so Biome reads the same bytes on Windows
 ├── .gitignore           `node_modules/`, and the executables `bun run build` writes to `dist/`
 └── CLAUDE.md            This file
@@ -352,6 +359,11 @@ does not pay for it again.
   Russian Four buttons changes with it.
 - **`\s` matches the narrow no-break space**, so a typography check for English or Russian sees
   U+202F before a colon as a space, which is right: only French writes one there.
+- **A `.ts` file imported as text is invisible to TypeScript**, which sees the module's types and
+  no default export. `src/init.ts` imports `format.ts` that way, so that the executable carries it, under
+  one `@ts-expect-error` that says why; it fails the type check if TypeScript ever stops minding.
+- **Cross-compiling fetches Bun for each target**, from Bun's own servers, the first time. A build
+  with no network makes the running system's executable alone.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
