@@ -63,7 +63,7 @@ function inline(value: unknown): string | undefined {
 }
 
 /** A value as the file writes it, at an indent, after what the line already holds. */
-function valueOf(
+function written(
   value: unknown,
   path: string,
   indent: string,
@@ -86,7 +86,7 @@ function valueOf(
       ]);
   for (const [at, member, key] of entries) {
     for (const comment of comments.get(at) ?? []) lines.push(`${inner}${comment}`);
-    lines.push(`${inner}${key}${valueOf(member, at, inner, inner.length + key.length, comments)},`);
+    lines.push(`${inner}${key}${written(member, at, inner, inner.length + key.length, comments)},`);
   }
   for (const comment of comments.get(`${path}/end`) ?? []) lines.push(`${inner}${comment}`);
   const [open, close] = Array.isArray(value) ? ["[", "]"] : ["{", "}"];
@@ -96,6 +96,6 @@ function valueOf(
 /** A circuit file declaring this data, its comments where they were. */
 export function printCircuit(data: unknown, comments: Comments = new Map()): string {
   const header = (comments.get("") ?? []).map((comment) => `${comment}\n`).join("");
-  const declared = valueOf(data, "", "", "export default ".length, comments);
+  const declared = written(data, "", "", "export default ".length, comments);
   return `${header}import type { ${CIRCUIT_TYPE} } from "${TYPES_MODULE}";\n\nexport default ${declared} satisfies ${CIRCUIT_TYPE};\n`;
 }
