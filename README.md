@@ -1,3 +1,14 @@
+<p align="center">
+  <img src="doc/ernest.jpg" alt="Ernest, a grey rat, chewing on a bundle of spaghetti" width="260">
+</p>
+
+<p align="center"><em>
+After rewiring pretty much all of his home's wiring, Ernest still has some juice to spare. While his
+neighbours rebuild their once-functional electric grid, one step at a time, Ernest definitely needs a
+side project... Help him focus on new challenges, and give him great, slick schematics for his next
+circuitry adventure.
+</em></p>
+
 # ratsnest
 
 _Graphical wiring for breadboards._ From a circuit described in one declarative file, ratsnest makes
