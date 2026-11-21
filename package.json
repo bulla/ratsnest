@@ -15,7 +15,8 @@
     "format": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "ratsnest": "bun src/cli.ts"
+    "ratsnest": "bun src/cli.ts",
+    "fonts": "bun scripts/fonts.ts"
   },
   "dependencies": {
     "@babel/parser": "8.1.3",
