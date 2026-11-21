@@ -98,3 +98,4 @@ Each new record adds a row here.
 | [0025](0025-let-init-ignore-pages-in-a-projects-git.md)                                                          | Let `init` ignore `pages/` in a project's git                                                      |
 | [0026](0026-give-each-button-blocked-on-the-channel-a-lane-of-its-own-alternating-sides.md)                      | Give each button blocked on the channel a lane of its own, alternating sides                       |
 | [0027](0027-put-a-second-board-parts-label-past-the-end-nearer-to-it.md)                                         | Put a second board's part's label past the end nearer to it                                        |
+| [0028](0028-let-a-button-sit-on-the-second-board.md)                                                             | Let a button sit on the second board                                                               |
