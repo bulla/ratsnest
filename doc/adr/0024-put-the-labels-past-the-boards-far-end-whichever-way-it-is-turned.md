@@ -1,6 +1,6 @@
 # ADR 0024: Put the labels past the board's far end, whichever way it is turned
 
-**Status:** Accepted · 2026-11-21
+**Status:** Accepted · 2026-11-21 · Amended by ADR-0027 (a part on the second board takes the end nearer to it)
 
 ## Context
 

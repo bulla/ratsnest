@@ -9,6 +9,7 @@ import {
   COLUMNS,
   columnX,
   type Hole,
+  holeAt,
   holeCentre,
   holeOfPin,
   isOnSecondBoard,
@@ -1268,12 +1269,31 @@ interface Point {
 }
 
 /**
- * A part's leader: the dot on the part, and where the run out to the margin starts. The two
- * are the same point unless something is in the way.
+ * Which end of the board a part's label goes past (ADR 0024, ADR 0027): the far end, away from the
+ * USB, for every part on the first board, whose near end is the Pico's; and for a part on the
+ * second board, whichever end is nearer, by its middle column.
+ */
+export type LabelEnd = "far" | "near";
+
+/** The middle column of the second board, at or before which a part's label goes past the near end. */
+const SECOND_BOARD_NEAR_HALF = (COLUMNS + 1) / 2;
+
+export function labelEndOf(part: Part): LabelEnd {
+  const legs = legsOf(part);
+  if (!legs.some(isOnSecondBoard)) return "far";
+  const columns = legs.map((leg) => holeAt(leg).column);
+  const middle = (Math.min(...columns) + Math.max(...columns)) / 2;
+  return middle <= SECOND_BOARD_NEAR_HALF ? "near" : "far";
+}
+
+/**
+ * A part's leader: the dot on the part, and where the run out to the margin starts, and the end of
+ * the board its label is past. The dot and the run are the same point unless something is in the way.
  */
 export interface Leader {
   readonly dot: Point;
   readonly run: Point;
+  readonly end: LabelEnd;
 }
 
 /**
@@ -1281,36 +1301,52 @@ export interface Leader {
  *
  * Buttons all sit on the channel, so a button with another labelled button further along it
  * would run its leader straight through that one, and the two leaders would share a line to
- * the margin — nobody could tell whose label was whose. So it leaves from the top of its body
- * instead, and runs between rows d and e, above the other's legs (scratchpi's ADR 0097).
+ * the margin — nobody could tell whose label was whose (scratchpi's ADR 0097). So each blocked
+ * button takes a lane of its own (ADR 0026), from the one nearest the end to the one furthest from
+ * it: between rows d and e from the top of its body, then between f and g from the bottom, then a
+ * row further out on each side in turn.
  */
 export function leaderOf(part: Part, labelled: readonly Part[]): Leader | undefined {
-  const anchor = anchorOf(part);
-  if (!anchor) return undefined;
+  const end = labelEndOf(part);
+  const edges = anchorOf(part);
+  if (!edges) return undefined;
+  const anchor = { x: end === "far" ? edges.right : edges.left, y: edges.y };
   if (part.kind === "button") {
-    const [, right] = part.columns;
     const { x: mid, y: cy } = buttonCentre(part);
-    // Only a button further along at the same height is in the way: one above or below the
-    // channel leaves a leader along it room to pass (scratchpi's ADR 0154).
-    const blocked = labelled.some(
-      (other) =>
-        other !== part &&
-        other.kind === "button" &&
-        other.columns[0] > right &&
-        Math.abs(buttonCentre(other).y - cy) < BUTTON_BODY_MM,
+    // How far along towards its label's end a button is: larger is nearer that end.
+    const along = (button: Extract<Part, { kind: "button" }>) =>
+      end === "far" ? buttonCentre(button).x : -buttonCentre(button).x;
+    // Only a button at the same height, going the same way, is in the line: one above or below
+    // the channel leaves a leader along it room to pass (scratchpi's ADR 0154).
+    const line = labelled.flatMap((other) =>
+      other.kind === "button" &&
+      labelEndOf(other) === end &&
+      Math.abs(buttonCentre(other).y - cy) < BUTTON_BODY_MM
+        ? [other]
+        : [],
     );
-    if (blocked) {
-      return {
-        dot: { x: mid, y: cy - BUTTON_BODY_MM / 2 },
-        run: { x: mid, y: nearestBetweenRows(cy - BUTTON_BODY_MM / 2 - 1) },
-      };
+    const isBlocked = (button: Extract<Part, { kind: "button" }>) =>
+      line.some((other) => other !== button && along(other) - along(button) > BUTTON_BODY_MM);
+    if (isBlocked(part)) {
+      const blocked = line.filter(isBlocked).sort((a, b) => along(b) - along(a));
+      const index = blocked.indexOf(part);
+      const above = index % 2 === 0;
+      const further = Math.floor(index / 2) * PIN_PITCH_MM;
+      const edge = above ? cy - BUTTON_BODY_MM / 2 : cy + BUTTON_BODY_MM / 2;
+      const lane = above
+        ? nearestBetweenRows(edge - 1) - further
+        : nearestBetweenRows(edge + 1) + further;
+      return { dot: { x: mid, y: edge }, run: { x: mid, y: lane }, end };
     }
   }
-  return { dot: anchor, run: anchor };
+  return { dot: anchor, run: anchor, end };
 }
 
-/** Where a part's leader starts: its right-hand edge, at a height between two rows. */
-function anchorOf(part: Part): { x: number; y: number } | undefined {
+/**
+ * Where a part's leader can start: its left-hand and right-hand edges, at a height between two rows.
+ * It leaves from the side that faces its label's end.
+ */
+function anchorOf(part: Part): { left: number; right: number; y: number } | undefined {
   switch (part.kind) {
     case "led": {
       const a = holeCentre(part.anode);
@@ -1320,31 +1356,39 @@ function anchorOf(part: Part): { x: number; y: number } | undefined {
       const y = nearestBetweenRows(centre);
       const dy = Math.min(Math.abs(y - centre), LENS_RADIUS_MM);
       const reach = y > centre ? LENS_RADIUS_MM : Math.sqrt(LENS_RADIUS_MM ** 2 - dy ** 2);
-      return { x: mid + reach + 0.2, y };
+      return { left: mid - reach - 0.2, right: mid + reach + 0.2, y };
     }
     case "button": {
       const { x: mid, y } = buttonCentre(part);
-      return { x: mid + BUTTON_BODY_MM / 2 + 0.2, y };
+      return { left: mid - BUTTON_BODY_MM / 2 - 0.2, right: mid + BUTTON_BODY_MM / 2 + 0.2, y };
     }
     case "buzzer": {
       const p = holeCentre(part.plus);
       const m = holeCentre(part.minus);
+      const mid = (p.x + m.x) / 2;
       const centre = p.y - BUZZER_LIFT_MM - BUZZER_HEIGHT_MM / 2;
-      return { x: (p.x + m.x) / 2 + BUZZER_RADIUS_MM + 0.2, y: nearestBetweenRows(centre) };
+      return {
+        left: mid - BUZZER_RADIUS_MM - 0.2,
+        right: mid + BUZZER_RADIUS_MM + 0.2,
+        y: nearestBetweenRows(centre),
+      };
     }
     case "rgbLed": {
       const xs = legsOf(part).map((leg) => holeCentre(leg).x);
+      const mid = (Math.min(...xs) + Math.max(...xs)) / 2;
       const centre = holeCentre(part.power).y - RGB_LENS_RISE_MM;
       return {
-        x: (Math.min(...xs) + Math.max(...xs)) / 2 + RGB_LENS_RADIUS_MM + 0.2,
+        left: mid - RGB_LENS_RADIUS_MM - 0.2,
+        right: mid + RGB_LENS_RADIUS_MM + 0.2,
         y: nearestBetweenRows(centre),
       };
     }
     case "ring": {
-      // The header's right-hand end: the ring itself hangs below the board, past the margin.
+      // The header's ends: the ring itself hangs below the board, past the margin.
       const xs = legsOf(part).map((leg) => holeCentre(leg).x);
       return {
-        x: Math.max(...xs) + PIN_PITCH_MM / 2 + 0.2,
+        left: Math.min(...xs) - PIN_PITCH_MM / 2 - 0.2,
+        right: Math.max(...xs) + PIN_PITCH_MM / 2 + 0.2,
         y: holeCentre(part.dataIn).y + RING_HEADER_MM.gap + RING_HEADER_MM.height / 2,
       };
     }
@@ -1373,7 +1417,7 @@ function labelHeights(
   const labelled = parts
     .flatMap((drawn) => {
       const leader = leaders.get(drawn);
-      return leader ? [{ drawn, y: leader.run.y }] : [];
+      return leader?.end === "far" ? [{ drawn, y: leader.run.y }] : [];
     })
     .sort((a, b) => a.y - b.y);
   const heights = new Map<DrawnPart, number>();
@@ -1404,48 +1448,60 @@ const labelWidthOf = (label: { title: string; detail: string }): number =>
     widthOf(label.detail, CALLOUT_DETAIL.size, CALLOUT_DETAIL.weight),
   );
 
-/** Where a leader leaves the board: just past its far end, level with where it ran along the rows. */
-const bendOf = (leader: Leader): Point => ({ x: BREADBOARD_WIDTH_MM + 0.8, y: leader.run.y });
+/**
+ * Where a leader leaves the board: just past the end its label is past, level with where it ran
+ * along the rows.
+ */
+const bendOf = (leader: Leader): Point => ({
+  x: leader.end === "far" ? BREADBOARD_WIDTH_MM + 0.8 : -0.8,
+  y: leader.run.y,
+});
 
 /**
- * Where each label stands on a turned board (ADR 0024): past the board's far end, in a column to
- * its left at 180°, and in a row below it at 90° or above it at 270°, each kept in its part's order
- * and moved along only as far as the one before it needs.
+ * Where each label past one end of the board stands, once the board is turned (ADR 0024, ADR 0027):
+ * in a column beside that end when the board lies flat, and in a row above or below it when it
+ * stands, each kept in its part's order and moved along only as far as the one before it needs. At
+ * 0°, the far end's labels are `labelHeights`', as they have always been.
  */
 function labelPlaces(
   parts: readonly DrawnPart[],
   leaders: ReadonlyMap<DrawnPart, Leader>,
+  end: LabelEnd,
 ): Map<DrawnPart, LabelPlace> {
-  const far = BREADBOARD_WIDTH_MM + 3;
   const labelled = parts.flatMap((drawn) => {
     const leader = leaders.get(drawn);
-    return leader && drawn.label
+    return leader?.end === end && drawn.label
       ? [{ drawn, bend: turned(bendOf(leader), turn), width: labelWidthOf(drawn.label) }]
       : [];
   });
+  // That end of the board on the page, and the way out past it.
+  const corner = turned({ x: end === "far" ? BREADBOARD_WIDTH_MM : 0, y: 0 }, turn);
+  const out = turned({ x: end === "far" ? 1 : -1, y: 0 }, turn);
   const places = new Map<DrawnPart, LabelPlace>();
   if (!isStanding(turn)) {
+    const x = corner.x + 3 * out.x;
+    const anchor = out.x > 0 ? "start" : "end";
     let previous = Number.NEGATIVE_INFINITY;
     for (const { drawn, bend, width } of labelled.sort((a, b) => a.bend.y - b.bend.y)) {
       const y = Math.max(bend.y, previous + LABEL_PITCH_MM);
       previous = y;
       places.set(drawn, {
-        end: { x: -far + 0.8, y },
-        title: { x: -far, y: y - 0.3 },
-        detail: { x: -far, y: y + 2.4 },
-        anchor: "end",
-        box: { x: -far - width, y: y - 2.6, w: width, h: 5.6 },
+        end: { x: x - 0.8 * out.x, y },
+        title: { x, y: y - 0.3 },
+        detail: { x, y: y + 2.4 },
+        anchor,
+        box: { x: anchor === "end" ? x - width : x, y: y - 2.6, w: width, h: 5.6 },
       });
     }
     return places;
   }
-  const below = turn === 90;
+  const below = out.y > 0;
+  const edge = corner.y + 3 * out.y;
   let right = Number.NEGATIVE_INFINITY;
   for (const { drawn, bend, width } of labelled.sort((a, b) => a.bend.x - b.bend.x)) {
     const x = Math.max(bend.x, right + 1.5 + width / 2);
     right = x + width / 2;
     // Below the board the title comes first, as everywhere; above it, the line is nearer the board.
-    const edge = below ? far : -far;
     places.set(drawn, {
       end: { x, y: below ? edge - 0.6 : edge + 0.6 },
       title: { x, y: below ? edge + 2.2 : edge - 3.1 },
@@ -1642,8 +1698,17 @@ function drawTurned(drawing: Breadboard): string {
     }),
   );
   const labels = labelHeights(drawing.parts, leaders);
-  const places =
-    turn === 0 ? new Map<DrawnPart, LabelPlace>() : labelPlaces(drawing.parts, leaders);
+  // At 0° the far end's labels stand where they always have, by `labelHeights`; every other label is
+  // placed past its end of the board (ADR 0027).
+  const places = new Map([
+    ...labelPlaces(drawing.parts, leaders, "near"),
+    ...(turn === 0 ? [] : labelPlaces(drawing.parts, leaders, "far")),
+  ]);
+  // At 0° the labels past the near end widen the picture to the left, and may reach past its top.
+  const nearBoxes = turn === 0 ? [...places.values()].map((place) => place.box) : [];
+  const flatLeft = Math.min(left, ...nearBoxes.map((box) => box.x - 2));
+  const flatTop = Math.min(top, ...nearBoxes.map((box) => box.y - 1));
+  const flatBottom = Math.max(bottom, ...nearBoxes.map((box) => box.y + box.h + 1));
   // Turned, the picture is the board's own box turned, reaching its far end or a ring's, which hangs
   // past it (scratchpi's ADR 0238), and its labels' boxes beside it.
   const far = Math.max(
@@ -1652,7 +1717,7 @@ function drawTurned(drawing: Breadboard): string {
   );
   const view =
     turn === 0
-      ? { x: left, y: top, w: width, h: height }
+      ? { x: flatLeft, y: flatTop, w: width + left - flatLeft, h: flatBottom - flatTop }
       : turnedView({ x: left, y: top, w: far - left, h: height }, [...places.values()]);
   // Wires are laid over everything else, the way they are on the bench, and an arching one is
   // over them too.

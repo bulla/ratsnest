@@ -15,6 +15,7 @@ import {
   pinOfStrip,
   placementOf,
   printedName,
+  type Row,
   rowY,
   stripOf,
   usesSecondBoard,
@@ -25,6 +26,7 @@ import {
   clearTagOf,
   drawBreadboard,
   formatOhms,
+  labelEndOf,
   leaderOf,
   resistorBands,
   tagOf,
@@ -165,6 +167,89 @@ describe("a label's leader", () => {
 
     // The one further along has nothing in its way.
     expect(leaderOf(right, [left, right])?.run.y).toBe(CHANNEL_Y_MM);
+  });
+
+  it("gives each of three buttons in a line a lane of its own, alternating sides (ADR 0026)", () => {
+    const first: Part = { kind: "button", button: "first", columns: [22, 24] };
+    const second: Part = { kind: "button", button: "second", columns: [25, 27] };
+    const third: Part = { kind: "button", button: "third", columns: [28, 30] };
+    const line = [first, second, third];
+    const [one, two, three] = line.map((button) => leaderOf(button, line));
+
+    // The blocked button nearest the end runs between d and e, from the top of its body...
+    expect(two?.run.y).toBeGreaterThan(rowY("d"));
+    expect(two?.run.y).toBeLessThan(rowY("e"));
+    expect(two?.dot.y).toBeLessThan(CHANNEL_Y_MM);
+    // ...the next between f and g, from the bottom of its body, on the channel's other side...
+    expect(one?.run.y).toBeGreaterThan(rowY("f"));
+    expect(one?.run.y).toBeLessThan(rowY("g"));
+    expect(one?.dot.y).toBeGreaterThan(CHANNEL_Y_MM);
+    // ...and the last one runs straight along the channel.
+    expect(three?.run.y).toBe(CHANNEL_Y_MM);
+
+    // So no two leaders share a line to the margin.
+    expect(new Set([one?.run.y, two?.run.y, three?.run.y]).size).toBe(3);
+  });
+
+  it("goes a row further out on each side for a fourth and a fifth button (ADR 0026)", () => {
+    const line: Part[] = [10, 13, 16, 19, 22].map((column) => ({
+      kind: "button",
+      button: `at ${column}`,
+      columns: [column, column + 2],
+    }));
+    const runs = line.map((button) => leaderOf(button, line)?.run.y ?? Number.NaN);
+    const between = (a: Row, b: Row) => (rowY(a) + rowY(b)) / 2;
+    const expected = [
+      between("g", "h"),
+      between("c", "d"),
+      between("f", "g"),
+      between("d", "e"),
+      CHANNEL_Y_MM,
+    ];
+    expected.forEach((y, i) => {
+      expect(runs[i]).toBeCloseTo(y, 9);
+    });
+  });
+});
+
+describe("the end a label goes past (ADR 0024, ADR 0027)", () => {
+  const rgbAt = (first: number, board: "" | "2:"): Part => ({
+    kind: "rgbLed",
+    led: "rgb",
+    power: `${board}f${first}`,
+    dataOut: `${board}f${first + 1}`,
+    ground: `${board}f${first + 2}`,
+    dataIn: `${board}f${first + 3}`,
+  });
+
+  it("is the far end for every part on the first board, however near the USB it is", () => {
+    expect(labelEndOf(rgbAt(22, ""))).toBe("far");
+    expect(labelEndOf({ kind: "led", led: "red", anode: "a1", cathode: "b1" })).toBe("far");
+  });
+
+  it("is the nearer end for a part on the second board, by its middle column", () => {
+    expect(labelEndOf(rgbAt(2, "2:"))).toBe("near");
+    // Columns 13 to 16: its middle, 14.5, is in the near half.
+    expect(labelEndOf(rgbAt(13, "2:"))).toBe("near");
+    // Columns 14 to 17: its middle, 15.5, is the board's own, which counts as near.
+    expect(labelEndOf(rgbAt(14, "2:"))).toBe("near");
+    expect(labelEndOf(rgbAt(15, "2:"))).toBe("far");
+    expect(labelEndOf(rgbAt(27, "2:"))).toBe("far");
+  });
+
+  it("starts a leader towards the near end on the part's other side", () => {
+    const near = rgbAt(2, "2:");
+    const far = rgbAt(27, "2:");
+    const middleOf = (part: Part) =>
+      legsOf(part)
+        .map((leg) => holeCentre(leg).x)
+        .reduce((sum, x) => sum + x, 0) / 4;
+    const towardsNear = leaderOf(near, [near]);
+    expect(towardsNear?.end).toBe("near");
+    expect(towardsNear?.dot.x).toBeLessThan(middleOf(near));
+    const towardsFar = leaderOf(far, [far]);
+    expect(towardsFar?.end).toBe("far");
+    expect(towardsFar?.dot.x).toBeGreaterThan(middleOf(far));
   });
 });
 
