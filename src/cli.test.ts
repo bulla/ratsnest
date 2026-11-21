@@ -113,7 +113,7 @@ describe("ratsnest generate (ADR 0023)", () => {
   it("writes the page into pages/, named by its four inputs, and says where", () => {
     const folder = project({ "lights.ts": LIGHTS });
     const result = run(folder, "generate", "circuits/lights.ts");
-    expect(result).toEqual({ status: 0, out: join("pages", "lights.0.dark.en.html"), err: "" });
+    expect(result).toEqual({ status: 0, out: "pages/lights.0.dark.en.html", err: "" });
     const page = readFileSync(join(folder, "pages", "lights.0.dark.en.html"), "utf8");
     expect(page).toContain("<h1>Two lights</h1>");
     expect(page).toStartWith("<!doctype html>");
@@ -131,7 +131,7 @@ describe("ratsnest generate (ADR 0023)", () => {
   it("writes it where --out says, instead", () => {
     const folder = project({ "lights.ts": LIGHTS });
     expect(run(folder, "generate", "circuits/lights.ts", "--out=guides/two.html").out).toBe(
-      join("guides", "two.html"),
+      "guides/two.html",
     );
     expect(existsSync(join(folder, "guides", "two.html"))).toBe(true);
     expect(existsSync(join(folder, "pages"))).toBe(false);

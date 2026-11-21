@@ -1,5 +1,5 @@
 import { mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { version } from "../package.json";
 import { type Checked, checkFile, problemLine } from "./check";
 import { FORMAT, languagesOf } from "./fields";
@@ -52,6 +52,12 @@ Usage:
 A circuit file is written in format ${FORMAT}. Exit status: 0 when all is well, 1 when a circuit has a
 problem, 2 when the command is used wrongly.`;
 
+/**
+ * A path as the command says it, with forward slashes on every system, as a person types it and as
+ * Windows reads it too, so that a project's output reads the same wherever it is made.
+ */
+const slashed = (path: string): string => path.split(sep).join("/");
+
 /** A usage mistake: what was wrong, said once, with exit status 2. */
 class Usage extends Error {}
 
@@ -90,7 +96,7 @@ function filesIn(path: string, cwd: string): string[] {
   return readdirSync(resolve(cwd, path))
     .filter((name) => name.endsWith(".ts") && !name.endsWith(".d.ts"))
     .sort()
-    .map((name) => join(path, name));
+    .map((name) => `${path.replace(/[\\/]+$/, "")}/${name}`);
 }
 
 /** Prints a file's problems, if it has any. */
@@ -190,7 +196,7 @@ function generate(args: readonly string[], cwd: string, io: Io): number {
   );
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, html);
-  io.out(relative(cwd, out));
+  io.out(slashed(relative(cwd, out)));
   return 0;
 }
 
