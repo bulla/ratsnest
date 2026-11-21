@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/ernest.jpg" alt="Ernest, a grey rat, chewing on a bundle of spaghetti" width="260">
+  <img src="doc/ernest.webp" alt="Ernest, a grey rat, holding a bundle of jumper wires" width="260" height="408">
 </p>
 
 <p align="center"><em>
@@ -16,6 +16,10 @@ one self-contained page showing how to build it on a breadboard with a Raspberry
 by step: the drawing, the steps that pick out their parts, the parts list and a MicroPython script to
 test it with. A page is drawn at any quarter turn, in a dark or a light theme, and in English, French
 or Russian.
+
+> ⚠️ **ratsnest is still very much a work in progress.** It can occasionally and unexpectedly break.
+> Run `ratsnest update` in your circuits project to move it to the latest ratsnest version. The
+> command upgrades every circuit to the latest format and checks them.
 
 ratsnest is not released yet: its first release, 0.1.0, is M9 in [the roadmap](doc/ROADMAP.md), and
 until then the steps below work with a build of your own.
@@ -70,5 +74,7 @@ Why it is built the way it is, one decision at a time, is in [`doc/adr/`](doc/ad
 
 ratsnest's code is MIT, held by bulla. The drawing of the Pico and the breadboard, in
 `src/drawing/`, is CC BY-SA 4.0, as an adaptation of Raspberry Pi's datasheet figure, and every page
-is set in Nunito, under the SIL Open Font License 1.1: [`ATTRIBUTION.md`](ATTRIBUTION.md) says what
-each is and what changed.
+is set in Nunito, under the SIL Open Font License 1.1. The picture of Ernest is originally a photo of
+Baby, a pet rat, holding a bunch of pasta instead of jumper wires (photo: Maaique). It is not under
+the MIT licence. [`ATTRIBUTION.md`](ATTRIBUTION.md)
+says what each is and what changed.
