@@ -1,0 +1,155 @@
+import { describe, expect, it } from "bun:test";
+import { JSDOM } from "jsdom";
+import { FIXTURE_IDS, FIXTURES, type FixtureId } from "../__fixtures__/circuits";
+import { ORIENTATIONS, type Orientation } from "../orientation";
+import { PAGE_FILES } from "./files";
+import { wiringPage } from "./page";
+
+/**
+ * Every test circuit's page at each quarter turn (ADR 0003): every word upright and inside the
+ * picture, the labels past the board's far end (ADR 0024), and the page arranged around a standing
+ * board.
+ */
+
+const page = (id: FixtureId, orientation: Orientation, language: "en" | "fr" = "en") =>
+  wiringPage(FIXTURES[id].circuit, FIXTURES[id].layout, PAGE_FILES, language, orientation);
+
+/** A 2D affine transform, as SVG's matrix(a b c d e f). */
+type Matrix = readonly [number, number, number, number, number, number];
+const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
+
+const times = (m: Matrix, n: Matrix): Matrix => [
+  m[0] * n[0] + m[2] * n[1],
+  m[1] * n[0] + m[3] * n[1],
+  m[0] * n[2] + m[2] * n[3],
+  m[1] * n[2] + m[3] * n[3],
+  m[0] * n[4] + m[2] * n[5] + m[4],
+  m[1] * n[4] + m[3] * n[5] + m[5],
+];
+
+/** An element's own `transform`, of the two kinds the drawing writes: translate and rotate. */
+function ownTransform(element: Element): Matrix {
+  let matrix = IDENTITY;
+  for (const [, kind, args] of (element.getAttribute("transform") ?? "").matchAll(
+    /(translate|rotate)\(([^)]*)\)/g,
+  )) {
+    const [a = 0, b = 0, c = 0] = (args ?? "").split(/[\s,]+/).map(Number);
+    if (kind === "translate") matrix = times(matrix, [1, 0, 0, 1, a, b]);
+    else {
+      const r = (a * Math.PI) / 180;
+      const turn: Matrix = [Math.cos(r), Math.sin(r), -Math.sin(r), Math.cos(r), 0, 0];
+      matrix = times(matrix, times([1, 0, 0, 1, b, c], times(turn, [1, 0, 0, 1, -b, -c])));
+    }
+  }
+  return matrix;
+}
+
+/** Where an element's own point lands in the picture, and how much it is turned there. */
+function placed(element: Element): { x: number; y: number; degrees: number } {
+  let matrix = IDENTITY;
+  for (let at: Element | null = element; at && at.tagName !== "svg"; at = at.parentElement) {
+    matrix = times(ownTransform(at), matrix);
+  }
+  const x = Number(element.getAttribute("x") ?? 0);
+  const y = Number(element.getAttribute("y") ?? 0);
+  const degrees = ((((Math.atan2(matrix[1], matrix[0]) * 180) / Math.PI) % 360) + 360) % 360;
+  return {
+    x: matrix[0] * x + matrix[2] * y + matrix[4],
+    y: matrix[1] * x + matrix[3] * y + matrix[5],
+    degrees: (Math.round(degrees * 1000) / 1000) % 360,
+  };
+}
+
+function drawingOf(html: string) {
+  const svg = new JSDOM(html).window.document.querySelector("svg.breadboard-drawing");
+  if (!svg) throw new Error("No drawing");
+  const [x = 0, y = 0, w = 0, h = 0] = (svg.getAttribute("viewBox") ?? "").split(" ").map(Number);
+  return { svg, view: { x, y, w, h } };
+}
+
+describe.each([...ORIENTATIONS])("every test circuit's drawing at %i°", (orientation) => {
+  it.each([...FIXTURE_IDS])("writes every word upright, inside the picture: %s", (id) => {
+    const { svg, view } = drawingOf(page(id, orientation));
+    const words = [...svg.querySelectorAll("text")];
+    expect(words.length).toBeGreaterThan(40);
+    for (const word of words) {
+      const at = placed(word);
+      expect({ word: word.textContent, degrees: at.degrees }).toEqual({
+        word: word.textContent,
+        degrees: 0,
+      });
+      expect(at.x).toBeGreaterThanOrEqual(view.x);
+      expect(at.x).toBeLessThanOrEqual(view.x + view.w);
+      expect(at.y).toBeGreaterThanOrEqual(view.y);
+      expect(at.y).toBeLessThanOrEqual(view.y + view.h);
+    }
+  });
+
+  it("turns the board itself, never mirroring it", () => {
+    const html = page("two-lights", orientation);
+    expect(html.includes(`<g transform="rotate(${orientation})">`)).toBe(orientation !== 0);
+    expect(html).not.toContain("scale(-1");
+  });
+});
+
+describe("the labels (ADR 0024)", () => {
+  /** Where the board's picture and its labels' titles are, in the picture. */
+  const layoutOf = (orientation: Orientation) => {
+    const { svg } = drawingOf(page("d-pad", orientation));
+    const board = [...svg.querySelectorAll("text")]
+      .filter((each) => /^(?:[a-j]|\d+)$/.test(each.textContent ?? ""))
+      .map(placed);
+    const titles = [...svg.querySelectorAll(".callout-title")].map(placed);
+    const extent = (values: number[]) => ({ min: Math.min(...values), max: Math.max(...values) });
+    return {
+      board: { x: extent(board.map((p) => p.x)), y: extent(board.map((p) => p.y)) },
+      titles,
+    };
+  };
+
+  it("stand past the board's far end, away from the USB, at every orientation", () => {
+    const right = layoutOf(0);
+    for (const title of right.titles) expect(title.x).toBeGreaterThan(right.board.x.max);
+    const below = layoutOf(90);
+    for (const title of below.titles) expect(title.y).toBeGreaterThan(below.board.y.max);
+    const left = layoutOf(180);
+    for (const title of left.titles) expect(title.x).toBeLessThan(left.board.x.min);
+    const above = layoutOf(270);
+    for (const title of above.titles) expect(title.y).toBeLessThan(above.board.y.min);
+  });
+
+  it("keep apart in a row on a standing board, each as wide as its words", () => {
+    const { titles } = layoutOf(90);
+    expect(titles).toHaveLength(4);
+    const xs = titles.map((title) => title.x).sort((a, b) => a - b);
+    for (let i = 1; i < xs.length; i++) {
+      expect((xs[i] ?? 0) - (xs[i - 1] ?? 0)).toBeGreaterThan(10);
+    }
+  });
+});
+
+describe("the page around a turned drawing (ADR 0003)", () => {
+  it("stands a standing board in a column of its own", () => {
+    for (const orientation of ORIENTATIONS) {
+      const standing = orientation === 90 || orientation === 270;
+      expect(page("two-lights", orientation).includes('<main class="page standing">')).toBe(
+        standing,
+      );
+    }
+  });
+
+  it("says which way the USB points, in each language", () => {
+    expect(page("two-lights", 0)).toContain("The USB goes to the left.");
+    expect(page("two-lights", 90)).toContain("The USB goes to the top.");
+    expect(page("two-lights", 180)).toContain("its USB to the right.");
+    expect(page("two-lights", 270, "fr")).toContain("Le port USB va en bas.");
+  });
+
+  it("builds the same circuit at every orientation, step for step and hole for hole", () => {
+    const holes = (html: string) => [...html.matchAll(/class="hole">([^<]+)</g)].map((m) => m[1]);
+    const upright = holes(page("rgb-led-and-d-pad", 0));
+    for (const orientation of ORIENTATIONS) {
+      expect(holes(page("rgb-led-and-d-pad", orientation))).toEqual(upright);
+    }
+  });
+});

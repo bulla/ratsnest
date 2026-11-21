@@ -21,7 +21,10 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   the declarative check, its format, its fields, its languages and its wiring, and says each problem
   on its line.
 - `ratsnest generate <file>`, which checks a circuit and writes its page into `pages/`, named by its
-  orientation, theme and language. So far it draws at 0° and in the dark theme.
+  orientation, theme and language. So far it draws in the dark theme only.
+- `ratsnest generate --orientation 90`, `180` and `270` draw the board turned, its USB at the top,
+  on the right or at the bottom, every word on it upright and its labels past its far end. A standing
+  board stands in a column beside the steps on a wide screen.
 - Every page is set in Nunito and carries it, so it looks the same on every device, and every word
   the drawing writes is measured in it. `ratsnest check` refuses a circuit whose words hold a
   character Nunito lacks, such as `→`.

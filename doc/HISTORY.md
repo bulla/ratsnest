@@ -169,3 +169,11 @@ refused in a circuit's words and fails a test in the engine's.
   moved; the margin widens only for a label wider than it, which none is yet. fontkit has no types,
   and five declared members cost less than a dependency. A check now refuses a circuit's words
   holding a character Nunito lacks, which the `circuit` skill already promised.
+- 2026-11-21: M5, its first two items. Where the labels go once the board is turned became ADR 0024:
+  past the board's far end, so that every leader is the 0° one turned. The board turns as one group
+  and every word is turned back, which kept 0° byte for byte as it was. A pin chip, upright on a
+  standing board, reaches further in and no longer meets its neighbour, so every chip fits in the
+  first row. A value tag, upright, is deep across the rows: beside the Pico, Four buttons' and RGB
+  LED's pull-downs have nowhere clear within three holes and fall back where they overlap, which a
+  search of five holes only moved off the board. That is what M5's overlap check is for, and the
+  layouts move then, as ADR 0007 says.

@@ -1,5 +1,6 @@
 import type { ButtonColour, LedColour } from "../circuit";
 import { widthOf } from "../fonts";
+import { isStanding, type Orientation, turned } from "../orientation";
 import { PIE_WEDGES, wedgePath } from "../rgb";
 import {
   BREADBOARD_HEIGHT_MM,
@@ -10,6 +11,7 @@ import {
   type Hole,
   holeCentre,
   holeOfPin,
+  isOnSecondBoard,
   legsOf,
   type Part,
   PICO_ORIGIN_MM,
@@ -76,6 +78,8 @@ export interface PinTag {
 }
 
 export interface Breadboard {
+  /** The quarter turn it is drawn at, 0 by default: the USB on the left (ADR 0003). */
+  readonly orientation?: Orientation;
   readonly parts: readonly DrawnPart[];
   readonly tags: readonly PinTag[];
   /** The colour of a circuit's light, by its id. */
@@ -146,6 +150,24 @@ function line(x1: number, y1: number, x2: number, y2: number, attributes: string
 
 function text(x: number, y: number, body: string, attributes: string): string {
   return `<text x="${n(x)}" y="${n(y)}" text-anchor="middle" dominant-baseline="central" ${attributes}>${escaped(body)}</text>`;
+}
+
+/**
+ * The quarter turn the drawing is being made at (ADR 0003). Everything is drawn in the board's own
+ * millimetres, as at 0°, inside one group turned by it; each word is turned back about its own point,
+ * so that it stays upright. Set for the length of `drawBreadboard`, and 0 otherwise.
+ */
+let turn: Orientation = 0;
+
+/** What turns an element back about a point, so that it stands upright on the page. */
+const upright = (x: number, y: number): string =>
+  turn === 0 ? "" : ` transform="rotate(${-turn} ${n(x)} ${n(y)})"`;
+
+/** A word on its own, drawn upright whichever way the board is turned. */
+function word(x: number, y: number, body: string, attributes: string): string {
+  return turn === 0
+    ? text(x, y, body, attributes)
+    : `<g${upright(x, y)}>${text(x, y, body, attributes)}</g>`;
 }
 
 // --- The resistor colour code, which the parts list prints as well as the drawing. ---
@@ -249,18 +271,18 @@ function drawPlastic(top = 0): string {
   const leftX = 0.85 * PIN_PITCH_MM;
   const rightX = w - leftX;
   for (const row of ROWS) {
-    out.push(text(leftX, rowY(row), row, print), text(rightX, rowY(row), row, print));
+    out.push(word(leftX, rowY(row), row, print), word(rightX, rowY(row), row, print));
   }
   for (const column of NUMBERED_COLUMNS) {
-    out.push(text(columnX(column), NUMBER_Y_TOP, String(column), print));
-    out.push(text(columnX(column), NUMBER_Y_BOTTOM, String(column), print));
+    out.push(word(columnX(column), NUMBER_Y_TOP, String(column), print));
+    out.push(word(columnX(column), NUMBER_Y_BOTTOM, String(column), print));
   }
   for (const rail of RAILS) {
     const sign = rail.endsWith("+") ? "+" : "−";
     const attributes = `font-size="2" font-weight="700" fill="${token(RAIL_TOKEN[rail])}"`;
     out.push(
-      text(leftX, railY(rail), sign, attributes),
-      text(rightX, railY(rail), sign, attributes),
+      word(leftX, railY(rail), sign, attributes),
+      word(rightX, railY(rail), sign, attributes),
     );
   }
   const placed = top === 0 ? "" : ` transform="translate(0 ${n(top)})"`;
@@ -281,7 +303,7 @@ function drawPico(): string {
   out.push(rect(ox - 13, usbY - 2.9, 10.2, 5.8, `rx="1" fill="${token("board-chip")}"`));
   out.push(rect(ox - 3.2, usbY - 2.1, 1.6, 4.2, `fill="${token("board-metal")}"`));
   out.push(
-    text(ox - 7.9, usbY, "USB", `font-size="1.6" font-weight="700" fill="${token("board-silk")}"`),
+    word(ox - 7.9, usbY, "USB", `font-size="1.6" font-weight="700" fill="${token("board-silk")}"`),
   );
 
   // Everything else is in the portrait millimetres of `geometry.ts`, turned a quarter to
@@ -416,11 +438,18 @@ function drawPico(): string {
     `<g transform="translate(${n(ox)} ${n(oy + BOARD_WIDTH_MM)}) rotate(-90)">${board.join("")}</g>`,
   );
 
-  // Silkscreen is set upright, so it is drawn after the turn rather than inside it.
+  // Silkscreen is set upright, so it is drawn after the turn rather than inside it: below the
+  // button, or, on a standing board, where the upright word clears it, past it along the board.
+  const bootsel = isStanding(turn)
+    ? {
+        x: ox + BOOTSEL.y + BOOTSEL.height + 1.25,
+        y: oy + BOARD_WIDTH_MM - BOOTSEL.x - BOOTSEL.width / 2,
+      }
+    : { x: ox + BOOTSEL.y + BOOTSEL.height / 2, y: oy + BOARD_WIDTH_MM - BOOTSEL.x + 1.25 };
   out.push(
-    text(
-      ox + BOOTSEL.y + BOOTSEL.height / 2,
-      oy + BOARD_WIDTH_MM - BOOTSEL.x + 1.25,
+    word(
+      bootsel.x,
+      bootsel.y,
       "BOOTSEL",
       `font-size="1.05" font-weight="700" letter-spacing="0.08" fill="${token("board-silk")}"`,
     ),
@@ -449,7 +478,9 @@ export function tagRows(tags: readonly PinTag[]): Map<PinTag, number> {
       const pin = HEADER_PINS.find((header) => header.number === tag.pin);
       if (!pin) throw new Error(`The Pico has no pin ${tag.pin}`);
       const { x } = holeCentre(holeOfPin(pin.number));
-      return { tag, side: pin.side, x, half: tagChipWidthOf(pin.label) / 2 };
+      // Along the header, an upright chip on a standing board is as long as it is tall.
+      const along = isStanding(turn) ? TAG_CHIP_HEIGHT_MM : tagChipWidthOf(pin.label);
+      return { tag, side: pin.side, x, half: along / 2 };
     })
     .sort((a, b) => a.x - b.x);
   for (const { tag, side, x, half } of placed) {
@@ -470,16 +501,25 @@ function drawTag(tag: PinTag, row: number): string {
   const width = tagChipWidthOf(pin.label);
   const height = TAG_CHIP_HEIGHT_MM;
   // Inside the board, just past the pads: below the top row, above the bottom one, and a row
-  // further in for one that would sit on its neighbour's.
+  // further in for one that would sit on its neighbour's. On a standing board the chip, upright,
+  // reaches in by its width rather than its height.
+  const reach = isStanding(turn) ? width : height;
   const inward = row * TAG_ROW_MM;
-  const top = pin.side === "right" ? y + 0.95 + inward : y - 0.95 - height - inward;
+  const top = pin.side === "right" ? y + 0.95 + inward : y - 0.95 - reach - inward;
+  const centre = top + reach / 2;
   const edge = style.bordered ? `stroke="${chipInk(style)}" stroke-width="0.14"` : "";
   return (
-    `<g class="part" data-g="${tag.group}">` +
-    rect(x - width / 2, top, width, height, `rx="0.45" fill="${chipFill(style)}" ${edge}`) +
+    `<g class="part" data-g="${tag.group}"${upright(x, centre)}>` +
+    rect(
+      x - width / 2,
+      centre - height / 2,
+      width,
+      height,
+      `rx="0.45" fill="${chipFill(style)}" ${edge}`,
+    ) +
     text(
       x,
-      top + height / 2 + 0.05,
+      centre + 0.05,
       pin.label,
       `font-size="1.35" font-weight="800" fill="${chipInk(style)}"`,
     ) +
@@ -626,18 +666,36 @@ export function clearTagOf(
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
   const along = (t: number) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-  const towards = mid.y < CHANNEL_Y_MM ? 2.8 : -2.8;
+  // The tag's footprint on the board's own drawing: upright on a standing board, it is as wide
+  // there as it is tall on the page. At 0° the distances are the ones it has always had.
+  const label = formatOhms(part.ohms);
+  const standing = isStanding(turn);
+  const width = standing ? TAG_HEIGHT_MM : tagWidthOf(label);
+  const height = standing ? tagWidthOf(label) : TAG_HEIGHT_MM;
+  const out = standing ? height / 2 + 1.65 : 2.8;
+  const aside = standing ? [2.8, -2.8, 3.9, -3.9] : [5, -5, 6.5, -6.5];
+  const towards = mid.y < CHANNEL_Y_MM ? out : -out;
   // Where it has always gone first, then the other side, then further along and further out.
-  const candidates: Point[] = horizontal
-    ? [0.5, 0.35, 0.65].flatMap((t) =>
-        [towards, -towards, towards * 1.4, -towards * 1.4].map((dy) => ({
-          x: along(t).x,
-          y: along(t).y + dy,
-        })),
-      )
-    : [0.5, 0.35, 0.65, 0.2, 0.8].flatMap((t) =>
-        [5, -5, 6.5, -6.5].map((dx) => ({ x: along(t).x + dx, y: along(t).y })),
-      );
+  // On a standing board, everywhere within three holes of the resistor's middle, nearest first, on
+  // the board's own plastic: any further, and a tag no longer reads as its resistor's.
+  const steps = [-3, -2, -1, 0, 1, 2, 3];
+  const around: Point[] = steps
+    .flatMap((i) => steps.map((j) => ({ dx: i * 2.54, dy: j * 2.54 })))
+    .filter(({ dx, dy }) => dx !== 0 || dy !== 0)
+    .sort((p, q) => Math.hypot(p.dx, p.dy) - Math.hypot(q.dx, q.dy))
+    .map(({ dx, dy }) => ({ x: mid.x + dx, y: mid.y + dy }));
+  const candidates: Point[] = standing
+    ? around
+    : horizontal
+      ? [0.5, 0.35, 0.65].flatMap((t) =>
+          [towards, -towards, towards * 1.4, -towards * 1.4].map((dy) => ({
+            x: along(t).x,
+            y: along(t).y + dy,
+          })),
+        )
+      : [0.5, 0.35, 0.65, 0.2, 0.8].flatMap((t) =>
+          aside.map((dx) => ({ x: along(t).x + dx, y: along(t).y })),
+        );
   // Last of all, for a resistor down to a rail: past the outer rail on that side, between it and
   // the board's edge, under where the resistor ends. Four buttons' GP15 pull-down needs it, between
   // an arching jumper's legs (scratchpi's ADR 0166); everything before it was placed without.
@@ -646,15 +704,20 @@ export function clearTagOf(
     const y = rail.y < CHANNEL_Y_MM ? railY("top+") - 2.4 : railY("bottom+") + 2.4;
     candidates.push(...[0, -1, 1, -2, 2, -3, 3].map((dx) => ({ x: rail.x + dx, y })));
   }
-  const width = tagWidthOf(formatOhms(part.ohms));
   const clear = (tag: Point): boolean => {
     const box = {
       x: tag.x - width / 2 - 0.3,
-      y: tag.y - TAG_HEIGHT_MM / 2 - 0.3,
+      y: tag.y - height / 2 - 0.3,
       w: width + 0.6,
-      h: TAG_HEIGHT_MM + 0.6,
+      h: height + 0.6,
     };
     const inside = (p: Point, reach: number) => segmentTouches(p, p, reach, box);
+    if (standing) {
+      const second = isOnSecondBoard(part.from) || isOnSecondBoard(part.to);
+      const plastic = { top: second ? SECOND_BOARD_Y_MM : 0, bottom: BREADBOARD_HEIGHT_MM };
+      if (box.x < 0 || box.x + box.w > BREADBOARD_WIDTH_MM) return false;
+      if (box.y < plastic.top || box.y + box.h > plastic.bottom) return false;
+    }
     // Its own body, the rails, and the column numbers, which a tag has never sat over.
     if (segmentTouches(a, b, 1.15, box)) return false;
     for (const rail of RAILS) {
@@ -784,6 +847,7 @@ function drawResistor(from: Hole, to: Hole, ohms: number, tag: Point): string {
     `<g transform="translate(${n(mid.x)} ${n(mid.y)}) rotate(${n(angle)})">${local.join("")}</g>` +
     legEnd(a.x, a.y) +
     legEnd(b.x, b.y) +
+    (turn === 0 ? "" : `<g${upright(tag.x, tag.y)}>`) +
     rect(
       tag.x - tagWidth / 2,
       tag.y - TAG_HEIGHT_MM / 2,
@@ -796,7 +860,8 @@ function drawResistor(from: Hole, to: Hole, ohms: number, tag: Point): string {
       tag.y + 0.05,
       label,
       `font-size="1.6" font-weight="800" fill="${token("on-pale-chip")}"`,
-    )
+    ) +
+    (turn === 0 ? "" : "</g>")
   );
 }
 
@@ -932,7 +997,7 @@ function drawBuzzer(plus: Hole, minus: Hole): string {
     rect(mid - r + 0.9, top, 0.9, BUZZER_HEIGHT_MM, `fill="${token("shine")}" fill-opacity="0.1"`) +
     `<ellipse cx="${n(mid)}" cy="${n(top)}" rx="${r}" ry="${ry}" fill="${token("board-chip")}" stroke="${token("shine")}" stroke-opacity="0.18" stroke-width="0.2"/>` +
     `<ellipse cx="${n(mid)}" cy="${n(top)}" rx="1.1" ry="0.42" fill="${token("shade")}" fill-opacity="0.7"/>` +
-    text(p.x, bottom - 2.2, "+", `font-size="2.4" font-weight="800" fill="${token("board-silk")}"`)
+    word(p.x, bottom - 2.2, "+", `font-size="2.4" font-weight="800" fill="${token("board-silk")}"`)
   );
 }
 
@@ -1212,6 +1277,123 @@ function labelHeights(
   return heights;
 }
 
+/** Where a label stands on the page once the board is turned, and how its words are anchored. */
+interface LabelPlace {
+  /** The leader's last point. */
+  readonly end: Point;
+  readonly title: Point;
+  readonly detail: Point;
+  readonly anchor: "start" | "middle" | "end";
+  /** The box its words take, to size the picture by. */
+  readonly box: { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
+}
+
+/** How wide a label's words are drawn: its title's or its line's, whichever is wider (ADR 0012). */
+const labelWidthOf = (label: { title: string; detail: string }): number =>
+  Math.max(
+    widthOf(label.title, CALLOUT_TITLE.size, CALLOUT_TITLE.weight),
+    widthOf(label.detail, CALLOUT_DETAIL.size, CALLOUT_DETAIL.weight),
+  );
+
+/** Where a leader leaves the board: just past its far end, level with where it ran along the rows. */
+const bendOf = (leader: Leader): Point => ({ x: BREADBOARD_WIDTH_MM + 0.8, y: leader.run.y });
+
+/**
+ * Where each label stands on a turned board (ADR 0024): past the board's far end, in a column to
+ * its left at 180°, and in a row below it at 90° or above it at 270°, each kept in its part's order
+ * and moved along only as far as the one before it needs.
+ */
+function labelPlaces(
+  parts: readonly DrawnPart[],
+  leaders: ReadonlyMap<DrawnPart, Leader>,
+): Map<DrawnPart, LabelPlace> {
+  const far = BREADBOARD_WIDTH_MM + 3;
+  const labelled = parts.flatMap((drawn) => {
+    const leader = leaders.get(drawn);
+    return leader && drawn.label
+      ? [{ drawn, bend: turned(bendOf(leader), turn), width: labelWidthOf(drawn.label) }]
+      : [];
+  });
+  const places = new Map<DrawnPart, LabelPlace>();
+  if (!isStanding(turn)) {
+    let previous = Number.NEGATIVE_INFINITY;
+    for (const { drawn, bend, width } of labelled.sort((a, b) => a.bend.y - b.bend.y)) {
+      const y = Math.max(bend.y, previous + LABEL_PITCH_MM);
+      previous = y;
+      places.set(drawn, {
+        end: { x: -far + 0.8, y },
+        title: { x: -far, y: y - 0.3 },
+        detail: { x: -far, y: y + 2.4 },
+        anchor: "end",
+        box: { x: -far - width, y: y - 2.6, w: width, h: 5.6 },
+      });
+    }
+    return places;
+  }
+  const below = turn === 90;
+  let right = Number.NEGATIVE_INFINITY;
+  for (const { drawn, bend, width } of labelled.sort((a, b) => a.bend.x - b.bend.x)) {
+    const x = Math.max(bend.x, right + 1.5 + width / 2);
+    right = x + width / 2;
+    // Below the board the title comes first, as everywhere; above it, the line is nearer the board.
+    const edge = below ? far : -far;
+    places.set(drawn, {
+      end: { x, y: below ? edge - 0.6 : edge + 0.6 },
+      title: { x, y: below ? edge + 2.2 : edge - 3.1 },
+      detail: { x, y: below ? edge + 4.7 : edge - 0.6 },
+      anchor: "middle",
+      box: { x: x - width / 2, y: below ? edge : edge - 5, w: width, h: 5 },
+    });
+  }
+  return places;
+}
+
+/**
+ * The picture's box on a turned board: the board's own box turned, and every label's beside it, with
+ * the same 3 mm to spare the board has at 0°.
+ */
+function turnedView(
+  board: { x: number; y: number; w: number; h: number },
+  places: readonly LabelPlace[],
+): { x: number; y: number; w: number; h: number } {
+  const corners = [
+    { x: board.x, y: board.y },
+    { x: board.x + board.w, y: board.y },
+    { x: board.x, y: board.y + board.h },
+    { x: board.x + board.w, y: board.y + board.h },
+  ].map((corner) => turned(corner, turn));
+  const boxes = places.map((place) => place.box);
+  const xs = [...corners.map((c) => c.x), ...boxes.flatMap((b) => [b.x - 1, b.x + b.w + 1])];
+  const ys = [...corners.map((c) => c.y), ...boxes.flatMap((b) => [b.y - 1, b.y + b.h + 1])];
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+
+/** A label on a turned board: its leader along the board as at 0°, then to its place on the page. */
+function drawTurnedLabel(
+  leader: Leader,
+  label: { title: string; detail: string },
+  place: LabelPlace,
+): string {
+  const { dot, run } = leader;
+  const bend = bendOf(leader);
+  const along = [dot, ...(run.x === dot.x && run.y === dot.y ? [] : [run]), bend]
+    .map((point) => `${n(point.x)},${n(point.y)}`)
+    .join(" ");
+  const from = turned(bend, turn);
+  const anchor = place.anchor === "start" ? "" : ` text-anchor="${place.anchor}"`;
+  return (
+    circle(dot.x, dot.y, 0.4, `class="callout-dot"`) +
+    `<polyline points="${along}" fill="none" class="callout-leader"/>` +
+    `<g transform="rotate(${-turn})">` +
+    `<polyline points="${n(from.x)},${n(from.y)} ${n(place.end.x)},${n(place.end.y)}" fill="none" class="callout-leader"/>` +
+    `<text x="${n(place.title.x)}" y="${n(place.title.y)}"${anchor} class="callout-title">${escaped(label.title)}</text>` +
+    `<text x="${n(place.detail.x)}" y="${n(place.detail.y)}"${anchor} class="callout-detail">${escaped(label.detail)}</text>` +
+    "</g>"
+  );
+}
+
 function drawLabel(leader: Leader, label: { title: string; detail: string }, y: number): string {
   const { dot, run } = leader;
   const bend = BREADBOARD_WIDTH_MM + 0.8;
@@ -1231,6 +1413,7 @@ function drawPart(
   colours: Pick<Breadboard, "ledColour" | "buttonColour">,
   leader: Leader | undefined,
   labelY: number | undefined,
+  place: LabelPlace | undefined,
   others: readonly Part[],
 ): string {
   const { part } = drawn;
@@ -1259,7 +1442,11 @@ function drawPart(
       break;
   }
   const label =
-    drawn.label && leader && labelY !== undefined ? drawLabel(leader, drawn.label, labelY) : "";
+    drawn.label && leader && place
+      ? drawTurnedLabel(leader, drawn.label, place)
+      : drawn.label && leader && labelY !== undefined
+        ? drawLabel(leader, drawn.label, labelY)
+        : "";
   return `<g class="part" data-g="${drawn.group}" data-kind="${part.kind}">${body}${label}</g>`;
 }
 
@@ -1275,8 +1462,17 @@ function glowGradient(colour: LedColour): string {
   );
 }
 
-/** The whole picture, as one `<svg>` element. */
+/** The whole picture, as one `<svg>` element, at the quarter turn it asks for (ADR 0003). */
 export function drawBreadboard(drawing: Breadboard): string {
+  turn = drawing.orientation ?? 0;
+  try {
+    return drawTurned(drawing);
+  } finally {
+    turn = 0;
+  }
+}
+
+function drawTurned(drawing: Breadboard): string {
   const colours = [
     ...new Set(
       drawing.parts.flatMap(({ part }): LedColour[] =>
@@ -1329,6 +1525,18 @@ export function drawBreadboard(drawing: Breadboard): string {
     }),
   );
   const labels = labelHeights(drawing.parts, leaders);
+  const places =
+    turn === 0 ? new Map<DrawnPart, LabelPlace>() : labelPlaces(drawing.parts, leaders);
+  // Turned, the picture is the board's own box turned, reaching its far end or a ring's, which hangs
+  // past it (scratchpi's ADR 0238), and its labels' boxes beside it.
+  const far = Math.max(
+    BREADBOARD_WIDTH_MM + 1.5,
+    ...rings.map((ring) => ringCentreOf(ring).x + RING_MM.outer + 3),
+  );
+  const view =
+    turn === 0
+      ? { x: left, y: top, w: width, h: height }
+      : turnedView({ x: left, y: top, w: far - left, h: height }, [...places.values()]);
   // Wires are laid over everything else, the way they are on the bench, and an arching one is
   // over them too.
   const ordered = [
@@ -1337,10 +1545,11 @@ export function drawBreadboard(drawing: Breadboard): string {
     ...drawing.parts.filter(({ part }) => part.kind === "wire" && part.arch),
   ];
   return (
-    `<svg class="breadboard-drawing" viewBox="${left} ${top} ${n(width)} ${n(height)}" role="img" aria-labelledby="breadboard-title breadboard-description">` +
+    `<svg class="breadboard-drawing" viewBox="${n(view.x)} ${n(view.y)} ${n(view.w)} ${n(view.h)}" role="img" aria-labelledby="breadboard-title breadboard-description">` +
     `<title id="breadboard-title">${escaped(drawing.title)}</title>` +
     `<desc id="breadboard-description">${escaped(drawing.description)}</desc>` +
     `<defs>${colours.map(glowGradient).join("")}</defs>` +
+    (turn === 0 ? "" : `<g transform="rotate(${turn})">`) +
     (second ? drawPlastic(SECOND_BOARD_Y_MM) : "") +
     drawPlastic() +
     drawPico() +
@@ -1352,10 +1561,12 @@ export function drawBreadboard(drawing: Breadboard): string {
           drawing,
           leaders.get(part),
           labels.get(part),
+          places.get(part),
           drawing.parts.map((drawn) => drawn.part),
         ),
       )
       .join("") +
+    (turn === 0 ? "" : "</g>") +
     "</svg>"
   );
 }

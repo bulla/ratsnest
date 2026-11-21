@@ -29,6 +29,29 @@ body {
   gap: 1.75rem;
 }
 
+/* A standing board is tall, so on a wide screen it stands in a column beside the steps rather than
+   above them (ADR 0003), and stays in view while they scroll past. */
+@media (min-width: 60rem) {
+  .page.standing {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+  }
+
+  .page.standing > header,
+  .page.standing > footer {
+    grid-column: 1 / -1;
+  }
+
+  .page.standing > .drawing {
+    position: sticky;
+    top: 1.25rem;
+  }
+
+  .page.standing .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 a {
   color: var(--color-accent);
 }
@@ -99,6 +122,11 @@ h2 {
   min-width: 45rem;
   height: auto;
   font-family: var(--font-page);
+}
+
+/* A standing board is tall rather than wide, so it reads at a third of the width (ADR 0003). */
+.page.standing .breadboard-drawing {
+  min-width: 20rem;
 }
 
 figcaption {

@@ -94,3 +94,4 @@ Each new record adds a row here.
 | [0021](0021-keep-versions-at-0-y-z-until-ratsnest-is-done-though-its-repository-is-public.md)                    | Keep versions at 0.y.z until ratsnest is done, though its repository is public                     |
 | [0022](0022-write-the-circuit-format-as-one-file-of-types-apart-from-the-engines-model.md)                       | Write the circuit format as one file of types, apart from the engine's model                       |
 | [0023](0023-write-a-generated-page-into-pages-named-by-its-four-inputs.md)                                       | Write a generated page into `pages/`, named by its four inputs                                     |
+| [0024](0024-put-the-labels-past-the-boards-far-end-whichever-way-it-is-turned.md)                                | Put the labels past the board's far end, whichever way it is turned                                |
