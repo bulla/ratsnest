@@ -14,7 +14,8 @@ The design is settled, in ADR 0001 to ADR 0023, the frame is built (M1), scratch
 wiring check and page generator are copied in (M2), circuits are data (M3): `ratsnest check` and
 `ratsnest generate` run from source, on format 1, with scratchpi's seven circuits as the examples,
 every page carries Nunito, the drawing measured in it (M4), and the drawing turns by any quarter
-turn, every word upright and nothing crowding at any of them (M5).
+turn, every word upright and nothing crowding at any of them (M5). `ratsnest update` moves a project
+and its executable to a newer ratsnest (M10). M6, M7 and M9 each wait on the owner, below.
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -68,14 +69,6 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
       system, and only then the GitHub Release (ADR 0020), written and waiting for its first tag
 - [ ] The first release, `0.1.0`, which says by its number that anything may still change (ADR 0021)
 
-### M10: updating
-
-- [ ] `ratsnest update`: the newer executable fetched and put in place, renamed first on Windows,
-      then the migrations, the skill and the type replaced, and the checks (ADR 0015, ADR 0016)
-- [x] The migrations' runner and their test harness, proven on a migration made for the purpose
-      (ADR 0015)
-- [x] A printer for writing a circuit file back with its comments (ADR 0015)
-
 ### M11: done, and 1.0.0
 
 - [ ] Every milestone before it landed, and nothing in Open points that blocks a stable release
@@ -107,7 +100,8 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
   bypass list and pushes `git push origin develop v0.1.0` as the release says, or releases are made on
   a branch, merged by pull request, and tagged after the merge, which is a change to ADR 0017 and a
   record of its own. Tried in a scratch clone, the release made `0.1.0` and then `0.1.1`, and each tag
-  met its check.
+  met its check. The second release is also the first that `ratsnest update` can fetch from GitHub:
+  until then it has put in place only an executable built here, and said that ratsnest has no release.
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
   A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
@@ -162,3 +156,4 @@ file's Log.
 | M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples   | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
 | M4        | The font: Nunito carried by every page, every drawn word measured in it                | 0011, 0012                              |
 | M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any     | 0003, 0007, 0024                        |
+| M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated        | 0015, 0016                              |

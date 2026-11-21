@@ -119,6 +119,20 @@ a word that crowds at any of the four, and the examples moved two pull-downs so 
 - [x] The page arranged around a vertical drawing
 - [x] The overlap checks run at all four orientations (ADR 0003, ADR 0007)
 
+### M10: updating
+
+M10 is done: `ratsnest update` moves a circuits project to a newer ratsnest, the latest release by
+default. A compiled ratsnest fetches that version's executable, runs it beside itself to be sure of
+its version, puts it in its own place, renamed first on Windows, and runs it to move the project on:
+every circuit migrated, the type and the skill replaced, `ratsnest.json` set, and the checks run. Run
+from its source, ratsnest moves the project to its own version alone. A project is never moved back.
+
+- [x] `ratsnest update`: the newer executable fetched and put in place, renamed first on Windows,
+      then the migrations, the skill and the type replaced, and the checks (ADR 0015, ADR 0016)
+- [x] The migrations' runner and their test harness, proven on a migration made for the purpose
+      (ADR 0015)
+- [x] A printer for writing a circuit file back with its comments (ADR 0015)
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -231,3 +245,11 @@ a word that crowds at any of the four, and the examples moved two pull-downs so 
   the file as it was. Every example prints back as the same data with the same comments, and printing
   it again changes nothing. `ratsnest update` itself, which fetches the newer executable from a
   release, is M10's last item, and the first release is what it will fetch.
+- 2026-11-21: M10, `ratsnest update`, after M6 to M10's pull requests were merged. It is two steps in
+  two processes: the running ratsnest puts the version asked for in its own place and runs it as
+  `update --version <it>`, and the version asked moves the project, so the migrations that run are
+  always the new version's. Staging the new executable beside the old one and running its `--version`
+  before it takes the old one's place found the one way this went wrong by hand: a file that is not a
+  program made `Bun.spawnSync` throw, which the first version did not catch. Two compiled executables,
+  0.0.0 and a 0.0.1 built for the purpose, moved a project from one to the other here; the first
+  fetch from GitHub has to wait for two releases, and until then `update` says ratsnest has none.
