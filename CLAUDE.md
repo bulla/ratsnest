@@ -13,10 +13,10 @@ under MIT (ADR 0018), and its repository has been public since 2026-11-20.
 
 ## Status
 
-The design is settled, in records argued by interview on 2026-11-20 (M0), and the frame is built
-(M1): the package, the checks, continuous integration on three systems, the changelog and the
-onboarding. There is no engine yet. M2, the copy, is next, and the milestones after it are in
-[`doc/ROADMAP.md`](doc/ROADMAP.md).
+The design is settled, in records argued by interview on 2026-11-20 (M0), the frame is built (M1),
+and scratchpi's drawing, wiring check and page generator are copied in (M2): the engine makes a page
+from a circuit a test hands it, and there is no command yet. M3, circuits as data, is next, and the
+milestones after it are in [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in
 [`doc/HISTORY.md`](doc/HISTORY.md), its open items in the roadmap, and its reasons in a record. None
@@ -186,11 +186,19 @@ there.
 │   ├── HISTORY.md       Every milestone's checklist, and the Log
 │   └── adr/             One record per decision, and why
 │       └── README.md      How records are written, and the index
-├── src/               · The engine (the validator, the renderer and the post-processor) and the
-│   │                    command-line tool: `init`, `check`, `generate`, `update` (ADR 0014)
-│   └── drawing/       · The Pico and the breadboard, drawn: CC BY-SA 4.0, unlike the rest (ADR 0018)
+├── src/               The engine, and · the command-line tool: `init`, `check`, `generate`,
+│   │                    `update` (ADR 0014). Nothing in it names a circuit (ADR 0007)
+│   ├── circuit.ts       What a circuit is and where its parts go, as scratchpi's pages knew it,
+│   │                    until M3 makes it the circuit format
+│   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
+│   ├── language.ts      The languages a page is written in
+│   ├── pins.ts, rgb.ts  The GPIO a Pico 2 W breaks out, and an RGB LED's colours
+│   ├── __fixtures__/    The tests' seven circuits: scratchpi's, renamed by what they hold
+│   ├── drawing/         The Pico and the breadboard, drawn: CC BY-SA 4.0, unlike the rest (ADR 0018)
+│   └── page/            The page: its generator, its words, its stylesheet, its one script, and
+│                        `tokens.css`, the only file that writes a colour (ADR 0004)
 ├── LICENSE              MIT, held by bulla, for everything but `src/drawing/` and `fonts/` (ADR 0018)
-├── ATTRIBUTION.md     · The drawing's source and licence, and which folder it covers (ADR 0018)
+├── ATTRIBUTION.md       The drawing's source and licence, and which folder it covers (ADR 0018)
 ├── api/               · The public surface as it was at the last release, written only by
 │                        `bun run release` (ADR 0017)
 ├── scripts/             The repository's own tools and their tests: the changelog check, and the
@@ -289,6 +297,15 @@ does not pay for it again.
   the loader that carries the data in its code. Bun's compiler packs only what is imported, so any
   dependency that reads a file beside itself fails the same way: run the examples with the compiled
   executable, never only from source.
+- **`tokens.css` holds every colour a page can draw, not only what the test circuits draw.** Pruned
+  to the tokens their pages used, it lost the colour of a control pin's chip, which none of them
+  wires, so the first circuit to wire RUN would have drawn a chip with no fill and said nothing. The
+  token tests read the drawing's own lists, `CHIP_STYLES`, `BREADBOARD_TOKENS` and `LED_COLOURS`: a
+  new colour goes in one of them and in `tokens.css` together.
+- **scratchpi's page generator does not run under Bun alone**: it imports `./ring` beside a
+  `Ring.tsx`, and Bun stops on a `ring.tsx` that does not exist. To set a page beside scratchpi's,
+  fetch scratchpi's from `https://scratchpi.bulla.io/circuits/<slug>/`, which redirects to the
+  trailing slash, so `curl` needs `-L`.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

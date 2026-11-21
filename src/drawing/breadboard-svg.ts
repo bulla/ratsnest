@@ -1,0 +1,1344 @@
+import type { ButtonColour, LedColour } from "../circuit";
+import { PIE_WEDGES, wedgePath } from "../rgb";
+import {
+  BREADBOARD_HEIGHT_MM,
+  BREADBOARD_WIDTH_MM,
+  CHANNEL_Y_MM,
+  COLUMNS,
+  columnX,
+  type Hole,
+  holeCentre,
+  holeOfPin,
+  legsOf,
+  type Part,
+  PICO_ORIGIN_MM,
+  RAIL_COLUMNS,
+  RAILS,
+  type Rail,
+  ROWS,
+  type Row,
+  railY,
+  rowsOf,
+  rowY,
+  SECOND_BOARD_Y_MM,
+  usesSecondBoard,
+  type WireRole,
+} from "./breadboard";
+import { CHIP_STYLES, chipFill, chipInk } from "./chips";
+import {
+  BLUE_PARTS,
+  BOARD_LENGTH_MM,
+  BOARD_WIDTH_MM,
+  BOOTSEL,
+  CHIP,
+  COMPONENTS,
+  CRYSTAL,
+  DEBUG,
+  DEBUG_FIRST_PIN_X_MM,
+  DEBUG_HOLE_RADIUS_MM,
+  DEBUG_PINS,
+  HEADER_PINS,
+  MOUNTING_HOLE,
+  ONBOARD_LED,
+  PAD,
+  PIN_PITCH_MM,
+  RADIO,
+  USB,
+  USB_MOUTH,
+} from "./geometry";
+import { onCircle, RING_MM, ringAngleOf, ringBoardPath } from "./ring";
+
+/**
+ * A circuit on a breadboard, drawn the way Fritzing's breadboard view draws one (scratchpi's ADR 0082):
+ * the board seen from above, parts standing up out of it, jumpers laid across it. It is
+ * markup rather than a component because it is drawn once, at build time, into a static
+ * page (scratchpi's ADR 0081) — there is nothing reactive about a wiring diagram.
+ *
+ * Everything here is an object, so every colour is one of the pinned tokens and none of
+ * them is `surface` or `ink`. The labels beside the board are the one thing that belongs to
+ * the page rather than to the objects, so they carry classes and no colour, and the page
+ * colours them in its own scale.
+ */
+
+export interface DrawnPart {
+  readonly part: Part;
+  /** Which of the page's steps it belongs to, so a step can pick out its own parts. */
+  readonly group: string;
+  /** A label in the margin, for the parts an adult has to tell apart. */
+  readonly label?: { readonly title: string; readonly detail: string };
+}
+
+/** A header pin's name, printed on the Pico beside it, for a pin the circuit uses. */
+export interface PinTag {
+  readonly pin: number;
+  readonly group: string;
+}
+
+export interface Breadboard {
+  readonly parts: readonly DrawnPart[];
+  readonly tags: readonly PinTag[];
+  /** The colour of a circuit's light, by its id. */
+  readonly ledColour: (led: string) => LedColour;
+  /** The colour of a button's cap, by its id (scratchpi's ADR 0174). */
+  readonly buttonColour: (button: string) => ButtonColour;
+  /** What a screen reader says the picture is. */
+  readonly title: string;
+  readonly description: string;
+}
+
+/** The group the Pico and its cable are drawn in. */
+export const PICO_GROUP = "pico";
+
+const token = (name: string) => `var(--color-${name})`;
+
+/** Every `--color-*` the drawing reads, so the token tests can hold them still. */
+export const BREADBOARD_TOKENS: readonly string[] = [
+  "breadboard",
+  "breadboard-edge",
+  "breadboard-hole",
+  "breadboard-groove",
+  "breadboard-print",
+  "rail-plus",
+  "rail-minus",
+  "lead",
+  "wire-ground",
+  "wire-power",
+  "wire-signal",
+  "resistor",
+  "resistor-edge",
+  ...Array.from({ length: 10 }, (_, digit) => `band-${digit}`),
+  "band-gold",
+  "shine",
+  "shade",
+];
+
+const WIRE_TOKEN: Record<WireRole, string> = {
+  ground: "wire-ground",
+  power: "wire-power",
+  signal: "wire-signal",
+};
+
+const RAIL_TOKEN: Record<Rail, string> = {
+  "top+": "rail-plus",
+  "top-": "rail-minus",
+  "bottom-": "rail-minus",
+  "bottom+": "rail-plus",
+};
+
+/** Three decimals is a micrometre, which is finer than anything here is measured to. */
+const n = (value: number): number => Math.round(value * 1000) / 1000;
+
+const escaped = (text: string): string =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function rect(x: number, y: number, w: number, h: number, attributes: string): string {
+  return `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" ${attributes}/>`;
+}
+
+function circle(cx: number, cy: number, r: number, attributes: string): string {
+  return `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" ${attributes}/>`;
+}
+
+function line(x1: number, y1: number, x2: number, y2: number, attributes: string): string {
+  return `<line x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}" ${attributes}/>`;
+}
+
+function text(x: number, y: number, body: string, attributes: string): string {
+  return `<text x="${n(x)}" y="${n(y)}" text-anchor="middle" dominant-baseline="central" ${attributes}>${escaped(body)}</text>`;
+}
+
+// --- The resistor colour code, which the parts list prints as well as the drawing. ---
+
+/** The names of the colour code's ten digits, black for 0 to white for 9. */
+export const BAND_NAMES = [
+  "black",
+  "brown",
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "violet",
+  "grey",
+  "white",
+] as const;
+
+/** A band, as its token's suffix: a digit, or the gold tolerance band. */
+export type Band = `${number}` | "gold";
+
+export const bandName = (band: Band): string =>
+  band === "gold" ? "gold" : (BAND_NAMES[Number(band)] ?? band);
+
+/**
+ * A value's bands. Four-band is digit, digit, how many zeros, and gold for 5% — which is
+ * what most kits' beige resistors are. Five-band is three digits, the zeros, and brown for
+ * 1% — the blue metal-film ones. Two significant digits, which is every value in the E12
+ * series a kit's resistors come from, and whole ohms from 100 up: below that the
+ * multiplier band goes gold or silver and is not drawn.
+ */
+export function resistorBands(ohms: number): { four: Band[]; five: Band[] } {
+  if (!Number.isInteger(ohms) || ohms < 100) {
+    throw new Error(`${ohms} Ω needs a fractional multiplier band, which is not drawn`);
+  }
+  const digits = String(ohms);
+  const [first = "0", second = "0", third = "0"] = digits;
+  if (/[1-9]/.test(digits.slice(2))) throw new Error(`${ohms} Ω has a third significant digit`);
+  return {
+    four: [first, second, String(digits.length - 2), "gold"] as Band[],
+    five: [first, second, third, String(digits.length - 3), "1"] as Band[],
+  };
+}
+
+/** `330 Ω`, `10 kΩ`, `4.7 kΩ` — the way the value is printed on the bag it came in. */
+export function formatOhms(ohms: number): string {
+  if (ohms >= 1_000_000) return `${ohms / 1_000_000} MΩ`;
+  if (ohms >= 1000) return `${ohms / 1000} kΩ`;
+  return `${ohms} Ω`;
+}
+
+// --- The board itself. ---
+
+function holeSquare(x: number, y: number): string {
+  return rect(x - 0.52, y - 0.52, 1.04, 1.04, `rx="0.16" fill="${token("breadboard-hole")}"`);
+}
+
+/**
+ * One half-size board, its top edge `top` down the drawing: 0 for the board the Pico is in,
+ * and `SECOND_BOARD_Y_MM` for the second, snapped onto the first one's top edge (scratchpi's ADR 0226).
+ */
+function drawPlastic(top = 0): string {
+  const out: string[] = [];
+  const w = BREADBOARD_WIDTH_MM;
+  out.push(
+    rect(
+      0,
+      0,
+      w,
+      BREADBOARD_HEIGHT_MM,
+      `rx="1.4" fill="${token("breadboard")}" stroke="${token("breadboard-edge")}" stroke-width="0.35"`,
+    ),
+  );
+  out.push(
+    rect(0.8, CHANNEL_Y_MM - 0.85, w - 1.6, 1.7, `rx="0.5" fill="${token("breadboard-groove")}"`),
+  );
+
+  // The coloured strip runs along the outside of each pair of rails.
+  const strip = (y: number, rail: Rail) =>
+    line(
+      1.4 * PIN_PITCH_MM,
+      y,
+      31.6 * PIN_PITCH_MM,
+      y,
+      `stroke="${token(RAIL_TOKEN[rail])}" stroke-width="0.4"`,
+    );
+  out.push(
+    strip(railY("top+") - 1.65, "top+"),
+    strip(railY("top-") + 1.65, "top-"),
+    strip(railY("bottom-") - 1.65, "bottom-"),
+    strip(railY("bottom+") + 1.65, "bottom+"),
+  );
+
+  for (const row of ROWS)
+    for (let column = 1; column <= COLUMNS; column++)
+      out.push(holeSquare(columnX(column), rowY(row)));
+  for (const rail of RAILS)
+    for (const column of RAIL_COLUMNS) out.push(holeSquare(columnX(column), railY(rail)));
+
+  const print = `font-size="1.5" fill="${token("breadboard-print")}"`;
+  const leftX = 0.85 * PIN_PITCH_MM;
+  const rightX = w - leftX;
+  for (const row of ROWS) {
+    out.push(text(leftX, rowY(row), row, print), text(rightX, rowY(row), row, print));
+  }
+  for (const column of NUMBERED_COLUMNS) {
+    out.push(text(columnX(column), NUMBER_Y_TOP, String(column), print));
+    out.push(text(columnX(column), NUMBER_Y_BOTTOM, String(column), print));
+  }
+  for (const rail of RAILS) {
+    const sign = rail.endsWith("+") ? "+" : "−";
+    const attributes = `font-size="2" font-weight="700" fill="${token(RAIL_TOKEN[rail])}"`;
+    out.push(
+      text(leftX, railY(rail), sign, attributes),
+      text(rightX, railY(rail), sign, attributes),
+    );
+  }
+  const placed = top === 0 ? "" : ` transform="translate(0 ${n(top)})"`;
+  return `<g class="breadboard"${placed}>${out.join("")}</g>`;
+}
+
+// --- The Pico, from the datasheet's measurements, as scratchpi's simulator drew it. ---
+
+const MATERIAL_TOKEN = { pad: "board-pad", chip: "board-chip", metal: "board-metal" } as const;
+
+function drawPico(): string {
+  const { x: ox, y: oy } = PICO_ORIGIN_MM;
+  const out: string[] = [];
+
+  // The cable, leaving to the left, and its plug in the socket.
+  const usbY = oy + BOARD_WIDTH_MM - (USB.x + USB.width / 2);
+  out.push(line(-20, usbY, ox - 12, usbY, `stroke="${token("board-chip")}" stroke-width="2.6"`));
+  out.push(rect(ox - 13, usbY - 2.9, 10.2, 5.8, `rx="1" fill="${token("board-chip")}"`));
+  out.push(rect(ox - 3.2, usbY - 2.1, 1.6, 4.2, `fill="${token("board-metal")}"`));
+  out.push(
+    text(ox - 7.9, usbY, "USB", `font-size="1.6" font-weight="700" fill="${token("board-silk")}"`),
+  );
+
+  // Everything else is in the portrait millimetres of `geometry.ts`, turned a quarter to
+  // the left: (x, y) lands at (y, BOARD_WIDTH_MM − x).
+  const board: string[] = [];
+  board.push(rect(0, 0, BOARD_WIDTH_MM, BOARD_LENGTH_MM, `rx="0.7" fill="${token("board")}"`));
+  board.push(
+    rect(
+      USB.x,
+      USB.y,
+      USB.width,
+      USB.height,
+      `rx="0.35" fill="${token("board-metal")}" stroke="${token("lead")}" stroke-width="0.2"`,
+    ),
+  );
+  board.push(
+    rect(
+      USB_MOUTH.x,
+      USB_MOUTH.y,
+      USB_MOUTH.width,
+      USB_MOUTH.height,
+      `fill="${token("board-chip")}"`,
+    ),
+  );
+  for (const part of COMPONENTS) {
+    board.push(
+      rect(
+        part.x,
+        part.y,
+        part.width,
+        part.height,
+        `rx="0.08" fill="${token(MATERIAL_TOKEN[part.material])}"`,
+      ),
+    );
+  }
+  for (const part of BLUE_PARTS) {
+    board.push(rect(part.x, part.y, part.width, part.height, `fill="${token("board-blue")}"`));
+  }
+  board.push(
+    rect(
+      ONBOARD_LED.x,
+      ONBOARD_LED.y,
+      ONBOARD_LED.width,
+      ONBOARD_LED.height,
+      `rx="0.1" fill="${token("board-silk")}"`,
+    ),
+  );
+  board.push(
+    rect(
+      BOOTSEL.x,
+      BOOTSEL.y,
+      BOOTSEL.width,
+      BOOTSEL.height,
+      `rx="0.25" fill="${token("board-metal")}"`,
+    ),
+    circle(
+      BOOTSEL.x + BOOTSEL.width / 2,
+      BOOTSEL.y + BOOTSEL.height / 2,
+      1.05,
+      `fill="${token("board-silk")}" stroke="${token("lead")}" stroke-width="0.15"`,
+    ),
+  );
+  board.push(
+    rect(CHIP.x, CHIP.y, CHIP.width, CHIP.height, `rx="0.35" fill="${token("board-chip")}"`),
+  );
+  board.push(
+    rect(
+      RADIO.x,
+      RADIO.y,
+      RADIO.width,
+      RADIO.height,
+      `rx="0.45" fill="${token("board-metal")}" stroke="${token("lead")}" stroke-width="0.2"`,
+    ),
+  );
+  board.push(
+    rect(
+      CRYSTAL.x,
+      CRYSTAL.y,
+      CRYSTAL.width,
+      CRYSTAL.height,
+      `rx="0.2" fill="${token("board-metal")}"`,
+    ),
+  );
+  board.push(
+    rect(
+      DEBUG.x,
+      DEBUG.y,
+      DEBUG.width,
+      DEBUG.height,
+      `rx="0.2" fill="none" stroke="${token("board-silk")}" stroke-width="0.18"`,
+    ),
+  );
+  for (let i = 0; i < DEBUG_PINS; i++) {
+    const cx = DEBUG_FIRST_PIN_X_MM + i * PIN_PITCH_MM;
+    const cy = DEBUG.y + DEBUG.height / 2;
+    board.push(circle(cx, cy, 0.72, `fill="${token("board-pad")}"`));
+    board.push(circle(cx, cy, DEBUG_HOLE_RADIUS_MM, `fill="${token("breadboard")}"`));
+  }
+  // Holes right through the board show the breadboard it is lying on.
+  for (const [cx, cy] of [
+    [MOUNTING_HOLE.insetX, MOUNTING_HOLE.insetY],
+    [BOARD_WIDTH_MM - MOUNTING_HOLE.insetX, MOUNTING_HOLE.insetY],
+    [MOUNTING_HOLE.insetX, BOARD_LENGTH_MM - MOUNTING_HOLE.insetY],
+    [BOARD_WIDTH_MM - MOUNTING_HOLE.insetX, BOARD_LENGTH_MM - MOUNTING_HOLE.insetY],
+  ] as const) {
+    board.push(circle(cx, cy, MOUNTING_HOLE.ring, `fill="${token("board-pad")}"`));
+    board.push(circle(cx, cy, MOUNTING_HOLE.drill, `fill="${token("breadboard")}"`));
+  }
+  // The castellated pads, and the header pin soldered through each one.
+  for (const pin of HEADER_PINS) {
+    const padX = pin.side === "left" ? PAD.outer : BOARD_WIDTH_MM - PAD.outer - PAD.length;
+    board.push(
+      rect(
+        padX,
+        pin.y - PAD.height / 2,
+        PAD.length,
+        PAD.height,
+        `rx="0.2" fill="${token("board-pad")}"`,
+      ),
+    );
+    board.push(
+      circle(
+        pin.x,
+        pin.y,
+        0.8,
+        `fill="${token("board-metal")}" stroke="${token("lead")}" stroke-width="0.12"`,
+      ),
+    );
+    board.push(circle(pin.x, pin.y, 0.3, `fill="${token("lead")}"`));
+  }
+  out.push(
+    `<g transform="translate(${n(ox)} ${n(oy + BOARD_WIDTH_MM)}) rotate(-90)">${board.join("")}</g>`,
+  );
+
+  // Silkscreen is set upright, so it is drawn after the turn rather than inside it.
+  out.push(
+    text(
+      ox + BOOTSEL.y + BOOTSEL.height / 2,
+      oy + BOARD_WIDTH_MM - BOOTSEL.x + 1.25,
+      "BOOTSEL",
+      `font-size="1.05" font-weight="700" letter-spacing="0.08" fill="${token("board-silk")}"`,
+    ),
+  );
+  return `<g class="part" data-g="${PICO_GROUP}">${out.join("")}</g>`;
+}
+
+/** How tall a pin's tag is, and how far a second row of them sits from the first. */
+const TAG_CHIP_HEIGHT_MM = 1.95;
+const TAG_ROW_MM = TAG_CHIP_HEIGHT_MM + 0.3;
+
+/** A pin's tag's width: its label's, and a little either side. */
+const tagChipWidthOf = (label: string): number => label.length * 0.98 + 1.2;
+
+/**
+ * Which row each tag goes in: the first, against its header, unless that would put it on a
+ * neighbour's, in which case the next one in. RGB LED's page is the first to tag three pins
+ * so close that two would meet, VBUS, GND and 3V3(OUT) at the top left (scratchpi's ADR 0226); every
+ * earlier page's tags are all in the first row.
+ */
+export function tagRows(tags: readonly PinTag[]): Map<PinTag, number> {
+  const rows = new Map<PinTag, number>();
+  const ends = new Map<string, number>();
+  const placed = tags
+    .map((tag) => {
+      const pin = HEADER_PINS.find((header) => header.number === tag.pin);
+      if (!pin) throw new Error(`The Pico has no pin ${tag.pin}`);
+      const { x } = holeCentre(holeOfPin(pin.number));
+      return { tag, side: pin.side, x, half: tagChipWidthOf(pin.label) / 2 };
+    })
+    .sort((a, b) => a.x - b.x);
+  for (const { tag, side, x, half } of placed) {
+    let row = 0;
+    while ((ends.get(`${side} ${row}`) ?? Number.NEGATIVE_INFINITY) > x - half - 0.2) row += 1;
+    ends.set(`${side} ${row}`, x + half);
+    rows.set(tag, row);
+  }
+  return rows;
+}
+
+/** A pin's name on a chip beside it, in the header's own colour coding (`chips.ts`). */
+function drawTag(tag: PinTag, row: number): string {
+  const pin = HEADER_PINS.find((header) => header.number === tag.pin);
+  if (!pin) throw new Error(`The Pico has no pin ${tag.pin}`);
+  const style = CHIP_STYLES[pin.kind];
+  const { x, y } = holeCentre(holeOfPin(pin.number));
+  const width = tagChipWidthOf(pin.label);
+  const height = TAG_CHIP_HEIGHT_MM;
+  // Inside the board, just past the pads: below the top row, above the bottom one, and a row
+  // further in for one that would sit on its neighbour's.
+  const inward = row * TAG_ROW_MM;
+  const top = pin.side === "right" ? y + 0.95 + inward : y - 0.95 - height - inward;
+  const edge = style.bordered ? `stroke="${chipInk(style)}" stroke-width="0.14"` : "";
+  return (
+    `<g class="part" data-g="${tag.group}">` +
+    rect(x - width / 2, top, width, height, `rx="0.45" fill="${chipFill(style)}" ${edge}`) +
+    text(
+      x,
+      top + height / 2 + 0.05,
+      pin.label,
+      `font-size="1.35" font-weight="800" fill="${chipInk(style)}"`,
+    ) +
+    "</g>"
+  );
+}
+
+// --- The parts. ---
+
+/** The leg of a part going into its hole: a dark dot where the metal disappears. */
+const legEnd = (x: number, y: number) => circle(x, y, 0.45, `fill="${token("breadboard-hole")}"`);
+
+/** How far past the board's edge an arching jumper rises (scratchpi's ADR 0166). */
+export const ARCH_LIFT_MM = 3.5;
+
+/** Whether a jumper arches over the top edge of the board, rather than under the bottom one. */
+const archesOverTop = (part: { readonly from: Hole; readonly to: Hole }): boolean =>
+  (holeCentre(part.from).y + holeCentre(part.to).y) / 2 < CHANNEL_Y_MM;
+
+/**
+ * An arching jumper as a cubic curve: it leaves its holes away from the channel, peaks
+ * `ARCH_LIFT_MM` past the nearer edge of the board, and comes back. A symmetric cubic peaks at
+ * a quarter of its ends' height and three quarters of its controls', which places the controls.
+ */
+function archCurve(part: { readonly from: Hole; readonly to: Hole }): [Point, Point, Point, Point] {
+  const a = holeCentre(part.from);
+  const b = holeCentre(part.to);
+  const peak = archesOverTop(part) ? -ARCH_LIFT_MM : BREADBOARD_HEIGHT_MM + ARCH_LIFT_MM;
+  const ends = (a.y + b.y) / 2;
+  const control = ends + (peak - ends) / 0.75;
+  const dx = b.x - a.x;
+  return [a, { x: a.x + dx * 0.1, y: control }, { x: b.x - dx * 0.1, y: control }, b];
+}
+
+/** The line a jumper is drawn along: two points when it lies flat, many when it arches. */
+export function wirePath(part: Extract<Part, { kind: "wire" }>): Point[] {
+  if (!part.arch) return [holeCentre(part.from), holeCentre(part.to)];
+  const [p0, p1, p2, p3] = archCurve(part);
+  return Array.from({ length: 41 }, (_, i) => {
+    const t = i / 40;
+    const u = 1 - t;
+    const at = (k: "x" | "y") =>
+      u * u * u * p0[k] + 3 * u * u * t * p1[k] + 3 * u * t * t * p2[k] + t * t * t * p3[k];
+    return { x: at("x"), y: at("y") };
+  });
+}
+
+function drawWire(part: Extract<Part, { kind: "wire" }>): string {
+  const a = holeCentre(part.from);
+  const b = holeCentre(part.to);
+  const colour = token(WIRE_TOKEN[part.role]);
+  const ends = [a, b]
+    .map(
+      (end) =>
+        circle(end.x, end.y, 0.72, `fill="${colour}"`) +
+        circle(end.x, end.y, 0.32, `fill="${token("lead")}"`),
+    )
+    .join("");
+  if (part.arch) {
+    // Lifted off the board: its shadow falls a little down and to the right of it, and the
+    // lighter line runs along the side away from the board.
+    const [p0, p1, p2, p3] = archCurve(part);
+    const d = `M${n(p0.x)} ${n(p0.y)} C${n(p1.x)} ${n(p1.y)} ${n(p2.x)} ${n(p2.y)} ${n(p3.x)} ${n(p3.y)}`;
+    const shine = archesOverTop(part) ? -0.22 : 0.22;
+    return (
+      `<path d="${d}" transform="translate(${ARCH_SHADOW_MM.x} ${ARCH_SHADOW_MM.y})" fill="none" stroke="${token("shade")}" stroke-opacity="0.28" stroke-width="1.6" stroke-linecap="round"/>` +
+      `<path d="${d}" fill="none" stroke="${colour}" stroke-width="1.15" stroke-linecap="round"/>` +
+      `<path d="${d}" transform="translate(0 ${shine})" fill="none" stroke="${token("shine")}" stroke-opacity="0.3" stroke-width="0.28" stroke-dasharray="0 1.2 1000"/>` +
+      ends
+    );
+  }
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
+  // A lighter line down one side of the insulation, which is what makes it read as round.
+  const nx = (-(b.y - a.y) / length) * 0.22;
+  const ny = ((b.x - a.x) / length) * 0.22;
+  const tx = ((b.x - a.x) / length) * 0.4;
+  const ty = ((b.y - a.y) / length) * 0.4;
+  return (
+    line(a.x, a.y, b.x, b.y, `stroke="${colour}" stroke-width="1.15" stroke-linecap="round"`) +
+    line(
+      a.x + nx + tx,
+      a.y + ny + ty,
+      b.x + nx - tx,
+      b.y + ny - ty,
+      `stroke="${token("shine")}" stroke-opacity="0.22" stroke-width="0.28"`,
+    ) +
+    ends
+  );
+}
+
+/** Where an arching jumper's shadow falls, from the jumper. */
+const ARCH_SHADOW_MM = { x: 0.6, y: 0.9 } as const;
+
+/** The columns the board prints a number over, above row a and below row j. */
+const NUMBERED_COLUMNS = [1, 5, 10, 15, 20, 25, 30] as const;
+const NUMBER_Y_TOP = rowY("a") - 1.5 * PIN_PITCH_MM + 0.5;
+const NUMBER_Y_BOTTOM = rowY("j") + 1.5 * PIN_PITCH_MM - 0.5;
+const PRINTED_NUMBERS: readonly Point[] = NUMBERED_COLUMNS.flatMap((column) => [
+  { x: columnX(column), y: NUMBER_Y_TOP },
+  { x: columnX(column), y: NUMBER_Y_BOTTOM },
+]);
+
+/**
+ * A resistor's value tag, in millimetres: its height, and its width for a label. A character
+ * is a digit's width at the tag's 1.6 mm bold, except a full stop, which is little more than
+ * half of one: counted whole, `4.7 kΩ` had no room between Four buttons' jumpers (scratchpi's ADR 0159).
+ */
+const TAG_HEIGHT_MM = 2.3;
+const tagWidthOf = (label: string): number =>
+  [...label].reduce((width, character) => width + (character === "." ? 0.6 : 1.05), 0) + 1.8;
+
+/** Whether a segment, widened by `reach` either side, touches a rectangle. */
+function segmentTouches(
+  a: Point,
+  b: Point,
+  reach: number,
+  box: { x: number; y: number; w: number; h: number },
+): boolean {
+  // Sample the segment finely: tags are small and nothing here needs exact geometry.
+  const steps = Math.max(2, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 0.25));
+  for (let i = 0; i <= steps; i += 1) {
+    const x = a.x + ((b.x - a.x) * i) / steps;
+    const y = a.y + ((b.y - a.y) * i) / steps;
+    const nx = Math.max(box.x, Math.min(x, box.x + box.w));
+    const ny = Math.max(box.y, Math.min(y, box.y + box.h));
+    if (Math.hypot(x - nx, y - ny) < reach) return true;
+  }
+  return false;
+}
+
+/**
+ * Where a resistor's value tag goes, given everything else on the board (scratchpi's ADR 0154). Towards the
+ * channel for a resistor lying along a row, and to its right for one that is not, as every
+ * layout before Four buttons had it — unless something is there, in which case the first of a
+ * few other places that is clear: the other side, or the other end. Four buttons is the first
+ * layout crowded enough to need them.
+ */
+export function clearTagOf(
+  part: Extract<Part, { kind: "resistor" }>,
+  others: readonly Part[],
+): Point | undefined {
+  const a = holeCentre(part.from);
+  const b = holeCentre(part.to);
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
+  const along = (t: number) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+  const towards = mid.y < CHANNEL_Y_MM ? 2.8 : -2.8;
+  // Where it has always gone first, then the other side, then further along and further out.
+  const candidates: Point[] = horizontal
+    ? [0.5, 0.35, 0.65].flatMap((t) =>
+        [towards, -towards, towards * 1.4, -towards * 1.4].map((dy) => ({
+          x: along(t).x,
+          y: along(t).y + dy,
+        })),
+      )
+    : [0.5, 0.35, 0.65, 0.2, 0.8].flatMap((t) =>
+        [5, -5, 6.5, -6.5].map((dx) => ({ x: along(t).x + dx, y: along(t).y })),
+      );
+  // Last of all, for a resistor down to a rail: past the outer rail on that side, between it and
+  // the board's edge, under where the resistor ends. Four buttons' GP15 pull-down needs it, between
+  // an arching jumper's legs (scratchpi's ADR 0166); everything before it was placed without.
+  const rail = [a, b].find((end) => end.y < railY("top-") + 0.1 || end.y > railY("bottom-") - 0.1);
+  if (rail) {
+    const y = rail.y < CHANNEL_Y_MM ? railY("top+") - 2.4 : railY("bottom+") + 2.4;
+    candidates.push(...[0, -1, 1, -2, 2, -3, 3].map((dx) => ({ x: rail.x + dx, y })));
+  }
+  const width = tagWidthOf(formatOhms(part.ohms));
+  const clear = (tag: Point): boolean => {
+    const box = {
+      x: tag.x - width / 2 - 0.3,
+      y: tag.y - TAG_HEIGHT_MM / 2 - 0.3,
+      w: width + 0.6,
+      h: TAG_HEIGHT_MM + 0.6,
+    };
+    const inside = (p: Point, reach: number) => segmentTouches(p, p, reach, box);
+    // Its own body, the rails, and the column numbers, which a tag has never sat over.
+    if (segmentTouches(a, b, 1.15, box)) return false;
+    for (const rail of RAILS) {
+      if (box.y < railY(rail) + 0.9 && box.y + box.h > railY(rail) - 0.9) return false;
+    }
+    for (const at of PRINTED_NUMBERS) {
+      if (inside(at, 1.3)) return false;
+    }
+    // The Pico, turned on its side.
+    const pico = {
+      x: PICO_ORIGIN_MM.x,
+      y: PICO_ORIGIN_MM.y,
+      w: BOARD_LENGTH_MM,
+      h: BOARD_WIDTH_MM,
+    };
+    if (
+      box.x < pico.x + pico.w &&
+      box.x + box.w > pico.x &&
+      box.y < pico.y + pico.h &&
+      box.y + box.h > pico.y
+    )
+      return false;
+    for (const other of others) {
+      if (other === part) continue;
+      if (other.kind === "resistor") {
+        if (segmentTouches(holeCentre(other.from), holeCentre(other.to), 1.15, box)) return false;
+      }
+      if (other.kind === "wire") {
+        // An arch's shadow is part of it too, a little down and to the right of it.
+        const path = wirePath(other);
+        const shadow = other.arch
+          ? path.map((p) => ({ x: p.x + ARCH_SHADOW_MM.x, y: p.y + ARCH_SHADOW_MM.y }))
+          : [];
+        for (const [line, reach] of [
+          [path, 0.6],
+          [shadow, 0.8],
+        ] as const) {
+          for (let i = 1; i < line.length; i++) {
+            if (segmentTouches(line[i - 1] as Point, line[i] as Point, reach, box)) return false;
+          }
+        }
+      }
+      if (other.kind === "button") {
+        const centre = buttonCentre(other);
+        if (inside(centre, BUTTON_BODY_MM / 2 + 0.4)) return false;
+      }
+      for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
+    }
+    return true;
+  };
+  return candidates.find(clear);
+}
+
+/** The same, falling back to where a tag has always gone if nowhere is clear. */
+export function tagOf(part: Extract<Part, { kind: "resistor" }>, others: readonly Part[]): Point {
+  return clearTagOf(part, others) ?? defaultTagOf(part);
+}
+
+/** Towards the channel along a row, and to the right otherwise: before `clearTagOf` looked. */
+function defaultTagOf(part: Extract<Part, { kind: "resistor" }>): Point {
+  const a = holeCentre(part.from);
+  const b = holeCentre(part.to);
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
+  return horizontal
+    ? { x: mid.x, y: mid.y + (mid.y < CHANNEL_Y_MM ? 2.8 : -2.8) }
+    : { x: mid.x + 5, y: mid.y };
+}
+
+function drawResistor(from: Hole, to: Hole, ohms: number, tag: Point): string {
+  const a = holeCentre(from);
+  const b = holeCentre(to);
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
+  const angle = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+  const body = Math.min(6.4, length - 1.2);
+  const height = 2.3;
+  const half = body / 2;
+
+  // Drawn along +x around its middle, then turned to lie between its two holes.
+  const local: string[] = [
+    line(
+      -length / 2,
+      0,
+      length / 2,
+      0,
+      `stroke="${token("lead")}" stroke-width="0.5" stroke-linecap="round"`,
+    ),
+    rect(
+      -half,
+      -height / 2,
+      body,
+      height,
+      `rx="1.1" fill="${token("resistor")}" stroke="${token("resistor-edge")}" stroke-width="0.18"`,
+    ),
+  ];
+  const bands = resistorBands(ohms).four;
+  // Three bands bunched at one end and the tolerance band apart at the other, which is
+  // how a reader knows which end to start from.
+  const at = [-0.61, -0.34, -0.08, 0.55];
+  bands.forEach((band, i) => {
+    local.push(
+      rect(
+        (at[i] ?? 0) * half - 0.26,
+        -height / 2 + 0.09,
+        0.52,
+        height - 0.18,
+        `fill="${token(`band-${band}`)}"`,
+      ),
+    );
+  });
+  local.push(
+    line(
+      -half + 1,
+      -0.62,
+      half - 1,
+      -0.62,
+      `stroke="${token("shine")}" stroke-opacity="0.35" stroke-width="0.3" stroke-linecap="round"`,
+    ),
+  );
+
+  // The value, on a tag where `tagOf` found room for it: never over a rail.
+  const label = formatOhms(ohms);
+  const tagWidth = tagWidthOf(label);
+
+  return (
+    `<g transform="translate(${n(mid.x)} ${n(mid.y)}) rotate(${n(angle)})">${local.join("")}</g>` +
+    legEnd(a.x, a.y) +
+    legEnd(b.x, b.y) +
+    rect(
+      tag.x - tagWidth / 2,
+      tag.y - TAG_HEIGHT_MM / 2,
+      tagWidth,
+      TAG_HEIGHT_MM,
+      `rx="1.15" fill="${token("board-silk")}" stroke="${token("breadboard-print")}" stroke-width="0.15"`,
+    ) +
+    text(
+      tag.x,
+      tag.y + 0.05,
+      label,
+      `font-size="1.6" font-weight="800" fill="${token("on-pale-chip")}"`,
+    )
+  );
+}
+
+/** How far above its holes an LED's lens is centred, and its radius. */
+const LENS_RISE_MM = 5.6;
+const LENS_RADIUS_MM = 2.45;
+
+function drawLed(anode: Hole, cathode: Hole, colour: LedColour): string {
+  const a = holeCentre(anode);
+  const k = holeCentre(cathode);
+  const y = a.y;
+  const mid = (a.x + k.x) / 2;
+  // +1 when the short leg is to the right: the kink goes on the long leg, away from it,
+  // and the flat on the rim is on the short leg's side.
+  const towardCathode = Math.sign(k.x - a.x) || 1;
+  const fill = token(`led-${colour}`);
+  const r = LENS_RADIUS_MM;
+  const lens = `M${n(mid - r)} ${n(y - 3.7)}V${n(y - LENS_RISE_MM)}A${r} ${r} 0 0 1 ${n(mid + r)} ${n(y - LENS_RISE_MM)}V${n(y - 3.7)}Z`;
+  const rimLeft = towardCathode > 0 ? mid - 2.85 : mid - 2.4;
+  const rimRight = towardCathode > 0 ? mid + 2.4 : mid + 2.85;
+  const kink = -0.75 * towardCathode;
+
+  return (
+    circle(mid, y - LENS_RISE_MM, 5.6, `class="glow" fill="url(#glow-${colour})"`) +
+    line(k.x, y - 3, k.x, y, `stroke="${token("lead")}" stroke-width="0.45"`) +
+    `<path d="M${n(a.x)} ${n(y - 3)}V${n(y - 2.15)}L${n(a.x + kink)} ${n(y - 1.5)}L${n(a.x)} ${n(y - 0.85)}V${n(y)}" fill="none" stroke="${token("lead")}" stroke-width="0.45" stroke-linejoin="round"/>` +
+    legEnd(a.x, y) +
+    legEnd(k.x, y) +
+    rect(rimLeft, y - 3.7, rimRight - rimLeft, 0.7, `fill="${fill}"`) +
+    rect(
+      rimLeft,
+      y - 3.7,
+      rimRight - rimLeft,
+      0.7,
+      `fill="${token("shade")}" fill-opacity="0.25"`,
+    ) +
+    `<path d="${lens}" fill="${fill}" fill-opacity="0.9" stroke="${token("shade")}" stroke-opacity="0.3" stroke-width="0.16"/>` +
+    `<path class="lit" d="${lens}" fill="${token("shine")}"/>` +
+    // The leads inside the lens: the thin post of the long leg and the anvil of the short.
+    `<path d="M${n(a.x)} ${n(y - 3.7)}V${n(y - 5.3)}M${n(k.x)} ${n(y - 3.7)}V${n(y - 4.9)}L${n(mid + 0.2 * towardCathode)} ${n(y - 5.5)}H${n(k.x)}" fill="none" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.3"/>` +
+    `<ellipse cx="${n(mid - 1.3)}" cy="${n(y - 5.9)}" rx="0.42" ry="1.25" fill="${token("shine")}" fill-opacity="0.5"/>`
+  );
+}
+
+/**
+ * The side of a tactile button's square body. A real one is 6 mm and its legs come out just
+ * past it; drawn a little smaller, the legs show where they go in.
+ */
+const BUTTON_BODY_MM = 5.6;
+
+/** Where a button's body is centred: between its legs' rows, the channel's middle across it. */
+function buttonCentre(part: Extract<Part, { kind: "button" }>): { x: number; y: number } {
+  const [first, second] = rowsOf(part);
+  return {
+    x: (columnX(part.columns[0]) + columnX(part.columns[1])) / 2,
+    y: (rowY(first) + rowY(second)) / 2,
+  };
+}
+
+function drawButton(part: Extract<Part, { kind: "button" }>, cap: ButtonColour): string {
+  const { x: mid, y: cy } = buttonCentre(part);
+  const half = BUTTON_BODY_MM / 2;
+  const out: string[] = [];
+  for (const column of part.columns) {
+    for (const row of rowsOf(part)) {
+      const y = rowY(row);
+      const edge = y < cy ? cy - half : cy + half;
+      out.push(
+        line(
+          columnX(column),
+          y,
+          columnX(column),
+          edge,
+          `stroke="${token("lead")}" stroke-width="0.8"`,
+        ),
+      );
+      out.push(legEnd(columnX(column), y));
+    }
+  }
+  out.push(
+    rect(
+      mid - half,
+      cy - half,
+      BUTTON_BODY_MM,
+      BUTTON_BODY_MM,
+      `rx="0.5" fill="${token("board-chip")}"`,
+    ),
+  );
+  out.push(
+    rect(
+      mid - half + 0.5,
+      cy - half + 0.5,
+      BUTTON_BODY_MM - 1,
+      BUTTON_BODY_MM - 1,
+      `rx="0.35" fill="${token("board-metal")}"`,
+    ),
+  );
+  // The cap, in the colour its circuit gives the button (scratchpi's ADR 0174), so the reader fits
+  // the one the steps and the parts list name.
+  out.push(
+    circle(
+      mid,
+      cy,
+      1.85,
+      `fill="${token(`led-${cap}`)}" stroke="${token("shade")}" stroke-width="0.2"`,
+    ),
+  );
+  out.push(circle(mid - 0.5, cy - 0.55, 0.55, `fill="${token("shine")}" fill-opacity="0.25"`));
+  return out.join("");
+}
+
+/** A passive buzzer, seen from the side: a short black cylinder standing on two legs. */
+const BUZZER_RADIUS_MM = 5.5;
+const BUZZER_HEIGHT_MM = 6;
+/** How far its body stands off the board: enough that its legs show under the rim. */
+const BUZZER_LIFT_MM = 2.6;
+
+function drawBuzzer(plus: Hole, minus: Hole): string {
+  const p = holeCentre(plus);
+  const m = holeCentre(minus);
+  const y = p.y;
+  const mid = (p.x + m.x) / 2;
+  const r = BUZZER_RADIUS_MM;
+  const bottom = y - BUZZER_LIFT_MM;
+  const top = bottom - BUZZER_HEIGHT_MM;
+  const ry = 1.3;
+  return (
+    line(p.x, y, p.x, bottom, `stroke="${token("lead")}" stroke-width="0.5"`) +
+    line(m.x, y, m.x, bottom, `stroke="${token("lead")}" stroke-width="0.5"`) +
+    legEnd(p.x, y) +
+    legEnd(m.x, y) +
+    `<path d="M${n(mid - r)} ${n(top)}V${n(bottom)}A${r} ${ry} 0 0 0 ${n(mid + r)} ${n(bottom)}V${n(top)}Z" fill="${token("board-chip")}"/>` +
+    rect(mid - r + 0.9, top, 0.9, BUZZER_HEIGHT_MM, `fill="${token("shine")}" fill-opacity="0.1"`) +
+    `<ellipse cx="${n(mid)}" cy="${n(top)}" rx="${r}" ry="${ry}" fill="${token("board-chip")}" stroke="${token("shine")}" stroke-opacity="0.18" stroke-width="0.2"/>` +
+    `<ellipse cx="${n(mid)}" cy="${n(top)}" rx="1.1" ry="0.42" fill="${token("shade")}" fill-opacity="0.7"/>` +
+    text(p.x, bottom - 2.2, "+", `font-size="2.4" font-weight="800" fill="${token("board-silk")}"`)
+  );
+}
+
+/**
+ * A 10 mm addressable RGB LED (scratchpi's ADR 0222), standing up: four leads, data out's kinked as the
+ * longest, a frosted lens over them, and its pie of red, green and blue showing through
+ * (scratchpi's ADR 0224). Its glow is white, all three at once, when the step that tests it is picked.
+ */
+const RGB_LENS_RISE_MM = 6.6;
+const RGB_LENS_RADIUS_MM = 4.8;
+
+function drawRgbLed(part: Extract<Part, { kind: "rgbLed" }>): string {
+  const legs = legsOf(part).map(holeCentre);
+  const y = legs[0]?.y ?? 0;
+  const xs = legs.map((leg) => leg.x);
+  const mid = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const r = RGB_LENS_RADIUS_MM;
+  const rim = y - 3.7;
+  const centre = y - RGB_LENS_RISE_MM;
+  const out = holeCentre(part.dataOut).x;
+  const lens = `M${n(mid - r)} ${n(rim)}V${n(centre)}A${r} ${r} 0 0 1 ${n(mid + r)} ${n(centre)}V${n(rim)}Z`;
+  return (
+    circle(mid, centre, 9, `class="glow" fill="url(#glow-white)"`) +
+    legs
+      .filter((leg) => leg.x !== out)
+      .map((leg) => line(leg.x, rim, leg.x, y, `stroke="${token("lead")}" stroke-width="0.45"`))
+      .join("") +
+    `<path d="M${n(out)} ${n(rim)}V${n(y - 2.15)}L${n(out - 0.75)} ${n(y - 1.5)}L${n(out)} ${n(y - 0.85)}V${n(y)}" fill="none" stroke="${token("lead")}" stroke-width="0.45" stroke-linejoin="round"/>` +
+    legs.map((leg) => legEnd(leg.x, leg.y)).join("") +
+    rect(mid - r - 0.5, rim, 2 * r + 1, 0.8, `fill="${token("led-white")}"`) +
+    rect(mid - r - 0.5, rim, 2 * r + 1, 0.8, `fill="${token("shade")}" fill-opacity="0.25"`) +
+    `<path d="${lens}" fill="${token("led-white")}" fill-opacity="0.92" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"/>` +
+    PIE_WEDGES.map(
+      (wedge) =>
+        `<path d="${wedgePath(mid, centre, 2.6, wedge.from, wedge.to)}" fill="${token(`led-${wedge.colour}`)}" fill-opacity="0.85"/>`,
+    ).join("") +
+    `<path class="lit" d="${lens}" fill="${token("shine")}"/>` +
+    `<ellipse cx="${n(mid - 2.4)}" cy="${n(centre - 1.2)}" rx="0.5" ry="1.6" fill="${token("shine")}" fill-opacity="0.5"/>`
+  );
+}
+
+/**
+ * Where the ring's header sits under its holes (scratchpi's ADR 0238): the pins' short run from the holes,
+ * then the black plastic, 2.5 mm, which the ring's board starts at.
+ */
+const RING_HEADER_MM = { gap: 0.9, height: 2.5 } as const;
+
+/** How long the test's red light takes to go once round the ring: the script's 0.2 s an LED. */
+const RING_ROUND_SECONDS = 2.4;
+
+/** The middle of the ring, as it is laid out below its holes. */
+export function ringCentreOf(part: Extract<Part, { kind: "ring" }>): Point {
+  const legs = legsOf(part).map(holeCentre);
+  const xs = legs.map((leg) => leg.x);
+  const y = legs[0]?.y ?? 0;
+  return {
+    x: (Math.min(...xs) + Math.max(...xs)) / 2,
+    y: y + RING_HEADER_MM.gap + RING_HEADER_MM.height + RING_MM.outer,
+  };
+}
+
+/**
+ * The ring of twelve RGB LEDs (scratchpi's ADR 0234), laid out below the board at its size, its header up in
+ * its four holes, after the owner's photo (scratchpi's ADR 0238): the black board with its four mounting
+ * holes, and each LED a white 5050 package turned to face along the ring, with its round lens,
+ * its four pads and the capacitor beside it. LED 0 is the one by the header.
+ *
+ * When the step that tests it is picked, a red light goes round it from LED 0, as the script's
+ * does: each LED's glow and lens wait their turn, a twelfth of the way round.
+ */
+function drawRing(part: Extract<Part, { kind: "ring" }>): string {
+  const legs = legsOf(part).map(holeCentre);
+  const xs = legs.map((leg) => leg.x);
+  const y = legs[0]?.y ?? 0;
+  const left = Math.min(...xs) - PIN_PITCH_MM / 2;
+  const width = Math.max(...xs) - Math.min(...xs) + PIN_PITCH_MM;
+  const plastic = y + RING_HEADER_MM.gap;
+  const centre = ringCentreOf(part);
+  const band = (RING_MM.outer + RING_MM.inner) / 2;
+  const half = RING_MM.led / 2;
+  const lens = RING_MM.lens;
+  const divider = (degrees: number) => {
+    const end = onCircle(0, 0, lens, degrees);
+    return line(0, 0, end.x, end.y, `stroke="${token("lead")}" stroke-width="0.16"`);
+  };
+  const pads = [-1, 1].flatMap((side) =>
+    [-1.55, 1.55].map((at) =>
+      rect(
+        side * (half + 0.1) - 0.4,
+        at - 0.45,
+        0.8,
+        0.9,
+        `rx="0.12" fill="${token("board-metal")}"`,
+      ),
+    ),
+  );
+  const leds = Array.from({ length: 12 }, (_, index) => {
+    const angle = ringAngleOf(index, 12);
+    const at = onCircle(centre.x, centre.y, band, angle);
+    const delay = `style="animation-delay: ${n((index * RING_ROUND_SECONDS) / 12 - RING_ROUND_SECONDS)}s"`;
+    return (
+      `<g data-led="${index}" transform="translate(${n(at.x)} ${n(at.y)}) rotate(${n(angle)})">` +
+      circle(0, 0, 4.4, `class="glow" fill="url(#glow-red)" ${delay}`) +
+      pads.join("") +
+      rect(-1.6, -half - 1.1, 1.1, 0.6, `rx="0.1" fill="${token("board-pad")}"`) +
+      rect(
+        -half,
+        -half,
+        RING_MM.led,
+        RING_MM.led,
+        `rx="0.3" fill="${token("led-white")}" stroke="${token("shade")}" stroke-opacity="0.25" stroke-width="0.12"`,
+      ) +
+      circle(
+        0,
+        0,
+        lens,
+        `fill="${token("board-metal")}" stroke="${token("lead")}" stroke-width="0.16"`,
+      ) +
+      divider(0) +
+      divider(120) +
+      divider(240) +
+      circle(0, 0, lens, `class="lit" fill="${token("led-red")}" ${delay}`) +
+      "</g>"
+    );
+  });
+  return (
+    `<path d="${ringBoardPath(centre.x, centre.y)}" fill-rule="evenodd" fill="${token("board-chip")}" stroke="${token("breadboard-edge")}" stroke-width="0.3"/>` +
+    legs
+      .map((leg) =>
+        line(leg.x, leg.y, leg.x, plastic, `stroke="${token("lead")}" stroke-width="0.6"`),
+      )
+      .join("") +
+    legs.map((leg) => legEnd(leg.x, leg.y)).join("") +
+    rect(left, plastic, width, RING_HEADER_MM.height, `rx="0.3" fill="${token("board-chip")}"`) +
+    rect(left, plastic, width, 0.5, `fill="${token("shine")}" fill-opacity="0.12"`) +
+    leds.join("")
+  );
+}
+
+// --- Labels in the margin. ---
+
+/**
+ * The rows' midpoints, which is where a leader can run without crossing a letter: on the first
+ * board, and on the second, above it (scratchpi's ADR 0226).
+ */
+const BETWEEN_ROWS: readonly number[] = ROWS.slice(0, -1)
+  .map((row, i) => (rowY(row) + rowY(ROWS[i + 1] as Row)) / 2)
+  .flatMap((y) => [y, SECOND_BOARD_Y_MM + y]);
+
+const nearestBetweenRows = (y: number): number =>
+  BETWEEN_ROWS.reduce((best, candidate) =>
+    Math.abs(candidate - y) < Math.abs(best - y) ? candidate : best,
+  );
+
+/** A point on the drawing, in millimetres. */
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * A part's leader: the dot on the part, and where the run out to the margin starts. The two
+ * are the same point unless something is in the way.
+ */
+export interface Leader {
+  readonly dot: Point;
+  readonly run: Point;
+}
+
+/**
+ * Where a part's leader leaves it, given every other part that has a label.
+ *
+ * Buttons all sit on the channel, so a button with another labelled button further along it
+ * would run its leader straight through that one, and the two leaders would share a line to
+ * the margin — nobody could tell whose label was whose. So it leaves from the top of its body
+ * instead, and runs between rows d and e, above the other's legs (scratchpi's ADR 0097).
+ */
+export function leaderOf(part: Part, labelled: readonly Part[]): Leader | undefined {
+  const anchor = anchorOf(part);
+  if (!anchor) return undefined;
+  if (part.kind === "button") {
+    const [, right] = part.columns;
+    const { x: mid, y: cy } = buttonCentre(part);
+    // Only a button further along at the same height is in the way: one above or below the
+    // channel leaves a leader along it room to pass (scratchpi's ADR 0154).
+    const blocked = labelled.some(
+      (other) =>
+        other !== part &&
+        other.kind === "button" &&
+        other.columns[0] > right &&
+        Math.abs(buttonCentre(other).y - cy) < BUTTON_BODY_MM,
+    );
+    if (blocked) {
+      return {
+        dot: { x: mid, y: cy - BUTTON_BODY_MM / 2 },
+        run: { x: mid, y: nearestBetweenRows(cy - BUTTON_BODY_MM / 2 - 1) },
+      };
+    }
+  }
+  return { dot: anchor, run: anchor };
+}
+
+/** Where a part's leader starts: its right-hand edge, at a height between two rows. */
+function anchorOf(part: Part): { x: number; y: number } | undefined {
+  switch (part.kind) {
+    case "led": {
+      const a = holeCentre(part.anode);
+      const k = holeCentre(part.cathode);
+      const mid = (a.x + k.x) / 2;
+      const centre = a.y - LENS_RISE_MM;
+      const y = nearestBetweenRows(centre);
+      const dy = Math.min(Math.abs(y - centre), LENS_RADIUS_MM);
+      const reach = y > centre ? LENS_RADIUS_MM : Math.sqrt(LENS_RADIUS_MM ** 2 - dy ** 2);
+      return { x: mid + reach + 0.2, y };
+    }
+    case "button": {
+      const { x: mid, y } = buttonCentre(part);
+      return { x: mid + BUTTON_BODY_MM / 2 + 0.2, y };
+    }
+    case "buzzer": {
+      const p = holeCentre(part.plus);
+      const m = holeCentre(part.minus);
+      const centre = p.y - BUZZER_LIFT_MM - BUZZER_HEIGHT_MM / 2;
+      return { x: (p.x + m.x) / 2 + BUZZER_RADIUS_MM + 0.2, y: nearestBetweenRows(centre) };
+    }
+    case "rgbLed": {
+      const xs = legsOf(part).map((leg) => holeCentre(leg).x);
+      const centre = holeCentre(part.power).y - RGB_LENS_RISE_MM;
+      return {
+        x: (Math.min(...xs) + Math.max(...xs)) / 2 + RGB_LENS_RADIUS_MM + 0.2,
+        y: nearestBetweenRows(centre),
+      };
+    }
+    case "ring": {
+      // The header's right-hand end: the ring itself hangs below the board, past the margin.
+      const xs = legsOf(part).map((leg) => holeCentre(leg).x);
+      return {
+        x: Math.max(...xs) + PIN_PITCH_MM / 2 + 0.2,
+        y: holeCentre(part.dataIn).y + RING_HEADER_MM.gap + RING_HEADER_MM.height / 2,
+      };
+    }
+    default:
+      return undefined;
+  }
+}
+
+/** Where the labels start: a little past the board's right-hand edge. */
+const MARGIN_X = BREADBOARD_WIDTH_MM + 3;
+/** A label is a title and a line under it; the next one starts at least this far down. */
+const LABEL_PITCH_MM = 5.8;
+
+/**
+ * Where each label goes: level with its part, unless that would put it on top of the one
+ * above, in which case it moves down and its leader bends in the margin to reach it.
+ */
+function labelHeights(
+  parts: readonly DrawnPart[],
+  leaders: ReadonlyMap<DrawnPart, Leader>,
+): Map<DrawnPart, number> {
+  const labelled = parts
+    .flatMap((drawn) => {
+      const leader = leaders.get(drawn);
+      return leader ? [{ drawn, y: leader.run.y }] : [];
+    })
+    .sort((a, b) => a.y - b.y);
+  const heights = new Map<DrawnPart, number>();
+  let previous = Number.NEGATIVE_INFINITY;
+  for (const { drawn, y } of labelled) {
+    const at = Math.max(y, previous + LABEL_PITCH_MM);
+    heights.set(drawn, at);
+    previous = at;
+  }
+  return heights;
+}
+
+function drawLabel(leader: Leader, label: { title: string; detail: string }, y: number): string {
+  const { dot, run } = leader;
+  const bend = BREADBOARD_WIDTH_MM + 0.8;
+  const points = [dot, ...(run.x === dot.x && run.y === dot.y ? [] : [run])]
+    .map((point) => `${n(point.x)},${n(point.y)}`)
+    .join(" ");
+  return (
+    circle(dot.x, dot.y, 0.4, `class="callout-dot"`) +
+    `<polyline points="${points} ${n(bend)},${n(run.y)} ${n(MARGIN_X - 0.8)},${n(y)}" fill="none" class="callout-leader"/>` +
+    `<text x="${n(MARGIN_X)}" y="${n(y - 0.3)}" class="callout-title">${escaped(label.title)}</text>` +
+    `<text x="${n(MARGIN_X)}" y="${n(y + 2.4)}" class="callout-detail">${escaped(label.detail)}</text>`
+  );
+}
+
+function drawPart(
+  drawn: DrawnPart,
+  colours: Pick<Breadboard, "ledColour" | "buttonColour">,
+  leader: Leader | undefined,
+  labelY: number | undefined,
+  others: readonly Part[],
+): string {
+  const { part } = drawn;
+  let body: string;
+  switch (part.kind) {
+    case "wire":
+      body = drawWire(part);
+      break;
+    case "resistor":
+      body = drawResistor(part.from, part.to, part.ohms, tagOf(part, others));
+      break;
+    case "led":
+      body = drawLed(part.anode, part.cathode, colours.ledColour(part.led));
+      break;
+    case "button":
+      body = drawButton(part, colours.buttonColour(part.button));
+      break;
+    case "buzzer":
+      body = drawBuzzer(part.plus, part.minus);
+      break;
+    case "rgbLed":
+      body = drawRgbLed(part);
+      break;
+    case "ring":
+      body = drawRing(part);
+      break;
+  }
+  const label =
+    drawn.label && leader && labelY !== undefined ? drawLabel(leader, drawn.label, labelY) : "";
+  return `<g class="part" data-g="${drawn.group}" data-kind="${part.kind}">${body}${label}</g>`;
+}
+
+/** The glow a lit lens gives off, one gradient per colour the circuit has. */
+function glowGradient(colour: LedColour): string {
+  const fill = token(`led-${colour}`);
+  return (
+    `<radialGradient id="glow-${colour}">` +
+    `<stop offset="0" stop-color="${fill}" stop-opacity="0.9"/>` +
+    `<stop offset="0.45" stop-color="${fill}" stop-opacity="0.35"/>` +
+    `<stop offset="1" stop-color="${fill}" stop-opacity="0"/>` +
+    "</radialGradient>"
+  );
+}
+
+/** The whole picture, as one `<svg>` element. */
+export function drawBreadboard(drawing: Breadboard): string {
+  const colours = [
+    ...new Set(
+      drawing.parts.flatMap(({ part }): LedColour[] =>
+        part.kind === "led"
+          ? [drawing.ledColour(part.led)]
+          : part.kind === "rgbLed"
+            ? ["white"]
+            : part.kind === "ring"
+              ? ["red"]
+              : [],
+      ),
+    ),
+  ];
+  const second = usesSecondBoard(drawing.parts.map(({ part }) => part));
+  const rows = tagRows(drawing.tags);
+  const left = -14;
+  const width = BREADBOARD_WIDTH_MM - left + 26;
+  // Room past an edge an arching jumper rises over, and the same margin as ever where none does.
+  const arches = drawing.parts.flatMap(({ part }) =>
+    part.kind === "wire" && part.arch ? [part] : [],
+  );
+  const over = (top: boolean) =>
+    arches.some((part) => archesOverTop(part) === top) ? ARCH_LIFT_MM + 1.5 : 0;
+  // A second board above the first (scratchpi's ADR 0226) is room enough for an arch over the top edge.
+  const top = second ? SECOND_BOARD_Y_MM - 3 : -3 - over(true);
+  // A ring laid out below the board (scratchpi's ADR 0238) is room enough for an arch under it.
+  const rings = drawing.parts.flatMap(({ part }) => (part.kind === "ring" ? [part] : []));
+  const bottom = Math.max(
+    BREADBOARD_HEIGHT_MM + 3 + over(false),
+    ...rings.map((ring) => ringCentreOf(ring).y + RING_MM.outer + 3),
+  );
+  const height = bottom - top;
+  const labelled = drawing.parts.filter((drawn) => drawn.label).map((drawn) => drawn.part);
+  const leaders = new Map(
+    drawing.parts.flatMap((drawn) => {
+      const leader = drawn.label ? leaderOf(drawn.part, labelled) : undefined;
+      return leader ? [[drawn, leader] as const] : [];
+    }),
+  );
+  const labels = labelHeights(drawing.parts, leaders);
+  // Wires are laid over everything else, the way they are on the bench, and an arching one is
+  // over them too.
+  const ordered = [
+    ...drawing.parts.filter(({ part }) => part.kind !== "wire"),
+    ...drawing.parts.filter(({ part }) => part.kind === "wire" && !part.arch),
+    ...drawing.parts.filter(({ part }) => part.kind === "wire" && part.arch),
+  ];
+  return (
+    `<svg class="breadboard-drawing" viewBox="${left} ${top} ${n(width)} ${n(height)}" role="img" aria-labelledby="breadboard-title breadboard-description">` +
+    `<title id="breadboard-title">${escaped(drawing.title)}</title>` +
+    `<desc id="breadboard-description">${escaped(drawing.description)}</desc>` +
+    `<defs>${colours.map(glowGradient).join("")}</defs>` +
+    (second ? drawPlastic(SECOND_BOARD_Y_MM) : "") +
+    drawPlastic() +
+    drawPico() +
+    drawing.tags.map((tag) => drawTag(tag, rows.get(tag) ?? 0)).join("") +
+    ordered
+      .map((part) =>
+        drawPart(
+          part,
+          drawing,
+          leaders.get(part),
+          labels.get(part),
+          drawing.parts.map((drawn) => drawn.part),
+        ),
+      )
+      .join("") +
+    "</svg>"
+  );
+}

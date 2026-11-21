@@ -1,0 +1,439 @@
+/*
+ * A circuit's wiring page (ADR 0004). Inlined into each page after `tokens.css`, so every
+ * colour, font, radius and duration here is a token.
+ *
+ * The drawing keeps its own colours in both scales, because it is a drawing of objects. Only
+ * the labels in its margin are the page's, and they are coloured here.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-page);
+  font-size: 1rem;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+
+.page {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding-inline: 1.25rem;
+  padding-block: 1.25rem 3rem;
+  display: grid;
+  gap: 1.75rem;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+header {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 68ch;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 4.2vw, 2.5rem);
+  line-height: 1.12;
+  font-weight: 900;
+  text-wrap: balance;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  text-wrap: balance;
+}
+
+.lede {
+  margin: 0;
+  font-size: 1.0625rem;
+  color: var(--color-ink-muted);
+}
+
+.panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+/* --- The drawing. --- */
+
+.drawing {
+  margin: 0;
+  overflow: hidden;
+}
+
+.scroll {
+  overflow-x: auto;
+  padding: 1rem 0.75rem 0.5rem;
+}
+
+.breadboard-drawing {
+  display: block;
+  width: 100%;
+  min-width: 45rem;
+  height: auto;
+  font-family: var(--font-page);
+}
+
+figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 1.125rem;
+  padding: 0.75rem 1.125rem;
+  border-top: 1px solid var(--color-canvas);
+  font-size: 0.875rem;
+  color: var(--color-ink-muted);
+}
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.key i {
+  display: inline-block;
+  width: 1.125rem;
+  height: 0.1875rem;
+  border-radius: 2px;
+}
+
+.breadboard-drawing .part {
+  transition: opacity var(--duration-quick) var(--ease-swift);
+}
+
+.breadboard-drawing.focus .part:not(.on) {
+  opacity: 0.14;
+}
+
+.breadboard-drawing .callout-leader {
+  stroke: var(--color-ink-muted);
+  stroke-width: 0.25;
+}
+
+.breadboard-drawing .callout-dot {
+  fill: var(--color-ink-muted);
+}
+
+.breadboard-drawing .callout-title {
+  font-size: 2.5px;
+  font-weight: 900;
+  fill: var(--color-ink);
+}
+
+.breadboard-drawing .callout-detail {
+  font-size: 1.85px;
+  font-weight: 600;
+  fill: var(--color-ink-muted);
+}
+
+/* A light is dark until the last step, when it shows what the script will do. */
+.breadboard-drawing .glow,
+.breadboard-drawing .lit {
+  opacity: 0;
+}
+
+.breadboard-drawing.testing [data-kind="led"] .glow,
+.breadboard-drawing.testing [data-kind="rgbLed"] .glow {
+  opacity: 1;
+}
+
+.breadboard-drawing.testing [data-kind="led"] .lit,
+.breadboard-drawing.testing [data-kind="rgbLed"] .lit {
+  opacity: 0.4;
+}
+
+.breadboard-drawing.testing [data-phase] .glow {
+  animation: glow 1s steps(1, end) infinite;
+}
+
+.breadboard-drawing.testing [data-phase] .lit {
+  animation: lit 1s steps(1, end) infinite;
+}
+
+.breadboard-drawing.testing [data-phase="1"] .glow,
+.breadboard-drawing.testing [data-phase="1"] .lit {
+  animation-delay: -0.5s;
+}
+
+@keyframes glow {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes lit {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* The ring's test (scratchpi's ADR 0238): the script's light going round it from LED 0, a twelfth of the way
+   round at a time, each LED's turn set by its own delay. */
+.breadboard-drawing.testing [data-kind="ring"] .glow,
+.breadboard-drawing.testing [data-kind="ring"] .lit {
+  animation: ring-round 2.4s steps(1, end) infinite;
+}
+
+@keyframes ring-round {
+  0% {
+    opacity: 1;
+  }
+  8.333% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breadboard-drawing .part {
+    transition: none;
+  }
+
+  .breadboard-drawing.testing [data-phase] .glow,
+  .breadboard-drawing.testing [data-phase] .lit,
+  .breadboard-drawing.testing [data-kind="ring"] .glow,
+  .breadboard-drawing.testing [data-kind="ring"] .lit {
+    animation: none;
+  }
+
+  /* Without the light going round, LED 0 stays lit. */
+  .breadboard-drawing.testing [data-kind="ring"] [data-led="0"] .glow,
+  .breadboard-drawing.testing [data-kind="ring"] [data-led="0"] .lit {
+    opacity: 1;
+  }
+}
+
+/* --- The steps, the parts and the script. --- */
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: start;
+}
+
+@media (max-width: 52rem) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.column {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.625rem;
+}
+
+.step {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2.125rem minmax(0, 1fr);
+  gap: 0.25rem 0.875rem;
+  padding: 0.875rem 1rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--color-surface);
+  border: 2px solid transparent;
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+  cursor: pointer;
+  transition: border-color var(--duration-quick) var(--ease-swift);
+}
+
+.step:hover {
+  border-color: var(--color-line);
+}
+
+.step[aria-pressed="true"] {
+  border-color: var(--color-picked-edge);
+}
+
+.step .number {
+  grid-row: span 2;
+  width: 2.125rem;
+  height: 2.125rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-canvas);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.step[aria-pressed="true"] .number {
+  background: var(--color-picked);
+  color: var(--color-on-picked);
+}
+
+.step strong {
+  padding-top: 0.3rem;
+  font-size: 1.03rem;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.step .body {
+  font-size: 0.9375rem;
+  color: var(--color-ink-muted);
+}
+
+.hole,
+code {
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 5px;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-code);
+  font-size: 0.88em;
+  white-space: nowrap;
+}
+
+.card {
+  padding: 1.125rem 1.25rem;
+}
+
+.parts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5625rem;
+}
+
+.parts li {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  gap: 0.625rem;
+  align-items: baseline;
+}
+
+.count {
+  text-align: right;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-muted);
+}
+
+.bands {
+  display: inline-flex;
+  gap: 3px;
+  margin-inline: 0.25rem;
+  vertical-align: middle;
+}
+
+.bands i {
+  display: inline-block;
+  width: 0.5625rem;
+  height: 0.9375rem;
+  border-radius: 2px;
+  outline: 1px solid var(--color-line);
+  outline-offset: -1px;
+}
+
+.aside {
+  display: block;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-ink-muted);
+}
+
+.script-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.copy {
+  padding: 0.25rem 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+pre {
+  margin: 0;
+  padding: 0.875rem 1rem;
+  overflow-x: auto;
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  font-family: var(--font-code);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+  white-space: pre;
+}
+
+.notes {
+  margin: 0;
+  padding-left: 1.125rem;
+  display: grid;
+  gap: 0.375rem;
+  font-size: 0.9rem;
+  color: var(--color-ink-muted);
+}
+
+footer {
+  max-width: 80ch;
+  font-size: 0.8125rem;
+  color: var(--color-ink-muted);
+}
+
+@media print {
+  .copy,
+  figcaption span:first-child {
+    display: none;
+  }
+}

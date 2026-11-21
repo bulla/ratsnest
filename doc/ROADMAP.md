@@ -10,10 +10,9 @@ judgement the owner has to make goes in **Open points**, and comes out once they
 
 ## Where it stands
 
-The design is settled, in ADR 0001 to ADR 0021, and the frame is built (M1): the package, the
-checks, continuous integration on three systems, the changelog and the onboarding. There is no engine
-yet. ratsnest is to be a builder of
-wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
+The design is settled, in ADR 0001 to ADR 0021, the frame is built (M1), and scratchpi's drawing,
+wiring check and page generator are copied in (M2): the engine makes a page from a circuit a test
+hands it, and nothing else can yet. ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
 SemVer (ADR 0017), and is open source under MIT: its repository has been public since 2026-11-20
@@ -22,19 +21,7 @@ SemVer (ADR 0017), and is open source under MIT: its repository has been public 
 ## Next
 
 The milestones, in order. Each needs the ones before it, and only the first is in flight. Its
-checklist moves to `HISTORY.md` when it lands. M2 is next.
-
-### M2: the copy
-
-- [ ] scratchpi's breadboard model, drawing, wiring check and page generator in `src/`, the drawing
-      in `src/drawing/` (ADR 0001, ADR 0018)
-- [ ] `ATTRIBUTION.md`, as the drawing arrives: its source, its licence, what was changed, and the
-      folder it covers (ADR 0018)
-- [ ] Its tests ported to `bun:test` and passing, jsdom running the page's script (ADR 0009)
-- [ ] What tied it to scratchpi's app gone: the back link, the theme handed over, the language twin,
-      the app's words and records (ADR 0004)
-- [ ] One page made from a circuit built in a test, in English, dark, at 0°, and looked at in
-      Chromium beside scratchpi's
+checklist moves to `HISTORY.md` when it lands. M3 is next.
 
 ### M3: circuits as data
 
@@ -142,6 +129,9 @@ checklist moves to `HISTORY.md` when it lands. M2 is next.
 - **An npm package**, beside the executables, if people ask for one (ADR 0016)
 - **The `circuit` skill as a Claude Code plugin**, if one can be versioned with the builder
   (ADR 0014)
+- **Where a part can be bought, said by its circuit**: the parts list's lines for an RGB LED and a
+  ring still name The Pi Hut's Let it Glow calendar, as scratchpi's did, which is the engine
+  recommending a shop
 
 ## Later
 
@@ -169,3 +159,4 @@ file's Log.
 | --------- | -------------------------------------------------------------------------------------- | ---------------------------- |
 | M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept          | 0001–0020                    |
 | M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding | 0009, 0017, 0018, 0020, 0021 |
+| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app             | 0001, 0004, 0007, 0018       |
