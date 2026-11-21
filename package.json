@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "ratsnest": "bun src/cli.ts",
-    "fonts": "bun scripts/fonts.ts"
+    "fonts": "bun scripts/fonts.ts",
+    "build": "bun scripts/build.ts"
   },
   "dependencies": {
     "@babel/parser": "8.1.3",
