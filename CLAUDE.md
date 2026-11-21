@@ -211,6 +211,8 @@ there.
 │   ├── fields.ts        Every field checked, the format first, then the languages and the words
 │   ├── check.ts         Every check in order, the wiring last: what `check` and `generate` run
 │   ├── shown.ts         A checked circuit taken into one language, as the engine's model
+│   ├── print.ts         A circuit's data written back as a file, its comments kept (ADR 0015)
+│   ├── migrate.ts       The migrations, one format to the next, and their runner (ADR 0015)
 │   ├── fonts.ts         Nunito's files, and every drawn word's width measured in them (ADR 0012)
 │   ├── orientation.ts   The four quarter turns, and where a point lands at each (ADR 0003)
 │   ├── theme.ts         The two themes a page is drawn in (ADR 0005)
@@ -369,6 +371,10 @@ does not pay for it again.
   one `@ts-expect-error` that says why; it fails the type check if TypeScript ever stops minding.
 - **Cross-compiling fetches Bun for each target**, from Bun's own servers, the first time. A build
   with no network makes the running system's executable alone.
+- **The printer keeps every comment, but not always on its line.** The reader keeps a comment under
+  the path of the value it stands before, so one written after a value, on the same line, comes back
+  on its own line before the next value. A migration's file is the same data, and the same comments,
+  in the printer's one style.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

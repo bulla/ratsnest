@@ -35,8 +35,18 @@ export interface Read {
   readonly data?: unknown;
   /** Where the value at a path is written, `steps[2].parts[0].from`, so a check can point at it. */
   readonly at: (path: string) => Location | undefined;
+  /**
+   * The file's comments, so that a migration can write it back with them (ADR 0015): by the path of
+   * the value each stands before, `""` for those before the import, and a path followed by `/end` for
+   * those after an object's or a list's last value.
+   */
+  readonly comments: ReadonlyMap<string, readonly string[]>;
   readonly problems: readonly Problem[];
 }
+
+/** A comment as it is written in the file. */
+const commentText = (comment: { type: string; value: string }): string =>
+  comment.type === "CommentLine" ? `//${comment.value}` : `/*${comment.value}*/`;
 
 /** The module a circuit's types are imported from, in ratsnest and in every circuits project. */
 export const TYPES_MODULE = "ratsnest";
@@ -107,6 +117,24 @@ export function readCircuit(source: string, file: string): Read {
   const problems: Problem[] = [];
   const locations = new Map<string, Location>();
   const at = (path: string) => locations.get(path);
+  const comments = new Map<string, string[]>();
+  /** The comments before a node, kept under its path. */
+  const keep = (
+    path: string,
+    node: { leadingComments?: readonly { type: string; value: string }[] | null },
+  ) => {
+    const before = node.leadingComments ?? [];
+    if (before.length > 0)
+      comments.set(path, [...(comments.get(path) ?? []), ...before.map(commentText)]);
+  };
+  /** The comments after the last of a list's or an object's values, kept under its path's end. */
+  const keepEnd = (
+    path: string,
+    last: { trailingComments?: readonly { type: string; value: string }[] | null } | undefined,
+  ) => {
+    const after = last?.trailingComments ?? [];
+    if (after.length > 0) comments.set(`${path}/end`, after.map(commentText));
+  };
   const refuse = (node: Node | { loc?: Node["loc"] }, message: string) => {
     const where = locationOf(node);
     problems.push(where ? { file, at: where, message } : { file, message });
@@ -120,6 +148,7 @@ export function readCircuit(source: string, file: string): Read {
     const message = `is not TypeScript the engine can read: ${(error as Error).message}`;
     return {
       at,
+      comments,
       problems: [
         loc ? { file, at: { line: loc.line, column: loc.column + 1 }, message } : { file, message },
       ],
@@ -148,11 +177,13 @@ export function readCircuit(source: string, file: string): Read {
         }
         break;
       case "ArrayExpression":
+        keepEnd(path, node.elements.at(-1) ?? undefined);
         return node.elements.map((element, index) => {
           if (element === null) {
             refuse(node, `an empty slot in an array: ${ONLY_DECLARES}`);
             return undefined;
           }
+          keep(pathOf(path, index), element);
           return dataOf(element, pathOf(path, index));
         });
       case "ObjectExpression": {
@@ -184,8 +215,10 @@ export function readCircuit(source: string, file: string): Read {
             refuse(member, `\`${key}\` is written twice`);
             continue;
           }
+          keep(pathOf(path, key), member);
           object[key] = dataOf(member.value as Node, pathOf(path, key));
         }
+        keepEnd(path, node.properties.at(-1));
         return object;
       }
     }
@@ -196,6 +229,7 @@ export function readCircuit(source: string, file: string): Read {
   let data: unknown;
   let exported = false;
   for (const statement of program.body) {
+    keep("", statement);
     if (statement.type === "ImportDeclaration") {
       if (statement.importKind !== "type") {
         refuse(statement, `an import that brings a value: write \`import type\` (ADR 0007)`);
@@ -239,5 +273,5 @@ export function readCircuit(source: string, file: string): Read {
     });
   }
 
-  return problems.length > 0 ? { at, problems } : { data, at, problems };
+  return problems.length > 0 ? { at, comments, problems } : { data, at, comments, problems };
 }

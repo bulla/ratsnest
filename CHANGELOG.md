@@ -12,6 +12,8 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Added
 
+- A circuit file can be taken from one format to the next with its comments kept, written back in one
+  style, which `ratsnest update` will run when the format first changes.
 - Every release's version is computed from what changed on ratsnest's public surface since the last
   release, the circuit format, the commands and `ratsnest.json`, and checked again when it is tagged,
   before its executables are built and released on GitHub.
