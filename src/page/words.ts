@@ -1,6 +1,7 @@
 import type { ButtonColour } from "../circuit";
 import type { WireRole } from "../drawing/breadboard";
 import { type Band, formatOhms } from "../drawing/breadboard-svg";
+import { plural } from "../language";
 import type { Orientation } from "../orientation";
 
 /**
@@ -178,6 +179,8 @@ const ENGLISH_USB: Record<Orientation, string> = {
   270: "to the bottom",
 };
 
+const ENGLISH_JUMPERS = { one: "jumper wire", other: "jumper wires" } as const;
+
 const capitalised = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** `the top − rail`, or the hole as the page marked it up, and which board it is on. */
@@ -258,23 +261,26 @@ export const ENGLISH_PAGE: PageWords = {
 
   listPico: "Raspberry Pi Pico 2 W, with its header pins soldered on. A Pico 2 WH comes with them.",
   listBreadboard: (count) =>
-    count > 1
-      ? "Half-size breadboards: 30 columns each, with a rail the whole length of each side. They join along their long sides."
-      : "Half-size breadboard: 30 columns, with a rail the whole length of each side.",
+    plural("en", count, {
+      one: "Half-size breadboard: 30 columns, with a rail the whole length of each side.",
+      other:
+        "Half-size breadboards: 30 columns each, with a rail the whole length of each side. They join along their long sides.",
+    }),
   listLed: (name) => `${capitalised(name)}, 5 mm.`,
   listRgbLed: (name) =>
     `${capitalised(name)}: a 10 mm addressable LED, like the one in The Pi Hut's Let it Glow calendar. It needs no resistor.`,
   listRing: (name) =>
     `${capitalised(name)}: twelve addressable RGB LEDs in a ring about 48 mm across, with a header of four pins, like the one in The Pi Hut's Let it Glow calendar. It needs no resistor.`,
   listResistor: (ohms, count, bands, five) =>
-    `${ohms} resistor${count > 1 ? "s" : ""} ${bands}` +
+    `${ohms} ${plural("en", count, { one: "resistor", other: "resistors" })} ${bands}` +
     `<span class="aside">On a blue 5-band one: ${five}.</span>`,
   listButton: (name, cap) =>
     `${capitalised(name)}: a 6 mm tactile switch with four legs, and a ${ENGLISH_CAPS[cap]} cap.`,
   listBuzzer: (name) => `Passive ${name}, with its + leg marked.`,
-  listWire: (colour, count) => `${capitalised(colour)} jumper wire${count > 1 ? "s" : ""}, short.`,
+  listWire: (colour, count) =>
+    `${capitalised(colour)} ${plural("en", count, ENGLISH_JUMPERS)}, short.`,
   listLongWire: (colour, count) =>
-    `${capitalised(colour)} jumper wire${count > 1 ? "s" : ""}, long and flexible: about 10 cm.`,
+    `${capitalised(colour)} ${plural("en", count, ENGLISH_JUMPERS)}, long and flexible: about 10 cm.`,
   listCable: "Micro-USB cable that carries data. A charge-only cable will not reach the Pico.",
 
   ledPolarity:
@@ -412,7 +418,10 @@ export const FRENCH_PAGE: PageWords = {
 
   ohms: (value) => formatOhms(value).replace(".", ","),
   band: (band) => (band === "gold" ? "or" : (FRENCH_BANDS[Number(band)] ?? band)),
-  wire: (role, count) => FRENCH_WIRES[role][count > 1 ? 1 : 0],
+  wire: (role, count) => {
+    const [one, more] = FRENCH_WIRES[role];
+    return plural("fr", count, { one, many: more, other: more });
+  },
 
   jumper: (colour, from, to) => `Un fil ${colour} ${frenchFrom(from)} ${frenchTo(to)}.`,
   archingJumper: (colour, from, to) =>
@@ -444,27 +453,41 @@ export const FRENCH_PAGE: PageWords = {
     `Branchez le câble USB et lancez dans Thonny le script de cette page. ${scriptDoes}`,
 
   listPico: "Raspberry Pi Pico 2 W, avec ses connecteurs soudés. Un Pico 2 WH est livré avec.",
-  listBreadboard: (count) =>
-    count > 1
-      ? `Plaques d’essai demi-taille${NNBSP}: 30 colonnes chacune, avec un rail sur toute la longueur de chaque côté. Elles s’emboîtent par leurs grands côtés.`
-      : `Plaque d’essai demi-taille${NNBSP}: 30 colonnes, avec un rail sur toute la longueur de chaque côté.`,
+  listBreadboard: (count) => {
+    const more = `Plaques d’essai demi-taille${NNBSP}: 30 colonnes chacune, avec un rail sur toute la longueur de chaque côté. Elles s’emboîtent par leurs grands côtés.`;
+    return plural("fr", count, {
+      one: `Plaque d’essai demi-taille${NNBSP}: 30 colonnes, avec un rail sur toute la longueur de chaque côté.`,
+      many: more,
+      other: more,
+    });
+  },
   listLed: (name) => `${capitalised(name)}, 5 mm.`,
   listRgbLed: (name) =>
     `${capitalised(name)}${NNBSP}: une LED adressable de 10 mm, comme celle du calendrier Let it Glow de The Pi Hut. Elle n’a besoin d’aucune résistance.`,
   listRing: (name) =>
     `${capitalised(name)}${NNBSP}: douze LED RVB adressables en anneau d’environ 48 mm de diamètre, avec un connecteur de quatre broches, comme celui du calendrier Let it Glow de The Pi Hut. Il n’a besoin d’aucune résistance.`,
   listResistor: (ohms, count, bands, five) =>
-    `Résistance${count > 1 ? "s" : ""} de ${ohms} ${bands}` +
+    `${plural("fr", count, { one: "Résistance", many: "Résistances", other: "Résistances" })} de ${ohms} ${bands}` +
     `<span class="aside">Sur une résistance bleue à 5 anneaux${NNBSP}: ${five}.</span>`,
   listButton: (name, cap) =>
     `${capitalised(name)}${NNBSP}: un interrupteur tactile de 6 mm à quatre pattes, avec un capuchon ${FRENCH_CAPS[cap]}.`,
   listBuzzer: (name) => `${capitalised(name)} passif, avec sa patte + marquée.`,
-  listWire: (colour, count) =>
-    count > 1 ? `Fils de connexion ${colour}, courts.` : `Fil de connexion ${colour}, court.`,
-  listLongWire: (colour, count) =>
-    count > 1
-      ? `Fils de connexion ${colour}, longs et souples${NNBSP}: environ 10 cm.`
-      : `Fil de connexion ${colour}, long et souple${NNBSP}: environ 10 cm.`,
+  listWire: (colour, count) => {
+    const more = `Fils de connexion ${colour}, courts.`;
+    return plural("fr", count, {
+      one: `Fil de connexion ${colour}, court.`,
+      many: more,
+      other: more,
+    });
+  },
+  listLongWire: (colour, count) => {
+    const more = `Fils de connexion ${colour}, longs et souples${NNBSP}: environ 10 cm.`;
+    return plural("fr", count, {
+      one: `Fil de connexion ${colour}, long et souple${NNBSP}: environ 10 cm.`,
+      many: more,
+      other: more,
+    });
+  },
   listCable:
     "Câble micro-USB qui transporte les données. Un câble de charge seule n’atteindra pas le Pico.",
 
@@ -478,4 +501,195 @@ export const FRENCH_PAGE: PageWords = {
   rowsLettered:
     "Sur certaines plaques d’essai, les lettres des rangées vont dans l’autre sens. Si c’est le cas de la vôtre, suivez le dessin plutôt que les lettres.",
   unplug: "Débranchez le câble USB pendant que vous changez le câblage.",
+};
+
+// --- Russian. ---
+//
+// The engine's Russian, which a reader of Russian checks before it ships and whenever it changes
+// (ADR 0010, ADR 0011): a test cannot check grammar. A part's name stands only where it is written as
+// it is, at the start of a sentence or before a colon, and never as the object of a verb, so that it
+// never has to be inflected (ADR 0011). The parts list is written as a bill of materials is, a noun
+// and what it is, its count in the column beside it.
+
+const RUSSIAN_BANDS = [
+  "чёрный",
+  "коричневый",
+  "красный",
+  "оранжевый",
+  "жёлтый",
+  "зелёный",
+  "синий",
+  "фиолетовый",
+  "серый",
+  "белый",
+] as const;
+
+/** A jumper's colour, agreeing with *перемычка*, which is feminine. */
+const RUSSIAN_WIRES: Record<WireRole, string> = {
+  ground: "чёрная",
+  power: "красная",
+  signal: "жёлтая",
+};
+
+/** A cap's colour, as *колпачок* takes it: after *с*, and on its own. */
+const RUSSIAN_CAPS: Record<ButtonColour, { with: string; alone: string }> = {
+  red: { with: "красным", alone: "красный" },
+  green: { with: "зелёным", alone: "зелёный" },
+  blue: { with: "синим", alone: "синий" },
+  yellow: { with: "жёлтым", alone: "жёлтый" },
+};
+
+const RUSSIAN_PLACEMENT: Record<ButtonPlacement, string> = {
+  across: "поперёк центральной канавки",
+  above: "над центральной канавкой",
+  below: "под центральной канавкой",
+};
+
+/** The same, as short as the margin wants it. */
+const RUSSIAN_LABEL: Record<ButtonPlacement, string> = {
+  across: "на канавке",
+  above: "верхняя половина",
+  below: "нижняя половина",
+};
+
+/** Where the USB is, and which way it points, at each quarter turn. */
+const RUSSIAN_USB: Record<Orientation, string> = {
+  0: "слева",
+  90: "сверху",
+  180: "справа",
+  270: "снизу",
+};
+const RUSSIAN_USB_POINTS: Record<Orientation, string> = {
+  0: "влево",
+  90: "вверх",
+  180: "вправо",
+  270: "вниз",
+};
+
+/** A rail, in the case a preposition asks for: *от верхней шины −*, *в верхнюю шину −*. */
+const russianRail = (place: Extract<Place, { kind: "rail" }>, accusative: boolean) =>
+  `${place.side === "top" ? (accusative ? "верхнюю" : "верхней") : accusative ? "нижнюю" : "нижней"} ${accusative ? "шину" : "шины"} ${place.sign}`;
+
+const russianBoard = (place: Place): string => (place.second ? " на второй плате" : "");
+
+const russianFrom = (place: Place): string =>
+  (place.kind === "rail" ? `от ${russianRail(place, false)}` : `от ${place.html}`) +
+  russianBoard(place);
+
+const russianTo = (place: Place): string =>
+  (place.kind === "rail" ? `до ${russianRail(place, false)}` : `до ${place.html}`) +
+  russianBoard(place);
+
+const russianIn = (place: Place): string =>
+  (place.kind === "rail" ? `в ${russianRail(place, true)}` : `в ${place.html}`) +
+  russianBoard(place);
+
+const russianList = (items: readonly string[]): string =>
+  items.length <= 1
+    ? items.join("")
+    : `${items.slice(0, -1).join(", ")} и ${items[items.length - 1]}`;
+
+/** A value in ohms as Russian writes it: a decimal comma, and *Ом*. */
+const russianOhms = (value: number): string =>
+  formatOhms(value).replace(".", ",").replace("kΩ", "кОм").replace("Ω", "Ом");
+
+export const RUSSIAN_PAGE: PageWords = {
+  tag: "ru",
+  eyebrow: "ratsnest · схема сборки",
+  tapStep: "Нажмите на шаг, чтобы выделить его детали.",
+  railMinus: "шина −: земля",
+  railPlus: (used) => `шина +: ${used ? "3V3" : "не используется"}`,
+  build: "Сборка",
+  parts: "Детали",
+  script: "Проверка в Thonny",
+  copy: "Копировать",
+  copied: "Скопировано",
+  selected: "Выделено",
+  footer: `Pico 2 W нарисован по размерам из его спецификации, на основе
+    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">распиновки Raspberry Pi Pico 2 W</a>,
+    © Raspberry Pi Ltd, по лицензии <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+    Этот рисунок распространяется по той же лицензии. Шрифт Nunito, авторы Nunito Project Authors,
+    по лицензии <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>.`,
+
+  drawingTitle: (circuit, boards) =>
+    `${circuit}: ${boards > 1 ? "на двух половинных макетных платах" : "на половинной макетной плате"}`,
+  drawingIntro: (orientation) =>
+    `Pico 2 W посередине макетной платы, его USB ${RUSSIAN_USB[orientation]}.`,
+
+  pinNote: (label, number) => `(${label}, вывод ${number})`,
+  from: russianFrom,
+  to: russianTo,
+  in: russianIn,
+  list: russianList,
+
+  ohms: russianOhms,
+  band: (band) => (band === "gold" ? "золотой" : (RUSSIAN_BANDS[Number(band)] ?? band)),
+  wire: (role) => RUSSIAN_WIRES[role],
+
+  jumper: (colour, from, to) =>
+    `${capitalised(colour)} перемычка ${russianFrom(from)} ${russianTo(to)}.`,
+  archingJumper: (colour, from, to) =>
+    `Длинная ${colour} перемычка ${russianFrom(from)} ${russianTo(to)}, перекинутая над платой.`,
+  resistor: (ohms, from, to) => `Резистор ${ohms} ${russianFrom(from)} ${russianTo(to)}.`,
+  led: (name, anode, cathode) =>
+    `${name}: длинная ножка ${russianIn(anode)}, короткая ножка ${russianIn(cathode)}.`,
+  button: (name, cap, where, legs) =>
+    `${name}: кнопка с ${RUSSIAN_CAPS[cap].with} колпачком, ${RUSSIAN_PLACEMENT[where]}, ножки в ${russianList(legs)}.`,
+  buzzer: (name, plus, minus) =>
+    `${name}: ножка + ${russianIn(plus)}, другая ножка ${russianIn(minus)}.`,
+  rgbLed: (name, legs, second) =>
+    `${name}: ножки в ${russianList(legs)}${second ? " на второй плате" : ""}: +5 В, затем выход данных, самая длинная, затем земля, затем вход данных.`,
+  ring: (name, dataIn, power, ground, dataOut) =>
+    `${name}, стоя: вход данных ${russianIn(dataIn)}, 5 В ${russianIn(power)}, земля ${russianIn(ground)} и выход данных ${russianIn(dataOut)}.`,
+
+  ledLabel: (anode) => `длинная ножка в ${anode}`,
+  buttonLabel: (where) => RUSSIAN_LABEL[where],
+  buzzerLabel: (plus) => `ножка + в ${plus}`,
+  rgbLedLabel: (dataIn) => `вход данных в ${dataIn}`,
+
+  picoTitle: "Установите Pico поперёк середины",
+  picoBody: (pinOne, lands, orientation) =>
+    `USB смотрит ${RUSSIAN_USB_POINTS[orientation]}. Выводы входят в ряды <span class="hole">c</span> и <span class="hole">h</span>, со столбца 2 по столбец 21, а вывод 1 входит в ${pinOne}.` +
+    (lands.length > 0 ? ` Тогда ${russianList(lands)}.` : ""),
+  land: (gpio, hole) => `GP${gpio} окажется в ${hole}`,
+  testTitle: "Подключите и проверьте",
+  testBody: (scriptDoes) =>
+    `Подключите кабель USB и запустите скрипт с этой страницы в Thonny. ${scriptDoes}`,
+
+  listPico:
+    "Raspberry Pi Pico 2 W с припаянными штыревыми выводами. Pico 2 WH продаётся уже с ними.",
+  listBreadboard: (count) =>
+    plural("ru", count, {
+      one: "Половинная макетная плата: 30 столбцов, с шиной по всей длине каждой стороны.",
+      few: "Половинные макетные платы: по 30 столбцов, с шиной по всей длине каждой стороны. Они соединяются длинными сторонами.",
+      many: "Половинные макетные платы: по 30 столбцов, с шиной по всей длине каждой стороны. Они соединяются длинными сторонами.",
+      other:
+        "Половинные макетные платы: по 30 столбцов, с шиной по всей длине каждой стороны. Они соединяются длинными сторонами.",
+    }),
+  listLed: (name) => `${capitalised(name)}, 5 мм.`,
+  listRgbLed: (name) =>
+    `${capitalised(name)}: адресуемый светодиод 10 мм, как в календаре Let it Glow от The Pi Hut. Резистор не нужен.`,
+  listRing: (name) =>
+    `${capitalised(name)}: двенадцать адресуемых RGB-светодиодов в кольце около 48 мм в диаметре, с разъёмом на четыре вывода, как в календаре Let it Glow от The Pi Hut. Резистор не нужен.`,
+  listResistor: (ohms, _count, bands, five) =>
+    `Резистор ${ohms} ${bands}<span class="aside">На синем, с 5 полосами: ${five}.</span>`,
+  listButton: (name, cap) =>
+    `${capitalised(name)}: тактовая кнопка 6 мм с четырьмя ножками и ${RUSSIAN_CAPS[cap].alone} колпачок.`,
+  listBuzzer: (name) => `${capitalised(name)}: пассивного типа, ножка + отмечена.`,
+  listWire: (colour) => `Перемычка ${colour}, короткая.`,
+  listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
+  listCable:
+    "Кабель micro-USB, передающий данные. Кабель только для зарядки не подойдёт: по нему Pico не получит данных.",
+
+  ledPolarity:
+    "Длинная ножка светодиода: это +, она идёт к выводу. Светодиод, вставленный наоборот, не горит, но и не портится: переверните его.",
+  rgbLedPolarity: (dataPin) =>
+    `Самая длинная ножка RGB-светодиода: выход данных, она идёт во второе отверстие. Проверьте её до установки: перевёрнутый, он подал бы 5 В на ${dataPin}.`,
+  ringPolarity: (dataPin) =>
+    `На обороте кольца подписаны его четыре вывода: вход данных, 5 В, земля и выход данных. Сверьте их с шагами до установки: перевёрнутое, оно подало бы 5 В на ${dataPin}.`,
+  anyResistor: (low, high) =>
+    `Для светодиода подойдёт любой резистор от ${low} до ${high}. Чем больше сопротивление, тем тусклее свет.`,
+  rowsLettered:
+    "На некоторых макетных платах ряды подписаны в обратном порядке. Если на вашей так, следуйте рисунку, а не буквам.",
+  unplug: "Отключайте кабель USB, пока меняете схему.",
 };

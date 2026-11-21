@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { FIXTURE_IDS, FIXTURES } from "./__fixtures__/circuits";
 import { fileOf, sourceOf } from "./__fixtures__/files";
+import { TRILINGUAL } from "./__fixtures__/trilingual";
 import { checkSource, problemLine } from "./check";
 import type { Circuit, LedPart } from "./format";
 
@@ -94,5 +95,34 @@ describe("what crowds at a quarter turn (ADR 0003, ADR 0007)", () => {
       "crowded.ts: at 90°, the 4.7 kΩ resistor from i23 to i26 has nowhere clear for its value tag",
       "crowded.ts: at 270°, the 4.7 kΩ resistor from i23 to i26 has nowhere clear for its value tag",
     ]);
+  });
+});
+
+describe("the engine's test circuit in three languages (ADR 0011, rule 10)", () => {
+  it("meets the worst case: refused for what only its Russian crowds, and saying so", () => {
+    // `4,7 кОм` is wider than `4.7 kΩ`, and beside the Pico and between an arch's legs no shape of the
+    // tag finds room in Russian. English and French pass, so the problems name Russian alone.
+    const checked = checkSource(sourceOf(TRILINGUAL), "trilingual.ts");
+    expect(checked.problems.map(problemLine)).toEqual([
+      "trilingual.ts: at 0° in `ru`, the 4.7 kΩ resistor from j21 to bottom-22 has nowhere clear for its value tag",
+      "trilingual.ts: at 90° in `ru`, the 4.7 kΩ resistor from i18 to bottom-17 has nowhere clear for its value tag",
+      "trilingual.ts: at 180° in `ru`, the 4.7 kΩ resistor from j21 to bottom-22 has nowhere clear for its value tag",
+      "trilingual.ts: at 270° in `ru`, the 4.7 kΩ resistor from i18 to bottom-17 has nowhere clear for its value tag",
+    ]);
+  });
+
+  it("passes every check in English and French alone", () => {
+    const { ru: _, ...twoLanguages } = { ...TRILINGUAL.name };
+    const withoutRussian = JSON.parse(
+      JSON.stringify(TRILINGUAL, (_key, value) =>
+        value && typeof value === "object" && "ru" in value && "en" in value
+          ? { en: value.en, fr: value.fr }
+          : value,
+      ),
+    );
+    expect(Object.keys(twoLanguages)).toEqual(["en", "fr"]);
+    expect(checkSource(sourceOf(withoutRussian), "bilingual.ts").problems.map(problemLine)).toEqual(
+      [],
+    );
   });
 });

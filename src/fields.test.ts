@@ -101,7 +101,7 @@ describe("a file's fields (ADR 0016)", () => {
       "name is in no language: a text needs one at least (ADR 0010)",
     ]);
     expect(said(changed((data) => (data.name = { de: "Ein Licht" })))).toEqual([
-      "name.de is not a language ratsnest writes: it writes `en` or `fr` (ADR 0010)",
+      "name.de is not a language ratsnest writes: it writes `en`, `fr` or `ru` (ADR 0010)",
     ]);
     expect(said(changed((data) => (data.description = { en: "  " })))).toEqual([
       "description.en is not a string with something in it",
@@ -251,11 +251,92 @@ describe("a circuit's characters (ADR 0012)", () => {
   });
 
   it("may hold the narrow no-break space French writes, which the page draws as Nunito's thin one", () => {
-    const data = changed((data) => (data.description = { en: "A light\u202F: and a button" }));
+    const data = changed((data) => (data.description = { en: "A light and a\u202Fbutton" }));
     expect(said(data)).toEqual([]);
   });
 
   it("leave the script alone, which is code in the device's own monospace", () => {
     expect(said(changed((data) => (data.script = { en: "print('→')" })))).toEqual([]);
+  });
+});
+
+describe("ADR 0011's rules for a circuit's words", () => {
+  /** The test circuit with every text in Russian only, the script left as it is. */
+  const inRussian = (change: (data: Circuit) => void = () => {}) => {
+    const data = structuredClone(fileOf(FIXTURES["two-lights"])) as Circuit;
+    const ru = (words: string) => ({ ru: words });
+    const russian = {
+      ...data,
+      name: ru("Два светодиода"),
+      description: ru("Красный и зелёный светодиоды, каждый через резистор на землю."),
+      leds: (data.leds ?? []).map((led, index) => ({
+        ...led,
+        name: ru(["красный светодиод", "зелёный светодиод"][index] ?? "светодиод"),
+      })),
+      steps: data.steps.map((step, index) => ({
+        title: ru(`Шаг ${index + 2}`),
+        parts: step.parts,
+      })),
+      script: ru(data.script.en ?? ""),
+      scriptDoes: ru("Светодиоды мигают по очереди."),
+    } as Circuit;
+    change(russian);
+    return russian;
+  };
+
+  it("pass a circuit written in Russian alone", () => {
+    expect(said(inRussian())).toEqual([]);
+  });
+
+  it("refuse a text that is not NFC, the ohm sign included (rule 1)", () => {
+    expect(said(changed((data) => (data.description = { en: "Café lights" })))[0]).toStartWith(
+      "description.en is not written in Unicode's NFC form",
+    );
+    expect(said(changed((data) => (data.description = { en: "A resistor, Ω" })))[0]).toStartWith(
+      "description.en is not written in Unicode's NFC form",
+    );
+  });
+
+  it("refuse a Cyrillic letter in English, and a word that mixes scripts in Russian (rule 2)", () => {
+    expect(said(changed((data) => (data.description = { en: "A red сolour" })))).toEqual([
+      "description.en has a Cyrillic letter, `с`, in English (ADR 0011)",
+    ]);
+    const mixed = inRussian((data) => {
+      (data as { description: object }).description = { ru: "Светодиодa на GP15" };
+    });
+    expect(said(mixed)).toEqual([
+      "description.ru mixes Latin and Cyrillic letters in one word, `Светодиодa` (ADR 0011)",
+    ]);
+  });
+
+  it("fold a Cyrillic look-alike before looking for a hole (rule 3)", () => {
+    const hole = inRussian((data) => {
+      (data.steps[0] as { title: object }).title = { ru: "Начните с а21" };
+    });
+    expect(said(hole)[0]).toStartWith("steps[0].title.ru names a hole, `a21`");
+  });
+
+  it("refuse a value written out, which is the engine's to write (rule 7)", () => {
+    expect(
+      said(changed((data) => (data.description = { en: "A button, about 6 mm across." }))),
+    ).toEqual([
+      "description.en writes a value, `6 mm`: the engine writes every value, in the page's language (ADR 0011)",
+    ]);
+    expect(said(changed((data) => (data.description = { en: "Take 3V3 from 3V3(OUT)." })))).toEqual(
+      [],
+    );
+  });
+
+  it("hold each language to its typography (rule 8)", () => {
+    expect(said(changed((data) => (data.description = { en: "Ready ? Go." })))).toEqual([
+      "description.en puts a space before `?`, which English does not (ADR 0011)",
+    ]);
+    const russian = inRussian((data) => {
+      (data as { description: object }).description = { ru: 'Готово : "да"' };
+    });
+    expect(said(russian)).toEqual([
+      "description.ru puts a space before `:`, which Russian does not (ADR 0011)",
+      "description.ru writes straight quotes, where it writes `« »` (ADR 0011)",
+    ]);
   });
 });
