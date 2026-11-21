@@ -435,7 +435,7 @@ export function wiringPage(
         <h2 id="script-title">${escaped(words.script)}</h2>
         <button class="copy" type="button" data-copies="script" data-copied="${escaped(words.copied)}" data-selected="${escaped(words.selected)}">${escaped(words.copy)}</button>
       </div>
-      <pre id="script" aria-labelledby="script-title"><code>${escaped(layout.script)}</code></pre>
+      <pre id="script"><code>${escaped(layout.script)}</code></pre>
 
       <ul class="notes">${notesHtml(circuit, parts, words)}</ul>
     </section>

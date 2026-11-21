@@ -150,6 +150,12 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
   it("has no tooltip on anything, the browser's included", () => {
     expect(html).not.toMatch(/\stitle="/);
   });
+
+  it("labels nothing whose role cannot be labelled", () => {
+    // A <pre> has the generic role in ARIA 1.2, which may not be named, as Biome found on a page.
+    // The heading just before the script names it.
+    expect(html).not.toMatch(/<pre[^>]*\saria-label/);
+  });
 });
 
 describe("a d-pad's page, its two jumpers arching over the board (scratchpi's ADR 0166)", () => {
