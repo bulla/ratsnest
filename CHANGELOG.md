@@ -22,3 +22,6 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   on its line.
 - `ratsnest generate <file>`, which checks a circuit and writes its page into `pages/`, named by its
   orientation, theme and language. So far it draws at 0° and in the dark theme.
+- Every page is set in Nunito and carries it, so it looks the same on every device, and every word
+  the drawing writes is measured in it. `ratsnest check` refuses a circuit whose words hold a
+  character Nunito lacks, such as `→`.

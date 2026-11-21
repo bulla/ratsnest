@@ -46,7 +46,7 @@ export interface PageWords {
   readonly copy: string;
   readonly copied: string;
   readonly selected: string;
-  /** The attribution the board drawing owes (ADR 0018): markup, with its two links. */
+  /** The attribution the drawing and the font are owed (ADR 0012, ADR 0018): markup, with links. */
   readonly footer: string;
 
   /** The drawing's own title, on one breadboard or two (scratchpi's ADR 0226), and its description's start. */
@@ -201,7 +201,8 @@ export const ENGLISH_PAGE: PageWords = {
   footer: `The Pico 2 W is drawn from the measurements in its datasheet, adapting the
     <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">Raspberry Pi Pico 2 W pinout</a>,
     © Raspberry Pi Ltd, under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
-    This drawing is shared under the same licence.`,
+    This drawing is shared under the same licence. Set in Nunito, by the Nunito Project Authors,
+    under the <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>.`,
 
   drawingTitle: (circuit, boards) =>
     `${circuit}, on ${boards > 1 ? "two half-size breadboards" : "a half-size breadboard"}`,
@@ -379,7 +380,8 @@ export const FRENCH_PAGE: PageWords = {
   footer: `Le Pico 2 W est dessiné d’après les mesures de sa fiche technique, en adaptant le
     <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">brochage du Raspberry Pi Pico 2 W</a>,
     © Raspberry Pi Ltd, sous licence <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
-    Ce dessin est partagé sous la même licence.`,
+    Ce dessin est partagé sous la même licence. Composé en Nunito, par les auteurs du projet Nunito,
+    sous la <a href="https://openfontlicense.org">licence SIL Open Font 1.1</a>.`,
 
   drawingTitle: (circuit, boards) =>
     `${circuit}, sur ${boards > 1 ? "deux plaques d’essai demi-taille" : "une plaque d’essai demi-taille"}`,

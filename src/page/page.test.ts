@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { FIXTURE_IDS, FIXTURES, type Fixture, type FixtureId } from "../__fixtures__/circuits";
 import type { Layout, ShownCircuit } from "../circuit";
+import { CYRILLIC, FONT_FAMILY, fileOf } from "../fonts";
 import { PAGE_THEME, PAGE_WORDS, type PageFiles, wiringPage } from "./page";
 
 const read = (name: string) => readFileSync(new URL(name, import.meta.url), "utf8");
@@ -17,6 +18,9 @@ const page = (id: FixtureId, language: "en" | "fr" = "en") =>
 
 /** The steps, not the drawing's description, which says every sentence again. */
 const steps = (html: string) => html.slice(html.indexOf('<ol class="steps">'));
+
+/** What a reader reads, the markup taken out: a narrow space's words are held in a span of their own. */
+const words = (html: string) => html.replace(/<[^>]+>/g, "");
 
 /** Every GPIO a circuit's components are on. */
 const gpiosOf = (circuit: ShownCircuit): number[] => [
@@ -142,9 +146,11 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
     expect(html).toContain(shown);
   });
 
-  it("credits the board drawing it adapts (ADR 0018)", () => {
+  it("credits the board drawing it adapts (ADR 0018), and the font it carries (ADR 0012)", () => {
     expect(html).toContain("creativecommons.org/licenses/by-sa/4.0");
     expect(html).toContain("Raspberry Pi Ltd");
+    expect(html).toContain("Nunito Project Authors");
+    expect(html).toContain("openfontlicense.org");
   });
 
   it("has no tooltip on anything, the browser's included", () => {
@@ -172,7 +178,7 @@ describe("a d-pad's page, its two jumpers arching over the board (scratchpi's AD
     const html = frenchPage("d-pad");
     expect(steps(html).match(/Un long fil jaune de/g)).toHaveLength(2);
     expect(steps(html).match(/qui passe par-dessus la plaque\./g)).toHaveLength(2);
-    expect(html).toContain("Fils de connexion jaunes, longs et souples");
+    expect(words(html)).toContain("Fils de connexion jaunes, longs et souples");
   });
 
   it("is, with the two circuits that build on it, the only one with a jumper off the board", () => {
@@ -298,7 +304,7 @@ describe("a ring's page, the ring laid out below the board (scratchpi's ADR 0238
 
   it("says it in French", () => {
     const html = steps(frenchPage("ring-and-button"));
-    expect(html).toContain("L’anneau de LED, debout");
+    expect(words(html)).toContain("L’anneau de LED, debout");
     expect(html).toContain("passe par-dessus la plaque");
   });
 });
@@ -331,8 +337,9 @@ describe("a button's cap on its page (scratchpi's ADR 0174)", () => {
     const html = frenchPage("d-pad");
     expect(steps(html)).toContain("BTN1, le bouton rouge, à cheval sur la rainure centrale");
     expect(steps(html)).toContain("BTN3, le bouton bleu, au-dessus de la rainure centrale");
-    expect(html).toContain(
-      "BTN4 : un interrupteur tactile de 6 mm à quatre pattes, avec un capuchon jaune.",
+    // The narrow no-break space is written as Nunito's thin space (ADR 0012).
+    expect(words(html)).toContain(
+      "BTN4\u2009: un interrupteur tactile de 6 mm à quatre pattes, avec un capuchon jaune.",
     );
   });
 
@@ -450,5 +457,57 @@ describe("French's grammar, where a sentence is built", () => {
     expect(fr.ohms(4700)).toBe("4,7 kΩ");
     expect(fr.band("1")).toBe("marron");
     expect(fr.band("gold")).toBe("or");
+  });
+});
+
+/** Every character the page's body writes in Nunito: not its code, its styles or its script. */
+const written = (html: string): Set<string> =>
+  new Set(
+    html
+      .slice(html.indexOf("<body>"))
+      .replace(/<(script|style|pre)[\s\S]*?<\/\1>/g, "")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&")
+      .replace(/[\n\t]/g, ""),
+  );
+
+describe("the page's font (ADR 0012)", () => {
+  const pages = FIXTURE_IDS.flatMap((id) => [page(id), frenchPage(id)]);
+
+  it("is Nunito, carried inside the page under ratsnest's own family name", () => {
+    const html = page("two-lights");
+    const faces = html.match(/@font-face\{[^}]*\}/g) ?? [];
+    expect(faces).toHaveLength(1);
+    expect(faces[0]).toContain(`font-family:"${FONT_FAMILY}"`);
+    expect(faces[0]).toContain("font-weight:200 1000");
+    expect(faces[0]).toContain("src:url(data:font/woff2;base64,");
+    expect(html).not.toContain("fonts.googleapis");
+    expect(FILES.tokens).toContain(`--font-page: "${FONT_FAMILY}"`);
+  });
+
+  it("carries the Cyrillic file only on a page that writes Cyrillic", () => {
+    const { circuit, layout } = FIXTURES["two-lights"];
+    const cyrillic = wiringPage({ ...circuit, name: "Два светодиода" }, layout, FILES);
+    expect(cyrillic.match(/@font-face/g)).toHaveLength(2);
+    expect(cyrillic).toContain(Buffer.from(CYRILLIC.bytes).toString("base64").slice(0, 64));
+  });
+
+  it("has every character any test circuit's page writes, in either language", () => {
+    const lacking = new Set(pages.flatMap((html) => [...written(html)].filter((c) => !fileOf(c))));
+    expect([...lacking]).toEqual([]);
+  });
+
+  it("writes no narrow no-break space, which Nunito lacks, and holds its words together instead", () => {
+    for (const html of pages) {
+      expect(html.slice(0, html.indexOf("<pre")).includes("\u202f")).toBe(false);
+    }
+    const french = frenchPage("d-pad");
+    expect(french).toContain('<span class="nowrap">BTN4\u2009:</span>');
+    // In the drawing nothing wraps, so the thin space stands alone there.
+    const drawing = french.slice(french.indexOf("<svg"), french.indexOf("</svg>"));
+    expect(drawing).not.toContain("nowrap");
   });
 });

@@ -1,5 +1,6 @@
 import { BUTTON_COLOURS, LED_COLOURS } from "./circuit";
 import { parseHole } from "./drawing/breadboard";
+import { fileOf } from "./fonts";
 import type { Circuit, Language, Text } from "./format";
 import { LANGUAGES } from "./language";
 import { isUsableGpio } from "./pins";
@@ -481,6 +482,35 @@ export function wordProblems(circuit: Circuit): FieldProblem[] {
   return problems;
 }
 
+/** A character as a person can find it: itself, and its code point. */
+const named = (character: string): string =>
+  `\`${character}\` (U+${(character.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, "0")})`;
+
+/**
+ * Every character a circuit's words hold that Nunito's files lack (ADR 0012), which the page would
+ * draw in another font, at another width. The script is left out: it is code, in the device's own
+ * monospace. The narrow no-break space is let through, since the engine writes it as Nunito's thin
+ * space.
+ */
+export function characterProblems(circuit: Circuit): FieldProblem[] {
+  const problems: FieldProblem[] = [];
+  for (const [path, text] of textsOf(circuit)) {
+    if (path === "script") continue;
+    for (const [language, words] of Object.entries(text)) {
+      const lacking = [...new Set(words ?? "")].filter(
+        (character) => character !== "\u202F" && character !== "\n" && !fileOf(character),
+      );
+      if (lacking.length > 0) {
+        problems.push({
+          path: pathOf(path, language),
+          message: `has ${lacking.map(named).join(", ")}, which the page's font, Nunito, lacks: write it another way (ADR 0012)`,
+        });
+      }
+    }
+  }
+  return problems;
+}
+
 /**
  * Every problem with a circuit's data but its wiring, in the order a person would fix them: its
  * format alone if that is not this engine's, then its shape, then its languages and words.
@@ -491,5 +521,5 @@ export function fieldProblems(data: unknown): FieldProblem[] {
   const shape = shapeProblems(data);
   if (shape.length > 0) return shape;
   const circuit = data as Circuit;
-  return [...languageProblems(circuit), ...wordProblems(circuit)];
+  return [...languageProblems(circuit), ...wordProblems(circuit), ...characterProblems(circuit)];
 }

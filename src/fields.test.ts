@@ -241,3 +241,21 @@ describe("a step's words (ADR 0006)", () => {
     ).toEqual([]);
   });
 });
+
+describe("a circuit's characters (ADR 0012)", () => {
+  it("are all Nunito's, so the page draws every one in its own font", () => {
+    const data = changed((data) => (step(data, 0).title = { en: "Ground → both rails" }));
+    expect(said(data)).toEqual([
+      "steps[0].title.en has `→` (U+2192), which the page's font, Nunito, lacks: write it another way (ADR 0012)",
+    ]);
+  });
+
+  it("may hold the narrow no-break space French writes, which the page draws as Nunito's thin one", () => {
+    const data = changed((data) => (data.description = { en: "A light\u202F: and a button" }));
+    expect(said(data)).toEqual([]);
+  });
+
+  it("leave the script alone, which is code in the device's own monospace", () => {
+    expect(said(changed((data) => (data.script = { en: "print('→')" })))).toEqual([]);
+  });
+});

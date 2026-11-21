@@ -20,6 +20,7 @@ import {
   resistorBands,
 } from "../drawing/breadboard-svg";
 import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
+import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN } from "../fonts";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
 import { LIGHT_OHMS_RANGE } from "../netlist";
 import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place } from "./words";
@@ -394,7 +395,7 @@ export function wiringPage(
 
   const usesPower = parts.some((p) => p.kind === "wire" && p.role === "power");
 
-  return `<!doctype html>
+  return finished(`<!doctype html>
 <html lang="${words.tag}" data-theme="${PAGE_THEME}">
 <head>
 <meta charset="utf-8">
@@ -448,5 +449,73 @@ export function wiringPage(
 <script>${files.script}</script>
 </body>
 </html>
-`;
+`);
+}
+
+/** The code points a font file has, as `unicode-range` writes them: `U+20-7E, U+A0-FF, …`. */
+function unicodeRangeOf(file: FontFile): string {
+  const points = [...file.font.characterSet].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  for (let i = 0; i < points.length; ) {
+    const from = points[i] ?? 0;
+    let to = from;
+    while (points[i + 1] === to + 1) to = points[++i] ?? to;
+    i += 1;
+    const hex = (point: number) => point.toString(16).toUpperCase();
+    ranges.push(from === to ? `U+${hex(from)}` : `U+${hex(from)}-${hex(to)}`);
+  }
+  return ranges.join(", ");
+}
+
+/** One of Nunito's files as the page carries it, inside it, under ratsnest's own family name. */
+const fontFace = (file: FontFile): string =>
+  `@font-face{font-family:"${FONT_FAMILY}";font-style:normal;font-weight:200 1000;font-display:block;` +
+  `src:url(data:font/woff2;base64,${Buffer.from(file.bytes).toString("base64")}) format("woff2");` +
+  `unicode-range:${unicodeRangeOf(file)}}`;
+
+/** The narrow no-break space French writes before `: ; ? !` and inside `« »`. */
+const NARROW = "\u202F";
+/** Nunito's thin space, which stands for it (ADR 0012). */
+const THIN = "\u2009";
+
+/**
+ * The narrow no-break space as Nunito draws it (ADR 0012): its thin space, since Nunito has no
+ * narrow one. Where text wraps, the words either side are held together by `nowrap`, so it still
+ * never breaks; in the drawing, where nothing wraps, and in an attribute, it is the thin space
+ * alone. The script, in the device's own monospace, is left as it is written.
+ */
+function narrowSpaces(html: string): string {
+  let inSvg = false;
+  let verbatim = false;
+  return html
+    .split(/(<[^>]*>)/)
+    .map((piece) => {
+      if (piece.startsWith("<")) {
+        const tag = /^<\/?([a-zA-Z0-9]+)/.exec(piece)?.[1]?.toLowerCase();
+        const closing = piece.startsWith("</");
+        if (tag === "svg") inSvg = !closing;
+        if (tag === "pre" || tag === "script" || tag === "style") verbatim = !closing;
+        return piece.replaceAll(NARROW, THIN);
+      }
+      if (verbatim || !piece.includes(NARROW)) return piece;
+      if (inSvg) return piece.replaceAll(NARROW, THIN);
+      return piece.replace(
+        new RegExp(`[^\\s${NARROW}]*(?:${NARROW}[^\\s${NARROW}]*)+`, "g"),
+        (words) => `<span class="nowrap">${words.replaceAll(NARROW, THIN)}</span>`,
+      );
+    })
+    .join("");
+}
+
+/**
+ * The page as it is written: Nunito carried inside it, the Latin file always and the Cyrillic one
+ * when the page writes a Cyrillic letter (ADR 0012), and every narrow no-break space as Nunito
+ * draws it.
+ */
+function finished(html: string): string {
+  const files = [LATIN, ...([...html].some(isCyrillic) ? [CYRILLIC] : [])];
+  return narrowSpaces(html).replace(
+    "<style>",
+    `<style>${files.map(fontFace).join("")}</style>\n<style>`,
+  );
 }

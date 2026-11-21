@@ -37,6 +37,20 @@ drawing, and says in its footer where the Pico comes from and that the drawing i
 The reasoning is in ADR 0018, and before it in scratchpi's ADR 0023, which first carried this
 attribution.
 
+## Nunito
+
+Every page is set in **Nunito 3.602**, by the Nunito Project Authors
+(<https://github.com/googlefonts/nunito>), and carries it inside it (ADR 0012). The two files in
+[`fonts/`](fonts/) are Nunito cut by Google Fonts' subsetter to ratsnest's characters, and
+[`fonts/README.md`](fonts/README.md) says how each was made.
+
+- **Licence:** [SIL Open Font License 1.1](fonts/OFL.txt), which goes wherever the files go: beside
+  them in the repository, inside every release, and named in every page's footer.
+- **Changes:** none to the glyphs. The files are subsets holding only the characters ratsnest writes,
+  which the licence counts as a Modified Version. Nunito's copyright notice reserves no font name, so
+  the subsets may keep it. Every page names the font under a family of ratsnest's own,
+  `ratsnest Nunito`, only to tell it apart from a Nunito installed on the reader's device.
+
 ## What a release carries
 
 Every release of ratsnest attaches a `NOTICES` file, made by `bun run build` from the licences of
