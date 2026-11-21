@@ -62,7 +62,7 @@ describe("ratsnest", () => {
     expect(bare.status).toBe(2);
     expect(bare.err).toContain("Usage:");
     expect(run(folder, "draw").err).toBe(
-      "ratsnest: `draw` is not a command: init, check, generate, --version or --help",
+      "ratsnest: `draw` is not a command: init, check, generate, update, --version or --help",
     );
   });
 });
