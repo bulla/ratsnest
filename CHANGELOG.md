@@ -10,6 +10,12 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
+### Fixed
+
+- `ratsnest update` on Windows no longer fails once it has put the new executable in place: the new
+  one tried to remove the old one, renamed out of the way, while the old one still ran, and now
+  leaves it for the next update.
+
 ## [0.1.0] - 2026-11-22
 
 ### Added

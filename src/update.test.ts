@@ -20,6 +20,7 @@ import type { Migration } from "./migrate";
 import {
   assetOf,
   besideOf,
+  clearOld,
   downloadUrlOf,
   fetchExecutable,
   install,
@@ -282,6 +283,26 @@ describe("the executable put in place (ADR 0016)", () => {
     install(current, stage(current, new TextEncoder().encode("new")), true);
     expect(readFileSync(current, "utf8")).toBe("new");
     expect(readFileSync(besideOf(current, "old"), "utf8")).toBe("old");
+  });
+
+  it("on Windows, is cleared of the one moved out of the way, once that one no longer runs", () => {
+    const current = join(folderOf(), "ratsnest.exe");
+    writeFileSync(besideOf(current, "old"), "old");
+    clearOld(current);
+    expect(existsSync(besideOf(current, "old"))).toBe(false);
+    clearOld(current);
+  });
+
+  it("on Windows, keeps the one moved out of the way while it cannot be removed, and goes on", () => {
+    // The new executable clears the old one while the old one still runs, waiting for it, and
+    // Windows will not delete a running program. A folder stands in here for a file that cannot go.
+    const current = join(folderOf(), "ratsnest.exe");
+    const old = besideOf(current, "old");
+    mkdirSync(old);
+    writeFileSync(join(old, "held"), "");
+    expect(() => rmSync(old, { force: true })).toThrow();
+    expect(() => clearOld(current)).not.toThrow();
+    expect(existsSync(old)).toBe(true);
   });
 });
 

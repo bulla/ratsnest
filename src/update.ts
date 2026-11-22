@@ -100,6 +100,19 @@ export function install(current: string, incoming: string, windows: boolean): vo
   renameSync(incoming, current);
 }
 
+/**
+ * Removes the executable the last update renamed out of the way on Windows, if it can. The new
+ * executable calls this as it starts, while the old one may still be running, waiting for it to move
+ * the project on, and Windows will not delete a running program: then it stays for the next update.
+ */
+export function clearOld(current: string): void {
+  try {
+    rmSync(besideOf(current, "old"), { force: true });
+  } catch {
+    // Still running, or otherwise held: the next update removes it.
+  }
+}
+
 /** Where `update` says what it did. */
 export interface Said {
   readonly out: (line: string) => void;
