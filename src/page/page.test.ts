@@ -215,7 +215,7 @@ describe("an RGB LED's page, on two breadboards (scratchpi's ADR 0226)", () => {
     expect(html).toMatch(
       /<span class="count">2<\/span><span>Half-size breadboards: 30 columns each/,
     );
-    expect(html).toContain("RGB LED: a 10 mm addressable LED");
+    expect(html).toContain("RGB LED: a 10 mm addressable LED. It needs no resistor.");
     expect(html).not.toContain("works for a light");
     expect(html).toContain("turned round, it would put 5 V on GP28");
     expect(html).toContain("An RGB LED and a d-pad, on two half-size breadboards");
@@ -280,7 +280,9 @@ describe("a ring's page, the ring laid out below the board (scratchpi's ADR 0238
   it("lists the ring and one breadboard, and warns which way round it goes", () => {
     const html = page("ring-and-button");
     expect(html).toMatch(/<span class="count">1<\/span><span>Half-size breadboard: 30 columns/);
-    expect(html).toContain("LED ring: twelve addressable RGB LEDs in a ring about 48 mm across");
+    expect(html).toContain(
+      "LED ring: twelve addressable RGB LEDs in a ring about 48 mm across, with a header of four pins. It needs no resistor.",
+    );
     expect(html).toContain("turned round, it would put 5 V on GP15");
     expect(html).not.toContain("works for a light");
   });

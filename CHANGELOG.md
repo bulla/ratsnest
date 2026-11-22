@@ -10,6 +10,10 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
+### Removed
+
+- The parts list no longer suggests where to buy an RGB LED or a ring of them, in any language.
+
 ## [0.1.1] - 2026-11-22
 
 ### Added

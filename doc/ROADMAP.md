@@ -85,12 +85,10 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 - **An npm package**, beside the executables, if people ask for one (ADR 0016)
 - **The `circuit` skill as a Claude Code plugin**, if one can be versioned with the builder
   (ADR 0014)
-- **A Russian Four buttons or RGB LED**: translated, each would be refused, since `4,7 кОм` is wider
-  than `4.7 kΩ` and two of its pull-downs then have no room for their values. The engine's test
-  circuit in three languages holds that, and those pull-downs would move.
-- **Where a part can be bought, said by its circuit**: the parts list's lines for an RGB LED and a
-  ring still name The Pi Hut's Let it Glow calendar, as scratchpi's did, which is the engine
-  recommending a shop
+- **A Russian Four buttons and RGB LED**: the two examples place their pull-downs alike, and in
+  Russian the ones from i18 and j21 have no room for their value tags, because `4,7 кОм` is wider
+  than `4.7 kΩ`. Translated, each example would be refused until those two pull-downs move. The
+  engine's test circuit in three languages is refused for the same reason, on purpose (ADR 0011).
 
 ## Later
 
