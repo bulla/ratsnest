@@ -6,7 +6,9 @@ What is left to do, and what comes next. What was built, and how it went, is in
 **How to keep it.** Work in flight goes under **Next** as a checklist. When it lands, the checklist
 moves to `HISTORY.md` under a heading of its own, a line goes into **Done** below, the Log in
 `HISTORY.md` gets an entry, and whatever it leaves open is sorted into the sections here. A
-judgement the owner has to make goes in **Open points**, and comes out once they sign it off.
+judgement the owner has to make goes in **Open points**, and comes out once they sign it off. A
+small piece of work suggested along the way, and not yet taken up, goes in **Suggestions** as an
+unticked item, and is ticked when it is done or taken out when the owner turns it down.
 
 ## Where it stands
 
@@ -55,6 +57,21 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
   A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
+
+## Suggestions
+
+- [ ] **Republish `bulla/rnest-circuits`' three Artifacts with 0.1.1.** They were made by a local
+      0.0.0 build on 2026-11-21. Through the `circuit` skill, each page is made again and published
+      to the link `ARTIFACTS.md` already has.
+- [ ] **Find a published page again from a fresh cloud session**, without `ARTIFACTS.md`. M8's last
+      item was signed off with no trial of it: a session in `bulla/rnest-circuits`, with the file
+      moved away, asks for a page already published, and the `circuit` skill should find its
+      Artifact by `<meta name="ratsnest">` (ADR 0013).
+- [ ] **A release tagged from GitHub's web form.** The form makes the GitHub Release with the tag, so
+      the workflow's last step, which makes it, fails. That step could fill a release that exists
+      instead, which changes ADR 0020's "only then the GitHub Release" and is a record of its own.
+- [ ] **The files GitHub's community profile asks for**: a code of conduct, a security policy, and
+      templates for issues and pull requests. None of them blocks a contributor.
 
 ## Backlog
 
