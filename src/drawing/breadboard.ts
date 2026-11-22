@@ -247,8 +247,8 @@ export type Part =
   | { readonly kind: "buzzer"; readonly buzzer: string; readonly plus: Hole; readonly minus: Hole }
   /**
    * A 10 mm addressable RGB LED, standing up (scratchpi's ADR 0222), its four legs side by side in one row
-   * in the order The Pi Hut's guide numbers them: +5 V, data out, ground, data in. Data out is
-   * the longest leg, and with one LED it joins nothing.
+   * in the order they are numbered: +5 V, data out, ground, data in. Data out is the longest leg,
+   * and with one LED it joins nothing.
    */
   | {
       readonly kind: "rgbLed";

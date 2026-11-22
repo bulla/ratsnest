@@ -337,3 +337,6 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
   fresh cloud session without that file.
 - 2026-11-22: M8, signed off by the owner, with no fresh-session trial of its second item recorded.
   Only M6 is left before M11, waiting on the Russian table's reading.
+- 2026-11-22: Between milestones. The parts list's lines for an RGB LED and a ring, in every
+  language, no longer suggest where to buy one, as scratchpi's had: a page names what a part is, never
+  a shop. The line in the roadmap's Backlog that asked for this came out with it.

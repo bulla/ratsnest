@@ -269,10 +269,9 @@ export const ENGLISH_PAGE: PageWords = {
         "Half-size breadboards: 30 columns each, with a rail the whole length of each side. They join along their long sides.",
     }),
   listLed: (name) => `${capitalised(name)}, 5 mm.`,
-  listRgbLed: (name) =>
-    `${capitalised(name)}: a 10 mm addressable LED, like the one in The Pi Hut's Let it Glow calendar. It needs no resistor.`,
+  listRgbLed: (name) => `${capitalised(name)}: a 10 mm addressable LED. It needs no resistor.`,
   listRing: (name) =>
-    `${capitalised(name)}: twelve addressable RGB LEDs in a ring about 48 mm across, with a header of four pins, like the one in The Pi Hut's Let it Glow calendar. It needs no resistor.`,
+    `${capitalised(name)}: twelve addressable RGB LEDs in a ring about 48 mm across, with a header of four pins. It needs no resistor.`,
   listResistor: (ohms, count, bands, five) =>
     `${ohms} ${plural("en", count, { one: "resistor", other: "resistors" })} ${bands}` +
     `<span class="aside">On a blue 5-band one: ${five}.</span>`,
@@ -465,9 +464,9 @@ export const FRENCH_PAGE: PageWords = {
   },
   listLed: (name) => `${capitalised(name)}, 5 mm.`,
   listRgbLed: (name) =>
-    `${capitalised(name)}${NNBSP}: une LED adressable de 10 mm, comme celle du calendrier Let it Glow de The Pi Hut. Elle n’a besoin d’aucune résistance.`,
+    `${capitalised(name)}${NNBSP}: une LED adressable de 10 mm. Elle n’a besoin d’aucune résistance.`,
   listRing: (name) =>
-    `${capitalised(name)}${NNBSP}: douze LED RVB adressables en anneau d’environ 48 mm de diamètre, avec un connecteur de quatre broches, comme celui du calendrier Let it Glow de The Pi Hut. Il n’a besoin d’aucune résistance.`,
+    `${capitalised(name)}${NNBSP}: douze LED RVB adressables en anneau d’environ 48 mm de diamètre, avec un connecteur de quatre broches. Il n’a besoin d’aucune résistance.`,
   listResistor: (ohms, count, bands, five) =>
     `${plural("fr", count, { one: "Résistance", many: "Résistances", other: "Résistances" })} de ${ohms} ${bands}` +
     `<span class="aside">Sur une résistance bleue à 5 anneaux${NNBSP}: ${five}.</span>`,
@@ -669,10 +668,9 @@ export const RUSSIAN_PAGE: PageWords = {
         "Половинные макетные платы: по 30 столбцов, с шиной по всей длине каждой стороны. Они соединяются длинными сторонами.",
     }),
   listLed: (name) => `${capitalised(name)}, 5 мм.`,
-  listRgbLed: (name) =>
-    `${capitalised(name)}: адресуемый светодиод 10 мм, как в календаре Let it Glow от The Pi Hut. Резистор не нужен.`,
+  listRgbLed: (name) => `${capitalised(name)}: адресуемый светодиод 10 мм. Резистор не нужен.`,
   listRing: (name) =>
-    `${capitalised(name)}: двенадцать адресуемых RGB-светодиодов в кольце около 48 мм в диаметре, с разъёмом на четыре вывода, как в календаре Let it Glow от The Pi Hut. Резистор не нужен.`,
+    `${capitalised(name)}: двенадцать адресуемых RGB-светодиодов в кольце около 48 мм в диаметре, с разъёмом на четыре вывода. Резистор не нужен.`,
   listResistor: (ohms, _count, bands, five) =>
     `Резистор ${ohms} ${bands}<span class="aside">На синем, с 5 полосами: ${five}.</span>`,
   listButton: (name, cap) =>
