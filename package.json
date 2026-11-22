@@ -1,6 +1,6 @@
 {
   "name": "ratsnest",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Graphical wiring for breadboards: a wiring guide for every circuit, drawn the same way",
   "license": "MIT",
   "private": true,
