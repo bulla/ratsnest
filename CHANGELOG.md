@@ -10,14 +10,6 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
-### Fixed
-
-- `ratsnest update` on Windows no longer fails once it has put the new executable in place: the new
-  one tried to remove the old one, renamed out of the way, while the old one still ran, and now
-  leaves it for the next update.
-
-## [0.1.0] - 2026-11-22
-
 ### Added
 
 - `rnest`, a shorter name for `ratsnest`: `install.sh` puts it beside the executable, as a link to
@@ -72,3 +64,14 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   half, such as the RGB LED by the USB, has its label past that end of the board, not the far one.
 - A button can sit on the second breadboard: `board: 2` on its part puts its legs there, and its
   step says so once. Left out, it is on the first board, as before.
+
+### Fixed
+
+- `ratsnest update` on Windows no longer fails once it has put the new executable in place: the new
+  one tried to remove the old one, renamed out of the way, while the old one still ran, and now
+  leaves it for the next update.
+
+## [0.1.0] - 2026-11-22 [YANKED]
+
+Tagged, but never published: its Windows executable failed the release's checks. Everything it
+held is in 0.1.1, the first release published.
