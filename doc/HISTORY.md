@@ -269,12 +269,12 @@ failed on Windows.
   program made `Bun.spawnSync` throw, which the first version did not catch. Two compiled executables,
   0.0.0 and a 0.0.1 built for the purpose, moved a project from one to the other here; the first
   fetch from GitHub has to wait for two releases, and until then `update` says ratsnest has none.
-- 2026-11-21: Between milestones, from the owner's first circuits project, `bulla/ernest-circuits`,
-  made by `init` from a local build: three buttons in a line, with an RGB LED on a second board. Its
-  buttons' leaders shared one line, so each button blocked on the channel now has a lane of its own,
-  on alternating sides (ADR 0026), and a part on the second board's near half has its label past that
-  end (ADR 0027, amending ADR 0024). A line of buttons on the second board needed a button that could
-  sit there, `board: 2` (ADR 0028).
+- 2026-11-21: Between milestones, from the owner's first circuits project, `bulla/rnest-circuits`,
+  then `ernest-circuits`, made by `init` from a local build: three buttons in a line, with an RGB
+  LED on a second board. Its buttons' leaders shared one line, so each button blocked on the channel
+  now has a lane of its own, on alternating sides (ADR 0026), and a part on the second board's near
+  half has its label past that end (ADR 0027, amending ADR 0024). A line of buttons on the second
+  board needed a button that could sit there, `board: 2` (ADR 0028).
 - 2026-11-22: Between milestones. `install.sh` puts `rnest` beside `ratsnest`, a link to it, and the
   docs type the shorter name (ADR 0029). An update run through the link was found to replace the
   file, not the link, since Bun gives the real file as `process.execPath`; the compiled check holds
@@ -290,3 +290,6 @@ failed on Windows.
   all three systems, and showed the fix working on Windows before any new tag. The release script
   then made 0.1.1, a patch, with 0.1.0's entries carried into it and 0.1.0 marked yanked, and its run
   passed on every system and published five executables.
+- 2026-11-22: The owner's circuits project renamed from `ernest-circuits` to `rnest-circuits`. Its
+  `rnest update`, run from a local 0.0.0 build, was the first update fetched from a GitHub release:
+  0.1.1 put in place, the `rnest` link kept, and the project moved on with both circuits passing.

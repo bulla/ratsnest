@@ -85,7 +85,7 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 - **The owner's first circuits project**, M7's last item: install ratsnest with `install.sh`, and
   run `rnest init` in a folder of the owner's own, as the README's _Get started_ says.
-  `bulla/ernest-circuits` was made by `init` from a local build on 2026-11-21, which the owner may
+  `bulla/rnest-circuits` was made by `init` from a local build on 2026-11-21, which the owner may
   count.
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
