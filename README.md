@@ -4,9 +4,8 @@
 
 <p align="center"><em>
 Having rewired just about every cable in his home, Ernest still has some juice to spare. While his
-neighbours rebuild their once-working power grid, one step at a time, Ernest definitely needs a side
-project... Help him focus on new challenges, and give him great, slick schematics for his next
-circuitry adventure.
+neighbours rebuild their once-working power grid, Ernest definitely needs a side project... Help him
+focus on new challenges, and give him great, slick schematics for his next circuitry adventure.
 </em></p>
 
 # ratsnest
