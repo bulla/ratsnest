@@ -227,8 +227,9 @@ there.
 │   ├── pins.ts, rgb.ts  The GPIO a Pico 2 W breaks out, and an RGB LED's colours
 │   ├── __fixtures__/    The tests' seven circuits: scratchpi's, renamed by what they hold
 │   ├── drawing/         The Pico and the breadboard, drawn: CC BY-SA 4.0, unlike the rest (ADR 0018)
-│   └── page/            The page: its generator, its words, its stylesheet, its one script, and
-│                        `tokens.css`, the only file that writes a colour (ADR 0004)
+│   └── page/            The page and the drawing alone: their generator, their words, the page's
+│                        stylesheet and its one script, `drawing.css`, which both carry (ADR 0031),
+│                        and `tokens.css`, the only file that writes a colour (ADR 0004)
 ├── pages/               What `bun run ratsnest generate` writes (ADR 0023), ignored by git
 ├── LICENSE              MIT, held by bulla, for everything but `src/drawing/` and `fonts/` (ADR 0018)
 ├── ATTRIBUTION.md       The drawing's source and licence, and which folder it covers (ADR 0018)

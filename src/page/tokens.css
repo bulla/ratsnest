@@ -1,6 +1,7 @@
 /*
  * The page's palette, and the one file in ratsnest that writes a colour literal. Every colour the
- * page and its drawing use is a custom property here, inlined into each page before `page.css`.
+ * page and its drawing use is a custom property here, inlined into each page, and each drawing
+ * alone (ADR 0031), before the stylesheets that use them.
  *
  * A `--color-*` token is plain six-digit hex, so that `tokens.test.ts` can measure it: what must be
  * read is measured against WCAG rather than asserted, and what the drawing draws is held the same

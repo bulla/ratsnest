@@ -11,6 +11,7 @@ const read = (name: string) => readFileSync(new URL(name, import.meta.url), "utf
 
 const FILES: PageFiles = {
   tokens: read("./tokens.css"),
+  drawing: read("./drawing.css"),
   css: read("./page.css"),
   script: read("./steps.js"),
 };

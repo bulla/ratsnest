@@ -1,6 +1,6 @@
 ---
 name: circuit
-description: Adds or changes a ratsnest circuit, translates it, makes its wiring page and publishes it as an Artifact, keeping every circuit file declarative so that every page looks like every other. Use when asked to add a circuit, change one, add a language to one, make a circuit's page in a given orientation, theme and language, publish or republish one, or update a project to a newer ratsnest.
+description: Adds or changes a ratsnest circuit, translates it, makes its wiring page or its drawing alone as an SVG, and publishes a page as an Artifact, keeping every circuit file declarative so that every page looks like every other. Use when asked to add a circuit, change one, add a language to one, make a circuit's page in a given orientation, theme and language, make its drawing as an SVG to embed elsewhere, publish or republish a page, or update a project to a newer ratsnest.
 argument-hint: [the circuit to add, change or translate, or the page to make]
 triggers:
   - add a circuit
@@ -8,6 +8,7 @@ triggers:
   - change a circuit
   - translate a circuit
   - make a wiring page
+  - make a circuit's drawing as an SVG
   - publish a circuit as an artifact
   - update ratsnest
 user-invocable: true
@@ -16,8 +17,8 @@ user-invocable: true
 # Circuit (`/circuit`)
 
 Every ratsnest page looks like every other because only the engine draws, and a circuit's file only
-declares. This skill adds and changes circuits without breaking that, makes their pages, and
-publishes them.
+declares. This skill adds and changes circuits without breaking that, makes their pages and their
+drawings alone, and publishes the pages.
 
 It is ratsnest's own, and the same text wherever it is: in ratsnest itself, and in every circuits
 project, where `rnest init` put it and `rnest update` replaces it. Never edit a project's copy;
@@ -35,12 +36,13 @@ ratsnest's, in `doc/adr/` of https://github.com/bulla/ratsnest.
   (ADR 0009), and the circuits are the examples, in `examples/`.
 
 If neither is there, say so and stop. Never draw a breadboard, write SVG or write a page by hand
-instead: a page is only ever the engine's output.
+instead: a page, and a drawing alone, is only ever the engine's output.
 
 | To | In a circuits project | In ratsnest itself |
 | --- | --- | --- |
 | Check every circuit | `rnest check` | `bun run ratsnest check examples` |
 | Make a page | `rnest generate <file> --orientation <0, 90, 180 or 270> --theme <dark or light> --language <en, fr or ru>` | the same, after `bun run` |
+| Make the drawing alone, as an SVG | the same, and `--format svg` | the same, after `bun run` |
 | Move to a newer ratsnest | `rnest update` | not needed: it is the newest |
 
 **When the executable says it is older or newer than the project**, run `rnest update` before
@@ -95,6 +97,13 @@ A page is made from four inputs, and the same four always make the same file.
 | Language | one of the circuit's own: the languages of its name | ask, offering only the circuit's own |
 | Orientation | `0`, `90`, `180` or `270` degrees clockwise: the USB left, top, right or bottom | `0` |
 
+**The page, or the drawing alone** (ADR 0031). `--format html`, the default, makes the whole page.
+`--format svg` makes the drawing alone, from the same four inputs, as an SVG file for other pages to
+embed by `<img>` or a Markdown image: it carries its font, its colours and its credit, and paints its
+own background in its theme. Make one when the request asks for an SVG, an image or the drawing to
+put somewhere else; a page otherwise. A host that wants both themes embeds both files, in a
+`<picture>` with `prefers-color-scheme`.
+
 **Check the language before calling the generator.** If the request names a language the circuit
 does not have, say so, name the ones it has, and offer to add the one asked for. Never generate in
 another language instead. The generator refuses one too, but the skill asks first.
@@ -107,14 +116,16 @@ another language instead. The generator refuses one too, but the skill asks firs
    the language checks and the overlap check, in every language the circuit has, must all pass.
    When one fails, go back to step 2. When it refuses a file's format as older, run the update first.
 4. **Check the four inputs**, the language against the circuit's own.
-5. **Generate the page** from them.
+5. **Generate the page**, or the drawing alone, from them.
 6. **Look at it in Chromium**, at its orientation and in its language. The checks say a circuit is
    correct, not that it is tidy, and parts that crowd each other send you back to step 2.
-7. **Hand over the file**, and say which four inputs made it. Publish it only if asked (below).
+7. **Hand over the file**, and say which four inputs made it. Publish a page only if asked (below).
+   Never publish a drawing alone: an Artifact opens only with a claude.ai sign-in, so no other page
+   could load it by `<img>`. Whoever embeds an SVG hosts it, and keeps its credit line in it.
 
 ## Publishing it as an Artifact (ADR 0013, ADR 0014, ADR 0019)
 
-Only when the request asks for it, and only in a circuits project. In ratsnest itself, say that its
+Only a page, only when the request asks for it, and only in a circuits project. In ratsnest itself, say that its
 examples are published from a circuits project, which `rnest init` makes, and stop. One
 Artifact holds one set of four inputs.
 

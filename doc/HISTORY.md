@@ -340,3 +340,12 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
 - 2026-11-22: Between milestones. The parts list's lines for an RGB LED and a ring, in every
   language, no longer suggest where to buy one, as scratchpi's had: a page names what a part is, never
   a shop. The line in the roadmap's Backlog that asked for this came out with it.
+- 2026-11-22: Between milestones, ADR 0031 by interview, then built: `generate --format svg` makes
+  the drawing alone, to embed in other pages by `<img>`. The drawing's styles moved out of
+  `page.css` into `drawing.css`, which the page and the SVG both carry, and the page's call to the
+  drawing became one the SVG makes too, so a test finds the page's own drawing inside the SVG. The
+  drawing is nested in an `<svg>` of its own, which carries Nunito, the tokens and those styles in
+  CDATA, its theme's surface as its background, and the credit, wrapped by measured width. Push
+  button's file is 145 KB, more than the record's estimate of 120 KB, since its tokens and styles
+  come with it. Through `<img>` in Chromium it drew in Nunito, Cyrillic included, on light and dark
+  hosts, and the compiled check makes every example's SVG beside its page.

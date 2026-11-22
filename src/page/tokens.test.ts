@@ -88,6 +88,7 @@ describe("the colour literal rule", () => {
     const files = sources();
     expect(files).toContain(join(SRC, "drawing", "breadboard-svg.ts"));
     expect(files).toContain(join(SRC, "page", "page.css"));
+    expect(files).toContain(join(SRC, "page", "drawing.css"));
   });
 
   it("finds a colour written anywhere but tokens.css nowhere", () => {

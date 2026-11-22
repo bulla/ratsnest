@@ -1,0 +1,128 @@
+/*
+ * The drawing's own styles (ADR 0031): what its parts, labels and lights look like, wherever it is
+ * drawn. The page carries this file, and so does the drawing alone as an SVG, so the two cannot drift.
+ * How large the drawing is on the page stays in `page.css`. Colours are `tokens.css`'s alone.
+ */
+
+.breadboard-drawing,
+.drawing-credit {
+  font-family: var(--font-page);
+}
+
+/* The credit an SVG carries along its bottom edge (ADR 0031), in the labels' muted ink. */
+.drawing-credit {
+  font-size: 1.5px;
+  font-weight: 600;
+  fill: var(--color-ink-muted);
+}
+
+.breadboard-drawing .part {
+  transition: opacity var(--duration-quick) var(--ease-swift);
+}
+
+.breadboard-drawing.focus .part:not(.on) {
+  opacity: 0.14;
+}
+
+.breadboard-drawing .callout-leader {
+  stroke: var(--color-ink-muted);
+  stroke-width: 0.25;
+}
+
+.breadboard-drawing .callout-dot {
+  fill: var(--color-ink-muted);
+}
+
+.breadboard-drawing .callout-title {
+  font-size: 2.5px;
+  font-weight: 900;
+  fill: var(--color-ink);
+}
+
+.breadboard-drawing .callout-detail {
+  font-size: 1.85px;
+  font-weight: 600;
+  fill: var(--color-ink-muted);
+}
+
+/* A light is dark until the last step, when it shows what the script will do. */
+.breadboard-drawing .glow,
+.breadboard-drawing .lit {
+  opacity: 0;
+}
+
+.breadboard-drawing.testing [data-kind="led"] .glow,
+.breadboard-drawing.testing [data-kind="rgbLed"] .glow {
+  opacity: 1;
+}
+
+.breadboard-drawing.testing [data-kind="led"] .lit,
+.breadboard-drawing.testing [data-kind="rgbLed"] .lit {
+  opacity: 0.4;
+}
+
+.breadboard-drawing.testing [data-phase] .glow {
+  animation: glow 1s steps(1, end) infinite;
+}
+
+.breadboard-drawing.testing [data-phase] .lit {
+  animation: lit 1s steps(1, end) infinite;
+}
+
+.breadboard-drawing.testing [data-phase="1"] .glow,
+.breadboard-drawing.testing [data-phase="1"] .lit {
+  animation-delay: -0.5s;
+}
+
+@keyframes glow {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes lit {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* The ring's test (scratchpi's ADR 0238): the script's light going round it from LED 0, a twelfth of the way
+   round at a time, each LED's turn set by its own delay. */
+.breadboard-drawing.testing [data-kind="ring"] .glow,
+.breadboard-drawing.testing [data-kind="ring"] .lit {
+  animation: ring-round 2.4s steps(1, end) infinite;
+}
+
+@keyframes ring-round {
+  0% {
+    opacity: 1;
+  }
+  8.333% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breadboard-drawing .part {
+    transition: none;
+  }
+
+  .breadboard-drawing.testing [data-phase] .glow,
+  .breadboard-drawing.testing [data-phase] .lit,
+  .breadboard-drawing.testing [data-kind="ring"] .glow,
+  .breadboard-drawing.testing [data-kind="ring"] .lit {
+    animation: none;
+  }
+
+  /* Without the light going round, LED 0 stays lit. */
+  .breadboard-drawing.testing [data-kind="ring"] [data-led="0"] .glow,
+  .breadboard-drawing.testing [data-kind="ring"] [data-led="0"] .lit {
+    opacity: 1;
+  }
+}

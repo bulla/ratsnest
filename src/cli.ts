@@ -7,7 +7,7 @@ import { init } from "./init";
 import { LANGUAGES, type Language } from "./language";
 import type { Orientation } from "./orientation";
 import { PAGE_FILES } from "./page/files";
-import { wiringPage } from "./page/page";
+import { drawingFile, wiringPage } from "./page/page";
 import { findProject, PROJECT_FILE, versionProblem } from "./project";
 import { shownIn } from "./shown";
 import { THEMES, type Theme } from "./theme";
@@ -37,6 +37,9 @@ export interface Io {
 /** The orientations ADR 0003 names, and the ones the engine draws so far. */
 const ORIENTATIONS = ["0", "90", "180", "270"];
 
+/** What `generate` makes (ADR 0031): the whole page, or the drawing alone. Each is its file's extension. */
+const FORMATS = ["html", "svg"];
+
 /**
  * The commands and the options each takes, with the values an option allows: part of ratsnest's
  * public surface, which every release snapshots (ADR 0017). A command or an option is read from here,
@@ -51,6 +54,7 @@ export const COMMANDS = {
       orientation: ORIENTATIONS,
       theme: [...THEMES],
       language: [...LANGUAGES],
+      format: FORMATS,
       out: "<file>",
     },
   },
@@ -81,12 +85,14 @@ Usage:
       Checks circuit files: each file named, and every .ts file in each folder.
       With none, every circuit in the project's ${CIRCUITS}/.
 
-  ratsnest generate <file> [--orientation 0] [--theme dark] [--language <language>] [--out <file>]
-      Checks a circuit, then makes its page, written to
-      ${PAGES}/<circuit>.<orientation>.<theme>.<language>.html unless --out says where.
+  ratsnest generate <file> [--orientation 0] [--theme dark] [--language <language>] [--format html]
+                  [--out <file>]
+      Checks a circuit, then makes its page, or its drawing alone, written to
+      ${PAGES}/<circuit>.<orientation>.<theme>.<language>.<format> unless --out says where.
       --orientation  0, 90, 180 or 270 degrees clockwise: the USB left, top, right or bottom
       --theme        dark or light
       --language     one of the circuit's languages; needed when it has more than one
+      --format       html, the whole page, or svg, the drawing alone, to embed in other pages
 
   ratsnest update [--version <version>] [--from <file>]
       Moves the project to a newer ratsnest, the latest release by default: puts that version's
@@ -213,6 +219,7 @@ function generate(args: readonly string[], cwd: string, io: Io): number {
     DRAWN_ORIENTATIONS,
   );
   const theme = choice(values.get("theme"), "dark", "theme", THEMES, DRAWN_THEMES);
+  const format = choice(values.get("format"), "html", "format", FORMATS, FORMATS);
 
   // The circuit is checked before anything is drawn, and refused whole if anything is wrong.
   const checked = checkFile(resolve(cwd, file), file);
@@ -242,18 +249,23 @@ function generate(args: readonly string[], cwd: string, io: Io): number {
 
   const shown = shownIn(circuit, language);
   const name = basename(file).replace(/\.ts$/, "");
-  const html = wiringPage(shown.circuit, shown.layout, PAGE_FILES, {
+  const inputs = {
     circuit: name,
     language,
     orientation: Number(orientation) as Orientation,
     theme: theme as Theme,
-  });
+  };
+  // The page, or the drawing alone (ADR 0031), from the same four inputs.
+  const made =
+    format === "svg"
+      ? drawingFile(shown.circuit, shown.layout, PAGE_FILES, inputs)
+      : wiringPage(shown.circuit, shown.layout, PAGE_FILES, inputs);
   const out = resolve(
     cwd,
-    values.get("out") ?? join(PAGES, `${name}.${orientation}.${theme}.${language}.html`),
+    values.get("out") ?? join(PAGES, `${name}.${orientation}.${theme}.${language}.${format}`),
   );
   mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, html);
+  writeFileSync(out, made);
   io.out(slashed(relative(cwd, out)));
   return 0;
 }

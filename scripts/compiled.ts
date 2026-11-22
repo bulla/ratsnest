@@ -1,7 +1,7 @@
 /**
  * The examples run with a compiled ratsnest, as a circuits project runs them (ADR 0016, ADR 0020): its
- * `check`, then every example's page in every language, orientation and theme, each the same file,
- * byte for byte, as the source makes. Bun's compiler packs only what is imported, so a file read from
+ * `check`, then every example's page, and its drawing alone (ADR 0031), in every language,
+ * orientation and theme, each the same file, byte for byte, as the source makes. Bun's compiler packs only what is imported, so a file read from
  * beside the source works from it and is missing from the executable; this is what finds that. Then
  * a copy of it updates a project of its own `--from` the executable, so that it stages, runs and puts
  * in place an executable over itself, which on Windows means renaming itself while it runs. Outside
@@ -29,7 +29,7 @@ import { checkFile } from "../src/check";
 import { languagesOf } from "../src/fields";
 import { ORIENTATIONS } from "../src/orientation";
 import { PAGE_FILES } from "../src/page/files";
-import { wiringPage } from "../src/page/page";
+import { drawingFile, wiringPage } from "../src/page/page";
 import { shownIn } from "../src/shown";
 import { THEMES } from "../src/theme";
 
@@ -47,25 +47,26 @@ try {
       const shown = shownIn(circuit, language);
       for (const orientation of ORIENTATIONS) {
         for (const theme of THEMES) {
-          const file = join(out, `${stem}.${orientation}.${theme}.${language}.html`);
-          await $`${executable} generate examples/${name} --language ${language} --orientation ${orientation} --theme ${theme} --out ${file}`
-            .cwd(ROOT)
-            .quiet();
-          const expected = wiringPage(shown.circuit, shown.layout, PAGE_FILES, {
-            circuit: stem,
-            language,
-            orientation,
-            theme,
-          });
-          if (readFileSync(file, "utf8") !== expected) {
-            throw new Error(`${file} is not the page the source makes`);
+          for (const format of ["html", "svg"] as const) {
+            const file = join(out, `${stem}.${orientation}.${theme}.${language}.${format}`);
+            await $`${executable} generate examples/${name} --language ${language} --orientation ${orientation} --theme ${theme} --format ${format} --out ${file}`
+              .cwd(ROOT)
+              .quiet();
+            const inputs = { circuit: stem, language, orientation, theme };
+            const expected =
+              format === "svg"
+                ? drawingFile(shown.circuit, shown.layout, PAGE_FILES, inputs)
+                : wiringPage(shown.circuit, shown.layout, PAGE_FILES, inputs);
+            if (readFileSync(file, "utf8") !== expected) {
+              throw new Error(`${file} is not the file the source makes`);
+            }
+            made += 1;
           }
-          made += 1;
         }
       }
     }
   }
-  console.log(`${made} pages made by ${executable}, each the source's own.`);
+  console.log(`${made} pages and drawings made by ${executable}, each the source's own.`);
 
   const bin = join(out, "bin");
   mkdirSync(bin);

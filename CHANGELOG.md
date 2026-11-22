@@ -10,6 +10,15 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
+### Added
+
+- `rnest generate --format svg` writes a circuit's drawing alone, as an SVG file to embed in other
+  pages with `<img>` or a Markdown image, from the same four inputs as its page, into
+  `pages/<circuit>.<orientation>.<theme>.<language>.svg`. It carries Nunito, its colours and its
+  styles, paints its own background in its theme, credits the drawing along its bottom edge, and is
+  6 px to the millimetre. `--format html`, the default, makes the page as before. The `circuit`
+  skill makes one when asked, and never publishes it.
+
 ### Removed
 
 - The parts list no longer suggests where to buy an RGB LED or a ring of them, in any language.

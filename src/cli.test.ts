@@ -174,6 +174,27 @@ describe("ratsnest generate (ADR 0023)", () => {
     );
   });
 
+  it("writes the drawing alone with --format svg, named as the page is but .svg (ADR 0031)", () => {
+    const folder = project({ "lights.ts": LIGHTS });
+    const result = run(folder, "generate", "circuits/lights.ts", "--format", "svg");
+    expect(result).toEqual({ status: 0, out: "pages/lights.0.dark.en.svg", err: "" });
+    const svg = readFileSync(join(folder, "pages", "lights.0.dark.en.svg"), "utf8");
+    expect(svg).toStartWith('<svg xmlns="http://www.w3.org/2000/svg" data-theme="dark"');
+    expect(svg).not.toContain("<h1>");
+    expect(run(folder, "generate", "circuits/lights.ts", "--format", "html").out).toBe(
+      "pages/lights.0.dark.en.html",
+    );
+  });
+
+  it("refuses a format it does not make", () => {
+    const folder = project({ "lights.ts": LIGHTS });
+    expect(run(folder, "generate", "circuits/lights.ts", "--format", "pdf")).toEqual({
+      status: 2,
+      out: "",
+      err: "ratsnest: --format is `html`, `svg`, not `pdf`",
+    });
+  });
+
   it("checks the circuit first, and draws nothing when it fails", () => {
     const folder = project({ "broken.ts": { ...LIGHTS, format: 2 } });
     const result = run(folder, "generate", "circuits/broken.ts");

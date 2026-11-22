@@ -79,8 +79,6 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
   starts to hurt (ADR 0007)
 - **A check that a circuit's test script drives the pins it declares** (ADR 0006)
 - **Each page's font cut to the letters it uses**, which needs a subsetting library (ADR 0012)
-- **The drawing alone, as an SVG file**, made by `generate --format svg` to embed in other pages:
-  decided in ADR 0031 and not built yet
 - **Pre-release versions**, such as `1.2.0-rc.1`, when a release needs testing by others first
   (ADR 0017)
 - **An npm package**, beside the executables, if people ask for one (ADR 0016)
