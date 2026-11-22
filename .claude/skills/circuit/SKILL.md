@@ -20,15 +20,17 @@ declares. This skill adds and changes circuits without breaking that, makes thei
 publishes them.
 
 It is ratsnest's own, and the same text wherever it is: in ratsnest itself, and in every circuits
-project, where `ratsnest init` put it and `ratsnest update` replaces it. Never edit a project's copy;
+project, where `rnest init` put it and `rnest update` replaces it. Never edit a project's copy;
 a project that wants something else adds a skill of its own beside it. The records named below are
 ratsnest's, in `doc/adr/` of https://github.com/bulla/ratsnest.
 
 ## First, find the builder (ADR 0014, ADR 0016)
 
 - **In a circuits project**, `ratsnest.json` names the version of ratsnest it expects, and the
-  `ratsnest` executable, on the `PATH`, answers `ratsnest --version`. The circuits are in
-  `circuits/`, and the `Circuit` type in `.ratsnest/`.
+  executable, on the `PATH`, answers `rnest --version`. `rnest` and `ratsnest` are two names for
+  the same executable (ADR 0029): use `rnest`, and `ratsnest` where `rnest` is not on the `PATH`,
+  as on Windows unless the download was saved as `rnest.exe`. The circuits are in `circuits/`, and
+  the `Circuit` type in `.ratsnest/`.
 - **In ratsnest's own repository**, the engine is in `src/`, run from its source through `bun run`
   (ADR 0009), and the circuits are the examples, in `examples/`.
 
@@ -37,11 +39,11 @@ instead: a page is only ever the engine's output.
 
 | To | In a circuits project | In ratsnest itself |
 | --- | --- | --- |
-| Check every circuit | `ratsnest check` | `bun run ratsnest check examples` |
-| Make a page | `ratsnest generate <file> --orientation <0, 90, 180 or 270> --theme <dark or light> --language <en, fr or ru>` | the same, after `bun run` |
-| Move to a newer ratsnest | `ratsnest update` | not needed: it is the newest |
+| Check every circuit | `rnest check` | `bun run ratsnest check examples` |
+| Make a page | `rnest generate <file> --orientation <0, 90, 180 or 270> --theme <dark or light> --language <en, fr or ru>` | the same, after `bun run` |
+| Move to a newer ratsnest | `rnest update` | not needed: it is the newest |
 
-**When the executable says it is older or newer than the project**, run `ratsnest update` before
+**When the executable says it is older or newer than the project**, run `rnest update` before
 anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
 
 ## The rules (ADR 0006, ADR 0007, ADR 0015)
@@ -57,8 +59,8 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
   reader cannot see in the data.
 - **It never says how anything looks**: no millimetres, colours, sizes, SVG, CSS or label positions.
   A step's title and note never name a hole; the engine writes the sentences that do.
-- **It says its format**, `format: <n>`. A new file takes the current one, which `ratsnest check`
-  reports. Never change a file's format by hand: `ratsnest update` moves old files on.
+- **It says its format**, `format: <n>`. A new file takes the current one, which `rnest check`
+  reports. Never change a file's format by hand: `rnest update` moves old files on.
 - **When a check refuses a circuit, change the circuit.** Move the part to other holes. Never loosen a
   check, and never teach the engine about one circuit: nothing in ratsnest names a circuit, its
   tests included. A change the engine needs is a change to ratsnest, for every circuit, with its own
@@ -113,12 +115,12 @@ another language instead. The generator refuses one too, but the skill asks firs
 ## Publishing it as an Artifact (ADR 0013, ADR 0014, ADR 0019)
 
 Only when the request asks for it, and only in a circuits project. In ratsnest itself, say that its
-examples are published from a circuits project, which `ratsnest init` makes, and stop. One
+examples are published from a circuits project, which `rnest init` makes, and stop. One
 Artifact holds one set of four inputs.
 
 1. **Look for the link in `ARTIFACTS.md`**, at the root of the project, in a row with the same four
    inputs. Make the file, with the header row below, if it is not there. Follow the project: commit
-   the row with the change if the file is tracked, as `ratsnest init` leaves it, and leave it if the
+   the row with the change if the file is tracked, as `rnest init` leaves it, and leave it if the
    project ignores it.
 2. **If there is no row, look through the person's own Artifacts before making a new one.** List the
    ones titled with the circuit's name in the page's language, read each, and take the one whose
@@ -139,7 +141,7 @@ Artifact holds one set of four inputs.
 
 ## Updating a project (ADR 0015, ADR 0016)
 
-`ratsnest update` fetches the newer executable and puts it in place of the old one, moves
+`rnest update` fetches the newer executable and puts it in place of the old one, moves
 `ratsnest.json` on, migrates every circuit file to the current format, replaces this skill and the
 type in `.ratsnest/`, and runs the checks. Read what it says it could not decide, and ask the person
 about each one; never guess a migration's answer. Then run the checks again, and offer to republish

@@ -47,7 +47,9 @@ are scratchpi's, ported, in `examples/`.
 macOS and Windows, each carrying Bun and Nunito inside, attached to a GitHub Release with an install
 script, and no npm package. It reads a circuit file as data and never runs it, and checks every field
 itself. A project names the version it expects in `ratsnest.json`, gets the `Circuit` type in
-`.ratsnest/` for editors, and `ratsnest update` replaces the executable before it migrates.
+`.ratsnest/` for editors, and `ratsnest update` replaces the executable before it migrates. The
+install puts `rnest` beside it, a link to the same executable, and the docs' examples type that
+shorter name (ADR 0029).
 
 **Every release is numbered by strict SemVer, computed and never chosen** (ADR 0017). The public
 surface (the circuit format and its type, the commands and their options, `ratsnest.json`) is
@@ -242,7 +244,8 @@ there.
 ├── CHANGELOG.md         Every release, and *Unreleased* (ADR 0017)
 ├── CONTRIBUTING.md      The walkthrough for working on ratsnest, which `/setup` follows
 ├── README.md            What ratsnest is, and how to start using it
-├── install.sh           Puts the right executable on the `PATH` (ADR 0016)
+├── install.sh           Puts the right executable on the `PATH`, and `rnest` beside it (ADR 0016,
+│                        ADR 0029)
 ├── .gitattributes       LF on every system, so Biome reads the same bytes on Windows
 ├── .gitignore           `node_modules/`, and the executables `bun run build` writes to `dist/`
 └── CLAUDE.md            This file
