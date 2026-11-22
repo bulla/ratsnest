@@ -1,6 +1,6 @@
 # ADR 0002: Draw a Pico 2 W on a half-size breadboard, and nothing else yet
 
-**Status:** Accepted · 2026-11-20
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0032 (a circuit has a Pico, or a supply in its place)
 
 ## Context
 

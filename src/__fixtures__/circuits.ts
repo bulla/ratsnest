@@ -1,7 +1,7 @@
 import type { Layout, ShownCircuit } from "../circuit";
 import { FORMAT_2_CREDIT } from "../migrate";
 
-/** The test circuits' credit: ratsnest's, as a circuit is given it (ADR 0032). */
+/** The test circuits' credit: ratsnest's, as a circuit is given it (ADR 0035). */
 export const CREDIT = FORMAT_2_CREDIT.en ?? "";
 
 /**

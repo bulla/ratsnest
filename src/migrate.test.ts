@@ -108,7 +108,7 @@ describe("the migrations' runner (ADR 0015)", () => {
   });
 });
 
-describe("format 1 to 2: every circuit carries its credit (ADR 0032)", () => {
+describe("format 1 to 2: every circuit carries its credit (ADR 0035)", () => {
   it("has ratsnest's examples in format 1 to be tested on, one for each example", () => {
     expect(formatOne.map(({ name }) => name)).toEqual(examples.map(({ name }) => name));
     for (const { source } of formatOne) expect(source).toContain("  format: 1,\n");

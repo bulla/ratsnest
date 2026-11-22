@@ -43,7 +43,7 @@ describe("every test circuit, as a file", () => {
 });
 
 describe("a file's format (ADR 0015)", () => {
-  it("is this engine's, which is 2 since circuits carry their credit (ADR 0032)", () => {
+  it("is this engine's, which is 2 since circuits carry their credit (ADR 0035)", () => {
     expect(FORMAT).toBe(2);
   });
 

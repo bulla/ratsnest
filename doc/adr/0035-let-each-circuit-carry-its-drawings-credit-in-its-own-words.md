@@ -1,6 +1,6 @@
-# ADR 0032: Let each circuit carry its drawing's credit, in its own words
+# ADR 0035: Let each circuit carry its drawing's credit, in its own words
 
-**Status:** Accepted · 2026-11-22 · Amends ADR-0018 (a page's footer carries its circuit's credit) and ADR-0031 (the credit's words are the circuit's)
+**Status:** Accepted · 2026-11-22 · Amends ADR-0018 (a page's footer carries its circuit's credit), ADR-0031 (the credit's words are the circuit's), ADR-0032 (a supply circuit's footer is its credit) and ADR-0034 (the format is 2, and both shapes carry a credit)
 
 ## Context
 
@@ -8,6 +8,10 @@ The drawing is an adaptation of Raspberry Pi's figure under CC BY-SA 4.0, and Nu
 SIL Open Font License (ADR 0018). Every page credits both in its footer, and the drawing alone as an
 SVG in a line along its bottom edge (ADR 0031). Both are the engine's words, in its tables for
 English, French and Russian, and nobody writing a circuit can change them.
+
+ADR 0032 to ADR 0034, decided the same day, let a circuit have a supply on its rails in the Pico's
+place, as a second shape of `Circuit`, its footer still the engine's words, and kept format 1, since
+that change breaks no file.
 
 The owner wants that credit to be a circuit's own text, like its name and its description: written
 in the circuit file, in each of its languages, adaptable and translatable, with the `circuit` skill
@@ -35,9 +39,16 @@ The migration from format 1 gives each circuit the default credit in each of its
 its description, and says so. ratsnest's examples are migrated by it, and their files in format 1
 are kept as they were, in `examples/format-1/`, for the migration's test.
 
+**Both of `Circuit`'s shapes carry it** (ADR 0034): a supply circuit has a `credit` as a Pico circuit
+does, and both are format 2. A supply circuit's default credits the breadboard's drawing without
+beginning with the Pico, as ADR 0032 wanted its footer to, and the `circuit` skill writes it when it
+makes one.
+
 This amends ADR 0018, where every page's footer carries the attribution: it now carries its
-circuit's credit, which is the attribution unless its author changes it; and ADR 0031, where the
-credit line was the engine's words, the footer's shortened. Everything else in them stands.
+circuit's credit, which is the attribution unless its author changes it; ADR 0031, where the credit
+line was the engine's words, the footer's shortened; ADR 0032, where a supply circuit's footer was
+the engine's words, and is now its credit; and ADR 0034, where the format stayed at 1, and is 2 for
+both shapes. Everything else in them stands.
 
 ## Considered options
 
@@ -70,3 +81,6 @@ credit line was the engine's words, the footer's shortened. Everything else in t
   the engine's Russian (M6) reads it there.
 - **The circuits people write were already theirs** (ADR 0018), and the credit is now among their
   words.
+- **M12's supply circuits are built on format 2.** Their shape takes a `credit` with the rest, the
+  engine writes no footer for them, and the skill gains a supply circuit's default credit, in
+  English, French and Russian, when M12 makes the skill ask which kind of circuit it is.

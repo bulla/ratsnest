@@ -146,7 +146,7 @@ describe("the drawing alone, as an SVG file (ADR 0031)", () => {
     }
   });
 
-  it("writes the credit its circuit says, and none of the engine's own (ADR 0032)", () => {
+  it("writes the credit its circuit says, and none of the engine's own (ADR 0035)", () => {
     const credit = "Drawn after the Pico 2 W's datasheet, © Raspberry Pi Ltd, CC BY-SA 4.0.";
     const circuit = { ...english.circuit, credit };
     const svg = drawingFile(circuit, english.layout, PAGE_FILES, { language: "en" });

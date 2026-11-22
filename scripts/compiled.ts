@@ -75,7 +75,7 @@ try {
   chmodSync(copy, 0o755);
   const project = join(out, "project");
   await $`${copy} init ${project}`.quiet();
-  // A circuit in format 1, which the update moves on to the format it reads (ADR 0015, ADR 0032).
+  // A circuit in format 1, which the update moves on to the format it reads (ADR 0015, ADR 0035).
   const older = join(project, "circuits", "push-button.ts");
   copyFileSync(join(ROOT, "examples", "format-1", "push-button.ts"), older);
   await $`${copy} update --from ${executable}`.cwd(project).quiet();

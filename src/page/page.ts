@@ -627,7 +627,7 @@ export function drawingFile(
   const inputs: PageInputs = { ...DEFAULT_INPUTS, ...given };
   const drawing = drawingOf(circuit, layout, inputs);
   const view = viewOf(drawing);
-  // The circuit's own credit (ADR 0032). A narrow space is Nunito's thin one in a drawing
+  // The circuit's own credit (ADR 0035). A narrow space is Nunito's thin one in a drawing
   // (ADR 0012), so it is measured as it is drawn.
   const credit = circuit.credit.replaceAll(NARROW, THIN);
   const lines = creditLines(credit, view.w - 2 * CREDIT.margin);

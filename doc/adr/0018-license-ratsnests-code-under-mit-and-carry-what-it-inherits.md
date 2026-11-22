@@ -1,6 +1,6 @@
 # ADR 0018: License ratsnest's code under MIT, and carry what it inherits
 
-**Status:** Accepted · 2026-11-20 · Amended by ADR-0032 (a page's footer carries its circuit's credit)
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0035 (a page's footer carries its circuit's credit)
 
 ## Context
 

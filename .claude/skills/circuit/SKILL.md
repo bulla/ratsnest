@@ -69,7 +69,7 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
   record.
 - **Never edit a generated page.** Change the circuit, or ratsnest, and generate it again.
 
-## Its credit (ADR 0032)
+## Its credit (ADR 0035)
 
 Every circuit has a `credit`, after its description: where the drawing and the font come from, and
 under which licences. The page writes it as its footer, and the drawing alone along its bottom

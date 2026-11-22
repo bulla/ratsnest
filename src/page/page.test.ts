@@ -151,7 +151,7 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
     expect(html).toContain(shown);
   });
 
-  it("credits the drawing and the font in its circuit's own words, as its footer (ADR 0032)", () => {
+  it("credits the drawing and the font in its circuit's own words, as its footer (ADR 0035)", () => {
     expect(html).toContain(`<footer>\n    ${circuit.credit}\n  </footer>`);
   });
 

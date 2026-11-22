@@ -28,7 +28,7 @@ export interface Migration {
 }
 
 /**
- * ratsnest's credit as format 2 was made with it (ADR 0032), in each language ratsnest writes: what
+ * ratsnest's credit as format 2 was made with it (ADR 0035), in each language ratsnest writes: what
  * the migration from format 1 gives every circuit. It is fixed with the migration, as every
  * migration is; the `circuit` skill's default, for new circuits, may change after it.
  */
@@ -39,7 +39,7 @@ export const FORMAT_2_CREDIT: Readonly<Record<string, string>> = {
 };
 
 /**
- * Format 1 to 2 (ADR 0032): every circuit says its drawing's credit, after its description, in each of
+ * Format 1 to 2 (ADR 0035): every circuit says its drawing's credit, after its description, in each of
  * its languages, which are its name's (ADR 0010). It is given ratsnest's, which its author may reword.
  */
 const addCredit: Migration = {

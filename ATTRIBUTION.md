@@ -36,7 +36,7 @@ drawing, and its circuit's credit as its footer; the drawing alone, as an SVG fi
 carries that credit in a line of small text along its bottom edge, so that it goes wherever the file
 is put. Every circuit is given ratsnest's credit, which says where the Pico comes from, that the
 drawing is CC BY-SA 4.0, with the licence's address written out, and that the font is Nunito, under
-the SIL Open Font License 1.1. A circuit's author may reword it (ADR 0032), and nothing checks it: a
+the SIL Open Font License 1.1. A circuit's author may reword it (ADR 0035), and nothing checks it: a
 credit that drops the attribution makes pages and drawings that no longer meet the licence, which is
 the author's to answer for.
 

@@ -19,7 +19,8 @@ every page carries Nunito, the drawing measured in it (M4), and the drawing turn
 turn, every word upright and nothing crowding at any of them (M5). `ratsnest update` moves a project
 and its executable to a newer ratsnest (M10), the first release, 0.1.1, is published (M9), and the
 executable makes circuits projects, the owner's first among them (M7), and the `circuit` skill
-publishes their pages as Artifacts (M8). M6 waits on the owner, below.
+publishes their pages as Artifacts (M8). M6 waits on the owner, below. Circuits without a Pico,
+powered by a supply on the rails, are decided in ADR 0032 to ADR 0034, and are M12, in flight.
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -29,7 +30,27 @@ SemVer (ADR 0017), and is open source under MIT: its repository has been public 
 ## Next
 
 The milestones, in order. Each needs the ones before it, and only the first is in flight. Its
-checklist moves to `HISTORY.md` when it lands. M6 is next.
+checklist moves to `HISTORY.md` when it lands. M12 is in flight, and needs nothing that is not done;
+M6 waits on the owner.
+
+### M12: circuits without a Pico
+
+- [x] The design, by interview: a supply on one pair of rails in the Pico's place (ADR 0032), the
+      wiring check it is held to (ADR 0033), and `Circuit` as one type with two shapes (ADR 0034)
+- [ ] The format: `supply`, lights and buttons without `pin`, `test`, and the `credit` every
+      circuit has (ADR 0035), in `Circuit`'s second shape, which is format 2 as the first is, read
+      and checked field by field, and a Pico's part refused in a supply circuit
+- [ ] The wiring check's rules for a supply circuit (ADR 0033), the short sought with every button
+      held, and the lights that need about 3 V refused at 3 V
+- [ ] The cell drawn beside the board's near end, its leads in column 1 of its rails, outlined for
+      both themes, and its colours in `tokens.css`
+- [ ] The page's words in English, French and Russian: the last step, the four supplies in the parts
+      list, the rails' legend, the notes and the drawing's introduction. The footer is the circuit's
+      credit (ADR 0035), and the skill's default for a supply circuit does not begin with the Pico
+- [ ] The `circuit` skill asks: a Pico or a supply, and then which voltage and which rails
+- [ ] `examples/battery-button.ts`, in English and French, and a supply circuit among the tests'
+      fixtures, with a variant for every rule it is refused by
+- [ ] 0.2.0, made by `bun run release` and brought to `develop` by pull request (ADR 0030)
 
 ### M6: themes and languages
 
@@ -55,7 +76,7 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,
-  and ratsnest's Russian credit (ADR 0032), which the `circuit` skill writes into new circuits and the
+  and ratsnest's Russian credit (ADR 0035), which the `circuit` skill writes into new circuits and the
   migration to format 2, `FORMAT_2_CREDIT` in `src/migrate.ts`, into old ones. A test cannot check
   its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.

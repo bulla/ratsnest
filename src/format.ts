@@ -200,7 +200,7 @@ export interface Circuit {
   readonly description: Text;
   /**
    * Where the drawing and the font come from, and under which licences: the page's footer, and the
-   * line along the drawing alone's bottom edge (ADR 0032). The `circuit` skill writes ratsnest's
+   * line along the drawing alone's bottom edge (ADR 0035). The `circuit` skill writes ratsnest's
    * credit here, which its author may reword. The drawing is CC BY-SA 4.0, and a credit that drops
    * that is the author's to answer for.
    */

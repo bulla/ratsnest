@@ -72,7 +72,10 @@ other with what to do. A migration turns one format's object into the next's and
 test on files of the format before; a change that breaks the format ships its migration with it.
 
 **One Pico 2 W, one half-size breadboard** (ADR 0002). Another board or breadboard is a record of its
-own, written when a circuit needs it.
+own, written when a circuit needs it. **A circuit may have a supply on one pair of rails in the Pico's
+place** (ADR 0032): `supply: { volts, rails }`, at 3, 3.7, 4.5 or 5 V, placed by the engine, with
+plain lights and buttons that name no pin and a `test` in place of the script. Its wiring is checked
+against its + and − rails (ADR 0033), and `Circuit` is one type with two shapes (ADR 0034).
 
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the
@@ -198,7 +201,7 @@ there.
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported: ratsnest's own, checked like anyone's,
 │                        and in `format-1/` the old files its migrations are tested on, left out of
-│                        the type check (ADR 0014, ADR 0015, ADR 0032)
+│                        the type check (ADR 0014, ADR 0015, ADR 0035)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
