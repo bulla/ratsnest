@@ -13,7 +13,7 @@ import { shownIn } from "./shown";
 import { THEMES, type Theme } from "./theme";
 import {
   assetOf,
-  besideOf,
+  clearOld,
   fetchExecutable,
   install,
   isCompiled,
@@ -336,8 +336,8 @@ async function update(args: readonly string[], cwd: string, io: Io): Promise<num
 
   const current = process.execPath;
   const windows = process.platform === "win32";
-  // What the last update renamed out of the way on Windows, which no longer runs.
-  if (windows) rmSync(besideOf(current, "old"), { force: true });
+  // What the last update renamed out of the way on Windows, which may still be running.
+  if (windows) clearOld(current);
   let target = asked;
   let fresh: Uint8Array | undefined;
   // The executable as the person knows it: the file they gave, or the release's file.
