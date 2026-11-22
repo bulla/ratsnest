@@ -22,8 +22,8 @@ upright and nothing crowding at any (M5), in either theme, and in English, Frenc
 language held to ADR 0011's rules (M6). It builds into one executable per platform, and
 `ratsnest init` makes circuits projects (M7), every release's version is computed and checked, and
 the first release, 0.1.1, is published (M9), and `ratsnest update` moves a project and its executable
-to a newer ratsnest (M10). M6 and M7 each wait on the owner (a reader of Russian, a first project),
-and M8, publishing, on a circuits project; the roadmap's Open points say what each needs, in
+to a newer ratsnest (M10). M6 waits on the owner (a reader of Russian), and M8, publishing, on a
+page found again from a fresh cloud session; the roadmap's Open points say what each needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
 This section is a summary and stays one. A piece of work's story goes in the Log in

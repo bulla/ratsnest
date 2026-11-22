@@ -149,6 +149,27 @@ failed on Windows.
 - [x] The first release, which says by its number that anything may still change (ADR 0021):
       0.1.0 tagged and never published, 0.1.1 published on 2026-11-22
 
+### M7: the executable, and circuits projects
+
+M7 is done: ratsnest builds into five executables, one per platform, each carrying Bun and Nunito,
+and `install.sh` puts the right one on the `PATH`. `ratsnest init` makes a circuits project, and the
+owner's first, `bulla/rnest-circuits`, made from a local build, holds two circuits whose pages are
+published. The compiled examples, which ran on Linux alone in pull requests, run on all three
+systems since 0.1.1.
+
+- [x] `bun run build`: the five executables with `--conditions=browser`, and `NOTICES` (ADR 0016,
+      ADR 0018)
+- [x] The pull request workflow checking the examples with the compiled Linux executable (ADR 0020),
+      every page compared byte for byte with the source's, and on Windows and macOS since 0.1.1
+- [x] `ratsnest init`: `ratsnest.json`, the `Circuit` type in `.ratsnest/`, `tsconfig.json`,
+      `circuits/`, the `circuit` skill, and a tracked `ARTIFACTS.md` (ADR 0014, ADR 0016, ADR 0019),
+      and `pages/` ignored (ADR 0025)
+- [x] An executable older or newer than its project's `ratsnest.json` saying so (ADR 0016)
+- [x] `install.sh` (ADR 0016), and `rnest` beside it (ADR 0029)
+- [x] The owner's first circuits project, made by `init` from a local build: `bulla/rnest-circuits`,
+      then `ernest-circuits`, on 2026-11-21
+- [x] The README's _Get started_, for people using ratsnest: install it, `ratsnest init`, `/circuit`
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -297,3 +318,7 @@ failed on Windows.
   `no changelog` label made, which closes ADR 0020's two open points. `CONTRIBUTING.md` gains
   _From a fork_, for contributors without write access: fork, clone, `upstream`, a branch from its
   `develop`, and what to expect of the first pull request.
+- 2026-11-22: M7, signed off by the owner: `bulla/rnest-circuits`, made by `init` from a local build,
+  counts as the first circuits project. M8's first item too: the `circuit` skill published three of
+  its pages and recorded them in `ARTIFACTS.md`. What is left of M8 is finding a page again from a
+  fresh cloud session without that file.
