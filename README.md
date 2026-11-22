@@ -22,8 +22,8 @@ examples here use `rnest`.
 > Run `rnest update` in your circuits project to move it to the latest ratsnest version. The
 > command upgrades every circuit to the latest format and checks them.
 
-ratsnest is not released yet: its first release, 0.1.0, is M9 in [the roadmap](doc/ROADMAP.md), and
-until then the steps below work with a build of your own.
+The latest release, and every executable it ships, is on the
+[Releases](https://github.com/bulla/ratsnest/releases) page.
 
 ## Get started
 
@@ -35,7 +35,7 @@ until then the steps below work with a build of your own.
 
    It installs `ratsnest`, and `rnest` beside it, a link to the same executable. On Windows,
    download `ratsnest-windows-x64.exe` from the [Releases](https://github.com/bulla/ratsnest/releases)
-   page and save it as `rnest.exe`. Before the first release, build it from a clone with
+   page and save it as `rnest.exe`. To use a build of your own instead, build it from a clone with
    `bun run build`, and install that one with `RATSNEST_FROM=dist/ratsnest-linux-x64 sh install.sh`.
 
 2. **Make a circuits project**, a folder of your own for your circuits:

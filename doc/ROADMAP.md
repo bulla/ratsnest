@@ -15,7 +15,8 @@ wiring check and page generator are copied in (M2), circuits are data (M3): `rat
 `ratsnest generate` run from source, on format 1, with scratchpi's seven circuits as the examples,
 every page carries Nunito, the drawing measured in it (M4), and the drawing turns by any quarter
 turn, every word upright and nothing crowding at any of them (M5). `ratsnest update` moves a project
-and its executable to a newer ratsnest (M10). M6, M7 and M9 each wait on the owner, below.
+and its executable to a newer ratsnest (M10), and the first release, 0.1.1, is published (M9). M6 and
+M7 each wait on the owner, below.
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -60,15 +61,6 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
       search by `<meta name="ratsnest">`, and the Artifact tool (ADR 0013, ADR 0019)
 - [ ] A page published, then found again from a fresh cloud session without `ARTIFACTS.md`
 
-### M9: releases
-
-- [x] The public surface as data, and its snapshot in `api/` (ADR 0017)
-- [x] `bun run release`: the version computed, the changelog moved, the snapshot written, the
-      commit and the tag (ADR 0017)
-- [x] The workflow for every `v*` tag: the rule checked, five executables built, each run on its own
-      system, and only then the GitHub Release (ADR 0020), written and waiting for its first tag
-- [ ] The first release, `0.1.0`, which says by its number that anything may still change (ADR 0021)
-
 ### M11: done, and 1.0.0
 
 - [ ] Every milestone before it landed, and nothing in Open points that blocks a stable release
@@ -91,14 +83,10 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 - **The `no changelog` label** (ADR 0020): made once, under _Issues_, then _Labels_, then _New label_,
   before a pull request can wear it.
 
-- **The owner's first circuits project**, M7's last item: build ratsnest with `bun run build`,
-  install it with `RATSNEST_FROM=dist/ratsnest-<system> sh install.sh`, and run `ratsnest init` in a
-  folder of the owner's own, as the README's _Get started_ says.
-- **The first release, `0.1.0`** (ADR 0021), M9's last item. A release reaches the protected
-  `develop` by pull request, and its tag is pushed after the merge (ADR 0030). Tried in a scratch
-  clone, the release made `0.1.0` and then `0.1.1`, and each tag met its check. The second release
-  is also the first that `ratsnest update` can fetch from GitHub: until then it has put in place
-  only an executable built here, and said that ratsnest has no release.
+- **The owner's first circuits project**, M7's last item: install ratsnest with `install.sh`, and
+  run `rnest init` in a folder of the owner's own, as the README's _Get started_ says.
+  `bulla/ernest-circuits` was made by `init` from a local build on 2026-11-21, which the owner may
+  count.
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
   A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
@@ -154,3 +142,4 @@ file's Log.
 | M4        | The font: Nunito carried by every page, every drawn word measured in it                | 0011, 0012                              |
 | M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any     | 0003, 0007, 0024                        |
 | M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated        | 0015, 0016                              |
+| M9        | Releases: the version computed, the first release, 0.1.1, published on GitHub          | 0017, 0020, 0021, 0030                  |

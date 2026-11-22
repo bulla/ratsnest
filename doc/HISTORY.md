@@ -133,6 +133,22 @@ from its source, ratsnest moves the project to its own version alone. A project 
       (ADR 0015)
 - [x] A printer for writing a circuit file back with its comments (ADR 0015)
 
+### M9: releases
+
+M9 is done: every release's version is computed from what changed on the public surface, checked
+again when it is tagged, and published by the release workflow only once its executables have run
+on Linux, Windows and macOS. A release reaches the protected `develop` by pull request, and its tag
+is pushed after the merge. The first release published is 0.1.1: 0.1.0 was tagged, and its run
+failed on Windows.
+
+- [x] The public surface as data, and its snapshot in `api/` (ADR 0017)
+- [x] `bun run release`: the version computed, the changelog moved, the snapshot written, the
+      commit and the tag (ADR 0017), brought to `develop` by pull request (ADR 0030)
+- [x] The workflow for every `v*` tag: the rule checked, five executables built, each run on its own
+      system, and only then the GitHub Release (ADR 0020)
+- [x] The first release, which says by its number that anything may still change (ADR 0021):
+      0.1.0 tagged and never published, 0.1.1 published on 2026-11-22
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -253,3 +269,24 @@ from its source, ratsnest moves the project to its own version alone. A project 
   program made `Bun.spawnSync` throw, which the first version did not catch. Two compiled executables,
   0.0.0 and a 0.0.1 built for the purpose, moved a project from one to the other here; the first
   fetch from GitHub has to wait for two releases, and until then `update` says ratsnest has none.
+- 2026-11-21: Between milestones, from the owner's first circuits project, `bulla/ernest-circuits`,
+  made by `init` from a local build: three buttons in a line, with an RGB LED on a second board. Its
+  buttons' leaders shared one line, so each button blocked on the channel now has a lane of its own,
+  on alternating sides (ADR 0026), and a part on the second board's near half has its label past that
+  end (ADR 0027, amending ADR 0024). A line of buttons on the second board needed a button that could
+  sit there, `board: 2` (ADR 0028).
+- 2026-11-22: Between milestones. `install.sh` puts `rnest` beside `ratsnest`, a link to it, and the
+  docs type the shorter name (ADR 0029). An update run through the link was found to replace the
+  file, not the link, since Bun gives the real file as `process.execPath`; the compiled check holds
+  that.
+- 2026-11-22: M9, the first release. `bun run release` commits and tags on `develop`, which is
+  protected, so a release now comes in by pull request, merged with a merge commit, and its tag is
+  pushed after the merge (ADR 0030). The first run made a commit that failed lint, since Biome would
+  reformat the snapshot the script writes, and `api/` was left out of Biome before it ran again. A
+  session working for the owner cannot push tags, so the owner pushed them, from a Codespace. A
+  `master` branch was tried for releases and taken out again the same day. `v0.1.0`'s run failed on
+  Windows: the new executable, started by the old one, removed the old one's file while it still
+  ran. The pull request check had run the compiled examples on Linux alone, so it now runs them on
+  all three systems, and showed the fix working on Windows before any new tag. The release script
+  then made 0.1.1, a patch, with 0.1.0's entries carried into it and 0.1.0 marked yanked, and its run
+  passed on every system and published five executables.
