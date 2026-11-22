@@ -102,3 +102,6 @@ Each new record adds a row here.
 | [0029](0029-install-rnest-beside-ratsnest-as-a-shorter-name-for-the-same-executable.md)                          | Install `rnest` beside `ratsnest`, as a shorter name for the same executable                       |
 | [0030](0030-bring-a-release-to-develop-by-pull-request-and-push-its-tag-after-the-merge.md)                      | Bring a release to `develop` by pull request, and push its tag after the merge                     |
 | [0031](0031-offer-the-drawing-alone-as-a-self-contained-svg-made-by-generate-format-svg.md)                      | Offer the drawing alone as a self-contained SVG, made by `generate --format svg`                   |
+| [0032](0032-let-a-circuit-be-powered-from-one-pair-of-rails-by-a-supply-instead-of-a-pico.md)                    | Let a circuit be powered from one pair of rails by a supply, instead of a Pico                     |
+| [0033](0033-check-a-supply-circuits-wiring-against-its-plus-and-minus-rails.md)                                  | Check a supply circuit's wiring against its + and − rails                                          |
+| [0034](0034-make-circuit-one-type-with-two-shapes-a-pico-circuit-or-a-supply-circuit.md)                         | Make `Circuit` one type with two shapes, a Pico circuit or a supply circuit                        |
