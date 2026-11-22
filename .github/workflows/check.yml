@@ -1,6 +1,6 @@
 # Every pull request into develop, and every push to it (ADR 0020), on Bun alone: no Node is set
-# up anywhere (ADR 0009). The tests run on Linux, Windows and macOS, which a public repository runs
-# for free. The last job, `ci`, passes only when every other has, and is the one check to require
+# up anywhere (ADR 0009). The tests and the compiled examples run on Linux, Windows and macOS, which
+# a public repository runs for free. The last job, `ci`, passes only when every other has, and is the one check to require
 # when protecting develop.
 name: check
 
@@ -63,10 +63,24 @@ jobs:
       - run: bun run test
 
   compiled:
-    name: the examples, compiled
-    # A compiled ratsnest carries only what is imported, so the examples run with the Linux
-    # executable as a circuits project runs them, every page compared with the source's (ADR 0016).
-    runs-on: ubuntu-latest
+    name: the examples, compiled, on ${{ matrix.os }}
+    # A compiled ratsnest carries only what is imported, so the examples run with each system's
+    # executable as a circuits project runs them, every page compared with the source's, and an
+    # update put in place over itself, which Windows does its own way (ADR 0016, ADR 0020).
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            executable: ratsnest-linux-x64
+          - os: windows-latest
+            target: windows-x64
+            executable: ratsnest-windows-x64.exe
+          - os: macos-latest
+            target: darwin-arm64
+            executable: ratsnest-darwin-arm64
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
 
@@ -76,9 +90,9 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - run: bun run build linux-x64
+      - run: bun run build ${{ matrix.target }}
 
-      - run: bun scripts/compiled.ts dist/ratsnest-linux-x64
+      - run: bun scripts/compiled.ts dist/${{ matrix.executable }}
 
   ci:
     name: ci

@@ -185,7 +185,7 @@ there.
 ├── .github/
 │   └── workflows/
 │       ├── check.yml    Every pull request and push to `develop`: lint, typecheck, the changelog,
-│       │                the tests on three systems, the examples compiled, and the one gate to
+│       │                the tests and the examples compiled on three systems, and the one gate to
 │       │                require, `ci` (ADR 0020)
 │       └── release.yml  Every `v*` tag: the version rule, the executables built and run on three
 │                        systems, then the GitHub Release (ADR 0017, ADR 0020)
@@ -395,8 +395,11 @@ does not pay for it again.
   that one's place, and catches both, so that a download that is not a ratsnest replaces nothing.
 - **Only a compiled ratsnest can put an executable in place of itself**, so the tests cannot. The
   compiled check, `scripts/compiled.ts`, has a copy of the executable update a project `--from` the
-  executable itself: on Linux in every pull request, and on Windows, where the running file is renamed
-  out of the way first, only in the release workflow.
+  executable itself, on all three systems in every pull request. It ran on Windows only in the
+  release workflow until the first release failed there: the new executable, started by the old one
+  to move the project on, removed the old one's renamed file while the old one still ran and waited
+  for it, and Windows refuses that with `EFAULT`. `clearOld` in `src/update.ts` now leaves such a file
+  for the next update, and the pull request check runs the compiled examples on Windows and macOS too.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
