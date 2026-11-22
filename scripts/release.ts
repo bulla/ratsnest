@@ -3,7 +3,8 @@
  * version against the last release's snapshot in `api/`, which a higher bump may be asked for but
  * never a lower one, moves the changelog's _Unreleased_ under it with the date, sets the version,
  * writes the new snapshot, commits and tags. It refuses with uncommitted changes, anywhere but on
- * `develop`, or with nothing under _Unreleased_. Pushing the commit and its tag is the owner's.
+ * `develop`, or with nothing under _Unreleased_. The commit then reaches the protected `develop` by
+ * pull request, merged with a merge commit, and only then is the tag pushed (ADR 0030).
  *
  * `bun scripts/release.ts --check v0.1.0` is what continuous integration runs on a pushed tag: the
  * tag is the version, the snapshot is the surface, and the version is one the rule allows after the
@@ -123,7 +124,13 @@ async function release(asked: Bump | undefined): Promise<void> {
   await $`git commit -m ${`Release ${version}`}`.cwd(ROOT).quiet();
   await $`git tag -a ${`v${version}`} -m ${`ratsnest ${version}`}`.cwd(ROOT);
   console.log(
-    `ratsnest ${version}, committed and tagged v${version}. Push both: git push origin develop v${version}`,
+    [
+      `ratsnest ${version}, committed and tagged v${version} on develop. Then (ADR 0030):`,
+      `  1. git push origin develop:release/${version}, and open a pull request into develop`,
+      "  2. merge it with a merge commit, never a squash or a rebase, once its checks pass",
+      `  3. git push origin v${version}, which makes the GitHub Release`,
+      "  4. bring develop back: git fetch origin develop && git reset --hard origin/develop",
+    ].join("\n"),
   );
 }
 

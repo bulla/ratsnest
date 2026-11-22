@@ -94,14 +94,11 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 - **The owner's first circuits project**, M7's last item: build ratsnest with `bun run build`,
   install it with `RATSNEST_FROM=dist/ratsnest-<system> sh install.sh`, and run `ratsnest init` in a
   folder of the owner's own, as the README's _Get started_ says.
-- **The first release, `0.1.0`** (ADR 0021), M9's last item, and **how a release reaches `develop`**.
-  `bun run release` commits and tags on `develop` (ADR 0017), and a protected `develop` takes changes
-  only by pull request (ADR 0020), so the two records meet here. Either the owner is on the ruleset's
-  bypass list and pushes `git push origin develop v0.1.0` as the release says, or releases are made on
-  a branch, merged by pull request, and tagged after the merge, which is a change to ADR 0017 and a
-  record of its own. Tried in a scratch clone, the release made `0.1.0` and then `0.1.1`, and each tag
-  met its check. The second release is also the first that `ratsnest update` can fetch from GitHub:
-  until then it has put in place only an executable built here, and said that ratsnest has no release.
+- **The first release, `0.1.0`** (ADR 0021), M9's last item. A release reaches the protected
+  `develop` by pull request, and its tag is pushed after the merge (ADR 0030). Tried in a scratch
+  clone, the release made `0.1.0` and then `0.1.1`, and each tag met its check. The second release
+  is also the first that `ratsnest update` can fetch from GitHub: until then it has put in place
+  only an executable built here, and said that ratsnest has no release.
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
   A test cannot check its grammar. The parts list is written as a bill of materials, and every part's

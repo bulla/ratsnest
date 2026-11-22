@@ -266,7 +266,8 @@ there.
   _Unreleased_** (ADR 0017): anything in `src/` outside its tests, `fonts/`, the `circuit` skill or
   `install.sh`. Continuous integration refuses one that does not, unless it is labelled
   `no changelog` (ADR 0020). A release is made by `bun run release` and nothing else: never set the
-  version, edit `api/` or push a tag by hand.
+  version, edit `api/` or make a tag by hand. Its commit reaches `develop` by pull request, merged
+  with a merge commit, and its tag is pushed after the merge (ADR 0030).
 
 ## Decisions
 
