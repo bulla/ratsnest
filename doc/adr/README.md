@@ -101,3 +101,4 @@ Each new record adds a row here.
 | [0028](0028-let-a-button-sit-on-the-second-board.md)                                                             | Let a button sit on the second board                                                               |
 | [0029](0029-install-rnest-beside-ratsnest-as-a-shorter-name-for-the-same-executable.md)                          | Install `rnest` beside `ratsnest`, as a shorter name for the same executable                       |
 | [0030](0030-bring-a-release-to-develop-by-pull-request-and-push-its-tag-after-the-merge.md)                      | Bring a release to `develop` by pull request, and push its tag after the merge                     |
+| [0031](0031-offer-the-drawing-alone-as-a-self-contained-svg-made-by-generate-format-svg.md)                      | Offer the drawing alone as a self-contained SVG, made by `generate --format svg`                   |

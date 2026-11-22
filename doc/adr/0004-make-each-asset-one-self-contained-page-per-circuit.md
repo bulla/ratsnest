@@ -1,6 +1,6 @@
 # ADR 0004: Make each asset one self-contained page per circuit
 
-**Status:** Accepted · 2026-11-20
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0031 (a circuit's output is its page, or its drawing alone when asked)
 
 ## Context
 
