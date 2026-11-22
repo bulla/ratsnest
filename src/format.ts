@@ -193,7 +193,7 @@ export interface Step {
 /** A circuit: what it is, where its parts go, and the script that tests it. */
 export interface Circuit {
   /** The circuit format the file is written in (ADR 0015). */
-  readonly format: 2;
+  readonly format: 1;
   /** Its name. The languages it has are the circuit's languages (ADR 0010). */
   readonly name: Text;
   /** A sentence saying what it is. */
@@ -201,10 +201,11 @@ export interface Circuit {
   /**
    * Where the drawing and the font come from, and under which licences: the page's footer, and the
    * line along the drawing alone's bottom edge (ADR 0035). The `circuit` skill writes ratsnest's
-   * credit here, which its author may reword. The drawing is CC BY-SA 4.0, and a credit that drops
-   * that is the author's to answer for.
+   * credit here, which its author may reword, or take out to credit the drawing elsewhere, as a
+   * tutorial of several drawings would once. Without it, the page has no footer and the drawing alone
+   * no credit line. The drawing is CC BY-SA 4.0, and crediting it is its author's to answer for.
    */
-  readonly credit: Text;
+  readonly credit?: Text;
   readonly leds?: readonly Led[];
   readonly buttons?: readonly Button[];
   readonly buzzers?: readonly Buzzer[];

@@ -440,6 +440,9 @@ export function wiringPage(
   ];
 
   const usesPower = parts.some((p) => p.kind === "wire" && p.role === "power");
+  // The circuit's own credit (ADR 0035), and no footer at all when it has none.
+  const footer =
+    circuit.credit === undefined ? "" : `\n  <footer>\n    ${escaped(circuit.credit)}\n  </footer>`;
 
   return finished(`<!doctype html>
 <html lang="${words.tag}" data-theme="${theme}">
@@ -489,10 +492,7 @@ export function wiringPage(
       <ul class="notes">${notesHtml(circuit, parts, words)}</ul>
     </section>
   </div>
-
-  <footer>
-    ${escaped(circuit.credit)}
-  </footer>
+${footer}
 </main>
 <script>${files.script}</script>
 </body>
@@ -615,7 +615,8 @@ function viewOf(svg: string): { x: number; y: number; w: number; h: number } {
 /**
  * A circuit's drawing alone, as one SVG file that needs nothing else (ADR 0031): a picture for other
  * pages to embed by `<img>`. It carries Nunito, the tokens in its theme and the drawing's own styles,
- * paints its own background, credits the drawing along its bottom edge, and says its size in pixels.
+ * paints its own background, writes its circuit's credit along its bottom edge when it has one, and
+ * says its size in pixels.
  * Like a page, it is a function of its four inputs and nothing else.
  */
 export function drawingFile(
@@ -627,11 +628,14 @@ export function drawingFile(
   const inputs: PageInputs = { ...DEFAULT_INPUTS, ...given };
   const drawing = drawingOf(circuit, layout, inputs);
   const view = viewOf(drawing);
-  // The circuit's own credit (ADR 0035). A narrow space is Nunito's thin one in a drawing
-  // (ADR 0012), so it is measured as it is drawn.
-  const credit = circuit.credit.replaceAll(NARROW, THIN);
-  const lines = creditLines(credit, view.w - 2 * CREDIT.margin);
-  const below = CREDIT.gap + CREDIT.size + (lines.length - 1) * CREDIT.line + CREDIT.margin;
+  // The circuit's own credit (ADR 0035), and no line, nor room for one, when it has none. A narrow
+  // space is Nunito's thin one in a drawing (ADR 0012), so it is measured as it is drawn.
+  const credit = circuit.credit?.replaceAll(NARROW, THIN);
+  const lines = credit === undefined ? [] : creditLines(credit, view.w - 2 * CREDIT.margin);
+  const below =
+    lines.length === 0
+      ? 0
+      : CREDIT.gap + CREDIT.size + (lines.length - 1) * CREDIT.line + CREDIT.margin;
   const height = view.h + below;
   const box = `${mm(view.x)} ${mm(view.y)} ${mm(view.w)} ${mm(height)}`;
   const nested = drawing.replace(

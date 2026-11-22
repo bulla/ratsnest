@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 2,
+  format: 1,
   name: { en: "Push button", fr: "Bouton poussoir" },
   description: {
     en: "A red LED and a push button, BTN1. The button is wired to its pin through a pull-down resistor, so the pin reads low until the button is held down and joins it to 3V3.",

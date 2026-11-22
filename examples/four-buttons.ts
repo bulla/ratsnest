@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 2,
+  format: 1,
   name: { en: "Four buttons", fr: "Quatre boutons" },
   description: {
     en: "Four push buttons in a cross: BTN3 at the top, BTN4 at the bottom, BTN2 on the left and BTN1 on the right. Each is pulled down, so its pin reads low until it is held. It is a gamepad with a button for every way.",

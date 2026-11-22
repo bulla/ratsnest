@@ -1,8 +1,8 @@
 import type { Layout, ShownCircuit } from "../circuit";
-import { FORMAT_2_CREDIT } from "../migrate";
+import { SKILL_CREDIT } from "./credit";
 
-/** The test circuits' credit: ratsnest's, as a circuit is given it (ADR 0035). */
-export const CREDIT = FORMAT_2_CREDIT.en ?? "";
+/** The test circuits' credit: ratsnest's, as the `circuit` skill gives it (ADR 0035). */
+export const CREDIT = SKILL_CREDIT.en;
 
 /**
  * The engine's own circuits, for its tests to build on and break on purpose. They are copies of

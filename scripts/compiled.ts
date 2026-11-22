@@ -1,10 +1,11 @@
 /**
  * The examples run with a compiled ratsnest, as a circuits project runs them (ADR 0016, ADR 0020): its
  * `check`, then every example's page, and its drawing alone (ADR 0031), in every language,
- * orientation and theme, each the same file, byte for byte, as the source makes. Bun's compiler packs only what is imported, so a file read from
- * beside the source works from it and is missing from the executable; this is what finds that. Then
- * a copy of it updates a project of its own `--from` the executable, migrating a circuit of format 1
- * in it, so that it stages, runs and puts in place an executable over itself, which on Windows means renaming itself while it runs. Outside
+ * orientation and theme, each the same file, byte for byte, as the source makes. Bun's compiler
+ * packs only what is imported, so a file read from beside the source works from it and is missing
+ * from the executable; this is what finds that. Then
+ * a copy of it updates a project of its own `--from` the executable, so that it stages, runs and puts
+ * in place an executable over itself, which on Windows means renaming itself while it runs. Outside
  * Windows it does so again run through `rnest`, a link to it as `install.sh` makes (ADR 0029), which
  * must still be a link afterwards: the update replaces the file, not the name it was run by.
  *
@@ -26,7 +27,7 @@ import { basename, join, resolve } from "node:path";
 import { $ } from "bun";
 import { version } from "../package.json";
 import { checkFile } from "../src/check";
-import { FORMAT, languagesOf } from "../src/fields";
+import { languagesOf } from "../src/fields";
 import { ORIENTATIONS } from "../src/orientation";
 import { PAGE_FILES } from "../src/page/files";
 import { drawingFile, wiringPage } from "../src/page/page";
@@ -75,19 +76,10 @@ try {
   chmodSync(copy, 0o755);
   const project = join(out, "project");
   await $`${copy} init ${project}`.quiet();
-  // A circuit in format 1, which the update moves on to the format it reads (ADR 0015, ADR 0035).
-  const older = join(project, "circuits", "push-button.ts");
-  copyFileSync(join(ROOT, "examples", "format-1", "push-button.ts"), older);
   await $`${copy} update --from ${executable}`.cwd(project).quiet();
   const after = (await $`${copy} --version`.text()).trim();
   if (after !== version) throw new Error(`the updated executable says ${after}, not ${version}`);
-  const migrated = readFileSync(older, "utf8");
-  if (!migrated.includes(`format: ${FORMAT},`) || !migrated.includes("credit:")) {
-    throw new Error(`${older} was not moved on to format ${FORMAT}`);
-  }
-  console.log(
-    `${copy} updated a project, migrated its circuit, and put an executable in place over itself.`,
-  );
+  console.log(`${copy} updated a project, and put an executable in place over itself.`);
 
   if (process.platform !== "win32") {
     const rnest = join(bin, "rnest");

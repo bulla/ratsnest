@@ -24,7 +24,7 @@ export function shownIn(
     circuit: {
       name: say(circuit.name),
       description: say(circuit.description),
-      credit: say(circuit.credit),
+      ...(circuit.credit ? { credit: say(circuit.credit) } : {}),
       leds: (circuit.leds ?? []).map((led): Led => named(led)),
       buttons: (circuit.buttons ?? []).map(named),
       buzzers: (circuit.buzzers ?? []).map(named),

@@ -1,6 +1,6 @@
 # ADR 0034: Make `Circuit` one type with two shapes, a Pico circuit or a supply circuit
 
-**Status:** Accepted · 2026-11-22 · Amended by ADR-0035 (the format is 2, and both shapes carry a credit)
+**Status:** Accepted · 2026-11-22 · Amended by ADR-0035 (both shapes may carry a credit)
 
 ## Context
 

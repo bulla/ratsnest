@@ -43,32 +43,26 @@ describe("every test circuit, as a file", () => {
 });
 
 describe("a file's format (ADR 0015)", () => {
-  it("is this engine's, which is 2 since circuits carry their credit (ADR 0035)", () => {
-    expect(FORMAT).toBe(2);
+  it("is this engine's, which is 1", () => {
+    expect(FORMAT).toBe(1);
   });
 
   it("is said, or the file is refused", () => {
     expect(said(changed((data) => delete data.format))).toEqual([
-      "format says no format: a circuit file says which it is written in, `format: 2` (ADR 0015)",
+      "format says no format: a circuit file says which it is written in, `format: 1` (ADR 0015)",
     ]);
     expect(said(changed((data) => (data.format = "1")))[0]).toContain("says no format");
   });
 
   it("is refused when newer, saying the project's ratsnest is older", () => {
-    expect(said(changed((data) => (data.format = 3)))).toEqual([
-      "format is written in format 3, newer than this ratsnest reads (2): run `ratsnest update`",
-    ]);
-  });
-
-  it("is refused when older, saying the project's circuits need moving on", () => {
-    expect(said(changed((data) => (data.format = 1)))).toEqual([
-      "format is written in format 1, older than this ratsnest reads (2): run `ratsnest update`",
+    expect(said(changed((data) => (data.format = 2)))).toEqual([
+      "format is written in format 2, newer than this ratsnest reads (1): run `ratsnest update`",
     ]);
   });
 
   it("is refused before anything else, so a person fixes that first", () => {
     const data = changed((data) => {
-      data.format = 3;
+      data.format = 2;
       data.name = 42;
       delete data.steps;
     });
@@ -112,6 +106,16 @@ describe("a file's fields (ADR 0016)", () => {
     expect(said(changed((data) => (data.description = { en: "  " })))).toEqual([
       "description.en is not a string with something in it",
     ]);
+  });
+
+  it("may leave the credit out, and holds one that is there to the circuit's languages (ADR 0035)", () => {
+    expect(said(changed((data) => delete data.credit))).toEqual([]);
+    expect(said(changed((data) => (data.credit = { en: "" })))).toEqual([
+      "credit.en is not a string with something in it",
+    ]);
+    const french = said(changed((data) => (data.credit = { fr: "Dessin d’après Raspberry Pi." })));
+    expect(french.length).toBeGreaterThan(0);
+    expect(french.every((line) => line.startsWith("credit"))).toBe(true);
   });
 
   it("put a light, a button and a buzzer on a pin the Pico breaks out", () => {
@@ -200,7 +204,7 @@ describe("a circuit's languages (ADR 0010)", () => {
       ...data,
       name: french(data.name),
       description: french(data.description),
-      credit: french(data.credit),
+      ...(data.credit ? { credit: french(data.credit) } : {}),
       leds: (data.leds ?? []).map((led) => ({ ...led, name: french(led.name) })),
       steps: data.steps.map((each) => ({
         ...each,

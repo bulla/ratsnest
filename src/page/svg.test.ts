@@ -133,7 +133,7 @@ describe("the drawing alone, as an SVG file (ADR 0031)", () => {
         const [x = 0, , w = 0] = numbers(root.getAttribute("viewBox"));
         const lines = [...root.querySelectorAll(":scope > text.drawing-credit")];
         const said = lines.map((line) => line.textContent ?? "");
-        expect(said.join(" ")).toBe(drawn.circuit.credit.replaceAll(" ", " "));
+        expect(said.join(" ")).toBe((drawn.circuit.credit ?? "").replaceAll(" ", " "));
         for (const line of said) {
           expect(widthOf(line, CREDIT.size, CREDIT.weight)).toBeLessThanOrEqual(
             w - 2 * CREDIT.margin,
@@ -143,6 +143,21 @@ describe("the drawing alone, as an SVG file (ADR 0031)", () => {
           expect(Number(line.getAttribute("x"))).toBeCloseTo(x + CREDIT.margin, 3);
         }
       }
+    }
+  });
+
+  it("has no credit line, nor room kept for one, when its circuit leaves its credit out", () => {
+    const { credit: _, ...uncredited } = english.circuit;
+    for (const orientation of ORIENTATIONS) {
+      const root = parsed(
+        drawingFile(uncredited, english.layout, PAGE_FILES, { language: "en", orientation }),
+      );
+      expect(root.querySelectorAll("text.drawing-credit")).toHaveLength(0);
+      const drawing = root.querySelector(":scope > svg.breadboard-drawing");
+      expect(numbers(root.getAttribute("viewBox"))[3]).toBeCloseTo(
+        Number(drawing?.getAttribute("height")),
+        3,
+      );
     }
   });
 

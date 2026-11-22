@@ -16,7 +16,7 @@ import { pathOf } from "./read";
  */
 
 /** The circuit format this engine reads, and the only one. */
-export const FORMAT = 2;
+export const FORMAT = 1;
 
 /** Something wrong with a field, by its path: `steps[2].parts[0].from`. */
 export interface FieldProblem {
@@ -339,7 +339,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   );
   circuit.text("name");
   circuit.text("description");
-  circuit.text("credit");
+  circuit.text("credit", true);
 
   const ids: Ids = {
     plainLeds: new Set(),
@@ -406,7 +406,7 @@ export function textsOf(circuit: Circuit): [string, Text][] {
   return [
     ["name", circuit.name],
     ["description", circuit.description],
-    ["credit", circuit.credit],
+    ...(circuit.credit ? [["credit", circuit.credit] as [string, Text]] : []),
     ...(["leds", "buttons", "buzzers"] as const).flatMap((list) =>
       (circuit[list] ?? []).map((part, index): [string, Text] => [
         pathOf(pathOf(list, index), "name"),

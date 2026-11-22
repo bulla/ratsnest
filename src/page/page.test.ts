@@ -155,6 +155,13 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
     expect(html).toContain(`<footer>\n    ${circuit.credit}\n  </footer>`);
   });
 
+  it("has no footer at all when its circuit leaves its credit out (ADR 0035)", () => {
+    const { credit: _, ...uncredited } = circuit;
+    const bare = wiringPage(uncredited, layout, FILES);
+    expect(bare).not.toContain("<footer>");
+    expect(bare).not.toContain("CC BY-SA");
+  });
+
   it("has no tooltip on anything, the browser's included", () => {
     expect(html).not.toMatch(/\stitle="/);
   });

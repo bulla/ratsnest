@@ -19,6 +19,5 @@
 
     "paths": { "ratsnest": ["./src/format.ts"] }
   },
-  "include": ["src", "scripts", "examples"],
-  "exclude": ["examples/format-1"]
+  "include": ["src", "scripts", "examples"]
 }

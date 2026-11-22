@@ -42,7 +42,7 @@ const inBoth = (circuit: Circuit): Circuit => {
     ...circuit,
     name: both(circuit.name),
     description: both(circuit.description),
-    credit: both(circuit.credit),
+    ...(circuit.credit ? { credit: both(circuit.credit) } : {}),
     leds: (circuit.leds ?? []).map((led) => ({ ...led, name: both(led.name) })),
     steps: circuit.steps.map((step) => ({
       ...step,
@@ -197,10 +197,10 @@ describe("ratsnest generate (ADR 0023)", () => {
   });
 
   it("checks the circuit first, and draws nothing when it fails", () => {
-    const folder = project({ "broken.ts": { ...LIGHTS, format: 3 } });
+    const folder = project({ "broken.ts": { ...LIGHTS, format: 2 } });
     const result = run(folder, "generate", "circuits/broken.ts");
     expect(result.status).toBe(1);
-    expect(result.err).toContain("format 3, newer than this ratsnest reads (2)");
+    expect(result.err).toContain("format 2, newer than this ratsnest reads (1)");
     expect(existsSync(join(folder, "pages"))).toBe(false);
   });
 

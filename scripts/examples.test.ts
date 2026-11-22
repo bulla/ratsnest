@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { SKILL_CREDIT } from "../src/__fixtures__/credit";
 import { checkFile } from "../src/check";
 import { main } from "../src/cli";
 import { languagesOf } from "../src/fields";
@@ -41,6 +42,13 @@ describe("the examples", () => {
     });
     expect(said).toEqual(["7 circuits checked: all well."]);
     expect(status).toBe(0);
+  });
+
+  it.each(EXAMPLES)("carry the credit the circuit skill gives, in each language: %s", (name) => {
+    const circuit = circuitOf(name);
+    for (const language of languagesOf(circuit)) {
+      expect(circuit.credit?.[language]).toBe(SKILL_CREDIT[language]);
+    }
   });
 
   it.each(EXAMPLES)("make a page in each of their languages: %s", (name) => {

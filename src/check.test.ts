@@ -18,8 +18,8 @@ describe("every check, over a circuit file", () => {
 
   it("stops at the declarative check, and says where", () => {
     const source = sourceOf(fileOf(FIXTURES["two-lights"])).replace(
-      '"format": 2',
-      '"format": Number("2")',
+      '"format": 1',
+      '"format": Number("1")',
     );
     const checked = checkSource(source, "circuits/two-lights.ts");
     expect(checked.circuit).toBeUndefined();

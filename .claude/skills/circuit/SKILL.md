@@ -71,15 +71,18 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
 
 ## Its credit (ADR 0035)
 
-Every circuit has a `credit`, after its description: where the drawing and the font come from, and
+A circuit may have a `credit`, after its description: where the drawing and the font come from, and
 under which licences. The page writes it as its footer, and the drawing alone along its bottom
-edge. When making a circuit, or adding a language to one, write ratsnest's credit in each of its
-languages, as below. It is the circuit's own text, so its author may reword it, or translate it
-into the words they prefer, and nothing checks what it says.
+edge; a circuit without one has neither. When making a circuit, or adding a language to one, write
+ratsnest's credit in each of its languages, as below, unless the person says otherwise. It is the
+circuit's own text, so its author may reword it, translate it, or take it out, as a tutorial built
+of several drawings would, to credit them once elsewhere.
 
-The drawing is an adaptation under CC BY-SA 4.0, which asks for it to be credited wherever it goes.
-When asked to reword the credit, keep Raspberry Pi Ltd, CC BY-SA 4.0 and the licence's address in
-it; when asked to drop them, say that the licence asks for them, and do as the person decides.
+The drawing is an adaptation under CC BY-SA 4.0, which asks for it to be credited wherever it is
+shown. When asked to reword the credit, keep Raspberry Pi Ltd, CC BY-SA 4.0 and the licence's
+address in it. When asked to drop it, or any of those, say that the licence asks for them wherever
+the drawing is shown, so whatever shows the drawing must credit it, and then do as the person
+decides. Nothing checks what a credit says.
 
 ```ts
   credit: {
@@ -91,8 +94,8 @@ it; when asked to drop them, say that the licence asks for them, and do as the p
 
 ## Its languages (ADR 0010, ADR 0011)
 
-- **Every text a reader sees is an object keyed by language**: its name, its sentence, its credit,
-  its parts' names, each step's title and note, and its test script. `en`, `fr` and `ru` are the engine's
+- **Every text a reader sees is an object keyed by language**: its name, its sentence, its credit if
+  it has one, its parts' names, each step's title and note, and its test script. `en`, `fr` and `ru` are the engine's
   languages, and a circuit needs one at least.
 - **A circuit's languages are the languages of its name**, and every other text has exactly those.
   Adding a language to a circuit means writing every one of its texts in it.
@@ -176,4 +179,5 @@ Artifact holds one set of four inputs.
 `ratsnest.json` on, migrates every circuit file to the current format, replaces this skill and the
 type in `.ratsnest/`, and runs the checks. Read what it says it could not decide, and ask the person
 about each one; never guess a migration's answer. Then run the checks again, and offer to republish
-the project's Artifacts.
+the project's Artifacts. A circuit written before circuits carried their credit (ADR 0035) has none,
+and its pages have lost the footer the engine used to write: offer to add ratsnest's credit to it.

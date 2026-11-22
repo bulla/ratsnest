@@ -1,6 +1,6 @@
 import type { Circuit } from "../format";
-import { FORMAT_2_CREDIT } from "../migrate";
 import { FIXTURES } from "./circuits";
+import { SKILL_CREDIT } from "./credit";
 import { fileOf } from "./files";
 
 /**
@@ -32,11 +32,7 @@ export const TRILINGUAL: Circuit = {
     fr: "Quatre boutons en croix et une LED adressable, sur deux plaques d’essai.",
     ru: "Четыре кнопки крестом и многоцветный адресуемый светодиод, собранные на двух половинных макетных платах.",
   },
-  credit: {
-    en: FORMAT_2_CREDIT.en ?? "",
-    fr: FORMAT_2_CREDIT.fr ?? "",
-    ru: FORMAT_2_CREDIT.ru ?? "",
-  },
+  credit: SKILL_CREDIT,
   leds: (english.leds ?? []).map((led) => {
     const name = led.name.en ?? "";
     return {
