@@ -1,0 +1,303 @@
+{
+  "Button.colour": [
+    "required ButtonColour"
+  ],
+  "Button.id": [
+    "required string"
+  ],
+  "Button.name": [
+    "required Text"
+  ],
+  "Button.pin": [
+    "required GpioPin"
+  ],
+  "ButtonPart.board": [
+    "optional 2"
+  ],
+  "ButtonPart.button": [
+    "required string"
+  ],
+  "ButtonPart.columns": [
+    "required readonly [number, number]"
+  ],
+  "ButtonPart.kind": [
+    "required \"button\""
+  ],
+  "ButtonPart.rows": [
+    "optional ButtonRows"
+  ],
+  "Buzzer.id": [
+    "required string"
+  ],
+  "Buzzer.name": [
+    "required Text"
+  ],
+  "Buzzer.pin": [
+    "required GpioPin"
+  ],
+  "BuzzerPart.buzzer": [
+    "required string"
+  ],
+  "BuzzerPart.kind": [
+    "required \"buzzer\""
+  ],
+  "BuzzerPart.minus": [
+    "required Hole"
+  ],
+  "BuzzerPart.plus": [
+    "required Hole"
+  ],
+  "Circuit.buttons": [
+    "optional readonly Button[]"
+  ],
+  "Circuit.buzzers": [
+    "optional readonly Buzzer[]"
+  ],
+  "Circuit.description": [
+    "required Text"
+  ],
+  "Circuit.format": [
+    "required 1"
+  ],
+  "Circuit.leds": [
+    "optional readonly Led[]"
+  ],
+  "Circuit.name": [
+    "required Text"
+  ],
+  "Circuit.script": [
+    "required Text"
+  ],
+  "Circuit.scriptDoes": [
+    "required Text"
+  ],
+  "Circuit.steps": [
+    "required readonly Step[]"
+  ],
+  "command check": [
+    "[<file or folder> ...]"
+  ],
+  "command generate": [
+    "<file>"
+  ],
+  "command generate --language": [
+    "en",
+    "fr",
+    "ru"
+  ],
+  "command generate --orientation": [
+    "0",
+    "90",
+    "180",
+    "270"
+  ],
+  "command generate --out": [
+    "<file>"
+  ],
+  "command generate --theme": [
+    "dark",
+    "light"
+  ],
+  "command init": [
+    "[<folder>]"
+  ],
+  "command update": [
+    ""
+  ],
+  "command update --from": [
+    "<file>"
+  ],
+  "command update --version": [
+    "<version>"
+  ],
+  "format": [
+    "1"
+  ],
+  "LedPart.anode": [
+    "required Hole"
+  ],
+  "LedPart.cathode": [
+    "required Hole"
+  ],
+  "LedPart.kind": [
+    "required \"led\""
+  ],
+  "LedPart.led": [
+    "required string"
+  ],
+  "PlainLed.colour": [
+    "required LedColour"
+  ],
+  "PlainLed.id": [
+    "required string"
+  ],
+  "PlainLed.name": [
+    "required Text"
+  ],
+  "PlainLed.pin": [
+    "required GpioPin"
+  ],
+  "ratsnest.json": [
+    "ratsnest"
+  ],
+  "Resistor.from": [
+    "required Hole"
+  ],
+  "Resistor.kind": [
+    "required \"resistor\""
+  ],
+  "Resistor.ohms": [
+    "required number"
+  ],
+  "Resistor.to": [
+    "required Hole"
+  ],
+  "RgbLed.colour": [
+    "required \"rgb\""
+  ],
+  "RgbLed.id": [
+    "required string"
+  ],
+  "RgbLed.name": [
+    "required Text"
+  ],
+  "RgbLed.pin": [
+    "required RgbPin"
+  ],
+  "RgbLedPart.dataIn": [
+    "required Hole"
+  ],
+  "RgbLedPart.dataOut": [
+    "required Hole"
+  ],
+  "RgbLedPart.ground": [
+    "required Hole"
+  ],
+  "RgbLedPart.kind": [
+    "required \"rgbLed\""
+  ],
+  "RgbLedPart.led": [
+    "required string"
+  ],
+  "RgbLedPart.power": [
+    "required Hole"
+  ],
+  "RingPart.dataIn": [
+    "required Hole"
+  ],
+  "RingPart.dataOut": [
+    "required Hole"
+  ],
+  "RingPart.ground": [
+    "required Hole"
+  ],
+  "RingPart.kind": [
+    "required \"ring\""
+  ],
+  "RingPart.led": [
+    "required string"
+  ],
+  "RingPart.power": [
+    "required Hole"
+  ],
+  "Step.note": [
+    "optional Text"
+  ],
+  "Step.parts": [
+    "required readonly Part[]"
+  ],
+  "Step.title": [
+    "required Text"
+  ],
+  "type BoardHole": [
+    "`${\"top\" | \"bottom\"}${\"+\" | \"-\"}${number}`",
+    "`${Row}${number}`"
+  ],
+  "type ButtonColour": [
+    "blue",
+    "green",
+    "red",
+    "yellow"
+  ],
+  "type ButtonRows": [
+    "readonly [\"a\", \"d\"]",
+    "readonly [\"b\", \"e\"]",
+    "readonly [\"f\", \"i\"]",
+    "readonly [\"g\", \"j\"]"
+  ],
+  "type GpioPin": [
+    "{ readonly kind: \"gpio\"; readonly gpio: number }"
+  ],
+  "type Hole": [
+    "BoardHole",
+    "`2:${BoardHole}`"
+  ],
+  "type Language": [
+    "en",
+    "fr",
+    "ru"
+  ],
+  "type Led": [
+    "PlainLed",
+    "RgbLed"
+  ],
+  "type LedColour": [
+    "amber",
+    "aqua",
+    "blue",
+    "green",
+    "orange",
+    "pink",
+    "purple",
+    "red",
+    "white",
+    "yellow"
+  ],
+  "type Part": [
+    "ButtonPart",
+    "BuzzerPart",
+    "LedPart",
+    "Resistor",
+    "RgbLedPart",
+    "RingPart",
+    "Wire"
+  ],
+  "type RgbPin": [
+    "{ readonly kind: \"rgb\"; readonly gpio: number; readonly count: number }"
+  ],
+  "type Row": [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j"
+  ],
+  "type Text": [
+    "{ readonly [language in Language]?: string }"
+  ],
+  "type WireRole": [
+    "ground",
+    "power",
+    "signal"
+  ],
+  "Wire.arch": [
+    "optional true"
+  ],
+  "Wire.from": [
+    "required Hole"
+  ],
+  "Wire.kind": [
+    "required \"wire\""
+  ],
+  "Wire.role": [
+    "required WireRole"
+  ],
+  "Wire.to": [
+    "required Hole"
+  ]
+}

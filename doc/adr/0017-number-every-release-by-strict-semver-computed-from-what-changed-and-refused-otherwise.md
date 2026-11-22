@@ -1,6 +1,6 @@
 # ADR 0017: Number every release by strict SemVer, computed from what changed, and refused otherwise
 
-**Status:** Accepted · 2026-11-20 · Amended by ADR-0021 (0.y.z until ratsnest is done, not until its repository is public)
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0021 (0.y.z until ratsnest is done, not until its repository is public) · Amended by ADR-0030 (the release reaches `develop` by pull request, and its tag is pushed after the merge)
 
 ## Context
 

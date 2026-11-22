@@ -111,8 +111,10 @@ That is everything. If a step printed something else, `/setup` can tell you why.
 - **A change users get has its line in [`CHANGELOG.md`](CHANGELOG.md)**, under _Unreleased_: anything
   in `src/` but its tests, `fonts/`, the `circuit` skill or `install.sh`. Continuous integration
   refuses a pull request that has none, unless it is labelled `no changelog`.
-- **Releases are made by `bun run release` alone** (ADR 0017), from the milestone that writes it.
-  Never set the version, edit `api/` or push a tag by hand.
+- **Releases are made by `bun run release` alone** (ADR 0017), on a local `develop` up to date with
+  the remote one. Its commit reaches `develop` by pull request, merged with a merge commit, and its
+  tag is pushed only after the merge (ADR 0030): the script's last lines say how. Never set the
+  version, edit `api/` or make a tag by hand.
 
 ## With Claude Code
 
