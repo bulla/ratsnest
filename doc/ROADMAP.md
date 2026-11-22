@@ -15,8 +15,9 @@ wiring check and page generator are copied in (M2), circuits are data (M3): `rat
 `ratsnest generate` run from source, on format 1, with scratchpi's seven circuits as the examples,
 every page carries Nunito, the drawing measured in it (M4), and the drawing turns by any quarter
 turn, every word upright and nothing crowding at any of them (M5). `ratsnest update` moves a project
-and its executable to a newer ratsnest (M10), and the first release, 0.1.1, is published (M9). M6 and
-M7 each wait on the owner, below.
+and its executable to a newer ratsnest (M10), the first release, 0.1.1, is published (M9), and the
+executable makes circuits projects, the owner's first among them (M7), and the `circuit` skill
+publishes their pages as Artifacts (M8). M6 waits on the owner, below.
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -41,26 +42,6 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 - [ ] The engine's Russian table read by the owner's friend, who reads Russian, before it ships
       (ADR 0010, ADR 0011)
 
-### M7: the executable, and circuits projects
-
-- [x] `bun run build`: the five executables with `--conditions=browser`, and `NOTICES` (ADR 0016,
-      ADR 0018)
-- [x] The pull request workflow checking the examples with the compiled Linux executable (ADR 0020),
-      every page compared byte for byte with the source's
-- [x] `ratsnest init`: `ratsnest.json`, the `Circuit` type in `.ratsnest/`, `tsconfig.json`,
-      `circuits/`, the `circuit` skill, and a tracked `ARTIFACTS.md` (ADR 0014, ADR 0016, ADR 0019),
-      and `pages/` ignored (ADR 0025)
-- [x] An executable older or newer than its project's `ratsnest.json` saying so (ADR 0016)
-- [x] `install.sh` (ADR 0016)
-- [ ] The owner's first circuits project, made by `init` from a local build
-- [x] The README's _Get started_, for people using ratsnest: install it, `ratsnest init`, `/circuit`
-
-### M8: publishing
-
-- [ ] The `circuit` skill's publishing steps, end to end, from a circuits project: `ARTIFACTS.md`, the
-      search by `<meta name="ratsnest">`, and the Artifact tool (ADR 0013, ADR 0019)
-- [ ] A page published, then found again from a fresh cloud session without `ARTIFACTS.md`
-
 ### M11: done, and 1.0.0
 
 - [ ] Every milestone before it landed, and nothing in Open points that blocks a stable release
@@ -70,10 +51,6 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 ## Open points
 
-- **The owner's first circuits project**, M7's last item: install ratsnest with `install.sh`, and
-  run `rnest init` in a folder of the owner's own, as the README's _Get started_ says.
-  `bulla/rnest-circuits` was made by `init` from a local build on 2026-11-21, which the owner may
-  count.
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
   A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
@@ -120,13 +97,15 @@ One line per milestone. Its checklist and the paragraph that summed it up are in
 [`HISTORY.md`](HISTORY.md), under the same name. Work that landed between milestones is only in that
 file's Log.
 
-| Milestone | What it gave the project                                                               | Records                                 |
-| --------- | -------------------------------------------------------------------------------------- | --------------------------------------- |
-| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept          | 0001–0020                               |
-| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding | 0009, 0017, 0018, 0020, 0021            |
-| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app             | 0001, 0004, 0007, 0018                  |
-| M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples   | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
-| M4        | The font: Nunito carried by every page, every drawn word measured in it                | 0011, 0012                              |
-| M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any     | 0003, 0007, 0024                        |
-| M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated        | 0015, 0016                              |
-| M9        | Releases: the version computed, the first release, 0.1.1, published on GitHub          | 0017, 0020, 0021, 0030                  |
+| Milestone | What it gave the project                                                                | Records                                 |
+| --------- | --------------------------------------------------------------------------------------- | --------------------------------------- |
+| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept           | 0001–0020                               |
+| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding  | 0009, 0017, 0018, 0020, 0021            |
+| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app              | 0001, 0004, 0007, 0018                  |
+| M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples    | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
+| M4        | The font: Nunito carried by every page, every drawn word measured in it                 | 0011, 0012                              |
+| M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any      | 0003, 0007, 0024                        |
+| M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated         | 0015, 0016                              |
+| M9        | Releases: the version computed, the first release, 0.1.1, published on GitHub           | 0017, 0020, 0021, 0030                  |
+| M7        | The executable and circuits projects: five executables, `init`, `install.sh`, a project | 0014, 0016, 0018, 0019, 0025            |
+| M8        | Publishing: a project's pages as Artifacts, kept in `ARTIFACTS.md` and found again      | 0013, 0014, 0019                        |
