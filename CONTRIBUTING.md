@@ -41,6 +41,8 @@ them.
    It prints `1.4.5`.
 
 2. **Clone the repository.** `develop` is its default branch, and the one all work starts from.
+   Without write access to `bulla/ratsnest`, fork it first and clone your fork instead, as
+   [_From a fork_](#from-a-fork) says.
 
    ```sh
    git clone https://github.com/bulla/ratsnest.git
@@ -93,6 +95,54 @@ them.
    `pages/push-button.0.dark.en.html`, which opens in any browser. `pages/` is ignored by git.
 
 That is everything. If a step printed something else, `/setup` can tell you why.
+
+## From a fork
+
+Without write access to `bulla/ratsnest`, you work from a fork of your own, and send each change as
+a pull request into `develop`.
+
+1. **Fork it** on GitHub, with _Fork_ at the top of the repository's page. The fork's default branch
+   is `develop`, as here.
+
+2. **Clone your fork, and name the original `upstream`**, then go on from step 3 of _Set up_:
+
+   ```sh
+   git clone https://github.com/<you>/ratsnest.git
+   cd ratsnest
+   git remote add upstream https://github.com/bulla/ratsnest.git
+   ```
+
+3. **Start each change from the latest `develop`**, on a branch of its own:
+
+   ```sh
+   git fetch upstream
+   git switch -c my-change upstream/develop
+   ```
+
+4. **Push the branch to your fork, and open a pull request into `bulla/ratsnest`'s `develop`.**
+   GitHub offers _Compare & pull request_ once the branch is pushed.
+
+   ```sh
+   git push -u origin my-change
+   ```
+
+5. **Keep it up to date while it waits** by merging `develop` into it, then pushing again:
+
+   ```sh
+   git fetch upstream
+   git merge upstream/develop
+   ```
+
+What to expect once it is open:
+
+- **Your first pull request's checks wait for the owner**, who lets them run: GitHub holds a
+  first-time contributor's workflows until then. After that, they run on every push.
+- **They are the checks of step 4**, on Linux, Windows and macOS, with the examples compiled on each.
+  The one called `ci` passes only when every other has, and nothing merges into `develop` until it
+  does.
+- **A change in `src/` that users cannot see**, such as a refactoring, needs the `no changelog` label
+  instead of a line in `CHANGELOG.md`. Only the owner can label a pull request, so say so in yours.
+- **The owner merges**, and makes every release.
 
 ## How work is done here
 
