@@ -293,3 +293,7 @@ failed on Windows.
 - 2026-11-22: The owner's circuits project renamed from `ernest-circuits` to `rnest-circuits`. Its
   `rnest update`, run from a local 0.0.0 build, was the first update fetched from a GitHub release:
   0.1.1 put in place, the `rnest` link kept, and the project moved on with both circuits passing.
+- 2026-11-22: `develop` protected by the owner, with `ci` the check it requires, and the
+  `no changelog` label made, which closes ADR 0020's two open points. `CONTRIBUTING.md` gains
+  _From a fork_, for contributors without write access: fork, clone, `upstream`, a branch from its
+  `develop`, and what to expect of the first pull request.

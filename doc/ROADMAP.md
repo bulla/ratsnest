@@ -70,19 +70,6 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 
 ## Open points
 
-- **Protecting `develop`** (ADR 0020), which only the owner can do, in the repository's settings:
-  1. _Settings_, then _Rules_, then _Rulesets_, then _New ruleset_, then _New branch ruleset_.
-  2. Name it `develop`, set _Enforcement status_ to _Active_, and under _Target branches_ add the
-     default branch.
-  3. Tick _Restrict deletions_, _Block force pushes_, and _Require a pull request before merging_
-     with **0** required approvals: GitHub never lets an account approve its own pull request, so
-     one required approval would leave the owner unable to merge.
-  4. Tick _Require status checks to pass_, and add the check `ci` from GitHub Actions, the job that
-     passes only when every other has. It is listed since M1's pull request ran it.
-  5. _Create_.
-- **The `no changelog` label** (ADR 0020): made once, under _Issues_, then _Labels_, then _New label_,
-  before a pull request can wear it.
-
 - **The owner's first circuits project**, M7's last item: install ratsnest with `install.sh`, and
   run `rnest init` in a folder of the owner's own, as the README's _Get started_ says.
   `bulla/rnest-circuits` was made by `init` from a local build on 2026-11-21, which the owner may
