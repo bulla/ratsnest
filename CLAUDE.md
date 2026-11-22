@@ -20,8 +20,9 @@ scratchpi's drawing, wiring check and page generator are copied in (M2), and cir
 Nunito and the drawing is measured in it (M4), and is drawn at any quarter turn, every word
 upright and nothing crowding at any (M5), in either theme, and in English, French or Russian, every
 language held to ADR 0011's rules (M6). It builds into one executable per platform, and
-`ratsnest init` makes circuits projects (M7), every release's version is computed and checked (M9),
-and `ratsnest update` moves a project and its executable to a newer ratsnest (M10). M6, M7 and M9 each wait on the owner (a reader of Russian, a first project, the first release),
+`ratsnest init` makes circuits projects (M7), every release's version is computed and checked, and
+the first release, 0.1.1, is published (M9), and `ratsnest update` moves a project and its executable
+to a newer ratsnest (M10). M6 and M7 each wait on the owner (a reader of Russian, a first project),
 and M8, publishing, on a circuits project; the roadmap's Open points say what each needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
