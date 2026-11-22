@@ -305,6 +305,11 @@ does not pay for it again.
   choice. It writes emphasis with underscores, `_like this_`, and pads every table to its widest
   cell, so `bun run lint` fails on a hand-written `*emphasis*` or a ragged table until
   `bun run format` has run. Formatting a record is not rewriting it: nothing it decided changes.
+- **Biome would reformat the release's snapshot, and `bun run lint` failed on the first release.**
+  `bun run release` writes `api/surface.json` with `JSON.stringify`, one value to a line, and Biome
+  puts a short array on one line, so the release commit failed the check every pull request runs,
+  while the scratch-clone trial, which ran no lint, had passed. `biome.json` leaves `api/` out: only
+  the release writes it, and formatting it by hand would be editing it.
 - **Biome 2.6.8 does not know frontmatter, and breaks every skill it formats.** It puts a blank line
   after a `SKILL.md`'s opening `---` and turns the YAML's lists into Markdown's, so Claude Code reads
   neither a name nor a description. `biome.json` leaves `.claude/skills/**/SKILL.md` out, the only
