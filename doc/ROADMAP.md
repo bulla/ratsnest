@@ -16,7 +16,8 @@ wiring check and page generator are copied in (M2), circuits are data (M3): `rat
 every page carries Nunito, the drawing measured in it (M4), and the drawing turns by any quarter
 turn, every word upright and nothing crowding at any of them (M5). `ratsnest update` moves a project
 and its executable to a newer ratsnest (M10), the first release, 0.1.1, is published (M9), and the
-executable makes circuits projects, the owner's first among them (M7). M6 waits on the owner, below.
+executable makes circuits projects, the owner's first among them (M7), and the `circuit` skill
+publishes their pages as Artifacts (M8). M6 waits on the owner, below.
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -40,13 +41,6 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
       circuit's name alone, as ADR 0013 says
 - [ ] The engine's Russian table read by the owner's friend, who reads Russian, before it ships
       (ADR 0010, ADR 0011)
-
-### M8: publishing
-
-- [x] The `circuit` skill's publishing steps, end to end, from a circuits project: `ARTIFACTS.md`, the
-      search by `<meta name="ratsnest">`, and the Artifact tool (ADR 0013, ADR 0019): three pages of
-      `bulla/rnest-circuits` published and recorded on 2026-11-21
-- [ ] A page published, then found again from a fresh cloud session without `ARTIFACTS.md`
 
 ### M11: done, and 1.0.0
 
@@ -114,3 +108,4 @@ file's Log.
 | M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated         | 0015, 0016                              |
 | M9        | Releases: the version computed, the first release, 0.1.1, published on GitHub           | 0017, 0020, 0021, 0030                  |
 | M7        | The executable and circuits projects: five executables, `init`, `install.sh`, a project | 0014, 0016, 0018, 0019, 0025            |
+| M8        | Publishing: a project's pages as Artifacts, kept in `ARTIFACTS.md` and found again      | 0013, 0014, 0019                        |

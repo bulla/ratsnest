@@ -170,6 +170,19 @@ systems since 0.1.1.
       then `ernest-circuits`, on 2026-11-21
 - [x] The README's _Get started_, for people using ratsnest: install it, `ratsnest init`, `/circuit`
 
+### M8: publishing
+
+M8 is done: the `circuit` skill publishes a circuits project's pages as Artifacts, one per set of
+four inputs, keeps their links in `ARTIFACTS.md`, and looks for a page by its
+`<meta name="ratsnest">` where the file has no row. `bulla/rnest-circuits` published three pages
+this way. The owner signed off the second item; no fresh-session trial of it is recorded.
+
+- [x] The `circuit` skill's publishing steps, end to end, from a circuits project: `ARTIFACTS.md`, the
+      search by `<meta name="ratsnest">`, and the Artifact tool (ADR 0013, ADR 0019): three pages of
+      `bulla/rnest-circuits` published and recorded on 2026-11-21
+- [x] A page published, then found again from a fresh cloud session without `ARTIFACTS.md`, signed
+      off by the owner on 2026-11-22
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -322,3 +335,5 @@ systems since 0.1.1.
   counts as the first circuits project. M8's first item too: the `circuit` skill published three of
   its pages and recorded them in `ARTIFACTS.md`. What is left of M8 is finding a page again from a
   fresh cloud session without that file.
+- 2026-11-22: M8, signed off by the owner, with no fresh-session trial of its second item recorded.
+  Only M6 is left before M11, waiting on the Russian table's reading.
