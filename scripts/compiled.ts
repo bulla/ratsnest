@@ -4,18 +4,22 @@
  * byte for byte, as the source makes. Bun's compiler packs only what is imported, so a file read from
  * beside the source works from it and is missing from the executable; this is what finds that. Then
  * a copy of it updates a project of its own `--from` the executable, so that it stages, runs and puts
- * in place an executable over itself, which on Windows means renaming itself while it runs.
+ * in place an executable over itself, which on Windows means renaming itself while it runs. Outside
+ * Windows it does so again run through `rnest`, a link to it as `install.sh` makes (ADR 0029), which
+ * must still be a link afterwards: the update replaces the file, not the name it was run by.
  *
  *   bun scripts/compiled.ts dist/ratsnest-linux-x64
  */
 import {
   chmodSync,
   copyFileSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
@@ -74,6 +78,18 @@ try {
   const after = (await $`${copy} --version`.text()).trim();
   if (after !== version) throw new Error(`the updated executable says ${after}, not ${version}`);
   console.log(`${copy} updated a project, and put an executable in place over itself.`);
+
+  if (process.platform !== "win32") {
+    const rnest = join(bin, "rnest");
+    symlinkSync(basename(copy), rnest);
+    await $`${rnest} update --from ${executable}`.cwd(project).quiet();
+    if (!lstatSync(rnest).isSymbolicLink()) {
+      throw new Error(`${rnest} is no longer a link to ${copy}: the update replaced the link`);
+    }
+    const through = (await $`${rnest} --version`.text()).trim();
+    if (through !== version) throw new Error(`rnest says ${through}, not ${version}`);
+    console.log(`${rnest}, a link, updated the executable it points to and is still a link.`);
+  }
 } finally {
   rmSync(out, { recursive: true, force: true });
 }

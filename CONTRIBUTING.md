@@ -82,7 +82,7 @@ them.
    `0 fail`.
 
 6. **Check the examples, and make a page from one**, as a circuits project's owner would with the
-   `ratsnest` executable (ADR 0014).
+   `rnest` executable, `ratsnest` by its longer name (ADR 0014, ADR 0029).
 
    ```sh
    bun run ratsnest check examples

@@ -12,6 +12,10 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Added
 
+- `rnest`, a shorter name for `ratsnest`: `install.sh` puts it beside the executable, as a link to
+  it, so `rnest check` is `ratsnest check`, and `rnest update` updates the one executable both run.
+  The install leaves a file already called `rnest` alone. The README and the `circuit` skill use
+  `rnest` in their examples.
 - `ratsnest update`, which moves a circuits project to a newer ratsnest, the latest release by
   default or the one `--version` names: it puts that version's executable in place of the running
   one, run first to be sure it is that version and runs on the system, then migrates every circuit to

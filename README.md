@@ -15,10 +15,11 @@ _Graphical wiring for breadboards._ From a circuit described in one declarative 
 one self-contained page showing how to build it on a breadboard with a Raspberry Pi Pico 2 W, step
 by step: the drawing, the steps that pick out their parts, the parts list and a MicroPython script to
 test it with. A page is drawn at any quarter turn, in a dark or a light theme, and in English, French
-or Russian.
+or Russian. Its command is `rnest`, a shorter name for `ratsnest`: the two are synonymous, and the
+examples here use `rnest`.
 
 > ⚠️ **ratsnest is still very much a work in progress.** It can occasionally and unexpectedly break.
-> Run `ratsnest update` in your circuits project to move it to the latest ratsnest version. The
+> Run `rnest update` in your circuits project to move it to the latest ratsnest version. The
 > command upgrades every circuit to the latest format and checks them.
 
 ratsnest is not released yet: its first release, 0.1.0, is M9 in [the roadmap](doc/ROADMAP.md), and
@@ -32,16 +33,16 @@ until then the steps below work with a build of your own.
    curl -fsSL https://raw.githubusercontent.com/bulla/ratsnest/develop/install.sh | sh
    ```
 
-   On Windows, download `ratsnest-windows-x64.exe` from the
-   [Releases](https://github.com/bulla/ratsnest/releases) page. Before the first release, build it
-   from a clone with `bun run build`, and install that one with
-   `RATSNEST_FROM=dist/ratsnest-linux-x64 sh install.sh`.
+   It installs `ratsnest`, and `rnest` beside it, a link to the same executable. On Windows,
+   download `ratsnest-windows-x64.exe` from the [Releases](https://github.com/bulla/ratsnest/releases)
+   page and save it as `rnest.exe`. Before the first release, build it from a clone with
+   `bun run build`, and install that one with `RATSNEST_FROM=dist/ratsnest-linux-x64 sh install.sh`.
 
 2. **Make a circuits project**, a folder of your own for your circuits:
 
    ```sh
    mkdir my-circuits && cd my-circuits
-   ratsnest init
+   rnest init
    ```
 
 3. **Add a circuit, with Claude Code.** The project holds ratsnest's `circuit` skill, so in Claude
@@ -50,8 +51,8 @@ until then the steps below work with a build of your own.
    [`examples/`](examples/), and:
 
    ```sh
-   ratsnest check
-   ratsnest generate circuits/my-circuit.ts --language en --theme dark --orientation 0
+   rnest check
+   rnest generate circuits/my-circuit.ts --language en --theme dark --orientation 0
    ```
 
    The page is written into `pages/`, named by its four inputs.
@@ -59,7 +60,7 @@ until then the steps below work with a build of your own.
 4. **Move to a newer ratsnest** when one is released, from anywhere in the project:
 
    ```sh
-   ratsnest update
+   rnest update
    ```
 
    It puts the latest release in place of the ratsnest you have, moves every circuit to its format,

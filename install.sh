@@ -1,6 +1,7 @@
 #!/bin/sh
 # Puts ratsnest on the PATH (ADR 0016): the executable for this system, from the repository's GitHub
-# Releases, into ~/.local/bin. On Windows, download ratsnest-windows-x64.exe from the Releases page.
+# Releases, into ~/.local/bin, and `rnest` beside it, a link to it, the same command by a shorter name
+# (ADR 0029). On Windows, download ratsnest-windows-x64.exe from the Releases page.
 #
 #   curl -fsSL https://raw.githubusercontent.com/bulla/ratsnest/develop/install.sh | sh
 #
@@ -46,8 +47,20 @@ fi
 chmod +x "$partial"
 mv "$partial" "$folder/ratsnest"
 
-echo "ratsnest $("$folder/ratsnest" --version) is in $folder."
+# rnest, unless the name is already something else's.
+short="$folder/rnest"
+if { [ ! -e "$short" ] && [ ! -L "$short" ]; } || [ "$(readlink "$short" 2>/dev/null)" = ratsnest ]; then
+  ln -sf ratsnest "$short"
+  also=", also as rnest"
+  names="\`rnest\` or \`ratsnest\`"
+else
+  echo "ratsnest: $short is something else already, so it is left alone, and only \`ratsnest\` is installed." >&2
+  also=""
+  names="\`ratsnest\`"
+fi
+
+echo "ratsnest $("$folder/ratsnest" --version) is in $folder$also."
 case ":$PATH:" in
   *":$folder:"*) ;;
-  *) echo "Add $folder to your PATH to run it as \`ratsnest\`." ;;
+  *) echo "Add $folder to your PATH to run it as $names." ;;
 esac
