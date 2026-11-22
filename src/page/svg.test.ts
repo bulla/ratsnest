@@ -126,14 +126,14 @@ describe("the drawing alone, as an SVG file (ADR 0031)", () => {
     }
   });
 
-  it("credits the drawing along its bottom edge, in its language, every line fitting", () => {
+  it("credits the drawing along its bottom edge, in its circuit's words, every line fitting", () => {
     for (const drawn of DRAWN) {
       for (const orientation of ORIENTATIONS) {
         const root = parsed(fileOfDrawn(drawn, orientation));
         const [x = 0, , w = 0] = numbers(root.getAttribute("viewBox"));
         const lines = [...root.querySelectorAll(":scope > text.drawing-credit")];
         const said = lines.map((line) => line.textContent ?? "");
-        expect(said.join(" ")).toBe(PAGE_WORDS[drawn.language].drawingCredit.replaceAll(" ", " "));
+        expect(said.join(" ")).toBe(drawn.circuit.credit.replaceAll(" ", " "));
         for (const line of said) {
           expect(widthOf(line, CREDIT.size, CREDIT.weight)).toBeLessThanOrEqual(
             w - 2 * CREDIT.margin,
@@ -146,14 +146,14 @@ describe("the drawing alone, as an SVG file (ADR 0031)", () => {
     }
   });
 
-  it("names the licence's address in full in every language, since a link in a picture cannot be followed", () => {
-    for (const language of LANGUAGES) {
-      expect(PAGE_WORDS[language].drawingCredit).toContain(
-        "creativecommons.org/licenses/by-sa/4.0",
-      );
-      expect(PAGE_WORDS[language].drawingCredit).toContain("CC BY-SA 4.0");
-      expect(PAGE_WORDS[language].drawingCredit).toContain("Nunito");
-    }
+  it("writes the credit its circuit says, and none of the engine's own (ADR 0032)", () => {
+    const credit = "Drawn after the Pico 2 W's datasheet, © Raspberry Pi Ltd, CC BY-SA 4.0.";
+    const circuit = { ...english.circuit, credit };
+    const svg = drawingFile(circuit, english.layout, PAGE_FILES, { language: "en" });
+    const said = [...parsed(svg).querySelectorAll(":scope > text.drawing-credit")];
+    expect(said.map((line) => line.textContent).join(" ")).toBe(credit);
+    const page = wiringPage(circuit, english.layout, PAGE_FILES, { language: "en" });
+    expect(page).toContain(`<footer>\n    ${credit}\n  </footer>`);
   });
 
   it("draws its credit at the size and weight drawing.css gives it, which it was measured at", () => {

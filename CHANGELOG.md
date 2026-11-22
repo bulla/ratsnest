@@ -15,9 +15,19 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 - `rnest generate --format svg` writes a circuit's drawing alone, as an SVG file to embed in other
   pages with `<img>` or a Markdown image, from the same four inputs as its page, into
   `pages/<circuit>.<orientation>.<theme>.<language>.svg`. It carries Nunito, its colours and its
-  styles, paints its own background in its theme, credits the drawing along its bottom edge, and is
-  6 px to the millimetre. `--format html`, the default, makes the page as before. The `circuit`
-  skill makes one when asked, and never publishes it.
+  styles, paints its own background in its theme, writes its circuit's credit along its bottom
+  edge, and is 6 px to the millimetre. `--format html`, the default, makes the page as before. The
+  `circuit` skill makes one when asked, and never publishes it.
+
+### Changed
+
+- A circuit file is written in format 2: it has a `credit`, a text in each of its languages, after
+  its description, saying where the drawing and the font come from and under which licences. A page
+  writes it as its footer, in place of the engine's own credit, as plain text, and the drawing alone
+  along its bottom edge. It is the circuit's to reword or translate, and nothing checks what it says.
+  The `circuit` skill writes ratsnest's credit, in English, French or Russian, into every circuit it
+  makes, and `rnest update` moves a format 1 file on by giving it that credit in each of its
+  languages.
 
 ### Removed
 

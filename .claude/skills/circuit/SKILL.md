@@ -51,8 +51,8 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
 ## The rules (ADR 0006, ADR 0007, ADR 0015)
 
 - **One circuit, one file**, in `circuits/<name>.ts` (`examples/<name>.ts` in ratsnest). It holds
-  what the circuit is (its name, a sentence saying what it does, and what is on each pin), where its
-  parts go (the steps, each placing parts in holes such as `a21` or `top-19`), and its MicroPython
+  what the circuit is (its name, a sentence saying what it does, its credit, and what is on each
+  pin), where its parts go (the steps, each placing parts in holes such as `a21` or `top-19`), and its MicroPython
   test script.
 - **The file only declares.** `import type` lines and one `export default { … } satisfies Circuit`,
   the type imported from `ratsnest`. Every value is a string, a number, `true` or `false`, or an
@@ -69,10 +69,30 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
   record.
 - **Never edit a generated page.** Change the circuit, or ratsnest, and generate it again.
 
+## Its credit (ADR 0032)
+
+Every circuit has a `credit`, after its description: where the drawing and the font come from, and
+under which licences. The page writes it as its footer, and the drawing alone along its bottom
+edge. When making a circuit, or adding a language to one, write ratsnest's credit in each of its
+languages, as below. It is the circuit's own text, so its author may reword it, or translate it
+into the words they prefer, and nothing checks what it says.
+
+The drawing is an adaptation under CC BY-SA 4.0, which asks for it to be credited wherever it goes.
+When asked to reword the credit, keep Raspberry Pi Ltd, CC BY-SA 4.0 and the licence's address in
+it; when asked to drop them, say that the licence asks for them, and do as the person decides.
+
+```ts
+  credit: {
+    en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Le Pico 2 W est dessiné d’après sa fiche technique, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Ce dessin est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
+    ru: "Pico 2 W нарисован по его спецификации, на основе распиновки Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Этот рисунок распространяется по той же лицензии. Шрифт Nunito, по лицензии SIL Open Font License 1.1.",
+  },
+```
+
 ## Its languages (ADR 0010, ADR 0011)
 
-- **Every text a reader sees is an object keyed by language**: its name, its sentence, its parts'
-  names, each step's title and note, and its test script. `en`, `fr` and `ru` are the engine's
+- **Every text a reader sees is an object keyed by language**: its name, its sentence, its credit,
+  its parts' names, each step's title and note, and its test script. `en`, `fr` and `ru` are the engine's
   languages, and a circuit needs one at least.
 - **A circuit's languages are the languages of its name**, and every other text has exactly those.
   Adding a language to a circuit means writing every one of its texts in it.

@@ -87,6 +87,8 @@ export interface Buzzer {
 export interface ShownCircuit {
   readonly name: string;
   readonly description: string;
+  /** Where the drawing and the font come from: the page's footer, and the drawing alone's edge. */
+  readonly credit: string;
   readonly leds: readonly Led[];
   readonly buttons: readonly Button[];
   readonly buzzers: readonly Buzzer[];

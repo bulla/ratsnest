@@ -54,8 +54,10 @@ checklist moves to `HISTORY.md` when it lands. M6 is next.
 ## Open points
 
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
-  the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
-  A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
+  the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,
+  and ratsnest's Russian credit (ADR 0032), which the `circuit` skill writes into new circuits and the
+  migration to format 2, `FORMAT_2_CREDIT` in `src/migrate.ts`, into old ones. A test cannot check
+  its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
 
 ## Suggestions

@@ -2,11 +2,15 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "Push button", fr: "Bouton poussoir" },
   description: {
     en: "A red LED and a push button, BTN1. The button is wired to its pin through a pull-down resistor, so the pin reads low until the button is held down and joins it to 3V3.",
     fr: "Une LED rouge et un bouton poussoir, BTN1. Le bouton est relié à sa broche avec une résistance de rappel à la masse : la broche lit un niveau bas tant qu’on n’appuie pas sur le bouton, qui la relie alors au 3V3.",
+  },
+  credit: {
+    en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Le Pico 2 W est dessiné d’après sa fiche technique, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Ce dessin est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
   },
   leds: [
     {

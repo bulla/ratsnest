@@ -2,7 +2,7 @@ import type { Circuit, Text } from "../format";
 import type { Fixture } from "./circuits";
 
 /**
- * A test circuit as a circuit file would declare it, in format 1 and in English, and that file's
+ * A test circuit as a circuit file would declare it, in format 2 and in English, and that file's
  * source: what the reader and the checks are tested on (ADR 0007).
  */
 
@@ -15,9 +15,10 @@ export function fileOf({ circuit, layout }: Fixture): Circuit {
     name: en(part.name),
   });
   return {
-    format: 1,
+    format: 2,
     name: en(circuit.name),
     description: en(circuit.description),
+    credit: en(circuit.credit),
     leds: circuit.leds.map(named),
     buttons: circuit.buttons.map(named),
     buzzers: circuit.buzzers.map(named),

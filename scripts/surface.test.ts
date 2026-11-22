@@ -19,7 +19,8 @@ const base: Surface = {
 describe("the public surface (ADR 0017)", () => {
   it("holds the format, its types, the commands' options and ratsnest.json", () => {
     const surface = surfaceOf();
-    expect(surface.format).toEqual(["1"]);
+    expect(surface.format).toEqual(["2"]);
+    expect(surface["Circuit.credit"]).toEqual(["required Text"]);
     expect(surface["type Language"]).toEqual(["en", "fr", "ru"]);
     expect(surface["type Part"]).toContain("RingPart");
     expect(surface["Circuit.leds"]).toEqual(["optional readonly Led[]"]);

@@ -2,11 +2,15 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "Two buttons", fr: "Deux boutons" },
   description: {
     en: "Two push buttons, one on each side of the Pico: BTN1 on GP16 and BTN2 on GP15. Each is pulled down, so its pin reads low until it is held. Held in both hands, it is a gamepad.",
     fr: "Deux boutons poussoirs, un de chaque côté du Pico : BTN1 sur GP16 et BTN2 sur GP15. Chacun a une résistance de rappel à la masse : sa broche lit un niveau bas tant qu’on n’appuie pas dessus. Tenu à deux mains, c’est une manette.",
+  },
+  credit: {
+    en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Le Pico 2 W est dessiné d’après sa fiche technique, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Ce dessin est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
   },
   buttons: [
     {

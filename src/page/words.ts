@@ -6,8 +6,8 @@ import type { Orientation } from "../orientation";
 
 /**
  * Everything a page says of its own, in each language the engine writes (ADR 0010): the sentences it
- * builds from the parts, the headings, the notes and the footer. A circuit's own words, its name, its
- * description and its steps' titles and notes, are the circuit's, and are not here.
+ * builds from the parts, the headings and the notes. A circuit's own words, its name, its
+ * description, its credit and its steps' titles and notes, are the circuit's, and are not here.
  *
  * The pages are written for an adult with a breadboard, so the French says `vous`. Its sentences are
  * built around holes and part names, which is where French grammar has to be got right: a light is
@@ -47,13 +47,6 @@ export interface PageWords {
   readonly copy: string;
   readonly copied: string;
   readonly selected: string;
-  /** The attribution the drawing and the font are owed (ADR 0012, ADR 0018): markup, with links. */
-  readonly footer: string;
-  /**
-   * The same attribution, shortened, as the drawing alone carries it along its bottom edge (ADR 0031):
-   * plain text, and the licence's address written out, since a link in a picture cannot be followed.
-   */
-  readonly drawingCredit: string;
 
   /** The drawing's own title, on one breadboard or two (scratchpi's ADR 0226), and its description's start. */
   readonly drawingTitle: (circuit: string, boards: number) => string;
@@ -216,13 +209,6 @@ export const ENGLISH_PAGE: PageWords = {
   copy: "Copy",
   copied: "Copied",
   selected: "Selected",
-  footer: `The Pico 2 W is drawn from the measurements in its datasheet, adapting the
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">Raspberry Pi Pico 2 W pinout</a>,
-    © Raspberry Pi Ltd, under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
-    This drawing is shared under the same licence. Set in Nunito, by the Nunito Project Authors,
-    under the <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>.`,
-  drawingCredit:
-    "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
 
   drawingTitle: (circuit, boards) =>
     `${circuit}, on ${boards > 1 ? "two half-size breadboards" : "a half-size breadboard"}`,
@@ -407,13 +393,6 @@ export const FRENCH_PAGE: PageWords = {
   copy: "Copier",
   copied: "Copié",
   selected: "Sélectionné",
-  footer: `Le Pico 2 W est dessiné d’après les mesures de sa fiche technique, en adaptant le
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">brochage du Raspberry Pi Pico 2 W</a>,
-    © Raspberry Pi Ltd, sous licence <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
-    Ce dessin est partagé sous la même licence. Composé en Nunito, par les auteurs du projet Nunito,
-    sous la <a href="https://openfontlicense.org">licence SIL Open Font 1.1</a>.`,
-  drawingCredit:
-    "Le Pico 2 W est dessiné d’après sa fiche technique, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Ce dessin est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
 
   drawingTitle: (circuit, boards) =>
     `${circuit}, sur ${boards > 1 ? "deux plaques d’essai demi-taille" : "une plaque d’essai demi-taille"}`,
@@ -615,13 +594,6 @@ export const RUSSIAN_PAGE: PageWords = {
   copy: "Копировать",
   copied: "Скопировано",
   selected: "Выделено",
-  footer: `Pico 2 W нарисован по размерам из его спецификации, на основе
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">распиновки Raspberry Pi Pico 2 W</a>,
-    © Raspberry Pi Ltd, по лицензии <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
-    Этот рисунок распространяется по той же лицензии. Шрифт Nunito, авторы Nunito Project Authors,
-    по лицензии <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>.`,
-  drawingCredit:
-    "Pico 2 W нарисован по его спецификации, на основе распиновки Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Этот рисунок распространяется по той же лицензии. Шрифт Nunito, по лицензии SIL Open Font License 1.1.",
 
   drawingTitle: (circuit, boards) =>
     `${circuit}: ${boards > 1 ? "на двух половинных макетных платах" : "на половинной макетной плате"}`,

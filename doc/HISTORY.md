@@ -349,3 +349,11 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
   button's file is 145 KB, more than the record's estimate of 120 KB, since its tokens and styles
   come with it. Through `<img>` in Chromium it drew in Nunito, Cyrillic included, on light and dark
   hosts, and the compiled check makes every example's SVG beside its page.
+- 2026-11-22: Between milestones, ADR 0032 at the owner's asking, on the same pull request as the SVG:
+  a circuit carries its credit, in its own words and languages, which the page writes as its footer
+  and the SVG along its edge. The owner chose one credit for both, and no check of what it says. A
+  required field broke format 1, so the circuit format is 2 and ratsnest ships its first migration,
+  which gives each circuit ratsnest's credit in each of its languages. The examples in format 1 were
+  kept in `examples/format-1/`, and the migration is tested on them, and run by the compiled check
+  through a real `update`. Written over the examples, the migration's output would have reflowed their
+  arrays, so the credit went in by hand and the test compares data.

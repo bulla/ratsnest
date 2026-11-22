@@ -32,9 +32,13 @@ from the original in that it:
 **The adapted drawing in `src/drawing/` is therefore distributed under CC BY-SA 4.0**, as
 ShareAlike requires. That obligation covers the drawing, not the rest of this repository, so drawing
 code moved out of `src/drawing/` takes the obligation with it. Every page ratsnest makes carries the
-drawing, and says in its footer where the Pico comes from and that the drawing is CC BY-SA 4.0. The
-drawing alone, as an SVG file (ADR 0031), says the same in a line of small text along its bottom
-edge, with the licence's address written out, so that the credit goes wherever the file is put.
+drawing, and its circuit's credit as its footer; the drawing alone, as an SVG file (ADR 0031),
+carries that credit in a line of small text along its bottom edge, so that it goes wherever the file
+is put. Every circuit is given ratsnest's credit, which says where the Pico comes from, that the
+drawing is CC BY-SA 4.0, with the licence's address written out, and that the font is Nunito, under
+the SIL Open Font License 1.1. A circuit's author may reword it (ADR 0032), and nothing checks it: a
+credit that drops the attribution makes pages and drawings that no longer meet the licence, which is
+the author's to answer for.
 
 The reasoning is in ADR 0018, and before it in scratchpi's ADR 0023, which first carried this
 attribution.

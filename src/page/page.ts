@@ -491,7 +491,7 @@ export function wiringPage(
   </div>
 
   <footer>
-    ${words.footer}
+    ${escaped(circuit.credit)}
   </footer>
 </main>
 <script>${files.script}</script>
@@ -627,8 +627,9 @@ export function drawingFile(
   const inputs: PageInputs = { ...DEFAULT_INPUTS, ...given };
   const drawing = drawingOf(circuit, layout, inputs);
   const view = viewOf(drawing);
-  // A narrow space is Nunito's thin one in a drawing (ADR 0012), so it is measured as it is drawn.
-  const credit = PAGE_WORDS[inputs.language].drawingCredit.replaceAll(NARROW, THIN);
+  // The circuit's own credit (ADR 0032). A narrow space is Nunito's thin one in a drawing
+  // (ADR 0012), so it is measured as it is drawn.
+  const credit = circuit.credit.replaceAll(NARROW, THIN);
   const lines = creditLines(credit, view.w - 2 * CREDIT.margin);
   const below = CREDIT.gap + CREDIT.size + (lines.length - 1) * CREDIT.line + CREDIT.margin;
   const height = view.h + below;

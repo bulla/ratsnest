@@ -197,7 +197,8 @@ there.
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported: ratsnest's own, checked like anyone's,
-│                        and · the old files its migrations are tested on (ADR 0014, ADR 0015)
+│                        and in `format-1/` the old files its migrations are tested on, left out of
+│                        the type check (ADR 0014, ADR 0015, ADR 0032)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
@@ -384,6 +385,12 @@ does not pay for it again.
   one `@ts-expect-error` that says why; it fails the type check if TypeScript ever stops minding.
 - **Cross-compiling fetches Bun for each target**, from Bun's own servers, the first time. A build
   with no network makes the running system's executable alone.
+- **A migration's output, written over an example, changes more than the migration does.** The
+  printer puts a short array of objects on one line, and Biome keeps it there, since it only breaks
+  an object that was written broken. Format 2's credit was added to the examples by hand, where the
+  migration puts it, and `src/migrate.test.ts` holds that migrating each file in `examples/format-1/`
+  gives the same data, and the same comments, as the example now. A project's own files take the
+  printer's style when they are migrated, which is its one style (ADR 0015).
 - **The printer keeps every comment, but not always on its line.** The reader keeps a comment under
   the path of the value it stands before, so one written after a value, on the same line, comes back
   on its own line before the next value. A migration's file is the same data, and the same comments,
