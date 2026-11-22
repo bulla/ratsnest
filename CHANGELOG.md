@@ -10,6 +10,8 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-22
+
 ### Added
 
 - `rnest`, a shorter name for `ratsnest`: `install.sh` puts it beside the executable, as a link to
