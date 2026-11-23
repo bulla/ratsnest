@@ -115,3 +115,5 @@ Each new record adds a row here.
 | [0042](0042-keep-a-light-lit-with-an-electrolytic-capacitor-on-a-supply.md)                                      | Keep a light lit with an electrolytic capacitor, on a supply                                       |
 | [0043](0043-let-a-pin-switch-a-light-through-an-npn-transistor.md)                                               | Let a pin switch a light through an NPN transistor                                                 |
 | [0044](0044-let-a-pin-switch-a-light-on-the-high-side-through-a-pnp-transistor.md)                               | Let a pin switch a light on the high side, through a PNP transistor                                |
+| [0045](0045-let-two-npn-transistors-flash-two-lights-on-a-supply-and-test-a-capacitor.md)                        | Let two NPN transistors flash two lights on a supply, and test a capacitor                         |
+| [0046](0046-lift-a-lights-leader-over-the-transistors-and-capacitors-in-its-way.md)                              | Lift a light's leader over the transistors and capacitors in its way                               |

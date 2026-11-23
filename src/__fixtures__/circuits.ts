@@ -13,8 +13,9 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * names a circuit that ships (ADR 0007): the ones that ship are `examples/`, from M3. The eighth has
  * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches, the
  * ninth a capacitor that keeps a light lit once its button is let go (ADR 0042), the tenth a light
- * that a pin switches through an NPN transistor (ADR 0043), and the eleventh one it switches through a
- * PNP transistor, on the high side (ADR 0044).
+ * that a pin switches through an NPN transistor (ADR 0043), the eleventh one it switches through a
+ * PNP transistor, on the high side (ADR 0044), and the twelfth two lights that two transistors flash in
+ * turn, on a supply (ADR 0045).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -28,6 +29,7 @@ export const FIXTURE_IDS = [
   "light-kept-lit-by-a-capacitor",
   "light-on-a-transistor",
   "light-under-a-pnp-transistor",
+  "two-lights-flashing",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -711,6 +713,74 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script: "from machine import Pin\n\nPin(17, Pin.OUT).off()",
       test: "The yellow LED lights, since GP17 is low, and stays lit until the Pico is unplugged.",
+    },
+  },
+  "two-lights-flashing": {
+    circuit: {
+      name: "Two lights flashing",
+      description:
+        "A green light and a blue one, which two 2N3904s, crosswise, flash in turn, on three AA batteries.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 4.5, rails: "bottom" },
+      leds: [
+        { id: "green", name: "green LED", colour: "green" },
+        { id: "blue", name: "blue LED", colour: "blue" },
+      ],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "The left transistor and its base resistor",
+          parts: [
+            { kind: "transistor", model: "2N3904", emitter: "f9", base: "f10", collector: "f11" },
+            { kind: "wire", from: "j9", to: "bottom-9", role: "ground" },
+            { kind: "resistor", ohms: 33000, from: "j10", to: "bottom+10" },
+          ],
+        },
+        {
+          title: "The green LED",
+          parts: [
+            { kind: "led", led: "green", anode: "f5", cathode: "f6" },
+            { kind: "wire", from: "j5", to: "bottom+5", role: "power" },
+            { kind: "resistor", ohms: 330, from: "h6", to: "h11" },
+          ],
+        },
+        {
+          title: "The right transistor and its base resistor",
+          parts: [
+            { kind: "transistor", model: "2N3904", emitter: "f20", base: "f21", collector: "f22" },
+            { kind: "wire", from: "j20", to: "bottom-20", role: "ground" },
+            { kind: "resistor", ohms: 33000, from: "j21", to: "bottom+21" },
+          ],
+        },
+        {
+          title: "The blue LED",
+          parts: [
+            { kind: "led", led: "blue", anode: "f27", cathode: "f26" },
+            { kind: "wire", from: "j27", to: "bottom+27", role: "power" },
+            { kind: "resistor", ohms: 330, from: "h22", to: "h26" },
+          ],
+        },
+        {
+          title: "A capacitor from the left collector to the right base",
+          parts: [
+            { kind: "electrolytic", microfarads: 47, plus: "f14", minus: "f15" },
+            { kind: "wire", from: "g11", to: "g14", role: "signal" },
+            { kind: "wire", from: "h15", to: "h21", role: "signal" },
+          ],
+        },
+        {
+          title: "A capacitor from the right collector to the left base",
+          parts: [
+            { kind: "electrolytic", microfarads: 4.7, plus: "f18", minus: "f17" },
+            { kind: "wire", from: "g22", to: "g18", role: "signal" },
+            { kind: "wire", from: "i17", to: "i10", role: "signal" },
+          ],
+        },
+      ],
+      test: "The green LED and the blue one flash in turn, the green one dark only for a moment.",
     },
   },
 };

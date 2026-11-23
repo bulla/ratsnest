@@ -57,6 +57,18 @@ export const FADE_SECONDS = 0.2;
  * which a 2N3904 turns into all of a light's 15 mA.
  */
 export const BASE_OHMS_RANGE = [1000, 10000] as const;
+/**
+ * What a flasher's base resistor can be, from + (ADR 0045): it sets, with its capacitor, how long
+ * its transistor stays off, and feeds the base enough to light its light the rest of the time. At
+ * 3 V, 47 kΩ lets 49 µA in, which a 2N3904 turns into a light's few milliamperes.
+ */
+export const FLASHER_BASE_OHMS_RANGE = [10000, 100000] as const;
+/**
+ * How long each half of a flasher's beat can last, in seconds: about 0.69 times its base resistor
+ * times its capacitor (ADR 0045). Shorter, and the lights blur into one; longer, and they seem to
+ * have stopped.
+ */
+export const FLASH_SECONDS_RANGE = [0.1, 5] as const;
 
 /** Union–find over strip names, pin names and the one shared ground. */
 class Nets {
@@ -689,10 +701,50 @@ function supplyWiringProblems(
   const accounted = new Set<Part>();
   const legs = legsIn(all);
   const [plus, minus] = [plusOf(all), minusOf(all)];
+  // A light on a transistor's collector is that transistor's, as on a Pico (ADR 0043, ADR 0045).
+  const transistors = parts.filter(
+    (part): part is Extract<Part, { kind: "transistor" }> => part.kind === "transistor",
+  );
+  const switching = new Set<Part>();
+  const reaches = (leg: string, collector: string) =>
+    leg === collector || between(all, leg, collector).length === 1;
   for (const light of lights) {
     const name = describe(light, circuit);
     const anode = all.find(stripOf(light.anode));
     const cathode = all.find(stripOf(light.cathode));
+    const transistor = transistors.find((t) => {
+      const collector = all.find(stripOf(t.collector));
+      return reaches(cathode, collector) || reaches(anode, collector);
+    });
+    if (transistor) {
+      switching.add(transistor);
+      const collector = all.find(stripOf(transistor.collector));
+      const collectorName = `the ${transistor.model}'s collector`;
+      if (reaches(anode, collector) && !reaches(cathode, collector)) {
+        problems.push(
+          `${name} is in backwards: its long leg must be towards +, and its short leg towards ${collectorName}`,
+        );
+        continue;
+      }
+      const [middle, series] =
+        cathode === collector
+          ? [anode, between(all, plus, anode)]
+          : anode === plus
+            ? [cathode, between(all, cathode, collector)]
+            : [undefined, []];
+      if (!middle || series.length !== 1 || legs.get(middle) !== 2) {
+        problems.push(`${name} is not wired from + through one resistor to ${collectorName}`);
+        continue;
+      }
+      const resistor = series[0] as Extract<Part, { kind: "resistor" }>;
+      accounted.add(resistor);
+      if (resistor.ohms < LIGHT_OHMS_RANGE[0] || resistor.ohms > LIGHT_OHMS_RANGE[1]) {
+        problems.push(
+          `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+        );
+      }
+      continue;
+    }
     if (anode === minus || cathode === plus) {
       problems.push(`${name} is in backwards: its long leg must be towards +`);
       continue;
@@ -719,16 +771,92 @@ function supplyWiringProblems(
       );
     }
   }
-  for (const resistor of resistors) {
-    if (!accounted.has(resistor)) {
-      problems.push(`${describe(resistor, circuit)} is not a light's resistor`);
+  // Two NPN transistors, crosswise, make a flasher (ADR 0045): each one's emitter on −, its light on
+  // its collector, its base fed from + through a resistor, and a capacitor from the other one's
+  // collector to its base, which holds it off for a while each time the other turns on.
+  const capacitors = parts.filter(
+    (part): part is Extract<Part, { kind: "electrolytic" }> => part.kind === "electrolytic",
+  );
+  const coupling = new Set<Part>();
+  const netOf = (hole: Hole) => open.find(stripOf(hole));
+  for (const transistor of transistors) {
+    const name = describe(transistor, circuit);
+    if (TRANSISTORS[transistor.model].type !== "NPN") {
+      problems.push(
+        `${name} has no use ratsnest knows on a supply: two NPN transistors make a flasher (ADR 0045)`,
+      );
+      continue;
+    }
+    if (!switching.has(transistor)) {
+      problems.push(
+        `${name} switches no light: its collector goes under a light, which goes to + through its resistor`,
+      );
+    }
+    if (netOf(transistor.emitter) !== minusOf(open)) {
+      problems.push(`${name} has its emitter off −`);
+    }
+    const base = netOf(transistor.base);
+    const range = FLASHER_BASE_OHMS_RANGE.map(formatOhms).join(" to ");
+    const feeds = between(open, plusOf(open), base);
+    let fed: Extract<Part, { kind: "resistor" }> | undefined;
+    if (base === plusOf(open)) {
+      problems.push(`${name} has its base straight on +: a resistor of ${range} goes between them`);
+    } else if (feeds.length !== 1) {
+      problems.push(`${name} has its base off +: one resistor of ${range} goes between them`);
+    } else {
+      fed = feeds[0] as Extract<Part, { kind: "resistor" }>;
+      accounted.add(fed);
+      if (fed.ohms < FLASHER_BASE_OHMS_RANGE[0] || fed.ohms > FLASHER_BASE_OHMS_RANGE[1]) {
+        problems.push(`${name}'s base resistor is ${formatOhms(fed.ohms)}, outside ${range}`);
+        fed = undefined;
+      }
+    }
+    // The other transistors' collectors, one of which its capacitor comes from.
+    const others = transistors
+      .filter((other) => other !== transistor)
+      .map((other) => netOf(other.collector));
+    const crosswise = capacitors.filter((capacitor) => {
+      const ends = [netOf(capacitor.plus), netOf(capacitor.minus)];
+      return ends.includes(base) && others.some((collector) => ends.includes(collector));
+    });
+    if (crosswise.length !== 1) {
+      problems.push(
+        `${name} needs one capacitor from the other transistor's collector to its base: two transistors, each with one, make a flasher`,
+      );
+      continue;
+    }
+    const capacitor = crosswise[0] as Extract<Part, { kind: "electrolytic" }>;
+    coupling.add(capacitor);
+    if (netOf(capacitor.minus) !== base) {
+      problems.push(
+        `${describe(capacitor, circuit)} is in backwards: its + leg goes towards the collector, and its − leg, under the stripe, towards the base`,
+      );
+      continue;
+    }
+    if (fed) {
+      const seconds = 0.69 * fed.ohms * capacitor.microfarads * 1e-6;
+      const [shortest, longest] = FLASH_SECONDS_RANGE;
+      const said = `the ${formatOhms(fed.ohms)} resistor and ${describe(capacitor, circuit)} hold ${name} off for about ${Math.round(seconds * 100) / 100} s at a time`;
+      if (seconds < shortest) {
+        problems.push(`${said}, too fast to see the lights flash: ${shortest} s at least`);
+      } else if (seconds > longest) {
+        problems.push(`${said}, so slowly that they seem to have stopped: ${longest} s at most`);
+      }
     }
   }
 
-  // Every capacitor keeps a light lit (ADR 0042): its − leg on −, its + leg between a button and a
-  // light's resistor, which a button charges and the light empties, slowly enough to be seen.
-  for (const capacitor of parts) {
-    if (capacitor.kind !== "electrolytic") continue;
+  for (const resistor of resistors) {
+    if (!accounted.has(resistor)) {
+      problems.push(
+        `${describe(resistor, circuit)} is not a light's resistor, or a flasher's base resistor`,
+      );
+    }
+  }
+
+  // Every other capacitor keeps a light lit (ADR 0042): its − leg on −, its + leg between a button
+  // and a light's resistor, which a button charges and the light empties, slowly enough to be seen.
+  for (const capacitor of capacitors) {
+    if (coupling.has(capacitor)) continue;
     const name = describe(capacitor, circuit);
     const plusLeg = open.find(stripOf(capacitor.plus));
     const minusLeg = open.find(stripOf(capacitor.minus));

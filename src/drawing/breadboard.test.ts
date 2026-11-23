@@ -24,6 +24,7 @@ import {
   ARCH_LIFT_MM,
   type Breadboard,
   clearTagOf,
+  crowdingProblems,
   drawBreadboard,
   formatOhms,
   labelEndOf,
@@ -306,7 +307,13 @@ describe("a resistor's value tag", () => {
     (id) => [id, FIXTURES[id].layout.steps.flatMap((s) => s.parts)] as const,
   );
 
-  it.each(everyLayout)("finds a place clear of everything else on %s", (_, parts) => {
+  it.each(everyLayout)("finds a place clear of everything else on %s", (id, parts) => {
+    // Asked on its own, a tag keeps off a Pico that a circuit with a supply does not have (ADR 0032),
+    // so a supply's layout is asked as the drawing asks it, with no Pico.
+    if (FIXTURES[id].circuit.supply) {
+      expect(crowdingProblems(parts, 0, formatOhms, false)).toEqual([]);
+      return;
+    }
     for (const part of parts) {
       if (part.kind !== "resistor") continue;
       expect(clearTagOf(part, parts), `${part.from} to ${part.to}`).toBeDefined();
@@ -443,5 +450,24 @@ describe("a jumper that arches over the board (scratchpi's ADR 0166)", () => {
     const tag = clearTagOf(pullDown, parts);
     expect(tag?.y).toBeGreaterThan(holeCentre("bottom+22").y);
     expect(Math.abs((tag?.x ?? 0) - holeCentre("bottom-22").x)).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("a light's leader, lifted over the cases and cans in its way (ADR 0046)", () => {
+  const parts = FIXTURES["two-lights-flashing"].layout.steps.flatMap((step) => [...step.parts]);
+  const lights = parts.filter((part) => part.kind === "led");
+  const [green, blue] = lights;
+
+  it("rises from the top of its lens to the lane between d and e, over every one of them", () => {
+    if (!green) throw new Error("No green light");
+    const leader = leaderOf(green, lights, parts);
+    expect(leader?.run.y).toBe((rowY("d") + rowY("e")) / 2);
+    expect(leader?.dot.x).toBe(leader?.run.x);
+  });
+
+  it("runs straight where nothing stands in its way, as it always has", () => {
+    if (!blue) throw new Error("No blue light");
+    expect(leaderOf(blue, lights, parts)).toEqual(leaderOf(blue, lights));
+    expect(leaderOf(blue, lights, parts)?.run).toEqual(leaderOf(blue, lights, parts)?.dot);
   });
 });

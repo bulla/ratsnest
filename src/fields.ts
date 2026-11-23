@@ -231,7 +231,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
-const SUPPLY_PARTS = ["wire", "resistor", "led", "button", "electrolytic"];
+const SUPPLY_PARTS = ["wire", "resistor", "led", "button", "electrolytic", "transistor"];
 
 function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean): void {
   const kind = part.kind;

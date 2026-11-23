@@ -111,7 +111,8 @@ A circuit with a supply:
 - **wires every light from + through one resistor of 220 Ω to 1 kΩ to −**, each button on a light's
   way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
   On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
-- **may have electrolytic capacitors, each keeping a light lit** (below).
+- **may have electrolytic capacitors, each keeping a light lit, and two NPN transistors that flash
+  two lights** (below).
 
 ## Capacitors, transistors and diodes (ADR 0038 to ADR 0042)
 
@@ -146,7 +147,14 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   its collector; a PNP's emitter goes on 3V3(OUT), never VBUS, and the light between its collector and
   ground, lit while the pin is low. Either way, the light has one resistor of 220 Ω to 1 kΩ. The case
   stands over the two rows above its legs, so reach each leg from the row below it, or from the row
-  above its case. On a supply it is refused.
+  above its case.
+- **Two NPN transistors on a supply flash two lights** (ADR 0045), and are the only use a transistor
+  has there. Each one's emitter goes on −; its light from + to its collector, through one resistor
+  of 220 Ω to 1 kΩ; its base from + through one resistor of 10 kΩ to 100 kΩ; and one electrolytic
+  capacitor from the other transistor's collector to its base, its + leg towards the collector. The
+  base resistor and that capacitor hold the transistor off for about 0.69 times the two, 0.1 s to
+  5 s. A circuit that tests a capacitor places that one in a step of its own and says so in the
+  step's title. Standing everything in row f leaves the rows below for the wiring.
 
 ## Its credit (ADR 0035)
 

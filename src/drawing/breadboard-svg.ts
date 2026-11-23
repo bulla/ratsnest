@@ -1619,11 +1619,19 @@ export interface Leader {
  * it: between rows d and e from the top of its body, then between f and g from the bottom, then a
  * row further out on each side in turn.
  */
-export function leaderOf(part: Part, labelled: readonly Part[]): Leader | undefined {
+export function leaderOf(
+  part: Part,
+  labelled: readonly Part[],
+  standing: readonly Part[] = [],
+): Leader | undefined {
   const end = labelEndOf(part);
   const edges = anchorOf(part);
   if (!edges) return undefined;
   const anchor = { x: end === "far" ? edges.right : edges.left, y: edges.y };
+  if (part.kind === "led") {
+    const lifted = liftedOverStanding(part, anchor, end, standing);
+    if (lifted) return lifted;
+  }
   if (part.kind === "button") {
     const { x: mid, y: cy } = buttonCentre(part);
     // How far along towards its label's end a button is: larger is nearer that end.
@@ -1653,6 +1661,40 @@ export function leaderOf(part: Part, labelled: readonly Part[]): Leader | undefi
     }
   }
   return { dot: anchor, run: anchor, end };
+}
+
+/**
+ * A light's leader lifted over the transistors' cases and the capacitors' cans in its way to its
+ * label's end of the board (ADR 0046): from the top of its lens, up to the first lane between rows
+ * above every one of them. A leader run straight would pass behind them, and read as running into
+ * them. Only those standing parts count, so that no layout without them changes.
+ */
+function liftedOverStanding(
+  part: Extract<Part, { kind: "led" }>,
+  anchor: Point,
+  end: LabelEnd,
+  standing: readonly Part[],
+): Leader | undefined {
+  const [from, to] = end === "far" ? [anchor.x, BREADBOARD_WIDTH_MM] : [0, anchor.x];
+  const blocking = standing.flatMap((other) => {
+    const box =
+      other.kind === "transistor"
+        ? to92BoxOf(other)
+        : other.kind === "electrolytic"
+          ? canBoxOf(other)
+          : undefined;
+    return box && box.x < to && box.x + box.w > from && box.y < anchor.y && box.y + box.h > anchor.y
+      ? [box]
+      : [];
+  });
+  if (blocking.length === 0) return undefined;
+  const a = holeCentre(part.anode);
+  const mid = (a.x + holeCentre(part.cathode).x) / 2;
+  const top = a.y - LENS_RISE_MM - LENS_RADIUS_MM;
+  const highest = Math.min(top, ...blocking.map((box) => box.y));
+  const lanes = BETWEEN_ROWS.filter((y) => y < highest - 0.5);
+  if (lanes.length === 0) return undefined;
+  return { dot: { x: mid, y: top }, run: { x: mid, y: Math.max(...lanes) }, end };
 }
 
 /**
@@ -2014,7 +2056,13 @@ function drawTurned(drawing: Breadboard): string {
   const labelled = drawing.parts.filter((drawn) => drawn.label).map((drawn) => drawn.part);
   const leaders = new Map(
     drawing.parts.flatMap((drawn) => {
-      const leader = drawn.label ? leaderOf(drawn.part, labelled) : undefined;
+      const leader = drawn.label
+        ? leaderOf(
+            drawn.part,
+            labelled,
+            drawing.parts.map(({ part }) => part),
+          )
+        : undefined;
       return leader ? [[drawn, leader] as const] : [];
     }),
   );
