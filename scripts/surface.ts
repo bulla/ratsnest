@@ -34,8 +34,8 @@ const textOf = (source: string, node: { start?: number | null; end?: number | nu
 
 /**
  * The format's exported types: a union as the set of its members, a string by its value and any
- * other by its text, so that a member added is a gain and one removed a change; anything else as its
- * text.
+ * other by its text, so that a member added is a gain and one removed a change; an interface by its
+ * members and what it extends; anything else as its text.
  */
 function typesOf(source: string): Surface {
   const program: Program = parse(source, { sourceType: "module", plugins: ["typescript"] }).program;
@@ -55,6 +55,13 @@ function typesOf(source: string): Surface {
         .sort();
     }
     if (declared?.type === "TSInterfaceDeclaration") {
+      // What it extends is part of it: a shape that stopped sharing the base would lose its members
+      // without one of its own going (ADR 0036).
+      if (declared.extends?.length) {
+        surface[`${declared.id.name} extends`] = declared.extends
+          .map((heritage) => textOf(source, heritage))
+          .sort();
+      }
       for (const member of declared.body.body) {
         if (member.type !== "TSPropertySignature" || member.key.type !== "Identifier") continue;
         const type = member.typeAnnotation

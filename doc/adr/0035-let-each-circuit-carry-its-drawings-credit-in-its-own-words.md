@@ -1,6 +1,6 @@
 # ADR 0035: Let each circuit carry its drawing's credit, in its own words
 
-**Status:** Accepted · 2026-11-22 · Amends ADR-0018 (a page's footer carries its circuit's credit, if it has one), ADR-0031 (the credit line is the circuit's, if it has one), ADR-0032 (a supply circuit's footer is its credit) and ADR-0034 (both shapes may carry a credit)
+**Status:** Accepted · 2026-11-22 · Amends ADR-0018 (a page's footer carries its circuit's credit, if it has one), ADR-0031 (the credit line is the circuit's, if it has one), ADR-0032 (a supply circuit's footer is its credit) and ADR-0034 (both shapes may carry a credit) · Amended by ADR-0036 (a circuit written before is given ratsnest's credit)
 
 ## Context
 

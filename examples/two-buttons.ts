@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "Two buttons", fr: "Deux boutons" },
   description: {
     en: "Two push buttons, one on each side of the Pico: BTN1 on GP16 and BTN2 on GP15. Each is pulled down, so its pin reads low until it is held. Held in both hands, it is a gamepad.",
@@ -120,7 +120,7 @@ while True:
         shown = now
     sleep(0.02)`,
   },
-  scriptDoes: {
+  test: {
     en: "Thonny's Shell shows 1 beside a button while it is held down, and 0 once it is let go. Press Stop in Thonny to end the script.",
     fr: "La console de Thonny affiche 1 à côté d’un bouton tant qu’il est enfoncé, et 0 dès qu’il est relâché. Appuyez sur Arrêter dans Thonny pour terminer le script.",
   },

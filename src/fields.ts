@@ -22,7 +22,7 @@ import { pathOf } from "./read";
  */
 
 /** The circuit format this engine reads, and the only one. */
-export const FORMAT = 1;
+export const FORMAT = 2;
 
 /** Something wrong with a field, by its path: `steps[2].parts[0].from`. */
 export interface FieldProblem {
@@ -343,8 +343,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   if (supplied) {
     const needsPico: Readonly<Record<string, string>> = {
       buzzers: "a buzzer needs a Pico to drive it",
-      script: "it has no Pico to run a script: it has `test` in its place",
-      scriptDoes: "it has no Pico to run a script: it has `test` in its place",
+      script: "it has no Pico to run a script, and its `test` says what to do instead",
     };
     for (const [key, why] of Object.entries(needsPico)) {
       if (Object.hasOwn(data, key)) {
@@ -378,7 +377,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
         "buzzers",
         "steps",
         "script",
-        "scriptDoes",
+        "test",
       ],
       "a circuit",
     );
@@ -470,12 +469,8 @@ export function shapeProblems(data: unknown): FieldProblem[] {
     circuit.problem("steps", "is empty: a circuit has a step at least");
   }
 
-  if (supplied) {
-    circuit.text("test");
-  } else {
-    circuit.text("script");
-    circuit.text("scriptDoes");
-  }
+  if (!supplied) circuit.text("script");
+  circuit.text("test");
   return problems;
 }
 
@@ -533,12 +528,8 @@ export function textsOf(circuit: Circuit): [string, Text][] {
       [pathOf(pathOf("steps", index), "title"), step.title],
       ...(step.note ? [[pathOf(pathOf("steps", index), "note"), step.note] as [string, Text]] : []),
     ]),
-    ...(circuit.supply
-      ? [["test", circuit.test] as [string, Text]]
-      : [
-          ["script", circuit.script] as [string, Text],
-          ["scriptDoes", circuit.scriptDoes] as [string, Text],
-        ]),
+    ...(circuit.supply ? [] : [["script", circuit.script] as [string, Text]]),
+    ["test", circuit.test],
   ];
 }
 

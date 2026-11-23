@@ -19,9 +19,13 @@ const base: Surface = {
 describe("the public surface (ADR 0017)", () => {
   it("holds the format, its types, the commands' options and ratsnest.json", () => {
     const surface = surfaceOf();
-    expect(surface.format).toEqual(["1"]);
-    expect(surface["PicoCircuit.credit"]).toEqual(["optional Text"]);
-    expect(surface["SupplyCircuit.credit"]).toEqual(["optional Text"]);
+    expect(surface.format).toEqual(["2"]);
+    expect(surface["CircuitBase.credit"]).toEqual(["optional Text"]);
+    expect(surface["CircuitBase.test"]).toEqual(["required Text"]);
+    expect(surface["PicoCircuit extends"]).toEqual(["CircuitBase"]);
+    expect(surface["SupplyCircuit extends"]).toEqual(["CircuitBase"]);
+    expect(surface["PicoCircuit.script"]).toEqual(["required Text"]);
+    expect(surface["PicoCircuit.scriptDoes"]).toBeUndefined();
     expect(surface["type Language"]).toEqual(["en", "fr", "ru"]);
     expect(surface["type Part"]).toContain("RingPart");
     expect(surface["type Circuit"]).toEqual(["PicoCircuit", "SupplyCircuit"]);
@@ -40,6 +44,13 @@ describe("the least bump", () => {
     expect(bumpOf(base, removed)).toBe("major");
     expect(bumpOf(base, { ...base, "type Language": ["en"] })).toBe("major");
     expect(bumpOf(base, { ...base, "Circuit.name": ["optional Text"] })).toBe("major");
+  });
+
+  it("is major when an interface stops extending what it did, or extends something else", () => {
+    const shaped = { ...base, "PicoCircuit extends": ["CircuitBase"] };
+    const { "PicoCircuit extends": _, ...unshaped } = shaped;
+    expect(bumpOf(shaped, unshaped)).toBe("major");
+    expect(bumpOf(shaped, { ...shaped, "PicoCircuit extends": ["OtherBase"] })).toBe("major");
   });
 
   it("is major for a required field added to a type a file already declares", () => {

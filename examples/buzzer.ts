@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "Buzzer", fr: "Buzzer" },
   description: {
     en: "A passive buzzer and a push button, BTN1. The buzzer is wired from its pin to ground, and switching the pin on and off hundreds of times a second makes a note: how fast is which note. The button is pulled down, so its pin reads low until it is held.",
@@ -116,7 +116,7 @@ try:
 finally:
     buzzer.duty_u16(0)`,
   },
-  scriptDoes: {
+  test: {
     en: "Hold the button down and the buzzer plays a high A. Let go and it stops. Press Stop in Thonny to end the script.",
     fr: "Maintenez le bouton enfoncé et le buzzer joue un LA aigu. Relâchez-le et il se tait. Appuyez sur Arrêter dans Thonny pour terminer le script.",
   },

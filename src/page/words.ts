@@ -114,7 +114,7 @@ export interface PageWords {
   /** Where one of the circuit's pins lands once the Pico is in. */
   readonly land: (gpio: number, hole: string) => string;
   readonly testTitle: string;
-  readonly testBody: (scriptDoes: string) => string;
+  readonly testBody: (test: string) => string;
 
   /** The parts list. A name is escaped already, and capitalised where it starts a line. */
   readonly listPico: string;
@@ -285,8 +285,7 @@ export const ENGLISH_PAGE: PageWords = {
     (lands.length > 0 ? ` That puts ${englishList(lands)}.` : ""),
   land: (gpio, hole) => `GP${gpio} in ${hole}`,
   testTitle: "Plug in and test",
-  testBody: (scriptDoes) =>
-    `Plug the USB cable in and run the script on this page in Thonny. ${scriptDoes}`,
+  testBody: (test) => `Plug the USB cable in and run the script on this page in Thonny. ${test}`,
 
   listPico: "Raspberry Pi Pico 2 W, with its header pins soldered on. A Pico 2 WH comes with them.",
   listBreadboard: (count) =>
@@ -500,8 +499,8 @@ export const FRENCH_PAGE: PageWords = {
     (lands.length > 0 ? ` Ainsi, ${frenchList(lands)}.` : ""),
   land: (gpio, hole) => `GP${gpio} est en ${hole}`,
   testTitle: "Branchez et testez",
-  testBody: (scriptDoes) =>
-    `Branchez le câble USB et lancez dans Thonny le script de cette page. ${scriptDoes}`,
+  testBody: (test) =>
+    `Branchez le câble USB et lancez dans Thonny le script de cette page. ${test}`,
 
   listPico: "Raspberry Pi Pico 2 W, avec ses connecteurs soudés. Un Pico 2 WH est livré avec.",
   listBreadboard: (count) => {
@@ -718,8 +717,7 @@ export const RUSSIAN_PAGE: PageWords = {
     (lands.length > 0 ? ` Тогда ${russianList(lands)}.` : ""),
   land: (gpio, hole) => `GP${gpio} окажется в ${hole}`,
   testTitle: "Подключите и проверьте",
-  testBody: (scriptDoes) =>
-    `Подключите кабель USB и запустите скрипт с этой страницы в Thonny. ${scriptDoes}`,
+  testBody: (test) => `Подключите кабель USB и запустите скрипт с этой страницы в Thonny. ${test}`,
 
   listPico:
     "Raspberry Pi Pico 2 W с припаянными штыревыми выводами. Pico 2 WH продаётся уже с ними.",

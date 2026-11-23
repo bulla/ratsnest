@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "Four buttons", fr: "Quatre boutons" },
   description: {
     en: "Four push buttons in a cross: BTN3 at the top, BTN4 at the bottom, BTN2 on the left and BTN1 on the right. Each is pulled down, so its pin reads low until it is held. It is a gamepad with a button for every way.",
@@ -210,7 +210,7 @@ while True:
             shown[name] = level
     sleep(0.02)`,
   },
-  scriptDoes: {
+  test: {
     en: "Thonny's Shell shows 1 beside a button while it is held down, and 0 once it is let go. Press Stop in Thonny to end the script.",
     fr: "La console de Thonny affiche 1 à côté d’un bouton tant qu’il est enfoncé, et 0 dès qu’il est relâché. Appuyez sur Arrêter dans Thonny pour terminer le script.",
   },

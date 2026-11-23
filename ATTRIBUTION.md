@@ -37,7 +37,8 @@ code moved out of `src/drawing/` takes the obligation with it. Every page ratsne
 drawing, with the Pico or with a supply in its place, and its circuit's credit, if it has one, as its
 footer; the drawing alone, as an SVG file (ADR 0031), carries that credit in a line of small text
 along its bottom edge, so that it goes wherever the file is put. The `circuit` skill gives every
-circuit it makes ratsnest's credit, which says where the drawing comes from, that it is
+circuit it makes ratsnest's credit, and the update to format 2 gives it to every circuit written
+before with none (ADR 0036), which says where the drawing comes from, that it is
 CC BY-SA 4.0, with the licence's address written out, and that the font is Nunito, under the SIL
 Open Font License 1.1. A circuit's author may reword it, or take it out to credit the drawing
 elsewhere, as a tutorial of several drawings would once (ADR 0035), and nothing checks it: a drawing

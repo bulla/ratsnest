@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "Push button", fr: "Bouton poussoir" },
   description: {
     en: "A red LED and a push button, BTN1. The button is wired to its pin through a pull-down resistor, so the pin reads low until the button is held down and joins it to 3V3.",
@@ -99,7 +99,7 @@ while True:
     led_rouge.value(btn1.value())
     sleep(0.02)`,
   },
-  scriptDoes: {
+  test: {
     en: "Hold the button down and the red LED lights. Let go and it goes out. Press Stop in Thonny to end the script.",
     fr: "Maintenez le bouton enfoncé et la LED rouge s’allume. Relâchez-le et elle s’éteint. Appuyez sur Arrêter dans Thonny pour terminer le script.",
   },

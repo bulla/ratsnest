@@ -37,10 +37,15 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   edge; without one, a page has no footer and a drawing no credit line. It is the circuit's to
   reword, translate or take out, and nothing checks what it says. The `circuit` skill writes
   ratsnest's credit, in English, French or Russian, into every circuit it makes, on a Pico or with a
-  supply, and offers to add
-  it to a circuit written before.
-- The `Circuit` type is now `PicoCircuit | SupplyCircuit`. Every circuit file stays valid as it is,
-  still ending `satisfies Circuit`, and `rnest update` puts the new type in `.ratsnest/`.
+  supply.
+- A circuit file is written in format 2. What every circuit has is one `CircuitBase`: its format,
+  name, description, credit, steps and `test`, what the reader does in the last step and what a
+  working circuit then does. A circuit on a Pico calls that `test` too, where it said `scriptDoes`,
+  and keeps its `script`. The `Circuit` type is `PicoCircuit | SupplyCircuit`, both extending it,
+  still ending `satisfies Circuit`.
+- `rnest update` moves a format 1 circuit on to format 2: it renames `scriptDoes` to `test`, with its
+  comments, and gives a circuit with no `credit` ratsnest's, for its kind and in each of its
+  languages, so that its pages keep their footer. It puts the new type in `.ratsnest/`.
 
 ### Removed
 

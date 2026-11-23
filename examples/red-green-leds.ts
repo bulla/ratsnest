@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "Red/Green LEDs", fr: "LED rouge et verte" },
   description: {
     en: "Two LEDs, a red one and a green one, each wired from its own pin through a resistor to ground.",
@@ -85,7 +85,7 @@ for i in range(5):
     sleep(0.5)
 led_verte.off()`,
   },
-  scriptDoes: {
+  test: {
     en: "The two lights take turns five times, then both go off.",
     fr: "Les deux LED s’allument chacune à leur tour cinq fois, puis s’éteignent toutes les deux.",
   },

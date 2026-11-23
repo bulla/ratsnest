@@ -360,3 +360,12 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
   record became 0035, and says how a supply circuit's credit fits them. When M12 itself landed, its
   engine-written footer for a supply circuit became the `circuit` skill's second default credit, and
   its example and test circuit carry it.
+- 2026-11-23: Between milestones, ADR 0036 at the owner's asking, on the same pull request: having
+  changed a good deal of the format, the owner wanted it to say each thing once. What every circuit
+  has is one `CircuitBase`, which both shapes extend, and a Pico circuit's `scriptDoes` is its `test`,
+  as a supply circuit's is. The format rose to 2, with ratsnest's first migration, which also gives
+  a circuit with no credit ratsnest's, so that an update keeps the footer its pages had. The examples
+  in format 1, as `develop` had them, are kept for its test, which finds each migrated to the
+  example as it is now, and the compiled check migrates one through a real update. The public surface
+  now records what an interface extends, since a shape that stopped sharing the base would otherwise
+  lose its members unseen.

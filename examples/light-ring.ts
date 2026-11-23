@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "Light ring", fr: "Anneau lumineux" },
   description: {
     en: "A ring of twelve RGB LEDs and a push button, BTN1. The ring's LEDs are addressable: each takes its colour as data, one after the other down one wire from GP15, so each can be lit in a colour of its own. The ring takes its power from VBUS and needs no resistor.",
@@ -150,7 +150,7 @@ finally:
     anneau_de_led.fill((0, 0, 0))
     anneau_de_led.write()`,
   },
-  scriptDoes: {
+  test: {
     en: "A red light goes round the ring, one LED at a time, from LED 0, the one by the pins: it shows which way the numbers go. Hold the button down and it goes round blue. Press Stop in Thonny to end the script, and the ring goes out.",
     fr: "Une lumière rouge fait le tour de l’anneau, une LED à la fois, à partir de la LED 0, celle près des broches : elle montre dans quel sens vont les numéros. Maintenez le bouton enfoncé et elle tourne en bleu. Appuyez sur Arrêter dans Thonny pour terminer le script, et l’anneau s’éteint.",
   },

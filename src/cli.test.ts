@@ -50,7 +50,7 @@ const inBoth = (circuit: PicoCircuit): PicoCircuit => {
       ...(step.note ? { note: both(step.note) } : {}),
     })),
     script: both(circuit.script),
-    scriptDoes: both(circuit.scriptDoes),
+    test: both(circuit.test),
   } as PicoCircuit;
 };
 
@@ -197,10 +197,10 @@ describe("ratsnest generate (ADR 0023)", () => {
   });
 
   it("checks the circuit first, and draws nothing when it fails", () => {
-    const folder = project({ "broken.ts": { ...LIGHTS, format: 2 } });
+    const folder = project({ "broken.ts": { ...LIGHTS, format: 3 } });
     const result = run(folder, "generate", "circuits/broken.ts");
     expect(result.status).toBe(1);
-    expect(result.err).toContain("format 2, newer than this ratsnest reads (1)");
+    expect(result.err).toContain("format 3, newer than this ratsnest reads (2)");
     expect(existsSync(join(folder, "pages"))).toBe(false);
   });
 

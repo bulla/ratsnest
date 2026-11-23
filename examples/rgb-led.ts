@@ -2,7 +2,7 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "RGB LED", fr: "LED RVB" },
   description: {
     en: "Four buttons in a cross, and an RGB LED that can be lit in any colour. It is an addressable LED, with a controller of its own: it takes its colour as data on GP28 and its power from VBUS, and needs no resistor. It goes on a second breadboard above the first.",
@@ -255,7 +255,7 @@ while True:
     led_rvb.write()
     sleep(0.02)`,
   },
-  scriptDoes: {
+  test: {
     en: "Hold a button down and the LED lights in its cap's colour: BTN1 red, BTN2 green, BTN3 blue and BTN4 yellow. Let go and it goes out. Press Stop in Thonny to end the script.",
     fr: "Maintenez un bouton enfoncé et la LED s’allume de la couleur de son capuchon : BTN1 en rouge, BTN2 en vert, BTN3 en bleu et BTN4 en jaune. Relâchez-le et elle s’éteint. Appuyez sur Arrêter dans Thonny pour terminer le script.",
   },

@@ -53,7 +53,9 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
 - **One circuit, one file**, in `circuits/<name>.ts` (`examples/<name>.ts` in ratsnest). It holds
   what the circuit is (its name, a sentence saying what it does, its credit, and what is on each
   pin, or the supply it has in the Pico's place), where its parts go (the steps, each placing parts
-  in holes such as `a21` or `top-19`), and its MicroPython test script, or, with a supply, its `test`.
+  in holes such as `a21` or `top-19`), and its `test`: what the reader does in the last step, and
+  what a working circuit then does. A circuit on a Pico also has its MicroPython `script`, and its
+  `test` says what the script does (ADR 0036).
 - **The file only declares.** `import type` lines and one `export default { … } satisfies Circuit`,
   the type imported from `ratsnest`. Every value is a string, a number, `true` or `false`, or an
   array or object of those, and a template string has no `${}`. No function, call, variable, spread,
@@ -88,8 +90,8 @@ A circuit with a supply:
   `satisfies Circuit`;
 - **has plain lights and buttons, and they name no `pin`**: no buzzer, RGB LED or ring, which need a
   Pico to drive them;
-- **has a `test` in place of `script` and `scriptDoes`**: what to do once the supply is connected,
-  and what a working circuit then does;
+- **has no `script`**, and its `test`, which every circuit has, says what to do once the supply is
+  connected, and what a working circuit then does;
 - **names no hole for the supply**: the engine puts its red lead in column 1 of the + rail and its
   black lead in column 1 of the − rail, so leave those two holes free;
 - **wires every light from + through one resistor of 220 Ω to 1 kΩ to −**, each button on a light's
@@ -135,8 +137,8 @@ For a circuit with a supply, whose drawing has no Pico on it (ADR 0032):
 ## Its languages (ADR 0010, ADR 0011)
 
 - **Every text a reader sees is an object keyed by language**: its name, its sentence, its credit if
-  it has one, its parts' names, each step's title and note, and its test script. `en`, `fr` and `ru` are the engine's
-  languages, and a circuit needs one at least.
+  it has one, its parts' names, each step's title and note, its `test`, and its `script` on a Pico.
+  `en`, `fr` and `ru` are the engine's languages, and a circuit needs one at least.
 - **A circuit's languages are the languages of its name**, and every other text has exactly those.
   Adding a language to a circuit means writing every one of its texts in it.
 - **Write each language in its own script.** Russian is Cyrillic throughout, with a Latin word only
@@ -220,5 +222,6 @@ Artifact holds one set of four inputs.
 `ratsnest.json` on, migrates every circuit file to the current format, replaces this skill and the
 type in `.ratsnest/`, and runs the checks. Read what it says it could not decide, and ask the person
 about each one; never guess a migration's answer. Then run the checks again, and offer to republish
-the project's Artifacts. A circuit written before circuits carried their credit (ADR 0035) has none,
-and its pages have lost the footer the engine used to write: offer to add ratsnest's credit to it.
+the project's Artifacts. Moving from format 1 to 2 (ADR 0036) renames a Pico circuit's `scriptDoes`
+to `test`, and gives a circuit with no credit ratsnest's, so that its pages keep their footer: say
+so, and that the person may reword the credit or take it out.

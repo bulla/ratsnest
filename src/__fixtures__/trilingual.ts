@@ -53,7 +53,7 @@ export const TRILINGUAL: PicoCircuit = {
     parts: step.parts,
   })),
   script: { en: english.script.en, fr: english.script.en, ru: english.script.en },
-  scriptDoes: {
+  test: {
     en: "The script tries every part in turn.",
     fr: "Le script essaie chaque composant à son tour.",
     ru: "Скрипт по очереди проверяет каждый компонент.",

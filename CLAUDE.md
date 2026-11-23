@@ -74,8 +74,9 @@ test on files of the format before; a change that breaks the format ships its mi
 **One Pico 2 W, one half-size breadboard** (ADR 0002). Another board or breadboard is a record of its
 own, written when a circuit needs it. **A circuit may have a supply on one pair of rails in the Pico's
 place** (ADR 0032): `supply: { volts, rails }`, at 3, 3.7, 4.5 or 5 V, placed by the engine, with
-plain lights and buttons that name no pin and a `test` in place of the script. Its wiring is checked
-against its + and − rails (ADR 0033), and `Circuit` is one type with two shapes (ADR 0034).
+plain lights and buttons that name no pin and no script. Its wiring is checked
+against its + and − rails (ADR 0033), and `Circuit` is one type with two shapes (ADR 0034), which
+extend one base: every circuit's name, description, credit, steps and `test` (ADR 0036).
 
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the
@@ -200,8 +201,9 @@ there.
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported, and `battery-button.ts`, the first on a
-│                        supply (ADR 0032): ratsnest's own, checked like anyone's, and · the old
-│                        files its migrations are tested on (ADR 0014, ADR 0015)
+│                        supply (ADR 0032): ratsnest's own, checked like anyone's, and in
+│                        `format-1/` the files the migration to format 2 is tested on, left out of
+│                        the type check (ADR 0014, ADR 0015, ADR 0036)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done

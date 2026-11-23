@@ -8,8 +8,8 @@ import { readCircuit } from "./read";
  * with its comments. A migration that cannot decide something leaves the file as it was and names
  * what a person has to choose.
  *
- * Format 1 is the first, so there is none yet: the first change that breaks the format ships the first,
- * with a test that runs it on files of format 1, ratsnest's examples among them, kept as they were.
+ * Each is tested on files of the format it reads, kept as they were: ratsnest's examples in format 1
+ * are in `examples/format-1/`.
  */
 
 type Data = Record<string, unknown>;
@@ -27,8 +27,62 @@ export interface Migration {
   readonly migrate: (data: Data) => Migrated;
 }
 
+/**
+ * ratsnest's credit as format 2 was made with it (ADR 0035, ADR 0036), for a circuit on a Pico and for
+ * one with a supply, in each language ratsnest writes: what the migration from format 1 gives a
+ * circuit that has none. It is fixed with the migration, as every migration is; the `circuit` skill's,
+ * for new circuits, may change after it.
+ */
+export const FORMAT_2_CREDIT: Readonly<
+  Record<"pico" | "supply", Readonly<Record<string, string>>>
+> = {
+  pico: {
+    en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Le Pico 2 W est dessiné d’après sa fiche technique, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Ce dessin est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
+    ru: "Pico 2 W нарисован по его спецификации, на основе распиновки Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Этот рисунок распространяется по той же лицензии. Шрифт Nunito, по лицензии SIL Open Font License 1.1.",
+  },
+  supply: {
+    en: "This drawing comes from the one ratsnest makes of the Pico 2 W, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), and is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Ce dessin vient de celui que ratsnest fait du Pico 2 W, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), et il est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
+    ru: "Этот рисунок основан на рисунке Pico 2 W, который делает ratsnest, на основе распиновки Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), и распространяется по той же лицензии. Шрифт Nunito, по лицензии SIL Open Font License 1.1.",
+  },
+};
+
+/**
+ * Format 1 to 2 (ADR 0036): a Pico circuit's `scriptDoes` is its `test`, as a supply circuit's is, and
+ * a circuit with no `credit` is given ratsnest's for its kind, in each of its languages, after its
+ * description, so that its pages keep the footer the engine used to write.
+ */
+const oneTest: Migration = {
+  from: 1,
+  says: "a Pico circuit's `scriptDoes` is its `test` now, and a circuit with no `credit` has ratsnest's, which you may reword or take out",
+  migrate: (data) => {
+    const defaults = FORMAT_2_CREDIT[Object.hasOwn(data, "supply") ? "supply" : "pico"];
+    const languages = data.name && typeof data.name === "object" ? Object.keys(data.name) : [];
+    const credited = Object.hasOwn(data, "credit");
+    const lacking = credited ? [] : languages.filter((language) => !(language in defaults));
+    if (lacking.length > 0) {
+      return { undecided: lacking.map((language) => `its \`credit\` in \`${language}\``) };
+    }
+    const credit = Object.fromEntries(languages.map((language) => [language, defaults[language]]));
+    const entries = Object.entries(data).flatMap(([key, value]): [string, unknown][] => {
+      if (key === "scriptDoes") return [["test", value]];
+      if (key === "description" && !credited)
+        return [
+          [key, value],
+          ["credit", credit],
+        ];
+      return [[key, value]];
+    });
+    return {
+      data: Object.fromEntries(entries),
+      moved: new Map([["scriptDoes", "test"]]),
+    };
+  },
+};
+
 /** Every migration ratsnest ships, in order. */
-export const MIGRATIONS: readonly Migration[] = [];
+export const MIGRATIONS: readonly Migration[] = [oneTest];
 
 /** What became of a file. */
 export type Outcome =

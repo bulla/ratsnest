@@ -15,6 +15,7 @@ import { executableOf, TARGETS } from "../scripts/build";
 import { FIXTURES } from "./__fixtures__/circuits";
 import { fileOf, sourceOf } from "./__fixtures__/files";
 import { main } from "./cli";
+import { FORMAT } from "./fields";
 import { CIRCUIT_SKILL, FORMAT_SOURCE } from "./init";
 import type { Migration } from "./migrate";
 import {
@@ -73,19 +74,20 @@ function listening() {
   };
 }
 
-/** A format 0 made for the test, whose `scriptSays` format 1 calls `scriptDoes`. */
-const { scriptDoes, ...rest } = LIGHTS;
-const FORMAT_ZERO = { ...rest, format: 0, scriptSays: scriptDoes };
+/** The format before this one, as the test makes it: what it calls `test` was `testSays`. */
+const { test, ...rest } = LIGHTS;
+const BEFORE = FORMAT - 1;
+const FORMAT_BEFORE = { ...rest, format: BEFORE, testSays: test };
 const renaming: Migration = {
-  from: 0,
-  says: "`scriptSays` is now `scriptDoes`",
-  migrate: ({ scriptSays, ...others }) => ({
-    data: { ...others, scriptDoes: scriptSays },
-    moved: new Map([["scriptSays", "scriptDoes"]]),
+  from: BEFORE,
+  says: "`testSays` is now `test`",
+  migrate: ({ testSays, ...others }) => ({
+    data: { ...others, test: testSays },
+    moved: new Map([["testSays", "test"]]),
   }),
 };
 const undecided: Migration = {
-  from: 0,
+  from: BEFORE,
   says: "never",
   migrate: () => ({ undecided: ["which light is the first"] }),
 };
@@ -114,20 +116,20 @@ describe("a project moved on (ADR 0015)", () => {
   });
 
   it("migrates an older circuit, says how, and checks it", () => {
-    const folder = olderProject({ "lights.ts": FORMAT_ZERO });
+    const folder = olderProject({ "lights.ts": FORMAT_BEFORE });
     const said = listening();
     expect(updateProject(folder, said.io, [renaming])).toBe(0);
     expect(said.out[0]).toBe(
-      "circuits/lights.ts: moved to format 1: `scriptSays` is now `scriptDoes`",
+      `circuits/lights.ts: moved to format ${FORMAT}: \`testSays\` is now \`test\``,
     );
     const now = readFileSync(join(folder, "circuits", "lights.ts"), "utf8");
-    expect(now).toContain("format: 1,");
-    expect(now).toContain("scriptDoes:");
-    expect(now).not.toContain("scriptSays");
+    expect(now).toContain(`format: ${FORMAT},`);
+    expect(now).toContain("test:");
+    expect(now).not.toContain("testSays");
   });
 
   it("leaves a circuit a person has to decide on as it was, and says what to decide", () => {
-    const folder = olderProject({ "lights.ts": FORMAT_ZERO, "more.ts": LIGHTS });
+    const folder = olderProject({ "lights.ts": FORMAT_BEFORE, "more.ts": LIGHTS });
     const before = readFileSync(join(folder, "circuits", "lights.ts"), "utf8");
     const said = listening();
     expect(updateProject(folder, said.io, [undecided])).toBe(1);
@@ -139,11 +141,11 @@ describe("a project moved on (ADR 0015)", () => {
   });
 
   it("leaves a circuit in a newer format as it was, and says why", () => {
-    const folder = olderProject({ "lights.ts": { ...LIGHTS, format: 2 } });
+    const folder = olderProject({ "lights.ts": { ...LIGHTS, format: FORMAT + 1 } });
     const said = listening();
     expect(updateProject(folder, said.io)).toBe(1);
     expect(said.err[0]).toBe(
-      "circuits/lights.ts: left as it was, since it is in format 2, newer than 1",
+      `circuits/lights.ts: left as it was, since it is in format ${FORMAT + 1}, newer than ${FORMAT}`,
     );
     expect(said.err.at(-1)).toBe("1 circuit of 1 needs a person.");
   });

@@ -41,6 +41,6 @@ export function shownIn(
   }
   return {
     circuit: { ...shown, buzzers: (circuit.buzzers ?? []).map(named) },
-    layout: { steps, script: say(circuit.script), test: say(circuit.scriptDoes) },
+    layout: { steps, script: say(circuit.script), test: say(circuit.test) },
   };
 }

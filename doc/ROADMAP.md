@@ -77,8 +77,9 @@ M6 waits on the owner.
 
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,
-  and ratsnest's Russian credit (ADR 0035), which the `circuit` skill writes into new circuits, in
-  `.claude/skills/circuit/SKILL.md`. A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
+  and ratsnest's Russian credits (ADR 0035), which the `circuit` skill writes into new circuits, in
+  `.claude/skills/circuit/SKILL.md`, and the migration to format 2 into old ones, in
+  `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
 
 ## Suggestions
