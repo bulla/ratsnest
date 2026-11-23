@@ -10,6 +10,16 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
+### Added
+
+- `rnest generate --format png` and `--format webp` write a circuit's drawing as a picture, for
+  places that take no SVG, into `pages/<circuit>.<orientation>.<theme>.<language>.png` or `.webp`:
+  the SVG of `--format svg`, its credit and background with it, drawn at 12 px to the millimetre,
+  twice the SVG's size, and a WebP lossless. A browser draws it: macOS's own, and on Linux and
+  Windows a Chrome, Chromium, Edge or Brave, which must be installed, or named by `BUN_CHROME_PATH`.
+  With none, or one that does not finish a step in 15 seconds, `generate` says so and makes nothing. The `circuit` skill makes one when asked, and
+  never publishes it.
+
 ## [0.2.0] - 2026-11-23
 
 ### Added

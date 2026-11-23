@@ -33,6 +33,17 @@ function run(cwd: string, ...args: string[]) {
   return { status, out: out.join("\n"), err: err.join("\n") };
 }
 
+/** The same, for a command that finishes later, as `update` and a picture's `generate` do. */
+async function ran(cwd: string, ...args: string[]) {
+  const out: string[] = [];
+  const err: string[] = [];
+  const status = await main(args, cwd, {
+    out: (line) => out.push(line),
+    err: (line) => err.push(line),
+  });
+  return { status, out: out.join("\n"), err: err.join("\n") };
+}
+
 const LIGHTS = fileOf(FIXTURES["two-lights"]);
 
 /** The test circuit in French as well as English, every text marked so it can be told apart. */
@@ -192,9 +203,46 @@ describe("ratsnest generate (ADR 0023)", () => {
     expect(run(folder, "generate", "circuits/lights.ts", "--format", "pdf")).toEqual({
       status: 2,
       out: "",
-      err: "ratsnest: --format is `html`, `svg`, not `pdf`",
+      err: "ratsnest: --format is `html`, `svg`, `png`, `webp`, not `pdf`",
     });
   });
+
+  it("draws the drawing as a PNG or a WebP, named as the page is (ADR 0042)", async () => {
+    const folder = project({ "lights.ts": LIGHTS });
+    for (const format of ["png", "webp"]) {
+      const result = await ran(folder, "generate", "circuits/lights.ts", "--format", format);
+      expect(result).toEqual({ status: 0, out: `pages/lights.0.dark.en.${format}`, err: "" });
+      const picture = readFileSync(join(folder, "pages", `lights.0.dark.en.${format}`));
+      expect(picture.subarray(0, 4).toString("latin1")).toBe(format === "png" ? "\x89PNG" : "RIFF");
+    }
+  }, 30_000);
+
+  // macOS draws with its own WebKit, and never looks for another browser.
+  it.skipIf(process.platform === "darwin")(
+    "says what to install when no browser draws a picture, and makes nothing",
+    () => {
+      const folder = project({ "lights.ts": LIGHTS });
+      const done = Bun.spawnSync(
+        [
+          process.execPath,
+          join(import.meta.dir, "cli.ts"),
+          "generate",
+          "circuits/lights.ts",
+        ].concat(["--format", "png"]),
+        { cwd: folder, env: { ...process.env, BUN_CHROME_PATH: join(folder, "no-browser") } },
+      );
+      expect(done.exitCode).toBe(1);
+      expect(done.stdout.toString()).toBe("");
+      expect(done.stderr.toString()).toStartWith(
+        "ratsnest: a PNG or a WebP is drawn by a browser, and none could be started (",
+      );
+      expect(done.stderr.toString()).toContain(
+        "install Chrome, Chromium, Edge or Brave, or name one with BUN_CHROME_PATH",
+      );
+      expect(existsSync(join(folder, "pages"))).toBe(false);
+    },
+    30_000,
+  );
 
   it("checks the circuit first, and draws nothing when it fails", () => {
     const folder = project({ "broken.ts": { ...LIGHTS, format: 3 } });
