@@ -106,8 +106,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
      resistor, its base on + through a large resistor, and a capacitor from each collector to the
      other's base, + towards the collector. One capacitor is the one under test: with a good one the
      two lights flash in turn, a larger one more slowly, and an open or a shorted one stops them.
-     Nothing new to draw; its rule is the multivibrator. Its two capacitors have different values,
-     so that its words can name the one to swap (ADR 0041).
+     Nothing new to draw; its rule is the multivibrator. The capacitor to test goes in a step of its
+     own, so that its words can point at it with neither a value nor a name (ADR 0011, ADR 0041).
   5. **The diode: two buttons, three lights.** On a supply, each button lights a light of its own
      and a shared one, and two diodes keep one button from lighting the other's light. Drawn lying,
      as a resistor is, with its band at the cathode and its model on a tag (ADR 0040); its rule is a

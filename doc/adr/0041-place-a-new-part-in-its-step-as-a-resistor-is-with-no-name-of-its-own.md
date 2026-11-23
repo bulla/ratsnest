@@ -46,9 +46,10 @@ The exact names of each kind and its fields are settled when that part is taken 
 
 ## Consequences
 
-- **A circuit's own words point at a part by what is printed on it** or by its value: the capacitor
-  tester says "the 10 µF capacitor", so its two capacitors have different values. The reference
-  designators of a schematic, `T1`, `C1`, `R1`, do not appear on the page.
+- **A circuit's own words point at a part by the step that places it**, since they write no value
+  (ADR 0011) and the part has no name: the capacitor tester places the capacitor to test in a step of
+  its own, and its `test` says to swap that one. The reference designators of a schematic, `T1`,
+  `C1`, `R1`, do not appear on the page.
 - **Two parts alike in one step cannot be told apart in its words** except by the holes the engine's
   sentences give them.
 - **A new part has no callout**, so a reader finds it on the drawing by its print and by the step
