@@ -6,7 +6,7 @@ import { version } from "../package.json";
 import { FIXTURES } from "./__fixtures__/circuits";
 import { fileOf, sourceOf } from "./__fixtures__/files";
 import { main } from "./cli";
-import type { Circuit } from "./format";
+import type { PicoCircuit } from "./format";
 
 const made: string[] = [];
 
@@ -36,7 +36,7 @@ function run(cwd: string, ...args: string[]) {
 const LIGHTS = fileOf(FIXTURES["two-lights"]);
 
 /** The test circuit in French as well as English, every text marked so it can be told apart. */
-const inBoth = (circuit: Circuit): Circuit => {
+const inBoth = (circuit: PicoCircuit): PicoCircuit => {
   const both = (text: { en?: string }) => ({ ...text, fr: `${text.en} [fr]` });
   return {
     ...circuit,
@@ -50,7 +50,7 @@ const inBoth = (circuit: Circuit): Circuit => {
     })),
     script: both(circuit.script),
     scriptDoes: both(circuit.scriptDoes),
-  } as Circuit;
+  } as PicoCircuit;
 };
 
 describe("ratsnest", () => {

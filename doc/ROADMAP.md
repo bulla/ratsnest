@@ -37,16 +37,16 @@ M6 waits on the owner.
 
 - [x] The design, by interview: a supply on one pair of rails in the Pico's place (ADR 0032), the
       wiring check it is held to (ADR 0033), and `Circuit` as one type with two shapes (ADR 0034)
-- [ ] The format: `supply`, lights and buttons without `pin`, and `test`, in `Circuit`'s second
+- [x] The format: `supply`, lights and buttons without `pin`, and `test`, in `Circuit`'s second
       shape, read and checked field by field, and a Pico's part refused in a supply circuit
-- [ ] The wiring check's rules for a supply circuit (ADR 0033), the short sought with every button
+- [x] The wiring check's rules for a supply circuit (ADR 0033), the short sought with every button
       held, and the lights that need about 3 V refused at 3 V
-- [ ] The cell drawn beside the board's near end, its leads in column 1 of its rails, outlined for
+- [x] The cell drawn beside the board's near end, its leads in column 1 of its rails, outlined for
       both themes, and its colours in `tokens.css`
-- [ ] The page's words in English, French and Russian: the last step, the four supplies in the parts
+- [x] The page's words in English, French and Russian: the last step, the four supplies in the parts
       list, the rails' legend, the notes, the drawing's introduction and the footer
-- [ ] The `circuit` skill asks: a Pico or a supply, and then which voltage and which rails
-- [ ] `examples/battery-button.ts`, in English and French, and a supply circuit among the tests'
+- [x] The `circuit` skill asks: a Pico or a supply, and then which voltage and which rails
+- [x] `examples/battery-button.ts`, in English and French, and a supply circuit among the tests'
       fixtures, with a variant for every rule it is refused by
 - [ ] 0.2.0, made by `bun run release` and brought to `develop` by pull request (ADR 0030)
 

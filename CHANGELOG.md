@@ -10,6 +10,24 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
+### Added
+
+- A circuit can do without a Pico, powered by a supply on the top or the bottom rails:
+  `supply: { volts, rails }`, at 3 or 4.5 V from AA batteries, 3.7 V from a protected Li-Po cell or
+  5 V from a USB charger. It holds plain LEDs and buttons, which name no pin, and a `test` in place
+  of the script. Its page draws the supply as a small cell beside the board, its leads in column 1,
+  ends by connecting it, lists what gives its voltage, and has no Thonny section.
+- `rnest check` holds a circuit with a supply to its + and − rails: every LED through one resistor
+  of 220 Ω to 1 kΩ, every button on an LED's way, no short with every button held, and no LED that
+  needs about 3 V on the 3 V supply.
+- The `circuit` skill asks whether a new circuit is on a Pico or powered by a supply, and which
+  voltage and rails.
+
+### Changed
+
+- The `Circuit` type is now `PicoCircuit | SupplyCircuit`. Every circuit file stays valid as it is,
+  still ending `satisfies Circuit`, and `rnest update` puts the new type in `.ratsnest/`.
+
 ### Removed
 
 - The parts list no longer suggests where to buy an RGB LED or a ring of them, in any language.

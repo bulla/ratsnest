@@ -51,7 +51,9 @@ describe("the migrations' runner (ADR 0015)", () => {
       expect(migrateSource(source, name)).toEqual({ kind: "current" });
   });
 
-  it.each(examples)(
+  // The migration made for the test renames `scriptDoes`, which a circuit with a supply has none of:
+  // it has `test` in its place (ADR 0032).
+  it.each(examples.filter(({ source }) => source.includes("  scriptDoes: {")))(
     "takes $name to the next format, its comments following what moved",
     ({ name, source }) => {
       const commented = source.replace(

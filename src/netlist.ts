@@ -1,4 +1,4 @@
-import type { Layout } from "./circuit";
+import type { Layout, Supply } from "./circuit";
 import { isRing, type ShownCircuit } from "./circuit";
 import {
   buttonHole,
@@ -13,6 +13,7 @@ import {
   type Row,
   rowsOf,
   stripOf,
+  supplyLeadsOf,
 } from "./drawing/breadboard";
 import { formatOhms } from "./drawing/breadboard-svg";
 import { HEADER_PINS, type HeaderPin, headerPinOfGpio } from "./drawing/geometry";
@@ -67,11 +68,19 @@ class Nets {
 
 const pinNode = (pin: HeaderPin) => `pin ${pin.number}`;
 
-function wireUp(parts: readonly Part[], pressed: boolean): Nets {
+type ButtonPart = Extract<Part, { kind: "button" }>;
+
+/**
+ * The nets a layout makes, with the buttons `pressed` says are held. On a Pico, its pins join the
+ * strips they are in and its grounds each other; a circuit with a supply has no Pico (ADR 0032).
+ */
+function wireUp(parts: readonly Part[], pressed: (part: ButtonPart) => boolean, pico = true): Nets {
   const nets = new Nets();
-  for (const pin of HEADER_PINS) {
-    nets.join(pinNode(pin), stripOf(holeOfPin(pin.number)));
-    if (pin.kind === "ground") nets.join(pinNode(pin), "ground");
+  if (pico) {
+    for (const pin of HEADER_PINS) {
+      nets.join(pinNode(pin), stripOf(holeOfPin(pin.number)));
+      if (pin.kind === "ground") nets.join(pinNode(pin), "ground");
+    }
   }
   for (const part of parts) {
     if (part.kind === "wire") nets.join(stripOf(part.from), stripOf(part.to));
@@ -81,7 +90,7 @@ function wireUp(parts: readonly Part[], pressed: boolean): Nets {
       const hole = (row: Row, column: number) => stripOf(buttonHole(part, row, column));
       nets.join(hole(first, left), hole(second, left));
       nets.join(hole(first, right), hole(second, right));
-      if (pressed) nets.join(hole(first, left), hole(first, right));
+      if (pressed(part)) nets.join(hole(first, left), hole(first, right));
     }
   }
   return nets;
@@ -133,7 +142,7 @@ function describe(part: Part, circuit: ShownCircuit): string {
 const ROW_ORDER = "abcdefghij";
 
 /** A button's two columns, as the holes of its first row: one per side of the switch. */
-const sidesOf = (part: Extract<Part, { kind: "button" }>): Hole[] =>
+const sidesOf = (part: ButtonPart): Hole[] =>
   part.columns.map((column) => buttonHole(part, rowsOf(part)[0], column));
 
 /** Holes a part's shape fixes: an LED's legs are one hole apart, a buzzer's three. */
@@ -186,12 +195,51 @@ function shapeProblems(part: Part, name: string): string[] {
   }
 }
 
+/** Every part names something the circuit has, and everything the circuit has is placed once. */
+function placedProblems(circuit: ShownCircuit, parts: readonly Part[]): string[] {
+  const problems: string[] = [];
+  const kinds = [
+    ["led", circuit.leds.filter((l) => l.colour !== "rgb").map((l) => l.id), "light"],
+    [
+      "rgbLed",
+      circuit.leds.filter((l) => l.colour === "rgb" && !isRing(l)).map((l) => l.id),
+      "RGB LED",
+    ],
+    ["ring", circuit.leds.filter(isRing).map((l) => l.id), "ring"],
+    ["button", circuit.buttons.map((b) => b.id), "button"],
+    ["buzzer", circuit.buzzers.map((b) => b.id), "buzzer"],
+  ] as const;
+  for (const [kind, ids, noun] of kinds) {
+    const placed = parts
+      .filter((part) => part.kind === kind)
+      .map(componentOf)
+      .filter((id): id is string => id !== undefined);
+    for (const id of ids) {
+      const times = placed.filter((p) => p === id).length;
+      if (times !== 1) problems.push(`the ${noun} "${id}" is placed ${times} times, not once`);
+    }
+    for (const id of placed) {
+      if (!(ids as readonly string[]).includes(id)) {
+        problems.push(`a ${noun} "${id}" is placed that ${circuit.name} does not have`);
+      }
+    }
+  }
+  return problems;
+}
+
 export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] {
   const parts = layout.steps.flatMap((step) => step.parts);
   const problems: string[] = [];
 
-  // Every leg in a hole that exists, not under the Pico, and not in a hole already taken.
+  // Every leg in a hole that exists, not under the Pico, and not in a hole already taken: on a
+  // circuit with a supply, the supply's two leads take theirs first (ADR 0032).
+  const supply = circuit.supply;
   const taken = new Map<Hole, string>();
+  if (supply) {
+    const leads = supplyLeadsOf(supply.rails);
+    taken.set(leads.plus, "the supply's red lead");
+    taken.set(leads.minus, "the supply's black lead");
+  }
   for (const part of parts) {
     const name = describe(part, circuit);
     const legs = legsOf(part);
@@ -201,7 +249,8 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
       continue;
     }
     for (const hole of legs) {
-      if (isUnderPico(hole)) problems.push(`${name} has a leg in ${hole}, under the Pico`);
+      if (!supply && isUnderPico(hole))
+        problems.push(`${name} has a leg in ${hole}, under the Pico`);
       const already = taken.get(hole);
       if (already) problems.push(`${name} and ${already} both have a leg in ${hole}`);
       taken.set(hole, name);
@@ -217,8 +266,10 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
   if (problems.length > 0) return problems;
+  problems.push(...placedProblems(circuit, parts));
+  if (supply) return [...problems, ...supplyWiringProblems(circuit, parts, supply)];
 
-  const nets = wireUp(parts, false);
+  const nets = wireUp(parts, () => false);
   const net = (hole: Hole) => nets.find(stripOf(hole));
   const ground = nets.find("ground");
   const powerPin = HEADER_PINS.find((pin) => pin.label === POWER_LABEL);
@@ -253,38 +304,10 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   const inRange = (r: { ohms: number }, [low, high]: readonly [number, number]) =>
     r.ohms >= low && r.ohms <= high;
 
-  // Every part names something the circuit has, and everything the circuit has is placed once.
-  const kinds = [
-    ["led", circuit.leds.filter((l) => l.colour !== "rgb").map((l) => l.id), "light"],
-    [
-      "rgbLed",
-      circuit.leds.filter((l) => l.colour === "rgb" && !isRing(l)).map((l) => l.id),
-      "RGB LED",
-    ],
-    ["ring", circuit.leds.filter(isRing).map((l) => l.id), "ring"],
-    ["button", circuit.buttons.map((b) => b.id), "button"],
-    ["buzzer", circuit.buzzers.map((b) => b.id), "buzzer"],
-  ] as const;
-  for (const [kind, ids, noun] of kinds) {
-    const placed = parts
-      .filter((part) => part.kind === kind)
-      .map(componentOf)
-      .filter((id): id is string => id !== undefined);
-    for (const id of ids) {
-      const times = placed.filter((p) => p === id).length;
-      if (times !== 1) problems.push(`the ${noun} "${id}" is placed ${times} times, not once`);
-    }
-    for (const id of placed) {
-      if (!(ids as readonly string[]).includes(id)) {
-        problems.push(`a ${noun} "${id}" is placed that ${circuit.name} does not have`);
-      }
-    }
-  }
-
   // A light: pin, one resistor, the LED the right way round, ground.
   for (const led of circuit.leds) {
     const part = parts.find((p) => p.kind === "led" && p.led === led.id);
-    if (part?.kind !== "led" || led.pin.kind !== "gpio") continue;
+    if (part?.kind !== "led" || led.pin?.kind !== "gpio") continue;
     const name = `the ${led.name}`;
     const pin = gpioNet(led.pin.gpio, name);
     if (!pin) continue;
@@ -326,7 +349,7 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   const fiveVolt = fiveVoltPin ? nets.find(pinNode(fiveVoltPin)) : "";
   for (const led of circuit.leds) {
     const part = parts.find((p) => (p.kind === "rgbLed" || p.kind === "ring") && p.led === led.id);
-    if ((part?.kind !== "rgbLed" && part?.kind !== "ring") || led.pin.kind !== "rgb") continue;
+    if ((part?.kind !== "rgbLed" && part?.kind !== "ring") || led.pin?.kind !== "rgb") continue;
     const name = `the ${led.name}`;
     const pin = gpioNet(led.pin.gpio, name);
     if (!pin) continue;
@@ -345,7 +368,7 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   // A button: between its pin and 3V3, open until pressed, and pulled down to ground.
   for (const button of circuit.buttons) {
     const part = parts.find((p) => p.kind === "button" && p.button === button.id);
-    if (part?.kind !== "button") continue;
+    if (part?.kind !== "button" || !button.pin) continue;
     const name = button.name;
     const pin = gpioNet(button.pin.gpio, name);
     if (!pin) continue;
@@ -392,7 +415,7 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   // Shorts: a pin joined to ground, pressed or not, and two pins joined to each other while
   // nothing is pressed — pressing a button is exactly a pin meeting 3V3.
   const shorts = (pressed: boolean): string[] => {
-    const state = wireUp(parts, pressed);
+    const state = wireUp(parts, () => pressed);
     const found: string[] = [];
     const seen = new Set<string>();
     for (const pin of HEADER_PINS) {
@@ -455,5 +478,160 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
+  return problems;
+}
+
+/**
+ * A circuit with a supply, held to its + and − rails rather than to a Pico's pins (ADR 0033): every
+ * light between + and − through one resistor, with buttons on its way; every button switching a
+ * light; no short, with every button held; wires in the colour of what they carry; and nothing with
+ * a leg that joins nothing. Its parts are already placed, each once.
+ */
+function supplyWiringProblems(
+  circuit: ShownCircuit,
+  parts: readonly Part[],
+  supply: Supply,
+): string[] {
+  const problems: string[] = [];
+  const leads = supplyLeadsOf(supply.rails);
+  const buttons = parts.filter((part): part is ButtonPart => part.kind === "button");
+  const resistors = parts.filter(
+    (part): part is Extract<Part, { kind: "resistor" }> => part.kind === "resistor",
+  );
+  const lights = parts.filter(
+    (part): part is Extract<Part, { kind: "led" }> => part.kind === "led",
+  );
+
+  /** The nets with every button held but those `released` names. */
+  const held = (released: ReadonlySet<Part> = new Set()) =>
+    wireUp(parts, (part) => !released.has(part), false);
+  const open = wireUp(parts, () => false, false);
+  const all = held();
+  const plusOf = (nets: Nets) => nets.find(stripOf(leads.plus));
+  const minusOf = (nets: Nets) => nets.find(stripOf(leads.minus));
+
+  // A short first: + joined to −, with nothing held, or with every button held, which joins the
+  // most any of them can.
+  if (plusOf(open) === minusOf(open)) {
+    return [...problems, "the supply's + and − are joined: a short across it"];
+  }
+  if (plusOf(all) === minusOf(all)) {
+    return [...problems, "the supply's + and − are joined while every button is held: a short"];
+  }
+
+  /** How many legs, and leads, each net of `nets` has, a button's sides left out. */
+  const legsIn = (nets: Nets) => {
+    const counts = new Map<string, number>();
+    const count = (node: string) => counts.set(node, (counts.get(node) ?? 0) + 1);
+    count(nets.find(stripOf(leads.plus)));
+    count(nets.find(stripOf(leads.minus)));
+    for (const part of parts) {
+      if (part.kind === "wire" || part.kind === "button") continue;
+      for (const hole of legsOf(part)) count(nets.find(stripOf(hole)));
+    }
+    return counts;
+  };
+
+  /** The resistors with one end in each of two nets. */
+  const between = (nets: Nets, a: string, b: string) =>
+    resistors.filter((r) => {
+      const ends = [nets.find(stripOf(r.from)), nets.find(stripOf(r.to))];
+      return a !== b && ends.includes(a) && ends.includes(b);
+    });
+
+  /** Whether a light has a way from + through a resistor to −, in the nets given. */
+  const lit = (light: Extract<Part, { kind: "led" }>, nets: Nets) => {
+    const [plus, minus] = [plusOf(nets), minusOf(nets)];
+    const anode = nets.find(stripOf(light.anode));
+    const cathode = nets.find(stripOf(light.cathode));
+    return (
+      (cathode === minus && between(nets, plus, anode).length > 0) ||
+      (anode === plus && between(nets, cathode, minus).length > 0)
+    );
+  };
+
+  // Every light, with every button held: the right way round, between + and −, through exactly one
+  // resistor of its own, of a value that lights it safely.
+  const accounted = new Set<Part>();
+  const legs = legsIn(all);
+  const [plus, minus] = [plusOf(all), minusOf(all)];
+  for (const light of lights) {
+    const name = describe(light, circuit);
+    const anode = all.find(stripOf(light.anode));
+    const cathode = all.find(stripOf(light.cathode));
+    if (anode === minus || cathode === plus) {
+      problems.push(`${name} is in backwards: its long leg must be towards +`);
+      continue;
+    }
+    if (anode === plus && cathode === minus) {
+      problems.push(`${name} has no resistor between + and −`);
+      continue;
+    }
+    const [middle, series] =
+      cathode === minus
+        ? [anode, between(all, plus, anode)]
+        : anode === plus
+          ? [cathode, between(all, cathode, minus)]
+          : [undefined, []];
+    if (!middle || series.length !== 1 || legs.get(middle) !== 2) {
+      problems.push(`${name} is not wired from + through one resistor to −`);
+      continue;
+    }
+    const resistor = series[0] as Extract<Part, { kind: "resistor" }>;
+    accounted.add(resistor);
+    if (resistor.ohms < LIGHT_OHMS_RANGE[0] || resistor.ohms > LIGHT_OHMS_RANGE[1]) {
+      problems.push(
+        `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+      );
+    }
+  }
+  for (const resistor of resistors) {
+    if (!accounted.has(resistor)) {
+      problems.push(`${describe(resistor, circuit)} is not a light's resistor`);
+    }
+  }
+
+  // Every button switches a light: let go of it alone, and a light lit while all are held goes out.
+  if (problems.length === 0) {
+    for (const button of buttons) {
+      const without = held(new Set([button]));
+      if (!lights.some((light) => lit(light, all) && !lit(light, without))) {
+        problems.push(
+          `${describe(button, circuit)} switches no light: it goes on a light's way, between + and the light or between the light and −`,
+        );
+      }
+    }
+  }
+
+  // Wires in the colour of what they carry, with nothing held: red on +, black on −, and yellow
+  // anything else, such as the line from a button to its light.
+  for (const part of parts) {
+    if (part.kind !== "wire") continue;
+    const node = open.find(stripOf(part.from));
+    const on = node === plusOf(open) ? "power" : node === minusOf(open) ? "ground" : "signal";
+    if (on !== part.role) {
+      const carries = { power: "+", ground: "−", signal: "neither + nor −" }[on];
+      problems.push(
+        `${describe(part, circuit)} is ${WIRE_COLOUR[part.role]}, but carries ${carries}: red is for +, black for −, yellow for anything else`,
+      );
+    }
+  }
+
+  // Nothing left with a leg in a net of its own, with nothing held.
+  const terminals = legsIn(open);
+  for (const part of buttons) {
+    for (const hole of sidesOf(part)) {
+      const node = open.find(stripOf(hole));
+      terminals.set(node, (terminals.get(node) ?? 0) + 1);
+    }
+  }
+  for (const part of parts) {
+    if (part.kind === "wire") continue;
+    for (const hole of part.kind === "button" ? sidesOf(part) : legsOf(part)) {
+      if ((terminals.get(open.find(stripOf(hole))) ?? 0) < 2) {
+        problems.push(`${describe(part, circuit)} has a leg in ${hole} that joins nothing`);
+      }
+    }
+  }
   return problems;
 }

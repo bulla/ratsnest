@@ -27,12 +27,15 @@ from the original in that it:
   not;
 - turns the Pico on its side and pushes it into a half-size breadboard, with the parts a circuit
   places at the holes and pins they are wired to;
+- draws, for a circuit with no Pico, a supply's cell in the Pico's place beside the breadboard
+  (ADR 0032);
 - reproduces no Raspberry Pi logo or other trademark: the RP2350's lid is left bare.
 
 **The adapted drawing in `src/drawing/` is therefore distributed under CC BY-SA 4.0**, as
 ShareAlike requires. That obligation covers the drawing, not the rest of this repository, so drawing
 code moved out of `src/drawing/` takes the obligation with it. Every page ratsnest makes carries the
-drawing, and says in its footer where the Pico comes from and that the drawing is CC BY-SA 4.0.
+drawing, with the Pico or with a supply in its place, and says in its footer where the drawing
+comes from and that it is CC BY-SA 4.0.
 
 The reasoning is in ADR 0018, and before it in scratchpi's ADR 0023, which first carried this
 attribution.
