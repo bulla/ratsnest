@@ -199,7 +199,7 @@ describe.each(SCOPES)("the %s scale", (scope) => {
     }
   });
 
-  it("prints a capacitor's value on its sleeve, and its minus signs on its stripe, legibly (ADR 0042)", () => {
+  it("prints a capacitor's value on its sleeve, and its minus signs on its stripe, legibly (ADR 0043)", () => {
     expect(
       contrastRatio(
         colour(ELECTROLYTIC_TOKENS.ink, scope),

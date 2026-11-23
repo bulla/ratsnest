@@ -214,12 +214,12 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
 
 M13 is done: the first new part, with the circuit that teaches it (ADR 0038). On a supply, a button
 charges an electrolytic capacitor across a light and its resistor, and once it is let go the light
-fades out. The wiring check holds the capacitor to that one use (ADR 0042), and the drawing stands it
+fades out. The wiring check holds the capacitor to that one use (ADR 0043), and the drawing stands it
 on its legs, a navy can with its value printed on it and a stripe down its − side.
 
 - [x] The design, by interview: new parts each with the circuit that needs it (ADR 0038), real
       models from a closed list (ADR 0039), print on the body (ADR 0040), and no name of their own
-      (ADR 0041); and this part's details, worked out alone at the owner's asking (ADR 0042)
+      (ADR 0041); and this part's details, worked out alone at the owner's asking (ADR 0043)
 - [x] The format: `{ kind: "electrolytic", microfarads, plus, minus }`, read and checked field by
       field, and allowed in a circuit with a supply
 - [x] The wiring check's rule: the right way round, its − leg on −, its + leg between a button and a
@@ -446,7 +446,7 @@ on its legs, a navy can with its value printed on it and a stripe down its − s
   ADR 0041 first had the flasher's words name a capacitor by its value, which ADR 0011 forbids; it
   points at the step that places it instead. The owner then asked for the work to go on alone, in
   pull requests stacked one on the next.
-- 2026-11-23: M13, the electrolytic capacitor, worked out alone (ADR 0042). The can was first drawn
+- 2026-11-23: M13, the electrolytic capacitor, worked out alone (ADR 0043). The can was first drawn
   tall, as real ones are, and stood over the button and over the hole its − leg's wire needed, so it
   became short, standing over three rows. Laying the example out showed why the drawing's every
   standing part rises over the rows above it: the − leg's wire comes from the row below, and the

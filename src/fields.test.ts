@@ -353,7 +353,7 @@ describe("ADR 0011's rules for a circuit's words", () => {
     );
   });
 
-  it("refuse a capacitor's value written out, as a resistor's is (rule 7, ADR 0042)", () => {
+  it("refuse a capacitor's value written out, as a resistor's is (rule 7, ADR 0043)", () => {
     expect(
       said(changed((data) => (data.description = { en: "A light, and a 470 µF capacitor." }))),
     ).toEqual([

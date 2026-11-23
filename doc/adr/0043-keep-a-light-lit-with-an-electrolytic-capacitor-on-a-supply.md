@@ -1,4 +1,4 @@
-# ADR 0042: Keep a light lit with an electrolytic capacitor, on a supply
+# ADR 0043: Keep a light lit with an electrolytic capacitor, on a supply
 
 **Status:** Accepted · 2026-11-23
 

@@ -103,7 +103,7 @@ export interface PageWords {
     ground: Place,
     dataOut: Place,
   ) => string;
-  /** An electrolytic capacitor (ADR 0042), its value written already: its + leg, then its − leg. */
+  /** An electrolytic capacitor (ADR 0043), its value written already: its + leg, then its − leg. */
   readonly electrolytic: (microfarads: string, plus: Place, minus: Place) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
@@ -131,7 +131,7 @@ export interface PageWords {
   /** A button, and the colour of the cap to fit on it (scratchpi's ADR 0174). */
   readonly listButton: (name: string, cap: ButtonColour) => string;
   readonly listBuzzer: (name: string) => string;
-  /** Electrolytic capacitors of one value, written already, and how many (ADR 0042). */
+  /** Electrolytic capacitors of one value, written already, and how many (ADR 0043). */
   readonly listElectrolytic: (microfarads: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
   readonly listLongWire: (colour: string, count: number) => string;

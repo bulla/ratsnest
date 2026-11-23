@@ -284,7 +284,7 @@ export type Part =
       readonly dataOut: Hole;
     }
   /**
-   * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0042): its value in
+   * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0043): its value in
    * microfarads, its + leg the longer, and its − leg under the stripe down its can.
    */
   | {

@@ -484,7 +484,7 @@ describe("a circuit with a supply (ADR 0033)", () => {
   });
 });
 
-describe("an electrolytic capacitor keeping a light lit (ADR 0042)", () => {
+describe("an electrolytic capacitor keeping a light lit (ADR 0043)", () => {
   const { circuit, layout } = FIXTURES["light-kept-lit-by-a-capacitor"];
   const problems = (edit: (parts: Part[]) => Part[]) =>
     wiringProblems(circuit, edited(layout, edit));
@@ -561,7 +561,7 @@ describe("an electrolytic capacitor keeping a light lit (ADR 0042)", () => {
       ]),
     );
     expect(found).toContain(
-      "the 470 µF capacitor with its + leg in g28 has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0042)",
+      "the 470 µF capacitor with its + leg in g28 has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0043)",
     );
   });
 });

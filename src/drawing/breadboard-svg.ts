@@ -127,7 +127,7 @@ export const SUPPLY_TOKENS = {
 } as const;
 
 /**
- * The colours of an electrolytic capacitor (ADR 0042): its can's sleeve, the pale stripe down its −
+ * The colours of an electrolytic capacitor (ADR 0043): its can's sleeve, the pale stripe down its −
  * side, the value printed on the sleeve, and the minus signs printed on the stripe.
  */
 export const ELECTROLYTIC_TOKENS = {
@@ -1236,7 +1236,7 @@ function drawBuzzer(plus: Hole, minus: Hole): string {
 
 /**
  * An electrolytic capacitor, standing on its two legs and seen from the side, as a light is (ADR 0040,
- * ADR 0042): a can in its sleeve, a pale stripe down the side its − leg is on, with minus signs on it,
+ * ADR 0043): a can in its sleeve, a pale stripe down the side its − leg is on, with minus signs on it,
  * an aluminium top, and its value printed on the sleeve, the number over its unit, upright at every
  * quarter turn. Its + leg is kinked, as a light's long leg is. It is drawn the same size whatever its
  * value, and short, so that it stands over no more than the three rows above its legs.
