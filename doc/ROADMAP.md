@@ -23,8 +23,8 @@ publishes their pages as Artifacts (M8). M6 waits on the owner, below. Circuits 
 powered by a supply on the rails (ADR 0032 to ADR 0034), are M12, released in 0.2.0 with format 2:
 every circuit's `setup`, one `test` and a credit of its own (ADR 0035 to ADR 0037). New parts,
 capacitors, transistors and diodes, each with the circuit that teaches it, are planned in the
-Backlog (ADR 0038 to ADR 0041), the first, the electrolytic capacitor, is M13 (ADR 0042), the NPN transistor M14 (ADR 0043), and
-the PNP transistor M15 (ADR 0044).
+Backlog (ADR 0038 to ADR 0041), the first, the electrolytic capacitor, is M13 (ADR 0043), the NPN transistor M14 (ADR 0044), and
+the PNP transistor M15 (ADR 0045).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -65,7 +65,7 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
 
-- **The new parts' drawings** (ADR 0042 to ADR 0044): the electrolytic capacitor's and the
+- **The new parts' drawings** (ADR 0043 to ADR 0045): the electrolytic capacitor's and the
   transistors', mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
@@ -90,7 +90,7 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 
 - **New parts, each with the circuit that teaches it** (ADR 0038 to ADR 0041), in this order, after
   the first three, the electrolytic capacitor's fading light and the NPN and PNP transistors'
-  switches, which are M13 to M15 (ADR 0042 to ADR 0044). Each brings its part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
+  switches, which are M13 to M15 (ADR 0043 to ADR 0045). Each brings its part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
   step's sentence and the parts list's line in English, French and Russian, an example and a test
   circuit, and the `circuit` skill's knowledge of it. Each part's drawing is mocked up on the board
   first, in both themes, at all four quarter turns, beside Fritzing's drawing of the same part, and
@@ -164,6 +164,6 @@ file's Log.
 | M7        | The executable and circuits projects: five executables, `init`, `install.sh`, a project | 0014, 0016, 0018, 0019, 0025            |
 | M8        | Publishing: a project's pages as Artifacts, kept in `ARTIFACTS.md` and found again      | 0013, 0014, 0019                        |
 | M12       | Circuits without a Pico: a supply on the rails, its wiring check, format 2, and 0.2.0   | 0032–0037                               |
-| M13       | The electrolytic capacitor: a light that fades out, the first new part with its circuit | 0038–0042                               |
-| M14       | The NPN transistor: a pin switches a light through a 2N3904                             | 0043                                    |
-| M15       | The PNP transistor: a pin switches a light on the high side, through a 2N3906           | 0044                                    |
+| M13       | The electrolytic capacitor: a light that fades out, the first new part with its circuit | 0038–0041, 0043                         |
+| M14       | The NPN transistor: a pin switches a light through a 2N3904                             | 0044                                    |
+| M15       | The PNP transistor: a pin switches a light on the high side, through a 2N3906           | 0045                                    |

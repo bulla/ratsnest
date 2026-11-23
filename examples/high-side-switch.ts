@@ -1,4 +1,4 @@
-// The PNP transistor's example (ADR 0038, ADR 0044): GP16 switches a light through a 2N3906 on the
+// The PNP transistor's example (ADR 0038, ADR 0045): GP16 switches a light through a 2N3906 on the
 // high side, between 3V3 and the light, so the light is lit while the pin is low.
 import type { Circuit } from "ratsnest";
 

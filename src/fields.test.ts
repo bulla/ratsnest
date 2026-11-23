@@ -159,7 +159,7 @@ describe("a file's fields (ADR 0016)", () => {
     );
   });
 
-  it("name a transistor by a model ratsnest knows (ADR 0039, ADR 0043)", () => {
+  it("name a transistor by a model ratsnest knows (ADR 0039, ADR 0044)", () => {
     const transistor = (model: string) =>
       changed(
         (data) =>
@@ -373,7 +373,7 @@ describe("ADR 0011's rules for a circuit's words", () => {
     );
   });
 
-  it("refuse a capacitor's value written out, as a resistor's is (rule 7, ADR 0042)", () => {
+  it("refuse a capacitor's value written out, as a resistor's is (rule 7, ADR 0043)", () => {
     expect(
       said(changed((data) => (data.description = { en: "A light, and a 470 µF capacitor." }))),
     ).toEqual([

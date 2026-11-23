@@ -1,11 +1,11 @@
-# ADR 0044: Let a pin switch a light on the high side, through a PNP transistor
+# ADR 0045: Let a pin switch a light on the high side, through a PNP transistor
 
 **Status:** Accepted · 2026-11-23
 
 ## Context
 
 The third new part is the PNP transistor, with the circuit that teaches it (ADR 0038): on a Pico, a
-2N3906 between 3V3 and a light, the light lit while its pin is low. ADR 0043 brought the NPN
+2N3906 between 3V3 and a light, the light lit while its pin is low. ADR 0044 brought the NPN
 transistor, its drawing, its words and the rule for a light on its collector; the 2N3906 has the
 2N3904's case and the same order of legs, and its rule is the NPN's mirrored. This record settles
 what the mirror changes. As before, the owner had the work go on alone.

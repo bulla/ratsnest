@@ -214,12 +214,12 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
 
 M13 is done: the first new part, with the circuit that teaches it (ADR 0038). On a supply, a button
 charges an electrolytic capacitor across a light and its resistor, and once it is let go the light
-fades out. The wiring check holds the capacitor to that one use (ADR 0042), and the drawing stands it
+fades out. The wiring check holds the capacitor to that one use (ADR 0043), and the drawing stands it
 on its legs, a navy can with its value printed on it and a stripe down its − side.
 
 - [x] The design, by interview: new parts each with the circuit that needs it (ADR 0038), real
       models from a closed list (ADR 0039), print on the body (ADR 0040), and no name of their own
-      (ADR 0041); and this part's details, worked out alone at the owner's asking (ADR 0042)
+      (ADR 0041); and this part's details, worked out alone at the owner's asking (ADR 0043)
 - [x] The format: `{ kind: "electrolytic", microfarads, plus, minus }`, read and checked field by
       field, and allowed in a circuit with a supply
 - [x] The wiring check's rule: the right way round, its − leg on −, its + leg between a button and a
@@ -237,11 +237,11 @@ on its legs, a navy can with its value printed on it and a stripe down its − s
 ### M14: the NPN transistor
 
 M14 is done: a pin switches a light through a 2N3904, the second new part with the circuit that
-teaches it (ADR 0038, ADR 0043). The pin feeds only the transistor's base through a resistor, and the
+teaches it (ADR 0038, ADR 0044). The pin feeds only the transistor's base through a resistor, and the
 light's current comes from 3V3. The drawing stands a black TO-92 on its legs, `NPN` and its model
 on its flat face and each leg's letter above it.
 
-- [x] The design, worked out alone at the owner's asking (ADR 0043)
+- [x] The design, worked out alone at the owner's asking (ADR 0044)
 - [x] The models ratsnest knows, in `src/transistors.ts`, the 2N3904 first (ADR 0039)
 - [x] The format: `{ kind: "transistor", model, emitter, base, collector }`, read and checked field
       by field, and refused in a circuit with a supply
@@ -260,10 +260,10 @@ on its flat face and each leg's letter above it.
 ### M15: the PNP transistor
 
 M15 is done: a pin switches a light on the high side through a 2N3906, lit while the pin is low, the
-third new part with the circuit that teaches it (ADR 0038, ADR 0044). The NPN's rule became one rule
+third new part with the circuit that teaches it (ADR 0038, ADR 0045). The NPN's rule became one rule
 read by the model's type, and the drawing, printed `PNP`, is the NPN's.
 
-- [x] The design, worked out alone at the owner's asking (ADR 0044)
+- [x] The design, worked out alone at the owner's asking (ADR 0045)
 - [x] The 2N3906 among the models ratsnest knows, and each model's look-alike whose legs differ
 - [x] The wiring check's rule, the NPN's read by type: the emitter on 3V3(OUT), and the light
       between the collector and ground
@@ -484,7 +484,7 @@ read by the model's type, and the drawing, printed `PNP`, is the NPN's.
   ADR 0041 first had the flasher's words name a capacitor by its value, which ADR 0011 forbids; it
   points at the step that places it instead. The owner then asked for the work to go on alone, in
   pull requests stacked one on the next.
-- 2026-11-23: M13, the electrolytic capacitor, worked out alone (ADR 0042). The can was first drawn
+- 2026-11-23: M13, the electrolytic capacitor, worked out alone (ADR 0043). The can was first drawn
   tall, as real ones are, and stood over the button and over the hole its − leg's wire needed, so it
   became short, standing over three rows. Laying the example out showed why the drawing's every
   standing part rises over the rows above it: the − leg's wire comes from the row below, and the
@@ -493,7 +493,7 @@ read by the model's type, and the drawing, printed `PNP`, is the NPN's.
   fetch Fritzing's parts. Writing the example's description with its value in it showed that the
   check on values in a circuit's words knew no unit of capacitance; it knows µF, nF and pF now, and
   мкФ, нФ and пФ.
-- 2026-11-23: M14, the NPN transistor, worked out alone (ADR 0043). Laying its example out took the
+- 2026-11-23: M14, the NPN transistor, worked out alone (ADR 0044). Laying its example out took the
   longest: a standing part hides the rows above its legs, so each of its three legs can be reached
   only from the row below, or from the row above its case. In the bottom half every arrangement
   crossed a wire or a tag, or put a value tag on GP15's chip; the top half, between the top rails,
@@ -502,7 +502,7 @@ read by the model's type, and the drawing, printed `PNP`, is the NPN's.
   its middle point, so the transistor moved a column left and its light's resistor grew a hole. The
   light runs from 3V3: VBUS's 5 V, which shows best what a transistor is for, would have changed the
   - rail's legend and the wire colours' rule, and waits for a circuit that needs it.
-- 2026-11-23: M15, the PNP transistor, worked out alone (ADR 0044), on the NPN's case, words and
+- 2026-11-23: M15, the PNP transistor, worked out alone (ADR 0045), on the NPN's case, words and
   example layout. The NPN's rule was written for the low side, and became one rule read by the
   model's type rather than a second copy. The PNP's emitter is held to 3V3(OUT) alone, since on VBUS
   a 3.3 V pin never turns it off. Its example's notes first wrote `3.3 V` and `5 V`, which the check

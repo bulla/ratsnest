@@ -12,9 +12,9 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * scratchpi's circuits and layouts (ADR 0001), renamed by what they hold, so that no test in `src/`
  * names a circuit that ships (ADR 0007): the ones that ship are `examples/`, from M3. The eighth has
  * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches, the
- * ninth a capacitor that keeps a light lit once its button is let go (ADR 0042), the tenth a light
- * that a pin switches through an NPN transistor (ADR 0043), and the eleventh one it switches through a
- * PNP transistor, on the high side (ADR 0044).
+ * ninth a capacitor that keeps a light lit once its button is let go (ADR 0043), the tenth a light
+ * that a pin switches through an NPN transistor (ADR 0044), and the eleventh one it switches through a
+ * PNP transistor, on the high side (ADR 0045).
  */
 export const FIXTURE_IDS = [
   "two-lights",
