@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SKILL_CREDIT } from "../src/__fixtures__/credit";
+import { SKILL_CREDIT, SKILL_SUPPLY_CREDIT } from "../src/__fixtures__/credit";
 import { checkFile } from "../src/check";
 import { main } from "../src/cli";
 import { languagesOf } from "../src/fields";
@@ -30,8 +30,9 @@ const pages = mkdtempSync(join(tmpdir(), "ratsnest-examples-"));
 afterAll(() => rmSync(pages, { recursive: true, force: true }));
 
 describe("the examples", () => {
-  it("are scratchpi's seven circuits", () => {
-    expect(EXAMPLES).toHaveLength(7);
+  it("are scratchpi's seven circuits, and one with a supply in the Pico's place (ADR 0032)", () => {
+    expect(EXAMPLES).toHaveLength(8);
+    expect(EXAMPLES.filter((name) => circuitOf(name).supply)).toEqual(["battery-button.ts"]);
   });
 
   it("pass `ratsnest check`, as anyone's circuits do", () => {
@@ -40,16 +41,20 @@ describe("the examples", () => {
       out: (line) => said.push(line),
       err: (line) => said.push(line),
     });
-    expect(said).toEqual(["7 circuits checked: all well."]);
+    expect(said).toEqual(["8 circuits checked: all well."]);
     expect(status).toBe(0);
   });
 
-  it.each(EXAMPLES)("carry the credit the circuit skill gives, in each language: %s", (name) => {
-    const circuit = circuitOf(name);
-    for (const language of languagesOf(circuit)) {
-      expect(circuit.credit?.[language]).toBe(SKILL_CREDIT[language]);
-    }
-  });
+  it.each(EXAMPLES)(
+    "carry the credit the circuit skill gives their kind, in each language: %s",
+    (name) => {
+      const circuit = circuitOf(name);
+      const credit = circuit.supply ? SKILL_SUPPLY_CREDIT : SKILL_CREDIT;
+      for (const language of languagesOf(circuit)) {
+        expect(circuit.credit?.[language]).toBe(credit[language]);
+      }
+    },
+  );
 
   it.each(EXAMPLES)("make a page in each of their languages: %s", (name) => {
     const languages = languagesOf(circuitOf(name));
@@ -81,9 +86,11 @@ describe("the engine (ADR 0007)", () => {
       // A name that is also one of the circuit's own parts, as RGB LED's is, names the part as often
       // as the circuit, so it cannot tell the two apart.
       const parts = new Set(
-        [...(circuit.leds ?? []), ...(circuit.buttons ?? []), ...(circuit.buzzers ?? [])].flatMap(
-          (part) => Object.values(part.name),
-        ),
+        [
+          ...(circuit.leds ?? []),
+          ...(circuit.buttons ?? []),
+          ...("buzzers" in circuit ? (circuit.buzzers ?? []) : []),
+        ].flatMap((part) => Object.values(part.name)),
       );
       return [
         ...Object.values(circuit.name)

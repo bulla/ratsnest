@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { FIXTURE_IDS, FIXTURES } from "./__fixtures__/circuits";
-import { fileOf, sourceOf } from "./__fixtures__/files";
+import { circuitFileOf, fileOf, sourceOf } from "./__fixtures__/files";
 import { TRILINGUAL } from "./__fixtures__/trilingual";
 import { checkSource, problemLine } from "./check";
 import type { Circuit, LedPart } from "./format";
@@ -9,7 +9,7 @@ describe("every check, over a circuit file", () => {
   it.each([...FIXTURE_IDS])(
     "passes every test circuit, and hands back what it declares: %s",
     (id) => {
-      const data = fileOf(FIXTURES[id]);
+      const data = circuitFileOf(FIXTURES[id]);
       const checked = checkSource(sourceOf(data), `${id}.ts`);
       expect(checked.problems.map(problemLine)).toEqual([]);
       expect(checked.circuit).toEqual(data);

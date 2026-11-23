@@ -357,4 +357,6 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
   optional, since a tutorial of several drawings would credit them once, and all of that came out
   again before it landed, the format still 1. The skill holds the default alone, and the tests read
   it from the skill. Meanwhile `develop` gained ADR 0032 to ADR 0034 for supply circuits, so the
-  record became 0035, and says how a supply circuit's credit fits them.
+  record became 0035, and says how a supply circuit's credit fits them. When M12 itself landed, its
+  engine-written footer for a supply circuit became the `circuit` skill's second default credit, and
+  its example and test circuit carry it.

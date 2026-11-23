@@ -1,13 +1,17 @@
 import type { Layout, ShownCircuit } from "../circuit";
-import { SKILL_CREDIT } from "./credit";
+import { SKILL_CREDIT, SKILL_SUPPLY_CREDIT } from "./credit";
 
 /** The test circuits' credit: ratsnest's, as the `circuit` skill gives it (ADR 0035). */
 export const CREDIT = SKILL_CREDIT.en;
 
+/** The credit of a test circuit with a supply, which has no Pico to begin with. */
+export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
+
 /**
- * The engine's own circuits, for its tests to build on and break on purpose. They are copies of
- * scratchpi's seven circuits and layouts (ADR 0001), renamed by what they hold, so that no test in
- * `src/` names a circuit that ships (ADR 0007): the ones that ship are `examples/`, from M3.
+ * The engine's own circuits, for its tests to build on and break on purpose. Seven are copies of
+ * scratchpi's circuits and layouts (ADR 0001), renamed by what they hold, so that no test in `src/`
+ * names a circuit that ships (ADR 0007): the ones that ship are `examples/`, from M3. The eighth has
+ * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches.
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -17,6 +21,7 @@ export const FIXTURE_IDS = [
   "d-pad",
   "rgb-led-and-d-pad",
   "ring-and-button",
+  "two-lights-on-a-supply",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -69,7 +74,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script:
         "from machine import Pin\nfrom time import sleep\n\nred_led = Pin(15, Pin.OUT)\ngreen_led = Pin(16, Pin.OUT)\n\nfor i in range(5):\n    red_led.on()\n    green_led.off()\n    sleep(0.5)\n    red_led.off()\n    green_led.on()\n    sleep(0.5)\ngreen_led.off()",
-      scriptDoes: "The two lights take turns five times, then both go off.",
+      test: "The two lights take turns five times, then both go off.",
     },
   },
   "light-and-button": {
@@ -124,8 +129,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script:
         "from machine import Pin\nfrom time import sleep\n\nred_led = Pin(15, Pin.OUT)\nbtn1 = Pin(16, Pin.IN)\n\nwhile True:\n    red_led.value(btn1.value())\n    sleep(0.02)",
-      scriptDoes:
-        "Hold the button down and the red LED lights. Let go and it goes out. Press Stop in Thonny to end the script.",
+      test: "Hold the button down and the red LED lights. Let go and it goes out. Press Stop in Thonny to end the script.",
     },
   },
   "buzzer-and-button": {
@@ -180,8 +184,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script:
         "from machine import Pin, PWM\nfrom time import sleep\n\nbuzzer = PWM(Pin(15))\nbtn1 = Pin(16, Pin.IN)\n\ntry:\n    while True:\n        if btn1.value():\n            buzzer.freq(880)\n            buzzer.duty_u16(32768)\n        else:\n            buzzer.duty_u16(0)\n        sleep(0.02)\nfinally:\n    buzzer.duty_u16(0)",
-      scriptDoes:
-        "Hold the button down and the buzzer plays a high A. Let go and it stops. Press Stop in Thonny to end the script.",
+      test: "Hold the button down and the buzzer plays a high A. Let go and it stops. Press Stop in Thonny to end the script.",
     },
   },
   "button-each-side": {
@@ -241,8 +244,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script:
         'from machine import Pin\nfrom time import sleep\n\nbtn1 = Pin(16, Pin.IN)\nbtn2 = Pin(15, Pin.IN)\n\nshown = None\nwhile True:\n    now = (btn1.value(), btn2.value())\n    if now != shown:\n        print("btn1:", now[0], "btn2:", now[1])\n        shown = now\n    sleep(0.02)',
-      scriptDoes:
-        "Thonny's Shell shows 1 beside a button while it is held down, and 0 once it is let go. Press Stop in Thonny to end the script.",
+      test: "Thonny's Shell shows 1 beside a button while it is held down, and 0 once it is let go. Press Stop in Thonny to end the script.",
     },
   },
   "d-pad": {
@@ -339,8 +341,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script:
         'from machine import Pin\nfrom time import sleep\n\nbtn1 = Pin(16, Pin.IN)\nbtn2 = Pin(15, Pin.IN)\nbtn3 = Pin(18, Pin.IN)\nbtn4 = Pin(13, Pin.IN)\n\nbuttons = {\n    "btn1": btn1,\n    "btn2": btn2,\n    "btn3": btn3,\n    "btn4": btn4,\n}\n\nshown = {}\nwhile True:\n    for name, button in buttons.items():\n        level = button.value()\n        if shown.get(name) != level:\n            print(name + ":", level)\n            shown[name] = level\n    sleep(0.02)',
-      scriptDoes:
-        "Thonny's Shell shows 1 beside a button while it is held down, and 0 once it is let go. Press Stop in Thonny to end the script.",
+      test: "Thonny's Shell shows 1 beside a button while it is held down, and 0 once it is let go. Press Stop in Thonny to end the script.",
     },
   },
   "rgb-led-and-d-pad": {
@@ -463,8 +464,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script:
         "from machine import Pin\nfrom neopixel import NeoPixel\nfrom time import sleep\n\nrgb_led = NeoPixel(Pin(28), 1)\nbtn1 = Pin(16, Pin.IN)\nbtn2 = Pin(15, Pin.IN)\nbtn3 = Pin(18, Pin.IN)\nbtn4 = Pin(13, Pin.IN)\n\ncaps = (\n    (btn1, (255, 0, 0)),\n    (btn2, (0, 255, 0)),\n    (btn3, (0, 0, 255)),\n    (btn4, (255, 150, 0)),\n)\n\nwhile True:\n    colour = (0, 0, 0)\n    for button, cap in caps:\n        if button.value():\n            colour = cap\n    rgb_led[0] = colour\n    rgb_led.write()\n    sleep(0.02)",
-      scriptDoes:
-        "Hold a button down and the LED lights in its cap's colour: BTN1 red, BTN2 green, BTN3 blue and BTN4 yellow. Let go and it goes out. Press Stop in Thonny to end the script.",
+      test: "Hold a button down and the LED lights in its cap's colour: BTN1 red, BTN2 green, BTN3 blue and BTN4 yellow. Let go and it goes out. Press Stop in Thonny to end the script.",
     },
   },
   "ring-and-button": {
@@ -537,8 +537,47 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script:
         "from machine import Pin\nfrom neopixel import NeoPixel\nfrom time import sleep\n\nled_ring = NeoPixel(Pin(15), 12)\nbtn1 = Pin(16, Pin.IN)\n\nled = 0\ntry:\n    while True:\n        if btn1.value():\n            colour = (0, 0, 255)\n        else:\n            colour = (255, 0, 0)\n        led_ring.fill((0, 0, 0))\n        led_ring[led] = colour\n        led_ring.write()\n        led = (led + 1) % 12\n        sleep(0.2)\nfinally:\n    led_ring.fill((0, 0, 0))\n    led_ring.write()",
-      scriptDoes:
-        "A red light goes round the ring, one LED at a time, from LED 0, the one by the pins: it shows which way the numbers go. Hold the button down and it goes round blue. Press Stop in Thonny to end the script, and the ring goes out.",
+      test: "A red light goes round the ring, one LED at a time, from LED 0, the one by the pins: it shows which way the numbers go. Hold the button down and it goes round blue. Press Stop in Thonny to end the script, and the ring goes out.",
+    },
+  },
+  "two-lights-on-a-supply": {
+    circuit: {
+      name: "Two lights on a supply",
+      description:
+        "A red light, always on, and a yellow one that BTN1 lights while it is held, on two AA batteries and no Pico.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 3, rails: "top" },
+      leds: [
+        { id: "red", name: "red LED", colour: "red" },
+        { id: "yellow", name: "yellow LED", colour: "yellow" },
+      ],
+      buttons: [{ id: "button", name: "BTN1", colour: "yellow" }],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "The red LED, always on",
+          parts: [
+            { kind: "wire", from: "a5", to: "top+5", role: "power" },
+            { kind: "resistor", ohms: 1000, from: "b5", to: "b9" },
+            { kind: "led", led: "red", anode: "c9", cathode: "c10" },
+            { kind: "wire", from: "a10", to: "top-10", role: "ground" },
+          ],
+        },
+        {
+          title: "BTN1 between + and the yellow LED",
+          note: "Pressing it joins its left-hand legs to its right-hand ones.",
+          parts: [
+            { kind: "wire", from: "a14", to: "top+14", role: "power" },
+            { kind: "button", button: "button", columns: [14, 16] },
+            { kind: "resistor", ohms: 330, from: "b16", to: "b20" },
+            { kind: "led", led: "yellow", anode: "c20", cathode: "c21" },
+            { kind: "wire", from: "a21", to: "top-21", role: "ground" },
+          ],
+        },
+      ],
+      test: "The red LED lights once the supply is connected. Hold BTN1 down and the yellow one lights too.",
     },
   },
 };

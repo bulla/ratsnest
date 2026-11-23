@@ -20,10 +20,14 @@ describe("the public surface (ADR 0017)", () => {
   it("holds the format, its types, the commands' options and ratsnest.json", () => {
     const surface = surfaceOf();
     expect(surface.format).toEqual(["1"]);
-    expect(surface["Circuit.credit"]).toEqual(["optional Text"]);
+    expect(surface["PicoCircuit.credit"]).toEqual(["optional Text"]);
+    expect(surface["SupplyCircuit.credit"]).toEqual(["optional Text"]);
     expect(surface["type Language"]).toEqual(["en", "fr", "ru"]);
     expect(surface["type Part"]).toContain("RingPart");
-    expect(surface["Circuit.leds"]).toEqual(["optional readonly Led[]"]);
+    expect(surface["type Circuit"]).toEqual(["PicoCircuit", "SupplyCircuit"]);
+    expect(surface["PicoCircuit.leds"]).toEqual(["optional readonly Led[]"]);
+    expect(surface["SupplyCircuit.supply"]).toEqual(["required Supply"]);
+    expect(surface["Supply.volts"]).toEqual(["required 3 | 3.7 | 4.5 | 5"]);
     expect(surface["command generate --orientation"]).toEqual(["0", "90", "180", "270"]);
     expect(surface["ratsnest.json"]).toEqual(["ratsnest"]);
   });

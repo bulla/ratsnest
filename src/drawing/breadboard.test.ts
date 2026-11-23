@@ -319,6 +319,9 @@ describe("a resistor's value tag", () => {
     let held = 0;
     for (const [id, parts] of everyLayout) {
       if (id === "d-pad" || id === "rgb-led-and-d-pad") continue;
+      // With no Pico on the board (ADR 0032), a tag may stand where the Pico would be: asked here,
+      // outside a drawing, the Pico is assumed.
+      if (FIXTURES[id].circuit.supply) continue;
       for (const part of parts) {
         if (part.kind !== "resistor") continue;
         if ([part.from, part.to].some((hole) => /^(?:2:)?(?:top|bottom)/.test(hole))) continue;

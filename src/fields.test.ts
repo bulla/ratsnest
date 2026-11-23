@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { FIXTURE_IDS, FIXTURES } from "./__fixtures__/circuits";
-import { fileOf } from "./__fixtures__/files";
+import { circuitFileOf, fileOf, supplyFileOf } from "./__fixtures__/files";
 import { FORMAT, fieldProblems, languagesOf } from "./fields";
-import type { Circuit } from "./format";
+import type { PicoCircuit } from "./format";
 
 /** A test circuit as a file, with some of its data replaced. */
 const changed = (change: (data: Record<string, unknown>) => void, id = "light-and-button") => {
@@ -38,7 +38,7 @@ const part = (data: Record<string, unknown>, stepIndex: number, partIndex: numbe
 
 describe("every test circuit, as a file", () => {
   it.each([...FIXTURE_IDS])("passes the field checks: %s", (id) => {
-    expect(said(fileOf(FIXTURES[id]))).toEqual([]);
+    expect(said(circuitFileOf(FIXTURES[id]))).toEqual([]);
   });
 });
 
@@ -197,8 +197,8 @@ describe("a file's fields (ADR 0016)", () => {
 
 describe("a circuit's languages (ADR 0010)", () => {
   /** The test circuit with a French name, and French wherever `except` does not say. */
-  const inBoth = (except: (circuit: Circuit) => void = () => {}) => {
-    const data = structuredClone(fileOf(FIXTURES["two-lights"])) as Circuit;
+  const inBoth = (except: (circuit: PicoCircuit) => void = () => {}) => {
+    const data = structuredClone(fileOf(FIXTURES["two-lights"])) as PicoCircuit;
     const french = (text: { en?: string }) => ({ ...text, fr: `${text.en} (fr)` });
     const both = {
       ...data,
@@ -213,7 +213,7 @@ describe("a circuit's languages (ADR 0010)", () => {
       })),
       script: french(data.script),
       scriptDoes: french(data.scriptDoes),
-    } as Circuit;
+    } as PicoCircuit;
     except(both);
     return both;
   };
@@ -283,8 +283,8 @@ describe("a circuit's characters (ADR 0012)", () => {
 
 describe("ADR 0011's rules for a circuit's words", () => {
   /** The test circuit with every text in Russian only, the script left as it is. */
-  const inRussian = (change: (data: Circuit) => void = () => {}) => {
-    const data = structuredClone(fileOf(FIXTURES["two-lights"])) as Circuit;
+  const inRussian = (change: (data: PicoCircuit) => void = () => {}) => {
+    const data = structuredClone(fileOf(FIXTURES["two-lights"])) as PicoCircuit;
     const ru = (words: string) => ({ ru: words });
     const russian = {
       ...data,
@@ -301,7 +301,7 @@ describe("ADR 0011's rules for a circuit's words", () => {
       })),
       script: ru(data.script.en ?? ""),
       scriptDoes: ru("Светодиоды мигают по очереди."),
-    } as Circuit;
+    } as PicoCircuit;
     change(russian);
     return russian;
   };
@@ -360,5 +360,89 @@ describe("ADR 0011's rules for a circuit's words", () => {
       "description.ru puts a space before `:`, which Russian does not (ADR 0011)",
       "description.ru writes straight quotes, where it writes `« »` (ADR 0011)",
     ]);
+  });
+});
+
+describe("a circuit with a supply (ADR 0032)", () => {
+  /** The test circuit with a supply, as a file, with some of its data replaced. */
+  const supplied = (change: (data: Record<string, unknown>) => void = () => {}) => {
+    const data = structuredClone(
+      supplyFileOf(FIXTURES["two-lights-on-a-supply"]),
+    ) as unknown as Record<string, unknown>;
+    change(data);
+    return data;
+  };
+  const supply = (data: Record<string, unknown>) => data.supply as Record<string, unknown>;
+  const led = (data: Record<string, unknown>, index: number) =>
+    (data.leds as Record<string, unknown>[])[index] as Record<string, unknown>;
+
+  it("passes as it is", () => {
+    expect(said(supplied())).toEqual([]);
+  });
+
+  it("gives one of the four voltages, on the top rails or the bottom ones", () => {
+    expect(said(supplied((data) => (supply(data).volts = 3.3)))).toEqual([
+      "supply.volts is not `3`, `3.7`, `4.5` or `5`: 3 or 4.5 from AA batteries, 3.7 from a Li-Po cell, or 5 from a USB charger (ADR 0032)",
+    ]);
+    expect(said(supplied((data) => (supply(data).rails = "left")))).toEqual([
+      "supply.rails is not one of `top` or `bottom`",
+    ]);
+    expect(said(supplied((data) => (data.supply = 4.5)))[0]).toStartWith(
+      "supply is not a supply, such as",
+    );
+  });
+
+  it("names no pin for a light or a button, which the supply powers", () => {
+    const pinned = supplied((data) => (led(data, 0).pin = { kind: "gpio", gpio: 15 }));
+    expect(said(pinned)).toEqual([
+      "leds[0].pin is a pin, which a light in a circuit with a supply has none of: the supply powers it, so leave it out (ADR 0032)",
+    ]);
+  });
+
+  it("has no buzzer, RGB LED, script or `scriptDoes`, which need a Pico", () => {
+    expect(said(supplied((data) => (data.buzzers = [])))).toEqual([
+      "buzzers is not a field of a circuit with a supply: a buzzer needs a Pico to drive it (ADR 0032)",
+    ]);
+    expect(said(supplied((data) => (data.script = { en: "print(1)" })))).toEqual([
+      "script is not a field of a circuit with a supply: it has no Pico to run a script: it has `test` in its place (ADR 0032)",
+    ]);
+    expect(said(supplied((data) => (led(data, 0).colour = "rgb")))[0]).toStartWith(
+      "leds[0].colour is `rgb`, an addressable LED, which needs a Pico",
+    );
+    const ring = supplied((data) =>
+      (step(data, 0).parts as unknown[]).push({
+        kind: "ring",
+        led: "red",
+        dataIn: "j25",
+        power: "j26",
+        ground: "j27",
+        dataOut: "j28",
+      }),
+    );
+    expect(said(ring)[0]).toStartWith("steps[0].parts[4].kind is `ring`, which needs a Pico");
+  });
+
+  it("says what a working circuit does in `test`", () => {
+    expect(said(supplied((data) => delete data.test))).toEqual([
+      "the circuit has no `test`, a text",
+    ]);
+  });
+
+  it("refuses a light that needs about 3 V on the 3 V supply, and takes it on 4.5 V (ADR 0033)", () => {
+    const blue = supplied((data) => (led(data, 1).colour = "blue"));
+    expect(said(blue)).toEqual([
+      "leds[1].colour is `blue`, a light that needs about 3 V itself, which the 3 V supply cannot light through a resistor: take `volts: 4.5`, or a red, amber, orange or yellow light (ADR 0033)",
+    ]);
+    const higher = supplied((data) => {
+      led(data, 1).colour = "blue";
+      supply(data).volts = 4.5;
+    });
+    expect(said(higher)).toEqual([]);
+  });
+
+  it("is a supply circuit by its `supply` alone, so a Pico circuit with a `test` is refused", () => {
+    expect(said(changed((data) => (data.test = { en: "It works." })))[0]).toStartWith(
+      "test is not a field of a circuit:",
+    );
   });
 });

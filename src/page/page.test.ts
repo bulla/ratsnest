@@ -27,8 +27,8 @@ const words = (html: string) => html.replace(/<[^>]+>/g, "");
 
 /** Every GPIO a circuit's components are on. */
 const gpiosOf = (circuit: ShownCircuit): number[] => [
-  ...circuit.leds.map((led) => led.pin.gpio),
-  ...circuit.buttons.map((button) => button.pin.gpio),
+  ...circuit.leds.flatMap((led) => (led.pin ? [led.pin.gpio] : [])),
+  ...circuit.buttons.flatMap((button) => (button.pin ? [button.pin.gpio] : [])),
   ...circuit.buzzers.map((buzzer) => buzzer.pin.gpio),
 ];
 
@@ -56,6 +56,7 @@ function inFrench({ circuit, layout }: Fixture): { circuit: ShownCircuit; layout
       description: "Un circuit d’essai, écrit en français.",
       credit:
         "Dessin d’après la fiche technique du Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0.",
+      ...(circuit.supply ? { supply: circuit.supply } : {}),
       leds: circuit.leds.map(named),
       buttons: circuit.buttons.map(named),
       buzzers: circuit.buzzers.map(named),
@@ -66,7 +67,7 @@ function inFrench({ circuit, layout }: Fixture): { circuit: ShownCircuit; layout
         title: `Étape ${index + 2}`,
         parts: step.parts,
       })),
-      scriptDoes: "Le script fait marcher chaque composant à son tour.",
+      test: "Le script fait marcher chaque composant à son tour.",
     },
   };
 }
@@ -106,8 +107,9 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
     expect([...used].filter((name) => !declared.has(name))).toEqual([]);
   });
 
-  it("has a step for the Pico, one for each of the layout's, and one to test it", () => {
-    expect(html.match(/<button class="step"/g) ?? []).toHaveLength(layout.steps.length + 2);
+  it("has a step for the Pico, if it has one, one for each of the layout's, and one to test it", () => {
+    const pico = circuit.supply ? 0 : 1;
+    expect(html.match(/<button class="step"/g) ?? []).toHaveLength(pico + layout.steps.length + 1);
   });
 
   it("picks out something in the drawing for every step", () => {
@@ -143,7 +145,7 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
   it("tests every part on the pin its circuit puts it on, shown as it is written", () => {
     for (const gpio of gpiosOf(circuit)) expect(layout.script).toContain(`Pin(${gpio}`);
     // Escaped the way the page escapes it: a script that prints a string has quotes in it.
-    const shown = layout.script
+    const shown = (layout.script ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -170,6 +172,59 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
     // A <pre> has the generic role in ARIA 1.2, which may not be named, as Biome found on a page.
     // The heading just before the script names it.
     expect(html).not.toMatch(/<pre[^>]*\saria-label/);
+  });
+});
+
+describe("a page with a supply in the Pico's place (ADR 0032)", () => {
+  const { circuit, layout } = FIXTURES["two-lights-on-a-supply"];
+  const html = page("two-lights-on-a-supply");
+
+  it("draws the supply's cell and no Pico, and puts no pin's chip or note anywhere", () => {
+    expect(html).toContain('data-kind="supply"');
+    expect(html).not.toContain('data-g="pico"');
+    expect(html).not.toContain("(GP");
+    expect(html).toMatch(/<text[^>]*>3 V<\/text>/);
+  });
+
+  it("starts with the circuit's own steps, and ends by connecting the supply, then its test", () => {
+    const shown = words(steps(html));
+    expect(shown).not.toContain("Put the Pico across the middle");
+    expect(shown).toContain("Connect the supply and test");
+    expect(shown).toContain(
+      `Put the supply's red lead in the top + rail and its black lead in the top − rail, both in column 1. ${layout.test}`,
+    );
+    expect(html).toContain('data-groups="supply test" data-test=""');
+  });
+
+  it("lists the supply first, and no Pico or cable", () => {
+    const list = html.slice(html.indexOf('<ul class="parts">'));
+    expect(list).toMatch(
+      /^<ul class="parts"><li><span class="count">1<\/span><span>Two AA batteries/,
+    );
+    expect(list).not.toContain("Raspberry Pi Pico 2 W, with its header pins");
+    expect(list).not.toContain("Micro-USB");
+  });
+
+  it("has no script to copy, and says to disconnect the supply rather than the cable", () => {
+    expect(html).not.toContain('id="script"');
+    expect(html).not.toContain("Thonny");
+    expect(html).toContain("Disconnect the supply while you change the wiring.");
+    expect(html).not.toContain("Unplug the USB cable");
+    expect(html).toContain("+ rail: 3 V");
+    expect(html).toContain(`A 3 V supply to the left of the breadboard.`);
+  });
+
+  it("still credits the drawing it is made by, in its circuit's own credit (ADR 0018, ADR 0035)", () => {
+    expect(html).toContain(`<footer>\n    ${circuit.credit}\n  </footer>`);
+    expect(circuit.credit).toContain("creativecommons.org/licenses/by-sa/4.0");
+    expect(circuit.credit).not.toStartWith("The Pico");
+    expect(circuit.supply?.volts).toBe(3);
+  });
+
+  it("writes the voltage as each language does", () => {
+    expect(PAGE_WORDS.en.volts(4.5)).toBe("4.5 V");
+    expect(PAGE_WORDS.fr.volts(4.5)).toBe("4,5 V");
+    expect(PAGE_WORDS.ru.volts(3.7)).toBe("3,7 В");
   });
 });
 

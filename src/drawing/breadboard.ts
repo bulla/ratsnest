@@ -203,6 +203,18 @@ export const PICO_ORIGIN_MM = {
   y: rowY(PICO_ROWS.outer) - PIN_EDGE_INSET_MM,
 } as const;
 
+/**
+ * The holes a supply's leads go in, on a circuit with no Pico (ADR 0032): column 1 of the pair of
+ * rails it names, at the board's near end, where the Pico's USB is. The red lead goes in the + rail
+ * and the black lead in the − rail.
+ */
+export function supplyLeadsOf(rails: "top" | "bottom"): {
+  readonly plus: Hole;
+  readonly minus: Hole;
+} {
+  return { plus: `${rails}+1`, minus: `${rails}-1` };
+}
+
 // --- What can be plugged in. ---
 
 /** What a jumper is for, which is also its colour: black, red and yellow. */

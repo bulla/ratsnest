@@ -27,19 +27,22 @@ from the original in that it:
   not;
 - turns the Pico on its side and pushes it into a half-size breadboard, with the parts a circuit
   places at the holes and pins they are wired to;
+- draws, for a circuit with no Pico, a supply's cell in the Pico's place beside the breadboard
+  (ADR 0032);
 - reproduces no Raspberry Pi logo or other trademark: the RP2350's lid is left bare.
 
 **The adapted drawing in `src/drawing/` is therefore distributed under CC BY-SA 4.0**, as
 ShareAlike requires. That obligation covers the drawing, not the rest of this repository, so drawing
 code moved out of `src/drawing/` takes the obligation with it. Every page ratsnest makes carries the
-drawing, and its circuit's credit, if it has one, as its footer; the drawing alone, as an SVG file
-(ADR 0031), carries that credit in a line of small text along its bottom edge, so that it goes
-wherever the file is put. The `circuit` skill gives every circuit it makes ratsnest's credit, which
-says where the Pico comes from, that the drawing is CC BY-SA 4.0, with the licence's address written
-out, and that the font is Nunito, under the SIL Open Font License 1.1. A circuit's author may reword
-it, or take it out to credit the drawing elsewhere, as a tutorial of several drawings would once
-(ADR 0035), and nothing checks it: a drawing shown with no credit anywhere around it no longer meets
-the licence, which is the author's to answer for.
+drawing, with the Pico or with a supply in its place, and its circuit's credit, if it has one, as its
+footer; the drawing alone, as an SVG file (ADR 0031), carries that credit in a line of small text
+along its bottom edge, so that it goes wherever the file is put. The `circuit` skill gives every
+circuit it makes ratsnest's credit, which says where the drawing comes from, that it is
+CC BY-SA 4.0, with the licence's address written out, and that the font is Nunito, under the SIL
+Open Font License 1.1. A circuit's author may reword it, or take it out to credit the drawing
+elsewhere, as a tutorial of several drawings would once (ADR 0035), and nothing checks it: a drawing
+shown with no credit anywhere around it no longer meets the licence, which is the author's to answer
+for.
 
 The reasoning is in ADR 0018, and before it in scratchpi's ADR 0023, which first carried this
 attribution.

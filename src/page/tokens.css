@@ -86,6 +86,15 @@
   --color-wire-ground: #262624;
   --color-wire-power: #cf2a24;
   --color-wire-signal: #e8b31c;
+  /* A supply in the Pico's place, drawn as a pouch cell (ADR 0032): silver foil, a sealed edge
+     lighter than its body, yellow tape over the end its tabs are on, and its voltage printed dark
+     on it. Its edge is dark enough to stand at 3:1 on either scale's surfaces, so that it reads on
+     both, like the leads it edges. */
+  --color-cell: #b9bec5;
+  --color-cell-panel: #cdd1d6;
+  --color-cell-edge: #6b7078;
+  --color-cell-ink: #1d1f23;
+  --color-cell-tape: #f2c511;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

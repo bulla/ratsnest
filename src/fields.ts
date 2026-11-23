@@ -1,7 +1,13 @@
-import { BUTTON_COLOURS, LED_COLOURS } from "./circuit";
+import {
+  BUTTON_COLOURS,
+  LED_COLOURS,
+  SUPPLY_RAILS,
+  SUPPLY_VOLTS,
+  THREE_VOLT_COLOURS,
+} from "./circuit";
 import { parseHole } from "./drawing/breadboard";
 import { fileOf } from "./fonts";
-import type { Circuit, Language, Text } from "./format";
+import type { Circuit, Language, SupplyCircuit, Text } from "./format";
 import { LANGUAGES } from "./language";
 import { isUsableGpio } from "./pins";
 import { pathOf } from "./read";
@@ -219,10 +225,20 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ring: ["kind", "led", "dataIn", "power", "ground", "dataOut"],
 };
 
-function partProblems(part: Record_, fields: Fields, ids: Ids): void {
+/** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
+const SUPPLY_PARTS = ["wire", "resistor", "led", "button"];
+
+function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean): void {
   const kind = part.kind;
   if (typeof kind !== "string" || !Object.hasOwn(PART_FIELDS, kind)) {
     fields.problem("kind", `is not a part ratsnest knows: ${quoted(Object.keys(PART_FIELDS))}`);
+    return;
+  }
+  if (supplied && !SUPPLY_PARTS.includes(kind)) {
+    fields.problem(
+      "kind",
+      `is \`${kind}\`, which needs a Pico to drive it: a circuit with a supply holds ${quoted(SUPPLY_PARTS)} (ADR 0032)`,
+    );
     return;
   }
   fields.only(PART_FIELDS[kind] ?? [], `a ${kind}`);
@@ -322,21 +338,51 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   const problems: FieldProblem[] = [];
   if (!isRecord(data)) return [{ path: "", message: "is not an object" }];
   const circuit = new Fields(data, "", problems);
-  circuit.only(
-    [
-      "format",
-      "name",
-      "description",
-      "credit",
-      "leds",
-      "buttons",
-      "buzzers",
-      "steps",
-      "script",
-      "scriptDoes",
-    ],
-    "a circuit",
-  );
+  // A circuit with a supply has no Pico (ADR 0032), and none of what a Pico drives or runs.
+  const supplied = Object.hasOwn(data, "supply");
+  if (supplied) {
+    const needsPico: Readonly<Record<string, string>> = {
+      buzzers: "a buzzer needs a Pico to drive it",
+      script: "it has no Pico to run a script: it has `test` in its place",
+      scriptDoes: "it has no Pico to run a script: it has `test` in its place",
+    };
+    for (const [key, why] of Object.entries(needsPico)) {
+      if (Object.hasOwn(data, key)) {
+        circuit.problem(key, `is not a field of a circuit with a supply: ${why} (ADR 0032)`);
+      }
+    }
+    circuit.only(
+      [
+        "format",
+        "name",
+        "description",
+        "credit",
+        "supply",
+        "leds",
+        "buttons",
+        "steps",
+        "test",
+      ].concat(Object.keys(needsPico)),
+      "a circuit with a supply",
+    );
+    supplyProblems(data.supply, problems);
+  } else {
+    circuit.only(
+      [
+        "format",
+        "name",
+        "description",
+        "credit",
+        "leds",
+        "buttons",
+        "buzzers",
+        "steps",
+        "script",
+        "scriptDoes",
+      ],
+      "a circuit",
+    );
+  }
   circuit.text("name");
   circuit.text("description");
   circuit.text("credit", true);
@@ -356,12 +402,34 @@ export function shapeProblems(data: unknown): FieldProblem[] {
     else seen.set(id, path);
     into.add(id);
   };
+  /** A light's or a button's pin, which a circuit with a supply has none of (ADR 0032). */
+  const pinless = (fields: Fields, item: Record_, what: string) => {
+    if (Object.hasOwn(item, "pin")) {
+      fields.problem(
+        "pin",
+        `is a pin, which ${what} in a circuit with a supply has none of: the supply powers it, so leave it out (ADR 0032)`,
+      );
+    }
+    fields.only(["id", "name", "colour", "pin"], what);
+  };
 
   circuit.list("leds", true, (fields, index) => {
     const path = pathOf("leds", index);
     const led = (data.leds as Record_[])[index] as Record_;
-    fields.only(["id", "name", "pin", "colour"], "a light");
     const rgb = led.colour === "rgb";
+    if (supplied) {
+      pinless(fields, led, "a light");
+      declare(fields, path, ids.plainLeds);
+      fields.text("name");
+      if (rgb) {
+        fields.problem(
+          "colour",
+          "is `rgb`, an addressable LED, which needs a Pico to drive it: a circuit with a supply has plain lights (ADR 0032)",
+        );
+      } else fields.oneOf("colour", LED_COLOURS);
+      return;
+    }
+    fields.only(["id", "name", "pin", "colour"], "a light");
     declare(fields, path, rgb ? ids.rgbLeds : ids.plainLeds);
     fields.text("name");
     fields.oneOf("colour", [...LED_COLOURS, "rgb"]);
@@ -369,19 +437,25 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   });
   circuit.list("buttons", true, (fields, index) => {
     const path = pathOf("buttons", index);
-    fields.only(["id", "name", "pin", "colour"], "a button");
+    if (supplied) {
+      pinless(fields, (data.buttons as Record_[])[index] as Record_, "a button");
+    } else {
+      fields.only(["id", "name", "pin", "colour"], "a button");
+    }
     declare(fields, path, ids.buttons);
     fields.text("name");
     fields.oneOf("colour", BUTTON_COLOURS);
-    pinField(fields, "gpio", path, problems);
+    if (!supplied) pinField(fields, "gpio", path, problems);
   });
-  circuit.list("buzzers", true, (fields, index) => {
-    const path = pathOf("buzzers", index);
-    fields.only(["id", "name", "pin"], "a buzzer");
-    declare(fields, path, ids.buzzers);
-    fields.text("name");
-    pinField(fields, "gpio", path, problems);
-  });
+  if (!supplied) {
+    circuit.list("buzzers", true, (fields, index) => {
+      const path = pathOf("buzzers", index);
+      fields.only(["id", "name", "pin"], "a buzzer");
+      declare(fields, path, ids.buzzers);
+      fields.text("name");
+      pinField(fields, "gpio", path, problems);
+    });
+  }
 
   circuit.list("steps", false, (fields, index) => {
     fields.only(["title", "note", "parts"], "a step");
@@ -389,36 +463,82 @@ export function shapeProblems(data: unknown): FieldProblem[] {
     fields.text("note", true);
     const step = (data.steps as Record_[])[index] as Record_;
     fields.list("parts", false, (partFields, partIndex) => {
-      partProblems((step.parts as Record_[])[partIndex] as Record_, partFields, ids);
+      partProblems((step.parts as Record_[])[partIndex] as Record_, partFields, ids, supplied);
     });
   });
   if (Array.isArray(data.steps) && data.steps.length === 0) {
     circuit.problem("steps", "is empty: a circuit has a step at least");
   }
 
-  circuit.text("script");
-  circuit.text("scriptDoes");
+  if (supplied) {
+    circuit.text("test");
+  } else {
+    circuit.text("script");
+    circuit.text("scriptDoes");
+  }
   return problems;
+}
+
+/** A supply's two fields: a voltage it can give, and the rails its leads go in (ADR 0032). */
+function supplyProblems(supply: unknown, problems: FieldProblem[]): void {
+  if (!isRecord(supply)) {
+    problems.push({
+      path: "supply",
+      message: 'is not a supply, such as `{ volts: 4.5, rails: "bottom" }` (ADR 0032)',
+    });
+    return;
+  }
+  const fields = new Fields(supply, "supply", problems);
+  fields.only(["volts", "rails"], "a supply");
+  const volts = fields.required("volts", "the voltage it gives");
+  if (volts !== undefined && !(SUPPLY_VOLTS as readonly unknown[]).includes(volts)) {
+    fields.problem(
+      "volts",
+      `is not ${quoted(SUPPLY_VOLTS)}: 3 or 4.5 from AA batteries, 3.7 from a Li-Po cell, or 5 from a USB charger (ADR 0032)`,
+    );
+  }
+  fields.oneOf("rails", SUPPLY_RAILS);
+}
+
+/**
+ * The lights a supply cannot light (ADR 0033): on the 3 V supply, those that need about 3 V
+ * themselves, which no resistor leaves enough for.
+ */
+export function supplyLightProblems(circuit: SupplyCircuit): FieldProblem[] {
+  if (circuit.supply.volts !== 3) return [];
+  return (circuit.leds ?? []).flatMap((led, index) =>
+    (THREE_VOLT_COLOURS as readonly string[]).includes(led.colour)
+      ? [
+          {
+            path: pathOf(pathOf("leds", index), "colour"),
+            message: `is \`${led.colour}\`, a light that needs about 3 V itself, which the 3 V supply cannot light through a resistor: take \`volts: 4.5\`, or a red, amber, orange or yellow light (ADR 0033)`,
+          },
+        ]
+      : [],
+  );
 }
 
 /** Every text a circuit has, by its path. */
 export function textsOf(circuit: Circuit): [string, Text][] {
+  const names = (list: string, parts: readonly { readonly name: Text }[] = []) =>
+    parts.map((part, index): [string, Text] => [pathOf(pathOf(list, index), "name"), part.name]);
   return [
     ["name", circuit.name],
     ["description", circuit.description],
     ...(circuit.credit ? [["credit", circuit.credit] as [string, Text]] : []),
-    ...(["leds", "buttons", "buzzers"] as const).flatMap((list) =>
-      (circuit[list] ?? []).map((part, index): [string, Text] => [
-        pathOf(pathOf(list, index), "name"),
-        part.name,
-      ]),
-    ),
+    ...names("leds", circuit.leds),
+    ...names("buttons", circuit.buttons),
+    ...(circuit.supply ? [] : names("buzzers", circuit.buzzers)),
     ...circuit.steps.flatMap((step, index): [string, Text][] => [
       [pathOf(pathOf("steps", index), "title"), step.title],
       ...(step.note ? [[pathOf(pathOf("steps", index), "note"), step.note] as [string, Text]] : []),
     ]),
-    ["script", circuit.script],
-    ["scriptDoes", circuit.scriptDoes],
+    ...(circuit.supply
+      ? [["test", circuit.test] as [string, Text]]
+      : [
+          ["script", circuit.script] as [string, Text],
+          ["scriptDoes", circuit.scriptDoes] as [string, Text],
+        ]),
   ];
 }
 
@@ -501,11 +621,16 @@ const HOLE_NAME =
  * a page never names one the drawing does not show, or a GPIO no part of the circuit is on.
  */
 export function wordProblems(circuit: Circuit): FieldProblem[] {
-  const used = new Set([
-    ...(circuit.leds ?? []).map((led) => led.pin.gpio),
-    ...(circuit.buttons ?? []).map((button) => button.pin.gpio),
-    ...(circuit.buzzers ?? []).map((buzzer) => buzzer.pin.gpio),
-  ]);
+  // A circuit with a supply has no pin, so every GPIO its words name is one no part is on.
+  const used = new Set(
+    circuit.supply
+      ? []
+      : [
+          ...(circuit.leds ?? []).map((led) => led.pin.gpio),
+          ...(circuit.buttons ?? []).map((button) => button.pin.gpio),
+          ...(circuit.buzzers ?? []).map((buzzer) => buzzer.pin.gpio),
+        ],
+  );
   const problems: FieldProblem[] = [];
   circuit.steps.forEach((step, index) => {
     for (const [key, text] of [
@@ -654,6 +779,7 @@ export function fieldProblems(data: unknown): FieldProblem[] {
   if (shape.length > 0) return shape;
   const circuit = data as Circuit;
   return [
+    ...(circuit.supply ? supplyLightProblems(circuit) : []),
     ...languageProblems(circuit),
     ...wordProblems(circuit),
     ...writingProblems(circuit),

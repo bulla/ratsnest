@@ -9,6 +9,7 @@ import {
   pinOfStrip,
   placementOf,
   printedName,
+  supplyLeadsOf,
   usesSecondBoard,
 } from "../drawing/breadboard";
 import {
@@ -102,7 +103,7 @@ const plain = (html: string): string =>
  * the reader can check the pin as well as the hole, and a rail as the rail it is. Which
  * words go round it — `from`, `du`, `en` — is the language's (`words.ts`).
  */
-function placeOf(hole: Hole, words: PageWords): Place {
+function placeOf(hole: Hole, words: PageWords, pico = true): Place {
   const at = holeAt(hole);
   // A hole on the second board says so (scratchpi's ADR 0226), and is named as that board prints it.
   const second = at.board === 2 ? { second: true } : {};
@@ -114,7 +115,8 @@ function placeOf(hole: Hole, words: PageWords): Place {
       ...second,
     };
   }
-  const pin = pinOfStrip(hole);
+  // A circuit with a supply has no Pico, and so no pin shares a hole's strip (ADR 0032).
+  const pin = pico ? pinOfStrip(hole) : undefined;
   const header = pin === undefined ? undefined : HEADER_PINS.find((p) => p.number === pin);
   const chip = `<span class="hole">${printedName(hole)}</span>`;
   return {
@@ -128,12 +130,14 @@ function placeOf(hole: Hole, words: PageWords): Place {
  * A hole on its own, in a list of legs: the chip and its pin. Which board it is on is left for
  * the sentence to say once, about all of them.
  */
-const holeHtml = (hole: Hole, words: PageWords): string => {
-  const place = placeOf(hole, words);
+const holeHtml = (hole: Hole, words: PageWords, pico = true): string => {
+  const place = placeOf(hole, words, pico);
   return place.kind === "hole" ? place.html : words.in({ ...place, second: false });
 };
 
 interface Names {
+  /** Whether the circuit is on a Pico, or has a supply in its place (ADR 0032). */
+  readonly pico: boolean;
   readonly led: (id: string) => string;
   readonly button: (id: string) => string;
   /** A button's cap colour (scratchpi's ADR 0174). */
@@ -145,6 +149,7 @@ function namesOf(circuit: ShownCircuit): Names {
   const find = (list: readonly { id: string; name: string }[], id: string) =>
     list.find((item) => item.id === id)?.name ?? id;
   return {
+    pico: !circuit.supply,
     led: (id) => find(circuit.leds, id),
     button: (id) => find(circuit.buttons, id),
     cap: (id) => buttonColourOf(circuit, id),
@@ -161,7 +166,7 @@ const buttonColourOf = (circuit: ShownCircuit, id: string): ButtonColour =>
 
 /** One part, as the sentence that says where it goes. */
 function sentenceOf(part: Part, names: Names, words: PageWords): string {
-  const at = (hole: Hole) => placeOf(hole, words);
+  const at = (hole: Hole) => placeOf(hole, words, names.pico);
   switch (part.kind) {
     case "wire":
       return (part.arch ? words.archingJumper : words.jumper)(
@@ -178,7 +183,7 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         escaped(names.button(part.button)),
         names.cap(part.button),
         placementOf(part),
-        legsOf(part).map((leg) => holeHtml(leg, words)),
+        legsOf(part).map((leg) => holeHtml(leg, words, names.pico)),
         part.board === 2,
       );
     case "buzzer":
@@ -186,7 +191,7 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
     case "rgbLed":
       return words.rgbLed(
         escaped(names.led(part.led)),
-        legsOf(part).map((leg) => holeHtml(leg, words)),
+        legsOf(part).map((leg) => holeHtml(leg, words, names.pico)),
         isOnSecondBoard(part.power),
       );
     case "ring":
@@ -227,6 +232,8 @@ const isComponent = (part: Part) =>
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
 const TEST_GROUP = "test";
+/** The group a circuit's supply is drawn in, picked out by the last step (ADR 0032). */
+const SUPPLY_GROUP = "supply";
 
 /** Which Pico pins the circuit uses, and the step that first reaches each one. */
 function tagsOf(layout: Layout): PinTag[] {
@@ -245,8 +252,10 @@ function tagsOf(layout: Layout): PinTag[] {
 /** The GPIO each of the circuit's components is on, in the order the circuit lists them. */
 function componentPins(circuit: ShownCircuit): { name: string; gpio: number }[] {
   return [
-    ...circuit.leds.map((led) => ({ name: led.name, gpio: led.pin.gpio })),
-    ...circuit.buttons.map((button) => ({ name: button.name, gpio: button.pin.gpio })),
+    ...circuit.leds.flatMap((led) => (led.pin ? [{ name: led.name, gpio: led.pin.gpio }] : [])),
+    ...circuit.buttons.flatMap((button) =>
+      button.pin ? [{ name: button.name, gpio: button.pin.gpio }] : [],
+    ),
     ...circuit.buzzers.map((buzzer) => ({ name: buzzer.name, gpio: buzzer.pin.gpio })),
   ];
 }
@@ -283,10 +292,15 @@ function bandsHtml(bands: readonly Band[], words: PageWords): string {
   );
 }
 
-function partsListHtml(parts: readonly Part[], names: Names, words: PageWords): string {
+function partsListHtml(
+  circuit: ShownCircuit,
+  parts: readonly Part[],
+  names: Names,
+  words: PageWords,
+): string {
   const boards = usesSecondBoard(parts) ? 2 : 1;
   const items: [number, string][] = [
-    [1, words.listPico],
+    [1, circuit.supply ? words.listSupply(circuit.supply.volts) : words.listPico],
     [boards, words.listBreadboard(boards)],
   ];
   for (const part of parts) {
@@ -331,7 +345,7 @@ function partsListHtml(parts: readonly Part[], names: Names, words: PageWords): 
       if (count > 0) items.push([count, list(words.wire(role, count), count)]);
     }
   }
-  items.push([1, words.listCable]);
+  if (!circuit.supply) items.push([1, words.listCable]);
   return items
     .map(([count, what]) => `<li><span class="count">${count}</span><span>${what}</span></li>`)
     .join("");
@@ -343,20 +357,23 @@ function partsListHtml(parts: readonly Part[], names: Names, words: PageWords): 
  * fails first (ADR 0007), so the question mark is never reached by a page that is made.
  */
 function dataPinOf(circuit: ShownCircuit, led: string): string {
-  return `GP${circuit.leds.find((each) => each.id === led)?.pin.gpio ?? "?"}`;
+  return `GP${circuit.leds.find((each) => each.id === led)?.pin?.gpio ?? "?"}`;
 }
 
 function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWords): string {
   const notes: string[] = [];
   if (parts.some((p) => p.kind === "led")) {
     const [low, high] = LIGHT_OHMS_RANGE;
-    notes.push(words.ledPolarity, words.anyResistor(words.ohms(low), words.ohms(high)));
+    notes.push(
+      circuit.supply ? words.supplyLedPolarity : words.ledPolarity,
+      words.anyResistor(words.ohms(low), words.ohms(high)),
+    );
   }
   for (const part of parts) {
     if (part.kind === "rgbLed") notes.push(words.rgbLedPolarity(dataPinOf(circuit, part.led)));
     if (part.kind === "ring") notes.push(words.ringPolarity(dataPinOf(circuit, part.led)));
   }
-  notes.push(words.rowsLettered, words.unplug);
+  notes.push(words.rowsLettered, circuit.supply ? words.supplyUnplug : words.unplug);
   return notes.map((note) => `<li>${escaped(note)}</li>`).join("");
 }
 
@@ -381,16 +398,19 @@ function drawingOf(circuit: ShownCircuit, layout: Layout, inputs: PageInputs): s
   );
   const ledColour = (led: string) =>
     circuit.leds.find((l): l is PlainLed => l.id === led && l.colour !== "rgb")?.colour ?? "red";
+  const supply = circuit.supply;
+  const volts = supply ? words.volts(supply.volts) : "";
   return drawBreadboard({
     orientation,
     ohms: words.ohms,
     parts: drawn,
-    tags: tagsOf(layout),
+    tags: supply ? [] : tagsOf(layout),
+    ...(supply ? { supply: { rails: supply.rails, label: volts, group: SUPPLY_GROUP } } : {}),
     ledColour,
     buttonColour: (button) => buttonColourOf(circuit, button),
     title: words.drawingTitle(circuit.name, usesSecondBoard(parts) ? 2 : 1),
     description: [
-      words.drawingIntro(orientation),
+      supply ? words.supplyIntro(volts, orientation) : words.drawingIntro(orientation),
       ...layout.steps.flatMap((step) =>
         step.parts.map((part) => plain(sentenceOf(part, names, words))),
       ),
@@ -411,17 +431,27 @@ export function wiringPage(
   const names = namesOf(circuit);
   const parts = layout.steps.flatMap((step) => step.parts);
   const svg = drawingOf(circuit, layout, inputs);
+  const supply = circuit.supply;
+  const volts = supply ? words.volts(supply.volts) : "";
 
+  // A circuit on a Pico starts with the Pico and ends with its script; one with a supply has no
+  // Pico, and ends with its supply connected and its test (ADR 0032).
+  const first = supply ? 1 : 2;
+  const leads = supply ? supplyLeadsOf(supply.rails) : undefined;
   const steps = [
-    stepHtml({
-      number: 1,
-      title: words.picoTitle,
-      body: picoStep(circuit, words, orientation),
-      groups: PICO_GROUP,
-    }),
+    ...(supply
+      ? []
+      : [
+          stepHtml({
+            number: 1,
+            title: words.picoTitle,
+            body: picoStep(circuit, words, orientation),
+            groups: PICO_GROUP,
+          }),
+        ]),
     ...layout.steps.map((step, index) =>
       stepHtml({
-        number: index + 2,
+        number: index + first,
         title: step.title,
         body: [
           ...step.parts.map((part) => sentenceOf(part, names, words)),
@@ -430,13 +460,25 @@ export function wiringPage(
         groups: stepGroup(index),
       }),
     ),
-    stepHtml({
-      number: layout.steps.length + 2,
-      title: words.testTitle,
-      body: words.testBody(escaped(layout.scriptDoes)),
-      groups: TEST_GROUP,
-      test: true,
-    }),
+    leads
+      ? stepHtml({
+          number: layout.steps.length + first,
+          title: words.supplyTitle,
+          body: words.supplyBody(
+            placeOf(leads.plus, words, false),
+            placeOf(leads.minus, words, false),
+            escaped(layout.test),
+          ),
+          groups: `${SUPPLY_GROUP} ${TEST_GROUP}`,
+          test: true,
+        })
+      : stepHtml({
+          number: layout.steps.length + first,
+          title: words.testTitle,
+          body: words.testBody(escaped(layout.test)),
+          groups: TEST_GROUP,
+          test: true,
+        }),
   ];
 
   const usesPower = parts.some((p) => p.kind === "wire" && p.role === "power");
@@ -469,7 +511,7 @@ export function wiringPage(
     <figcaption>
       <span>${escaped(words.tapStep)}</span>
       <span class="key"><i style="background: var(--color-rail-minus)"></i>${escaped(words.railMinus)}</span>
-      <span class="key"><i style="background: var(--color-rail-plus)"></i>${escaped(words.railPlus(usesPower))}</span>
+      <span class="key"><i style="background: var(--color-rail-plus)"></i>${escaped(supply ? words.railSupply(volts) : words.railPlus(usesPower))}</span>
     </figcaption>
   </figure>
 
@@ -481,14 +523,18 @@ export function wiringPage(
 
     <section class="column" aria-labelledby="parts">
       <h2 id="parts">${escaped(words.parts)}</h2>
-      <div class="panel card"><ul class="parts">${partsListHtml(parts, names, words)}</ul></div>
-
+      <div class="panel card"><ul class="parts">${partsListHtml(circuit, parts, names, words)}</ul></div>
+${
+  layout.script === undefined
+    ? ""
+    : `
       <div class="script-head">
         <h2 id="script-title">${escaped(words.script)}</h2>
         <button class="copy" type="button" data-copies="script" data-copied="${escaped(words.copied)}" data-selected="${escaped(words.selected)}">${escaped(words.copy)}</button>
       </div>
       <pre id="script"><code>${escaped(layout.script)}</code></pre>
-
+`
+}
       <ul class="notes">${notesHtml(circuit, parts, words)}</ul>
     </section>
   </div>

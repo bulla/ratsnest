@@ -20,23 +20,27 @@ export function shownIn(
 ): { readonly circuit: ShownCircuit; readonly layout: Layout } {
   const say = (text: Text) => inLanguage(text, language);
   const named = <T extends { readonly name: Text }>(part: T) => ({ ...part, name: say(part.name) });
+  const steps = circuit.steps.map((step) => ({
+    title: say(step.title),
+    ...(step.note ? { note: say(step.note) } : {}),
+    parts: step.parts,
+  }));
+  const shown = {
+    name: say(circuit.name),
+    description: say(circuit.description),
+    ...(circuit.credit ? { credit: say(circuit.credit) } : {}),
+    leds: (circuit.leds ?? []).map((led): Led => named(led)),
+    buttons: (circuit.buttons ?? []).map(named),
+  };
+  if (circuit.supply) {
+    // A circuit with a supply has no Pico, and so no script and no buzzer (ADR 0032).
+    return {
+      circuit: { ...shown, supply: circuit.supply, buzzers: [] },
+      layout: { steps, test: say(circuit.test) },
+    };
+  }
   return {
-    circuit: {
-      name: say(circuit.name),
-      description: say(circuit.description),
-      ...(circuit.credit ? { credit: say(circuit.credit) } : {}),
-      leds: (circuit.leds ?? []).map((led): Led => named(led)),
-      buttons: (circuit.buttons ?? []).map(named),
-      buzzers: (circuit.buzzers ?? []).map(named),
-    },
-    layout: {
-      steps: circuit.steps.map((step) => ({
-        title: say(step.title),
-        ...(step.note ? { note: say(step.note) } : {}),
-        parts: step.parts,
-      })),
-      script: say(circuit.script),
-      scriptDoes: say(circuit.scriptDoes),
-    },
+    circuit: { ...shown, buzzers: (circuit.buzzers ?? []).map(named) },
+    layout: { steps, script: say(circuit.script), test: say(circuit.scriptDoes) },
   };
 }

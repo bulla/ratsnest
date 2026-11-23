@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BUTTON_COLOURS, LED_COLOURS } from "../circuit";
-import { BREADBOARD_TOKENS } from "../drawing/breadboard-svg";
+import { BREADBOARD_TOKENS, SUPPLY_TOKENS } from "../drawing/breadboard-svg";
 import { CHIP_STYLES } from "../drawing/chips";
 import { contrastRatio } from "./contrast";
 
@@ -184,6 +184,19 @@ describe.each(SCOPES)("the %s scale", (scope) => {
     expect(
       contrastRatio(colour("on-picked", scope), colour("picked", scope)),
     ).toBeGreaterThanOrEqual(7);
+  });
+
+  it("writes a supply's voltage legibly on its cell, and edges the cell at 3:1 on the page (ADR 0032)", () => {
+    for (const ground of [SUPPLY_TOKENS.body, SUPPLY_TOKENS.panel]) {
+      expect(
+        contrastRatio(colour(SUPPLY_TOKENS.ink, scope), colour(ground, scope)),
+      ).toBeGreaterThanOrEqual(7);
+    }
+    for (const surface of surfaces) {
+      expect(
+        contrastRatio(colour(SUPPLY_TOKENS.edge, scope), colour(surface, scope)),
+      ).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it.each(Object.entries(CHIP_STYLES))(

@@ -52,8 +52,8 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
 
 - **One circuit, one file**, in `circuits/<name>.ts` (`examples/<name>.ts` in ratsnest). It holds
   what the circuit is (its name, a sentence saying what it does, its credit, and what is on each
-  pin), where its parts go (the steps, each placing parts in holes such as `a21` or `top-19`), and its MicroPython
-  test script.
+  pin, or the supply it has in the Pico's place), where its parts go (the steps, each placing parts
+  in holes such as `a21` or `top-19`), and its MicroPython test script, or, with a supply, its `test`.
 - **The file only declares.** `import type` lines and one `export default { … } satisfies Circuit`,
   the type imported from `ratsnest`. Every value is a string, a number, `true` or `false`, or an
   array or object of those, and a template string has no `${}`. No function, call, variable, spread,
@@ -69,12 +69,40 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
   record.
 - **Never edit a generated page.** Change the circuit, or ratsnest, and generate it again.
 
+## A Pico, or a supply in its place (ADR 0032, ADR 0033, ADR 0034)
+
+A circuit is on a Pico, or has a supply on one pair of rails instead. **When adding a circuit and
+the request does not say which, ask first**: with a Pico, or powered by a supply? For a supply, ask
+then which voltage, suggesting 4.5 V, and which rails, suggesting the bottom ones.
+
+| Volts | What gives it |
+| --- | --- |
+| `3` | two AA batteries |
+| `4.5` | three AA batteries |
+| `3.7` | one protected Li-Po cell |
+| `5` | a USB charger, through a USB-C breakout board |
+
+A circuit with a supply:
+
+- **declares `supply: { volts, rails }`**, `rails` being `"top"` or `"bottom"`, and still ends
+  `satisfies Circuit`;
+- **has plain lights and buttons, and they name no `pin`**: no buzzer, RGB LED or ring, which need a
+  Pico to drive them;
+- **has a `test` in place of `script` and `scriptDoes`**: what to do once the supply is connected,
+  and what a working circuit then does;
+- **names no hole for the supply**: the engine puts its red lead in column 1 of the + rail and its
+  black lead in column 1 of the − rail, so leave those two holes free;
+- **wires every light from + through one resistor of 220 Ω to 1 kΩ to −**, each button on a light's
+  way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
+  On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
+
 ## Its credit (ADR 0035)
 
 A circuit may have a `credit`, after its description: where the drawing and the font come from, and
 under which licences. The page writes it as its footer, and the drawing alone along its bottom
 edge; a circuit without one has neither. When making a circuit, or adding a language to one, write
-ratsnest's credit in each of its languages, as below, unless the person says otherwise. It is the
+ratsnest's credit in each of its languages, the one below for its kind of circuit, unless the person
+says otherwise. It is the
 circuit's own text, so its author may reword it, translate it, or take it out, as a tutorial built
 of several drawings would, to credit them once elsewhere.
 
@@ -84,11 +112,23 @@ address in it. When asked to drop it, or any of those, say that the licence asks
 the drawing is shown, so whatever shows the drawing must credit it, and then do as the person
 decides. Nothing checks what a credit says.
 
+For a circuit on a Pico:
+
 ```ts
   credit: {
     en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
     fr: "Le Pico 2 W est dessiné d’après sa fiche technique, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Ce dessin est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
     ru: "Pico 2 W нарисован по его спецификации, на основе распиновки Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Этот рисунок распространяется по той же лицензии. Шрифт Nunito, по лицензии SIL Open Font License 1.1.",
+  },
+```
+
+For a circuit with a supply, whose drawing has no Pico on it (ADR 0032):
+
+```ts
+  credit: {
+    en: "This drawing comes from the one ratsnest makes of the Pico 2 W, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), and is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Ce dessin vient de celui que ratsnest fait du Pico 2 W, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), et il est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
+    ru: "Этот рисунок основан на рисунке Pico 2 W, который делает ratsnest, на основе распиновки Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), и распространяется по той же лицензии. Шрифт Nunito, по лицензии SIL Open Font License 1.1.",
   },
 ```
 
@@ -133,7 +173,8 @@ another language instead. The generator refuses one too, but the skill asks firs
 
 ## How to run it
 
-1. **Read the records the change touches**, by their numbers above.
+1. **Read the records the change touches**, by their numbers above. For a new circuit, settle a
+   Pico or a supply first (above).
 2. **Write or change the one circuit file**, and nothing else among the circuits.
 3. **Run the check** (the table above). The declarative check, the field checks, the wiring check,
    the language checks and the overlap check, in every language the circuit has, must all pass.

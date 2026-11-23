@@ -1,4 +1,4 @@
-import type { Circuit } from "../format";
+import type { PicoCircuit } from "../format";
 import { FIXTURES } from "./circuits";
 import { SKILL_CREDIT } from "./credit";
 import { fileOf } from "./files";
@@ -20,7 +20,7 @@ const RUSSIAN_NAMES: Readonly<Record<string, string>> = {
 
 const FRENCH_NAMES: Readonly<Record<string, string>> = { "RGB LED": "LED RVB" };
 
-export const TRILINGUAL: Circuit = {
+export const TRILINGUAL: PicoCircuit = {
   ...english,
   name: {
     en: "Test circuit in three languages",

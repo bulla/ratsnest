@@ -42,7 +42,7 @@ engine, a command-line tool, the `Circuit` type and the `circuit` skill. A circu
 folder with a `ratsnest.json`: `ratsnest init` makes one, `ratsnest check` and `ratsnest generate`
 are what the skill calls, and `ratsnest update` moves a project to a newer ratsnest. The skill has
 one copy, ratsnest's: `init` puts it in a project and `update` replaces it. ratsnest's own circuits
-are scratchpi's, ported, in `examples/`.
+are scratchpi's, ported, in `examples/`, with one of its own on a supply.
 
 **ratsnest reaches its users as one executable per platform, built by Bun** (ADR 0016): Linux,
 macOS and Windows, each carrying Bun and Nunito inside, attached to a GitHub Release with an install
@@ -199,8 +199,9 @@ there.
 │       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
-├── examples/            scratchpi's seven circuits, ported: ratsnest's own, checked like anyone's,
-│                        and · the old files its migrations are tested on (ADR 0014, ADR 0015)
+├── examples/            scratchpi's seven circuits, ported, and `battery-button.ts`, the first on a
+│                        supply (ADR 0032): ratsnest's own, checked like anyone's, and · the old
+│                        files its migrations are tested on (ADR 0014, ADR 0015)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
@@ -228,8 +229,10 @@ there.
 │   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
 │   ├── language.ts      The languages a page is written in
 │   ├── pins.ts, rgb.ts  The GPIO a Pico 2 W breaks out, and an RGB LED's colours
-│   ├── __fixtures__/    The tests' seven circuits: scratchpi's, renamed by what they hold
-│   ├── drawing/         The Pico and the breadboard, drawn: CC BY-SA 4.0, unlike the rest (ADR 0018)
+│   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, and one
+│   │                    on a supply, and the `circuit` skill's default credits, read from the skill
+│   ├── drawing/         The Pico, the breadboard and a supply's cell, drawn: CC BY-SA 4.0, unlike
+│   │                    the rest (ADR 0018)
 │   └── page/            The page and the drawing alone: their generator, their words, the page's
 │                        stylesheet and its one script, `drawing.css`, which both carry (ADR 0031),
 │                        and `tokens.css`, the only file that writes a colour (ADR 0004)
@@ -405,6 +408,11 @@ does not pay for it again.
   to move the project on, removed the old one's renamed file while the old one still ran and waited
   for it, and Windows refuses that with `EFAULT`. `clearOld` in `src/update.ts` now leaves such a file
   for the next update, and the pull request check runs the compiled examples on Windows and macOS too.
+- **Outside `drawBreadboard` and `crowdingProblems`, the drawing assumes a Pico.** `turn`, `sayOhms`
+  and `pico` in `breadboard-svg.ts` are set for the length of those two calls and put back after.
+  `tagOf` asked on its own, as a test does, keeps a value tag off a Pico that a circuit with a supply
+  does not have (ADR 0032), so the tag it gives can differ from the one drawn. The test of where a
+  tag always was leaves the supply's test circuit out for that reason.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

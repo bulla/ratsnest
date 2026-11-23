@@ -1,4 +1,4 @@
-import type { ButtonColour } from "../circuit";
+import type { ButtonColour, Supply } from "../circuit";
 import type { WireRole } from "../drawing/breadboard";
 import { type Band, formatOhms } from "../drawing/breadboard-svg";
 import { plural } from "../language";
@@ -140,6 +140,24 @@ export interface PageWords {
   readonly anyResistor: (low: string, high: string) => string;
   readonly rowsLettered: string;
   readonly unplug: string;
+
+  /**
+   * A circuit with a supply in the Pico's place (ADR 0032). Its voltage as the language writes a
+   * decimal and its unit: `4.5 V`, `4,5 V`, `4,5 В`.
+   */
+  readonly volts: (volts: number) => string;
+  /** The + rail's legend: the supply's voltage, written already. */
+  readonly railSupply: (volts: string) => string;
+  /** Where the supply is, at the drawing's quarter turn, its voltage written already (ADR 0003). */
+  readonly supplyIntro: (volts: string, orientation: Orientation) => string;
+  /** The last step: the supply's two leads in their rails, and then the circuit's test. */
+  readonly supplyTitle: string;
+  readonly supplyBody: (plus: Place, minus: Place, test: string) => string;
+  /** What gives each voltage, in the parts list in the Pico's place. */
+  readonly listSupply: (volts: Supply["volts"]) => string;
+  /** The notes that say the Pico's pin or its cable, said of the supply instead. */
+  readonly supplyLedPolarity: string;
+  readonly supplyUnplug: string;
 }
 
 const ENGLISH_BANDS = [
@@ -177,6 +195,22 @@ const ENGLISH_USB: Record<Orientation, string> = {
   90: "to the top",
   180: "to the right",
   270: "to the bottom",
+};
+
+/** Where a supply is, beside the board, at each quarter turn: where the USB would be. */
+const ENGLISH_SUPPLY_SIDE: Record<Orientation, string> = {
+  0: "to the left of",
+  90: "above",
+  180: "to the right of",
+  270: "below",
+};
+
+/** What gives each voltage a supply can be (ADR 0032). */
+const ENGLISH_SUPPLIES: Record<Supply["volts"], string> = {
+  3: "Two AA batteries, in a holder with a red and a black lead.",
+  3.7: "A protected 3.7 V Li-Po cell, with a protection circuit, usually under yellow tape by its leads. Its plug needs an adapter to two pins. Charge it only with a Li-Po charger.",
+  4.5: "Three AA batteries, in a holder with a red and a black lead.",
+  5: "A USB charger and its cable, into a USB-C breakout board for breadboards, which brings + and − out on two pins.",
 };
 
 const ENGLISH_JUMPERS = { one: "jumper wire", other: "jumper wires" } as const;
@@ -288,6 +322,18 @@ export const ENGLISH_PAGE: PageWords = {
   rowsLettered:
     "Some breadboards letter their rows the other way up. If yours does, follow the picture rather than the letters.",
   unplug: "Unplug the USB cable while you change the wiring.",
+
+  volts: (volts) => `${volts} V`,
+  railSupply: (volts) => `+ rail: ${volts}`,
+  supplyIntro: (volts, orientation) =>
+    `A ${volts} supply ${ENGLISH_SUPPLY_SIDE[orientation]} the breadboard.`,
+  supplyTitle: "Connect the supply and test",
+  supplyBody: (plus, minus, test) =>
+    `Put the supply's red lead ${englishIn(plus)} and its black lead ${englishIn(minus)}, both in column 1. ${test}`,
+  listSupply: (volts) => ENGLISH_SUPPLIES[volts],
+  supplyLedPolarity:
+    "An LED's long leg is + and goes towards the + rail. One put in backwards stays dark, but it is not damaged: turn it round.",
+  supplyUnplug: "Disconnect the supply while you change the wiring.",
 };
 
 // --- French. ---
@@ -301,6 +347,22 @@ const FRENCH_USB: Record<Orientation, string> = {
   90: "en haut",
   180: "à droite",
   270: "en bas",
+};
+
+/** Où est l’alimentation, à côté de la plaque, à chaque quart de tour. */
+const FRENCH_SUPPLY_SIDE: Record<Orientation, string> = {
+  0: "à gauche",
+  90: "au-dessus",
+  180: "à droite",
+  270: "au-dessous",
+};
+
+/** Ce qui donne chaque tension (ADR 0032). */
+const FRENCH_SUPPLIES: Record<Supply["volts"], string> = {
+  3: "Deux piles AA, dans un boîtier avec un fil rouge et un fil noir.",
+  3.7: "Un accu Li-Po de 3,7 V protégé, avec un circuit de protection, souvent sous un ruban jaune près de ses fils. Sa fiche demande un adaptateur vers deux broches. Ne le chargez qu’avec un chargeur Li-Po.",
+  4.5: "Trois piles AA, dans un boîtier avec un fil rouge et un fil noir.",
+  5: "Un chargeur USB et son câble, branchés sur une carte d’adaptation USB-C pour plaque d’essai, qui sort le + et le − sur deux broches.",
 };
 
 const FRENCH_BANDS = [
@@ -490,6 +552,17 @@ export const FRENCH_PAGE: PageWords = {
   rowsLettered:
     "Sur certaines plaques d’essai, les lettres des rangées vont dans l’autre sens. Si c’est le cas de la vôtre, suivez le dessin plutôt que les lettres.",
   unplug: "Débranchez le câble USB pendant que vous changez le câblage.",
+
+  volts: (volts) => `${String(volts).replace(".", ",")} V`,
+  railSupply: (volts) => `rail +${NNBSP}: ${volts}`,
+  supplyIntro: (volts, orientation) =>
+    `Une alimentation de ${volts} ${FRENCH_SUPPLY_SIDE[orientation]} de la plaque d’essai.`,
+  supplyTitle: "Branchez l’alimentation et testez",
+  supplyBody: (plus, minus, test) =>
+    `Enfoncez le fil rouge de l’alimentation ${frenchIn(plus)} et son fil noir ${frenchIn(minus)}, tous deux en colonne 1. ${test}`,
+  listSupply: (volts) => FRENCH_SUPPLIES[volts],
+  supplyLedPolarity: `La grande patte d’une LED est le + et va du côté du rail +. Une LED mise à l’envers reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
+  supplyUnplug: "Débranchez l’alimentation pendant que vous changez le câblage.",
 };
 
 // --- Russian. ---
@@ -553,6 +626,14 @@ const RUSSIAN_USB_POINTS: Record<Orientation, string> = {
   90: "вверх",
   180: "вправо",
   270: "вниз",
+};
+
+/** What gives each voltage (ADR 0032). */
+const RUSSIAN_SUPPLIES: Record<Supply["volts"], string> = {
+  3: "Две батарейки AA в держателе с красным и чёрным проводом.",
+  3.7: "Защищённый литий-полимерный аккумулятор 3,7 В со схемой защиты, обычно под жёлтой лентой у проводов. Для его разъёма нужен переходник на два штырька. Заряжайте его только зарядным устройством для Li-Po.",
+  4.5: "Три батарейки AA в держателе с красным и чёрным проводом.",
+  5: "Зарядное устройство USB с кабелем и переходная плата USB-C для макетной платы, которая выводит + и − на два штырька.",
 };
 
 /** A rail, in the case a preposition asks for: *от верхней шины −*, *в верхнюю шину −*. */
@@ -675,4 +756,16 @@ export const RUSSIAN_PAGE: PageWords = {
   rowsLettered:
     "На некоторых макетных платах ряды подписаны в обратном порядке. Если на вашей так, следуйте рисунку, а не буквам.",
   unplug: "Отключайте кабель USB, пока меняете схему.",
+
+  volts: (volts) => `${String(volts).replace(".", ",")} В`,
+  railSupply: (volts) => `шина +: ${volts}`,
+  supplyIntro: (volts, orientation) =>
+    `Источник питания ${volts} ${RUSSIAN_USB[orientation]} от макетной платы.`,
+  supplyTitle: "Подключите питание и проверьте",
+  supplyBody: (plus, minus, test) =>
+    `Вставьте красный провод источника ${russianIn(plus)}, а чёрный ${russianIn(minus)}, оба в столбец 1. ${test}`,
+  listSupply: (volts) => RUSSIAN_SUPPLIES[volts],
+  supplyLedPolarity:
+    "Длинная ножка светодиода: это +, она идёт к шине +. Светодиод, вставленный наоборот, не горит, но и не портится: переверните его.",
+  supplyUnplug: "Отключайте питание, пока меняете схему.",
 };

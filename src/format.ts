@@ -190,8 +190,39 @@ export interface Step {
   readonly parts: readonly Part[];
 }
 
-/** A circuit: what it is, where its parts go, and the script that tests it. */
-export interface Circuit {
+/**
+ * What powers a circuit that has no Pico (ADR 0032): a supply whose red lead goes in the + rail and
+ * whose black lead goes in the − rail, both in column 1, on the side it names. The engine places it
+ * and draws it, so a circuit names no hole for it.
+ *
+ * - `3`: two AA batteries, in a holder with a red and a black lead
+ * - `3.7`: one protected Li-Po cell, with an adapter from its plug to two pins
+ * - `4.5`: three AA batteries, in a holder with a red and a black lead
+ * - `5`: a USB charger, into a USB-C breakout board for breadboards
+ */
+export interface Supply {
+  readonly volts: 3 | 3.7 | 4.5 | 5;
+  /** The pair of rails its leads go in. */
+  readonly rails: "top" | "bottom";
+}
+
+/** A light of one colour, lit from a supply through its resistor: it names no pin (ADR 0032). */
+export interface SupplyLed {
+  readonly id: string;
+  readonly name: Text;
+  readonly colour: LedColour;
+}
+
+/** A push button that switches a supply's current itself: it names no pin (ADR 0032). */
+export interface SupplyButton {
+  readonly id: string;
+  /** Its name, `BTN1`, which takes no article. */
+  readonly name: Text;
+  readonly colour: ButtonColour;
+}
+
+/** A circuit on a Pico: what it is, where its parts go, and the script that tests it. */
+export interface PicoCircuit {
   /** The circuit format the file is written in (ADR 0015). */
   readonly format: 1;
   /** Its name. The languages it has are the circuit's languages (ADR 0010). */
@@ -215,4 +246,41 @@ export interface Circuit {
   readonly script: Text;
   /** What the script does, said to the person watching the board. */
   readonly scriptDoes: Text;
+  /** None: a circuit with a supply has no Pico, and is a `SupplyCircuit` (ADR 0034). */
+  readonly supply?: never;
 }
+
+/**
+ * A circuit with no Pico, powered by a supply on one pair of rails (ADR 0032): plain lights and
+ * buttons, and nothing to program.
+ */
+export interface SupplyCircuit {
+  /** The circuit format the file is written in (ADR 0015). */
+  readonly format: 1;
+  /** Its name. The languages it has are the circuit's languages (ADR 0010). */
+  readonly name: Text;
+  /** A sentence saying what it is. */
+  readonly description: Text;
+  /**
+   * Where the drawing and the font come from, as a Pico circuit's `credit` says (ADR 0035): the
+   * page's footer, and the line along the drawing alone's bottom edge, or neither without it.
+   */
+  readonly credit?: Text;
+  /** What powers it, in the Pico's place. */
+  readonly supply: Supply;
+  readonly leds?: readonly SupplyLed[];
+  readonly buttons?: readonly SupplyButton[];
+  /**
+   * How to build it, in order: lights, resistors, buttons and wires. The supply goes in last, with
+   * the test, without a step.
+   */
+  readonly steps: readonly Step[];
+  /** What to do once the supply is connected, and what a working circuit then does. */
+  readonly test: Text;
+}
+
+/**
+ * A circuit: on a Pico, or powered by a supply in its place (ADR 0034). Its `supply` says which, and
+ * every circuit file ends `satisfies Circuit`.
+ */
+export type Circuit = PicoCircuit | SupplyCircuit;
