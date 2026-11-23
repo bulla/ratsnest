@@ -114,3 +114,4 @@ Each new record adds a row here.
 | [0041](0041-place-a-new-part-in-its-step-as-a-resistor-is-with-no-name-of-its-own.md)                            | Place a new part in its step as a resistor is, with no name of its own                             |
 | [0042](0042-keep-a-light-lit-with-an-electrolytic-capacitor-on-a-supply.md)                                      | Keep a light lit with an electrolytic capacitor, on a supply                                       |
 | [0043](0043-let-a-pin-switch-a-light-through-an-npn-transistor.md)                                               | Let a pin switch a light through an NPN transistor                                                 |
+| [0044](0044-let-a-pin-switch-a-light-on-the-high-side-through-a-pnp-transistor.md)                               | Let a pin switch a light on the high side, through a PNP transistor                                |

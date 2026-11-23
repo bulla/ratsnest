@@ -257,6 +257,21 @@ on its flat face and each leg's letter above it.
 - [x] `examples/transistor-switch.ts`, in English and French, and a test circuit with a variant for
       every rule it is refused by
 
+### M15: the PNP transistor
+
+M15 is done: a pin switches a light on the high side through a 2N3906, lit while the pin is low, the
+third new part with the circuit that teaches it (ADR 0038, ADR 0044). The NPN's rule became one rule
+read by the model's type, and the drawing, printed `PNP`, is the NPN's.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0044)
+- [x] The 2N3906 among the models ratsnest knows, and each model's look-alike whose legs differ
+- [x] The wiring check's rule, the NPN's read by type: the emitter on 3V3(OUT), and the light
+      between the collector and ground
+- [x] The page's note on a light's long leg, for a light either kind of transistor switches, and the
+      note on a transistor's legs naming its own look-alike, the BC547 or the BC557
+- [x] `examples/high-side-switch.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -487,3 +502,8 @@ on its flat face and each leg's letter above it.
   its middle point, so the transistor moved a column left and its light's resistor grew a hole. The
   light runs from 3V3: VBUS's 5 V, which shows best what a transistor is for, would have changed the
   - rail's legend and the wire colours' rule, and waits for a circuit that needs it.
+- 2026-11-23: M15, the PNP transistor, worked out alone (ADR 0044), on the NPN's case, words and
+  example layout. The NPN's rule was written for the low side, and became one rule read by the
+  model's type rather than a second copy. The PNP's emitter is held to 3V3(OUT) alone, since on VBUS
+  a 3.3 V pin never turns it off. Its example's notes first wrote `3.3 V` and `5 V`, which the check
+  on values refused, as it should.

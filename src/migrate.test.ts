@@ -23,7 +23,7 @@ const examples = sourcesIn(EXAMPLES);
  */
 const formatOne = sourcesIn(join(EXAMPLES, "format-1"));
 /** The examples written since, in format 2, which have no copy in format 1. */
-const BORN_IN_FORMAT_2 = ["fading-light.ts", "transistor-switch.ts"];
+const BORN_IN_FORMAT_2 = ["fading-light.ts", "high-side-switch.ts", "transistor-switch.ts"];
 
 const NEXT = FORMAT + 1;
 type Data = Record<string, unknown>;

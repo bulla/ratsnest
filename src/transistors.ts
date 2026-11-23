@@ -14,11 +14,18 @@ export interface TransistorModel {
   readonly type: TransistorType;
   /** Its legs, left to right, with its flat face towards you and its legs down. */
   readonly legs: readonly [TransistorLeg, TransistorLeg, TransistorLeg];
+  /**
+   * A model of the same type that looks the same and has its legs in another order, which the page's
+   * note on its legs names (ADR 0044).
+   */
+  readonly unlike: string;
 }
 
 export const TRANSISTORS = {
   /** The most widely sold small NPN transistor, in a TO-92 case (ADR 0043). */
-  "2N3904": { type: "NPN", legs: ["emitter", "base", "collector"] },
+  "2N3904": { type: "NPN", legs: ["emitter", "base", "collector"], unlike: "BC547" },
+  /** The 2N3904's PNP complement, in the same case, with its legs in the same order (ADR 0044). */
+  "2N3906": { type: "PNP", legs: ["emitter", "base", "collector"], unlike: "BC557" },
 } as const satisfies Record<string, TransistorModel>;
 
 export type TransistorName = keyof typeof TRANSISTORS;

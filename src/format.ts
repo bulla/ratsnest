@@ -190,10 +190,11 @@ export interface ElectrolyticPart {
 }
 
 /**
- * A transistor ratsnest knows, by its model (ADR 0039): `2N3904`, an NPN transistor whose legs are
- * emitter, base and collector, left to right, with its flat face towards you.
+ * A transistor ratsnest knows, by its model (ADR 0039): `2N3904`, an NPN transistor, and `2N3906`, a
+ * PNP one, whose legs are both emitter, base and collector, left to right, with the flat face towards
+ * you.
  */
-export type TransistorModel = "2N3904";
+export type TransistorModel = "2N3904" | "2N3906";
 
 /**
  * A transistor in a TO-92 case, standing up, its three legs side by side in one row (ADR 0043): the

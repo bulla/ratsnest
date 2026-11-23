@@ -377,13 +377,24 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
       switching.add(transistor);
       const tName = describe(transistor, circuit);
       const collector = net(transistor.collector);
-      if (reaches(anode, collector) && !reaches(cathode, collector)) {
+      // An NPN switches a light's low side, from 3V3 down to its collector, and a PNP its high side,
+      // from its collector down to ground (ADR 0044): which rail its emitter is on, and which of the
+      // light's legs faces it, are all that differ.
+      const npn = TRANSISTORS[transistor.model].type === "NPN";
+      const [toward, away] = npn ? [cathode, anode] : [anode, cathode];
+      const [rail, railName] = npn ? [power, POWER_LABEL] : [ground, "ground"];
+      const collectorName = `the ${transistor.model}'s collector`;
+      if (reaches(away, collector) && !reaches(toward, collector)) {
         problems.push(
-          `${name} is in backwards: its long leg must be towards ${POWER_LABEL}, and its short leg towards the ${transistor.model}'s collector`,
+          npn
+            ? `${name} is in backwards: its long leg must be towards ${POWER_LABEL}, and its short leg towards ${collectorName}`
+            : `${name} is in backwards: its long leg must be towards ${collectorName}, and its short leg towards ground`,
         );
         continue;
       }
-      if (net(transistor.emitter) !== ground) problems.push(`${tName} has its emitter off ground`);
+      if (net(transistor.emitter) !== (npn ? ground : power)) {
+        problems.push(`${tName} has its emitter off ${npn ? "ground" : POWER_LABEL}`);
+      }
       const base = net(transistor.base);
       const bases = between(pin, base);
       if (base === pin) {
@@ -401,16 +412,18 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
           );
         }
       }
-      // From 3V3 through one resistor to the collector, the resistor on either side of the light.
+      // Between its rail and the collector through one resistor, on either side of the light.
       const [middle, series] =
-        cathode === collector
-          ? [anode, between(power, anode)]
-          : anode === power
-            ? [cathode, between(cathode, collector)]
+        toward === collector
+          ? [away, between(rail, away)]
+          : away === rail
+            ? [toward, between(toward, collector)]
             : [undefined, []];
       if (!middle || series.length !== 1 || terminals.get(middle) !== 2) {
         problems.push(
-          `${name} is not wired from ${POWER_LABEL} through one resistor to the ${transistor.model}'s collector`,
+          npn
+            ? `${name} is not wired from ${railName} through one resistor to ${collectorName}`
+            : `${name} is not wired from ${collectorName} through one resistor to ${railName}`,
         );
         continue;
       }
@@ -518,7 +531,9 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   for (const transistor of transistors) {
     if (!switching.has(transistor)) {
       problems.push(
-        `${describe(transistor, circuit)} switches no light: its emitter goes on ground, its base through a resistor from a light's pin, and its collector under the light`,
+        TRANSISTORS[transistor.model].type === "NPN"
+          ? `${describe(transistor, circuit)} switches no light: its emitter goes on ground, its base through a resistor from a light's pin, and its collector under the light`
+          : `${describe(transistor, circuit)} switches no light: its emitter goes on ${POWER_LABEL}, its base through a resistor from a light's pin, and its collector over the light`,
       );
     }
   }

@@ -159,8 +159,15 @@ export interface PageWords {
   readonly electrolyticPolarity: string;
   /** Which way round a light goes on a Pico whose lights a transistor may switch (ADR 0043). */
   readonly switchedLedPolarity: string;
-  /** A transistor model's legs, left to right, and that another model's can differ (ADR 0039). */
-  readonly transistorPinout: (model: string, legs: readonly TransistorLeg[]) => string;
+  /**
+   * A transistor model's legs, left to right, and a model that looks the same and has them in
+   * another order (ADR 0039, ADR 0044).
+   */
+  readonly transistorPinout: (
+    model: string,
+    legs: readonly TransistorLeg[],
+    unlike: string,
+  ) => string;
   /** What a transistor's base resistor can be. */
   readonly baseResistor: (low: string, high: string) => string;
   readonly rowsLettered: string;
@@ -361,9 +368,9 @@ export const ENGLISH_PAGE: PageWords = {
   electrolyticPolarity:
     "An electrolytic capacitor goes in one way round: its − leg is the shorter one, under the pale stripe down its side, and goes towards −. Put in backwards, it can be damaged.",
   switchedLedPolarity:
-    "An LED's long leg is + and goes towards the pin, or towards 3V3 where a transistor switches it. One put in backwards stays dark, but it is not damaged: turn it round.",
-  transistorPinout: (model, legs) =>
-    `With its flat face towards you and its legs down, a ${model}'s legs are its ${englishList(legs.map((leg) => ENGLISH_LEGS[leg]))}, left to right. Other transistors that look the same, such as a BC547, have them in another order: take the model the parts list names.`,
+    "An LED's long leg is + and goes towards the pin, or, where a transistor switches it, towards 3V3 or towards the transistor, as its step says. One put in backwards stays dark, but it is not damaged: turn it round.",
+  transistorPinout: (model, legs, unlike) =>
+    `With its flat face towards you and its legs down, a ${model}'s legs are its ${englishList(legs.map((leg) => ENGLISH_LEGS[leg]))}, left to right. Others that look the same, such as a ${unlike}, have them in another order: take the model the parts list names.`,
   baseResistor: (low, high) => `Any resistor from ${low} to ${high} works for a transistor's base.`,
   rowsLettered:
     "Some breadboards letter their rows the other way up. If yours does, follow the picture rather than the letters.",
@@ -612,9 +619,9 @@ export const FRENCH_PAGE: PageWords = {
   anyResistor: (low, high) =>
     `N’importe quelle résistance de ${low} à ${high} convient pour une LED. Plus elle est grande, plus la LED éclaire faiblement.`,
   electrolyticPolarity: `Un condensateur électrolytique se plante dans un seul sens${NNBSP}: sa patte − est la plus courte, du côté de la bande pâle sur son flanc, et va vers le −. Monté à l’envers, il peut être abîmé.`,
-  switchedLedPolarity: `La grande patte d’une LED est le + et va du côté de la broche, ou du 3V3 quand un transistor la commande. Une LED mise à l’envers reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
-  transistorPinout: (model, legs) =>
-    `Face plate vers vous et pattes en bas, les pattes d’un ${model} sont ${frenchList(legs.map((leg) => FRENCH_LEGS[leg]))}, de gauche à droite. D’autres transistors qui lui ressemblent, comme le BC547, les ont dans un autre ordre${NNBSP}: prenez le modèle que nomme la liste des composants.`,
+  switchedLedPolarity: `La grande patte d’une LED est le + et va du côté de la broche, ou, quand un transistor la commande, du côté du 3V3 ou du transistor, comme le dit son étape. Une LED mise à l’envers reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
+  transistorPinout: (model, legs, unlike) =>
+    `Face plate vers vous et pattes en bas, les pattes d’un ${model} sont ${frenchList(legs.map((leg) => FRENCH_LEGS[leg]))}, de gauche à droite. D’autres qui lui ressemblent, comme le ${unlike}, les ont dans un autre ordre${NNBSP}: prenez le modèle que nomme la liste des composants.`,
   baseResistor: (low, high) =>
     `N’importe quelle résistance de ${low} à ${high} convient pour la base d’un transistor.`,
   rowsLettered:
@@ -842,9 +849,9 @@ export const RUSSIAN_PAGE: PageWords = {
   electrolyticPolarity:
     "Электролитический конденсатор ставится только одной стороной: ножка − короче, она под светлой полосой на корпусе и идёт к −. Вставленный наоборот, он может испортиться.",
   switchedLedPolarity:
-    "Длинная ножка светодиода: это +, она идёт к выводу, а если светодиод переключает транзистор, к 3V3. Светодиод, вставленный наоборот, не горит, но и не портится: переверните его.",
-  transistorPinout: (model, legs) =>
-    `Если смотреть на плоскую сторону, ножками вниз, у ${model} слева направо: ${russianList(legs.map((leg) => RUSSIAN_LEGS[leg]))}. У похожих на него транзисторов, например BC547, порядок другой: берите модель, названную в списке деталей.`,
+    "Длинная ножка светодиода: это +, она идёт к выводу, а если светодиод переключает транзистор, к 3V3 или к транзистору, как сказано в его шаге. Светодиод, вставленный наоборот, не горит, но и не портится: переверните его.",
+  transistorPinout: (model, legs, unlike) =>
+    `Если смотреть на плоскую сторону, ножками вниз, у ${model} слева направо: ${russianList(legs.map((leg) => RUSSIAN_LEGS[leg]))}. У похожих на него, например ${unlike}, порядок другой: берите модель, названную в списке деталей.`,
   baseResistor: (low, high) => `Для базы транзистора подойдёт любой резистор от ${low} до ${high}.`,
   rowsLettered:
     "На некоторых макетных платах ряды подписаны в обратном порядке. Если на вашей так, следуйте рисунку, а не буквам.",
