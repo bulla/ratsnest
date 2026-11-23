@@ -36,7 +36,7 @@ ShareAlike requires. That obligation covers the drawing, not the rest of this re
 code moved out of `src/drawing/` takes the obligation with it. Every page ratsnest makes carries the
 drawing, with the Pico or with a supply in its place, and its circuit's credit, if it has one, as its
 footer; the drawing alone, as an SVG file (ADR 0031), or as a PNG or a WebP drawn from it
-(ADR 0038), carries that credit in a line of small text along its bottom edge, so that it goes
+(ADR 0042), carries that credit in a line of small text along its bottom edge, so that it goes
 wherever the file is put. The `circuit` skill gives every
 circuit it makes ratsnest's credit, and the update to format 2 gives it to every circuit written
 before with none (ADR 0036), which says where the drawing comes from, that it is

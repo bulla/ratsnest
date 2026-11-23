@@ -7,7 +7,7 @@ import { drawingFile } from "./page";
 import { PICTURE_PX_PER_MM, type Picture, pictureOf, sized } from "./picture";
 
 /**
- * The drawing as a PNG or a WebP (ADR 0038): the SVG drawn by a browser, so these tests need one
+ * The drawing as a PNG or a WebP (ADR 0042): the SVG drawn by a browser, so these tests need one
  * where they run, a Chrome, Chromium, Edge or Brave, or on macOS its own WebKit.
  */
 
@@ -111,7 +111,7 @@ function surfaceOf(theme: Theme): string {
   return found[1] as string;
 }
 
-describe("the drawing as a picture, a PNG or a WebP (ADR 0038)", () => {
+describe("the drawing as a picture, a PNG or a WebP (ADR 0042)", () => {
   it(
     "is a PNG of the SVG at 12 px per millimetre, twice the SVG's size",
     async () => {

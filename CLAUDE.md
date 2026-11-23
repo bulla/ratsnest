@@ -52,7 +52,7 @@ itself. A project names the version it expects in `ratsnest.json`, gets the `Cir
 `.ratsnest/` for editors, and `ratsnest update` replaces the executable before it migrates. The
 install puts `rnest` beside it, a link to the same executable, and the docs' examples type that
 shorter name (ADR 0029). Its one need from outside is a browser, for a drawing as a PNG or a WebP:
-macOS's own WebKit, or on Linux and Windows a Chrome, Chromium, Edge or Brave (ADR 0038).
+macOS's own WebKit, or on Linux and Windows a Chrome, Chromium, Edge or Brave (ADR 0042).
 
 **Every release is numbered by strict SemVer, computed and never chosen** (ADR 0017). The public
 surface (the circuit format and its type, the commands and their options, `ratsnest.json`) is
@@ -83,6 +83,15 @@ extend one base: every circuit's setup, name, description, credit, steps and `te
 `"supply"`, as a part's and a pin's `kind` says what they are, a new start being a new `kind`
 (ADR 0037).
 
+**A new part comes with a circuit that needs it, and the wiring check learns that one use**
+(ADR 0038), so that every page still shows a circuit that works. A part bought by its model is one
+of a closed list the engine holds, with its pinout, its print and its parts list's line, 2N3904 and
+2N3906 first (ADR 0039); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
+part apart is printed on its body, upright at every turn and the same in every language, `NPN` and
+`470 µF`, and on a tag only where it cannot fit (ADR 0040). A new part is placed in its step as a
+resistor is, its legs named by role, with no name or callout of its own (ADR 0041). The parts to
+come, in order, are in the roadmap's Backlog.
+
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the
 drawing's attribution, with nothing else to load. **A page is a pure function of four inputs**: the
@@ -90,7 +99,7 @@ circuit, an orientation of 0°, 90°, 180° or 270° clockwise (ADR 0003), a the
 (ADR 0005). Nothing on the page switches any of them, and the same inputs make the same file.
 When asked, a circuit's output is its drawing alone instead, from the same inputs: an SVG to embed
 (ADR 0031), or a PNG or a WebP drawn from that SVG by a browser, the same file only from the same
-browser (ADR 0038).
+browser (ADR 0042).
 
 **A circuit is written in English, French or Russian, one language at least, and a page is made only
 in a language its circuit has** (ADR 0010). Every text a reader sees is keyed by language, a circuit's
@@ -155,7 +164,7 @@ on a range or on a running Bun other than the one pinned.
 | Versions               | Strict SemVer, computed by `bun run release` and compared with `Bun.semver` (ADR 0017)                                                   |
 | Continuous integration | GitHub Actions on Bun alone: one workflow for every pull request and push to `develop`, one for every `v*` tag (ADR 0020)                |
 | Looking at a page      | The Playwright and Chromium installed where the work is done, never a dependency                                                         |
-| Drawing a picture      | Bun's own `WebView`, driving the browser on the machine, and `Bun.Image`, encoding PNG and WebP (ADR 0038)                               |
+| Drawing a picture      | Bun's own `WebView`, driving the browser on the machine, and `Bun.Image`, encoding PNG and WebP (ADR 0042)                               |
 
 Two standing constraints:
 
@@ -247,7 +256,7 @@ there.
 │   └── page/            The page and the drawing alone: their generator, their words, the page's
 │                        stylesheet and its one script, `drawing.css`, which both carry (ADR 0031),
 │                        `tokens.css`, the only file that writes a colour (ADR 0004), and
-│                        `picture.ts`, which has a browser draw the SVG as a PNG or a WebP (ADR 0038)
+│                        `picture.ts`, which has a browser draw the SVG as a PNG or a WebP (ADR 0042)
 ├── pages/               What `bun run ratsnest generate` writes (ADR 0023), ignored by git
 ├── LICENSE              MIT, held by bulla, for everything but `src/drawing/` and `fonts/` (ADR 0018)
 ├── ATTRIBUTION.md       The drawing's source and licence, and which folder it covers (ADR 0018)

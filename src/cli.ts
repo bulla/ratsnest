@@ -40,7 +40,7 @@ const ORIENTATIONS = ["0", "90", "180", "270"];
 
 /**
  * What `generate` makes: the whole page, or the drawing alone as an SVG (ADR 0031) or as a picture
- * (ADR 0038). Each is its file's extension.
+ * (ADR 0042). Each is its file's extension.
  */
 const FORMATS = ["html", "svg", ...PICTURES];
 
@@ -274,7 +274,7 @@ function generate(args: readonly string[], cwd: string, io: Io): number | Promis
   if (format === "html") return write(wiringPage(shown.circuit, shown.layout, PAGE_FILES, inputs));
   const drawing = drawingFile(shown.circuit, shown.layout, PAGE_FILES, inputs);
   if (!isPicture(format)) return write(drawing);
-  // A picture of that same drawing, drawn by a browser (ADR 0038), which may not be there.
+  // A picture of that same drawing, drawn by a browser (ADR 0042), which may not be there.
   return pictureOf(drawing, format).then(write, (error: unknown) => {
     if (!(error instanceof NoBrowser)) throw error;
     io.err(`ratsnest: ${error.message}`);

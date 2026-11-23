@@ -183,7 +183,7 @@ own background in its theme. Make one when the request asks for an SVG, an image
 put somewhere else; a page otherwise. A host that wants both themes embeds both files, in a
 `<picture>` with `prefers-color-scheme`.
 
-**The drawing as a picture** (ADR 0038). `--format png` and `--format webp` make a picture of that
+**The drawing as a picture** (ADR 0042). `--format png` and `--format webp` make a picture of that
 same SVG, at twice its size, its credit and background with it; a WebP is lossless. Make one when the
 request asks for a PNG, a WebP, or a picture for somewhere that takes no SVG, such as a chat, a
 forum or slides; an SVG when the drawing goes into a web page. A browser draws it, so on Linux and

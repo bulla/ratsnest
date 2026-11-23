@@ -207,7 +207,7 @@ describe("ratsnest generate (ADR 0023)", () => {
     });
   });
 
-  it("draws the drawing as a PNG or a WebP, named as the page is (ADR 0038)", async () => {
+  it("draws the drawing as a PNG or a WebP, named as the page is (ADR 0042)", async () => {
     const folder = project({ "lights.ts": LIGHTS });
     for (const format of ["png", "webp"]) {
       const result = await ran(folder, "generate", "circuits/lights.ts", "--format", format);

@@ -1,6 +1,6 @@
 # ADR 0023: Write a generated page into `pages/`, named by its four inputs
 
-**Status:** Accepted · 2026-11-20 · Amended by ADR-0031 (a drawing is written as `.svg`) and ADR-0038 (or as `.png` or `.webp`)
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0031 (a drawing is written as `.svg`) and ADR-0042 (or as `.png` or `.webp`)
 
 ## Context
 

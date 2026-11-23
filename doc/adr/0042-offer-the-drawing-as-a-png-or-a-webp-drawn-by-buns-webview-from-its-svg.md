@@ -1,4 +1,4 @@
-# ADR 0038: Offer the drawing as a PNG or a WebP, drawn by Bun's WebView from its SVG
+# ADR 0042: Offer the drawing as a PNG or a WebP, drawn by Bun's WebView from its SVG
 
 **Status:** Accepted · 2026-11-23 · Amends ADR-0005 (a PNG or a WebP is the same file only from the same browser), ADR-0016 (on Linux and Windows, a PNG or a WebP needs a browser installed), ADR-0023 (a drawing is also written as `.png` or `.webp`) and ADR-0031 (the drawing alone is also a PNG or a WebP)
 

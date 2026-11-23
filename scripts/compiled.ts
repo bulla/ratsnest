@@ -2,7 +2,7 @@
  * The examples run with a compiled ratsnest, as a circuits project runs them (ADR 0016, ADR 0020): its
  * `check`, then every example's page, and its drawing alone (ADR 0031), in every language,
  * orientation and theme, each the same file, byte for byte, as the source makes. Then the first
- * example's drawing as a PNG and a WebP (ADR 0038), drawn by the browser the executable finds, the
+ * example's drawing as a PNG and a WebP (ADR 0042), drawn by the browser the executable finds, the
  * system's WebKit on macOS, each the same file as the source draws with it. Bun's compiler
  * packs only what is imported, so a file read from beside the source works from it and is missing
  * from the executable; this is what finds that. Then a copy of it updates a project of its own

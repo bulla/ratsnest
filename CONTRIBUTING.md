@@ -30,7 +30,7 @@ them.
 - **Chromium, from the second milestone on**, to look at the pages the engine makes. Nothing
   installs it for you, and it is never a dependency.
 - **A browser for the tests, on Linux and Windows**: Chrome, Chromium, Edge or Brave, since ratsnest
-  draws a drawing as a PNG or a WebP with it, and the tests draw some (ADR 0038). Windows has Edge,
+  draws a drawing as a PNG or a WebP with it, and the tests draw some (ADR 0042). Windows has Edge,
   and macOS draws with its own WebKit. Bun finds one on the `PATH` or where it is usually installed,
   and `BUN_CHROME_PATH` names one anywhere else.
 
