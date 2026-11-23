@@ -1,4 +1,4 @@
-# ADR 0045: Let two NPN transistors flash two lights on a supply, and test a capacitor
+# ADR 0046: Let two NPN transistors flash two lights on a supply, and test a capacitor
 
 **Status:** Accepted · 2026-11-23
 
@@ -13,7 +13,7 @@ base resistor has charged it again: the two lights flash in turn. One of the two
 one under test: a good one keeps the lights flashing, and a larger one holds its transistor off for
 longer; an open or a shorted one stops them.
 
-It needs the electrolytic capacitor (ADR 0042) and the 2N3904 (ADR 0043) together, on a supply,
+It needs the electrolytic capacitor (ADR 0043) and the 2N3904 (ADR 0044) together, on a supply,
 where neither had a use. As with the parts before it, the owner had the work go on alone.
 
 ## Decision
@@ -26,7 +26,7 @@ flasher. The wiring check holds every transistor on a supply to it:
 3. **A light on its collector**, from + through one resistor of 220 Ω to 1 kΩ, on either side of the
    light, its long leg towards +, as on a Pico.
 4. **Its base fed from + through one resistor of 10 kΩ to 100 kΩ.** A flasher's base resistor sets
-   its beat with its capacitor, and is larger than a switch's on a Pico (ADR 0043). At 3 V, 47 kΩ
+   its beat with its capacitor, and is larger than a switch's on a Pico (ADR 0044). At 3 V, 47 kΩ
    lets 49 µA into the base, which a 2N3904 turns into a light's few milliamperes.
 5. **One capacitor from the other transistor's collector to its base**, its + leg towards the
    collector and its stripe towards the base.
@@ -38,7 +38,7 @@ Each transistor's rule names the other only as "another transistor's collector",
 each held to it, are the flasher.
 
 **A capacitor on a supply has two uses now**: from a collector to a base, as above, or keeping a
-light lit (ADR 0042), which every other capacitor is still held to.
+light lit (ADR 0043), which every other capacitor is still held to.
 
 **The page notes the flasher's base resistor's range** in place of a switch's, in the note on a
 transistor's base resistor.
@@ -75,4 +75,4 @@ the rows below.
 - **The 3 V supply lights only red, amber, orange and yellow lights**, as before (ADR 0033), so the
   example's lights are red and yellow.
 - **The example's red light's leader would run behind both transistors and both cans** to its label,
-  which ADR 0046 lifts over them.
+  which ADR 0047 lifts over them.

@@ -128,7 +128,7 @@ export const SUPPLY_TOKENS = {
 } as const;
 
 /**
- * The colours of an electrolytic capacitor (ADR 0042): its can's sleeve, the pale stripe down its −
+ * The colours of an electrolytic capacitor (ADR 0043): its can's sleeve, the pale stripe down its −
  * side, the value printed on the sleeve, and the minus signs printed on the stripe.
  */
 export const ELECTROLYTIC_TOKENS = {
@@ -138,7 +138,7 @@ export const ELECTROLYTIC_TOKENS = {
   stripeInk: "capacitor-stripe-ink",
 } as const;
 
-/** The colours of a transistor's TO-92 case, and of what is printed on its flat face (ADR 0043). */
+/** The colours of a transistor's TO-92 case, and of what is printed on its flat face (ADR 0044). */
 export const TRANSISTOR_TOKENS = { body: "transistor", ink: "transistor-ink" } as const;
 
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
@@ -1242,7 +1242,7 @@ function drawBuzzer(plus: Hole, minus: Hole): string {
 
 /**
  * An electrolytic capacitor, standing on its two legs and seen from the side, as a light is (ADR 0040,
- * ADR 0042): a can in its sleeve, a pale stripe down the side its − leg is on, with minus signs on it,
+ * ADR 0043): a can in its sleeve, a pale stripe down the side its − leg is on, with minus signs on it,
  * an aluminium top, and its value printed on the sleeve, the number over its unit, upright at every
  * quarter turn. Its + leg is kinked, as a light's long leg is. It is drawn the same size whatever its
  * value, and short, so that it stands over no more than the three rows above its legs.
@@ -1340,7 +1340,7 @@ function drawElectrolytic(part: Extract<Part, { kind: "electrolytic" }>): string
 
 /**
  * A transistor in its TO-92 case, standing on its three legs with its flat face towards the viewer,
- * as a datasheet draws it (ADR 0040, ADR 0043): a black case, larger than life so that what is printed
+ * as a datasheet draws it (ADR 0040, ADR 0044): a black case, larger than life so that what is printed
  * on it reads, its type large, `NPN`, its model small beneath, and the letter of each leg above it,
  * every word upright at every quarter turn and the same in every language. Its legs leave the case
  * 1.27 mm apart, as a TO-92's do, and bend out to the holes, a pitch apart.
@@ -1665,7 +1665,7 @@ export function leaderOf(
 
 /**
  * A light's leader lifted over the transistors' cases and the capacitors' cans in its way to its
- * label's end of the board (ADR 0046): from the top of its lens, up to the first lane between rows
+ * label's end of the board (ADR 0047): from the top of its lens, up to the first lane between rows
  * above every one of them. A leader run straight would pass behind them, and read as running into
  * them. Only those standing parts count, so that no layout without them changes.
  */

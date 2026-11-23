@@ -204,7 +204,7 @@ describe.each(SCOPES)("the %s scale", (scope) => {
     }
   });
 
-  it("prints a capacitor's value on its sleeve, and its minus signs on its stripe, legibly (ADR 0042)", () => {
+  it("prints a capacitor's value on its sleeve, and its minus signs on its stripe, legibly (ADR 0043)", () => {
     expect(
       contrastRatio(
         colour(ELECTROLYTIC_TOKENS.ink, scope),
@@ -219,7 +219,7 @@ describe.each(SCOPES)("the %s scale", (scope) => {
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("prints a transistor's type, model and legs legibly on its case (ADR 0043)", () => {
+  it("prints a transistor's type, model and legs legibly on its case (ADR 0044)", () => {
     expect(
       contrastRatio(colour(TRANSISTOR_TOKENS.ink, scope), colour(TRANSISTOR_TOKENS.body, scope)),
     ).toBeGreaterThanOrEqual(4.5);

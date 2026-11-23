@@ -48,24 +48,24 @@ export const LIGHT_OHMS_RANGE = [220, 1000] as const;
 export const PULL_DOWN_OHMS_RANGE = [1000, 8200] as const;
 /**
  * How long a capacitor keeps a light lit, at the least: its capacitance times the light's resistor,
- * in seconds (ADR 0042). Shorter, and the light goes out too fast to be seen fading.
+ * in seconds (ADR 0043). Shorter, and the light goes out too fast to be seen fading.
  */
 export const FADE_SECONDS = 0.2;
 /**
- * What a transistor's base resistor can be, from a 3.3 V pin (ADR 0043): enough current into the base
+ * What a transistor's base resistor can be, from a 3.3 V pin (ADR 0044): enough current into the base
  * to switch a light's, and no more than a pin gives easily. 1 kΩ lets 2.6 mA in, and 10 kΩ 0.26 mA,
  * which a 2N3904 turns into all of a light's 15 mA.
  */
 export const BASE_OHMS_RANGE = [1000, 10000] as const;
 /**
- * What a flasher's base resistor can be, from + (ADR 0045): it sets, with its capacitor, how long
+ * What a flasher's base resistor can be, from + (ADR 0046): it sets, with its capacitor, how long
  * its transistor stays off, and feeds the base enough to light its light the rest of the time. At
  * 3 V, 47 kΩ lets 49 µA in, which a 2N3904 turns into a light's few milliamperes.
  */
 export const FLASHER_BASE_OHMS_RANGE = [10000, 100000] as const;
 /**
  * How long each half of a flasher's beat can last, in seconds: about 0.69 times its base resistor
- * times its capacitor (ADR 0045). Shorter, and the lights blur into one; longer, and they seem to
+ * times its capacitor (ADR 0046). Shorter, and the lights blur into one; longer, and they seem to
  * have stopped.
  */
 export const FLASH_SECONDS_RANGE = [0.1, 5] as const;
@@ -319,11 +319,11 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   problems.push(...placedProblems(circuit, parts));
   if (supply) return [...problems, ...supplyWiringProblems(circuit, parts, supply)];
 
-  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0042).
+  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0043).
   for (const part of parts) {
     if (part.kind === "electrolytic") {
       problems.push(
-        `${describe(part, circuit)} has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0042)`,
+        `${describe(part, circuit)} has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0043)`,
       );
     }
   }
@@ -364,7 +364,7 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     r.ohms >= low && r.ohms <= high;
 
   // A light: pin, one resistor, the LED the right way round, ground; or a transistor's, switched by
-  // its pin through the transistor's base (ADR 0043).
+  // its pin through the transistor's base (ADR 0044).
   const transistors = parts.filter(
     (part): part is Extract<Part, { kind: "transistor" }> => part.kind === "transistor",
   );
@@ -390,7 +390,7 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
       const tName = describe(transistor, circuit);
       const collector = net(transistor.collector);
       // An NPN switches a light's low side, from 3V3 down to its collector, and a PNP its high side,
-      // from its collector down to ground (ADR 0044): which rail its emitter is on, and which of the
+      // from its collector down to ground (ADR 0045): which rail its emitter is on, and which of the
       // light's legs faces it, are all that differ.
       const npn = TRANSISTORS[transistor.model].type === "NPN";
       const [toward, away] = npn ? [cathode, anode] : [anode, cathode];
@@ -701,7 +701,7 @@ function supplyWiringProblems(
   const accounted = new Set<Part>();
   const legs = legsIn(all);
   const [plus, minus] = [plusOf(all), minusOf(all)];
-  // A light on a transistor's collector is that transistor's, as on a Pico (ADR 0043, ADR 0045).
+  // A light on a transistor's collector is that transistor's, as on a Pico (ADR 0044, ADR 0046).
   const transistors = parts.filter(
     (part): part is Extract<Part, { kind: "transistor" }> => part.kind === "transistor",
   );
@@ -771,7 +771,7 @@ function supplyWiringProblems(
       );
     }
   }
-  // Two NPN transistors, crosswise, make a flasher (ADR 0045): each one's emitter on −, its light on
+  // Two NPN transistors, crosswise, make a flasher (ADR 0046): each one's emitter on −, its light on
   // its collector, its base fed from + through a resistor, and a capacitor from the other one's
   // collector to its base, which holds it off for a while each time the other turns on.
   const capacitors = parts.filter(
@@ -783,7 +783,7 @@ function supplyWiringProblems(
     const name = describe(transistor, circuit);
     if (TRANSISTORS[transistor.model].type !== "NPN") {
       problems.push(
-        `${name} has no use ratsnest knows on a supply: two NPN transistors make a flasher (ADR 0045)`,
+        `${name} has no use ratsnest knows on a supply: two NPN transistors make a flasher (ADR 0046)`,
       );
       continue;
     }
@@ -853,7 +853,7 @@ function supplyWiringProblems(
     }
   }
 
-  // Every other capacitor keeps a light lit (ADR 0042): its − leg on −, its + leg between a button
+  // Every other capacitor keeps a light lit (ADR 0043): its − leg on −, its + leg between a button
   // and a light's resistor, which a button charges and the light empties, slowly enough to be seen.
   for (const capacitor of capacitors) {
     if (coupling.has(capacitor)) continue;

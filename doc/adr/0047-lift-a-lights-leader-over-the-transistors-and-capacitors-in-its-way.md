@@ -1,4 +1,4 @@
-# ADR 0046: Lift a light's leader over the transistors and capacitors in its way
+# ADR 0047: Lift a light's leader over the transistors and capacitors in its way
 
 **Status:** Accepted · 2026-11-23
 
@@ -9,7 +9,7 @@ along the lane between two rows nearest its middle. A button in the way of anoth
 gives that one a lane of its own (ADR 0026), and nothing else was ever in the way: the parts scratchpi
 drew were lights, buttons and buzzers, which a layout spaced apart.
 
-The capacitor tester (ADR 0045) stands two transistors and two capacitors in a row between its two
+The capacitor tester (ADR 0046) stands two transistors and two capacitors in a row between its two
 lights. The left light's leader ran along the channel behind all four, drawn under their cases, and
 read as running into them rather than past them.
 

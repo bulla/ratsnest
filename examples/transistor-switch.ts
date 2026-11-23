@@ -1,4 +1,4 @@
-// The first example with a transistor (ADR 0038, ADR 0043): a pin switches a light through a 2N3904,
+// The first example with a transistor (ADR 0038, ADR 0044): a pin switches a light through a 2N3904,
 // whose base takes a little current from the pin and lets the light's own through from 3V3.
 import type { Circuit } from "ratsnest";
 

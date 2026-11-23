@@ -1,4 +1,4 @@
-// The capacitor tester and flasher (ADR 0038, ADR 0045), after a schematic the owner brought: two
+// The capacitor tester and flasher (ADR 0038, ADR 0046), after a schematic the owner brought: two
 // NPN transistors, crosswise, each holding the other off through a capacitor, flash two lights in
 // turn. The capacitor placed last is the one to test, and its own step says so.
 import type { Circuit } from "ratsnest";

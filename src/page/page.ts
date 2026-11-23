@@ -405,7 +405,7 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     notes.push(words.transistorPinout(model, TRANSISTORS[model].legs, TRANSISTORS[model].unlike));
   }
   if (models.length > 0) {
-    // A flasher's base resistors set its beat, and are larger than a switch's (ADR 0045).
+    // A flasher's base resistors set its beat, and are larger than a switch's (ADR 0046).
     const [low, high] = circuit.supply ? FLASHER_BASE_OHMS_RANGE : BASE_OHMS_RANGE;
     notes.push(words.baseResistor(words.ohms(low), words.ohms(high)));
   }

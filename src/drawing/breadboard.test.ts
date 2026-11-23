@@ -329,7 +329,7 @@ describe("a resistor's value tag", () => {
       // With no Pico on the board (ADR 0032), a tag may stand where the Pico would be: asked here,
       // outside a drawing, the Pico is assumed.
       if (FIXTURES[id].circuit.supply) continue;
-      // A transistor's case stands where a tag always went, and a tag keeps off it (ADR 0043).
+      // A transistor's case stands where a tag always went, and a tag keeps off it (ADR 0044).
       if (parts.some((part) => part.kind === "transistor")) continue;
       for (const part of parts) {
         if (part.kind !== "resistor") continue;
@@ -453,7 +453,7 @@ describe("a jumper that arches over the board (scratchpi's ADR 0166)", () => {
   });
 });
 
-describe("a light's leader, lifted over the cases and cans in its way (ADR 0046)", () => {
+describe("a light's leader, lifted over the cases and cans in its way (ADR 0047)", () => {
   const parts = FIXTURES["two-lights-flashing"].layout.steps.flatMap((step) => [...step.parts]);
   const lights = parts.filter((part) => part.kind === "led");
   const [green, blue] = lights;

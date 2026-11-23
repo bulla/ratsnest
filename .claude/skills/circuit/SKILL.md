@@ -114,7 +114,7 @@ A circuit with a supply:
 - **may have electrolytic capacitors, each keeping a light lit, and two NPN transistors that flash
   two lights** (below).
 
-## Capacitors, transistors and diodes (ADR 0038 to ADR 0042)
+## Capacitors, transistors and diodes (ADR 0038 to ADR 0041, ADR 0043)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -122,7 +122,7 @@ name of its own and no list at the top of the circuit (ADR 0041). Its value is n
 circuit's own words, as a resistor's is not: point at it by the step that places it.
 
 - **An electrolytic capacitor**, on a supply, keeps a light lit once its button is let go
-  (ADR 0042):
+  (ADR 0043):
 
   ```ts
   { kind: "electrolytic", microfarads: 470, plus: "i5", minus: "i4" },
@@ -134,13 +134,13 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   out too fast to see it fade: 470 µF through 1 kΩ is about right. The can is drawn standing over
   the three rows above its legs, so keep those holes free, and wire its − leg from the row below.
   On a Pico it has no use yet, and is refused.
-- **A transistor**, on a Pico, lets a pin switch a light (ADR 0043):
+- **A transistor**, on a Pico, lets a pin switch a light (ADR 0044):
 
   ```ts
   { kind: "transistor", model: "2N3904", emitter: "e24", base: "e25", collector: "e26" },
   ```
 
-  Its model is one ratsnest knows: `2N3904`, NPN, or `2N3906`, PNP (ADR 0044). Its legs are side by
+  Its model is one ratsnest knows: `2N3904`, NPN, or `2N3906`, PNP (ADR 0045). Its legs are side by
   side in one row, emitter, base and collector from left to right, so that its flat face is towards
   row j. The light keeps its `pin`, the pin that switches it, and its base goes on that pin through
   one resistor of 1 kΩ to 10 kΩ. An NPN's emitter goes on ground, and the light between 3V3(OUT) and
@@ -148,7 +148,7 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   ground, lit while the pin is low. Either way, the light has one resistor of 220 Ω to 1 kΩ. The case
   stands over the two rows above its legs, so reach each leg from the row below it, or from the row
   above its case.
-- **Two NPN transistors on a supply flash two lights** (ADR 0045), and are the only use a transistor
+- **Two NPN transistors on a supply flash two lights** (ADR 0046), and are the only use a transistor
   has there. Each one's emitter goes on −; its light from + to its collector, through one resistor
   of 220 Ω to 1 kΩ; its base from + through one resistor of 10 kΩ to 100 kΩ; and one electrolytic
   capacitor from the other transistor's collector to its base, its + leg towards the collector. The
