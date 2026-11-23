@@ -35,8 +35,8 @@ describe("the public surface (ADR 0017)", () => {
     expect(surface["SupplyCircuit.setup"]).toEqual(["required SupplySetup"]);
     expect(surface["SupplyCircuit.supply"]).toBeUndefined();
     expect(surface["type Setup"]).toEqual(["PicoSetup", "SupplySetup"]);
-    expect(surface["PicoSetup.type"]).toEqual(['required "pico"']);
-    expect(surface["SupplySetup.type"]).toEqual(['required "supply"']);
+    expect(surface["PicoSetup.kind"]).toEqual(['required "pico"']);
+    expect(surface["SupplySetup.kind"]).toEqual(['required "supply"']);
     expect(surface["SupplySetup.volts"]).toEqual(["required 3 | 3.7 | 4.5 | 5"]);
     expect(surface["command generate --orientation"]).toEqual(["0", "90", "180", "270"]);
     expect(surface["ratsnest.json"]).toEqual(["ratsnest"]);

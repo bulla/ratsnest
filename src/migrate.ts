@@ -68,7 +68,7 @@ const formatTwo: Migration = {
       return { undecided: lacking.map((language) => `its \`credit\` in \`${language}\``) };
     }
     const credit = Object.fromEntries(languages.map((language) => [language, defaults[language]]));
-    const setup = supplied ? { type: "supply", ...supply } : { type: "pico" };
+    const setup = supplied ? { kind: "supply", ...supply } : { kind: "pico" };
     const entries = Object.entries(data).flatMap(([key, value]): [string, unknown][] => {
       if (key === "format")
         return [

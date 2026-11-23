@@ -342,10 +342,10 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   const circuit = new Fields(data, "", problems);
   // What the board is set up with decides what every other field may be (ADR 0037), so a circuit
   // whose setup says nothing this engine knows is checked no further.
-  const type = setupType(data, problems);
-  if (type === undefined) return problems;
+  const kind = setupKind(data, problems);
+  if (kind === undefined) return problems;
   // A circuit with a supply has no Pico (ADR 0032), and none of what a Pico drives or runs.
-  const supplied = type === "supply";
+  const supplied = kind === "supply";
   const setup = new Fields(data.setup as Record_, "setup", problems);
   if (supplied) {
     const needsPico: Readonly<Record<string, string>> = {
@@ -389,7 +389,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
       ],
       "a circuit",
     );
-    setup.only(["type"], "a Pico's setup");
+    setup.only(["kind"], "a Pico's setup");
   }
   circuit.text("name");
   circuit.text("description");
@@ -483,16 +483,16 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   return problems;
 }
 
-/** What a board can be set up with (ADR 0037), each a `type` of the format's `Setup`. */
-const SETUPS = ["pico", "supply"] as const satisfies readonly Setup["type"][];
+/** What a board can be set up with (ADR 0037), each a `kind` of the format's `Setup`. */
+const SETUPS = ["pico", "supply"] as const satisfies readonly Setup["kind"][];
 
-const SETUP_EXAMPLES = '`{ type: "pico" }`, or `{ type: "supply", volts: 4.5, rails: "bottom" }`';
+const SETUP_EXAMPLES = '`{ kind: "pico" }`, or `{ kind: "supply", volts: 4.5, rails: "bottom" }`';
 
 /**
  * What a circuit's board is set up with (ADR 0037), or nothing, and a problem saying what to write:
  * asked before any other field, since it decides what every other field may be.
  */
-function setupType(data: Record_, problems: FieldProblem[]): Setup["type"] | undefined {
+function setupKind(data: Record_, problems: FieldProblem[]): Setup["kind"] | undefined {
   if (!Object.hasOwn(data, "setup")) {
     problems.push({
       path: "",
@@ -508,28 +508,28 @@ function setupType(data: Record_, problems: FieldProblem[]): Setup["type"] | und
     });
     return undefined;
   }
-  const type = setup.type;
-  if ((SETUPS as readonly unknown[]).includes(type)) return type as Setup["type"];
+  const kind = setup.kind;
+  if ((SETUPS as readonly unknown[]).includes(kind)) return kind as Setup["kind"];
   problems.push(
-    Object.hasOwn(setup, "type")
+    Object.hasOwn(setup, "kind")
       ? {
-          path: pathOf("setup", "type"),
+          path: pathOf("setup", "kind"),
           message: `is not ${quoted(SETUPS)}: a Pico 2 W across the middle of the board, or a supply in its place (ADR 0037)`,
         }
       : {
           path: "setup",
-          message: `has no \`type\`, which names what the breadboard is set up with: ${quoted(SETUPS)} (ADR 0037)`,
+          message: `has no \`kind\`, which names what the breadboard is set up with: ${quoted(SETUPS)} (ADR 0037)`,
         },
   );
   return undefined;
 }
 
 /**
- * A supply's setup: its type, a voltage it can give, and the rails its leads go in (ADR 0032,
+ * A supply's setup: its kind, a voltage it can give, and the rails its leads go in (ADR 0032,
  * ADR 0037).
  */
 function supplyProblems(fields: Fields): void {
-  fields.only(["type", "volts", "rails"], "a supply's setup");
+  fields.only(["kind", "volts", "rails"], "a supply's setup");
   const volts = fields.required("volts", "the voltage it gives");
   if (volts !== undefined && !(SUPPLY_VOLTS as readonly unknown[]).includes(volts)) {
     fields.problem(

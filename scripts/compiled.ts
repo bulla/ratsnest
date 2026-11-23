@@ -85,7 +85,7 @@ try {
   const migrated = readFileSync(older, "utf8");
   if (
     !migrated.includes(`format: ${FORMAT},`) ||
-    !migrated.includes('setup: { type: "pico" },') ||
+    !migrated.includes('setup: { kind: "pico" },') ||
     !migrated.includes("test:")
   ) {
     throw new Error(`${older} was not moved on to format ${FORMAT}`);

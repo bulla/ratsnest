@@ -122,7 +122,7 @@ describe("format 1 to 2: a `setup`, one `test`, and a credit for a circuit that 
       expect(Object.keys(migrated)).toEqual(Object.keys(example));
       expect(migrated).toEqual(example);
       // The credit is the migration's own, fixed with it, whatever the skill's becomes.
-      const kind = (migrated.setup as Data).type === "supply" ? "supply" : "pico";
+      const kind = (migrated.setup as Data).kind === "supply" ? "supply" : "pico";
       const languages = Object.keys(migrated.name as Data);
       expect(credit).toEqual(
         Object.fromEntries(
@@ -142,7 +142,7 @@ describe("format 1 to 2: a `setup`, one `test`, and a credit for a circuit that 
     const keys = Object.keys(data);
     const before = Object.keys(readCircuit(pico?.source ?? "", "x.ts").data as Data);
     expect(keys[keys.indexOf("format") + 1]).toBe("setup");
-    expect(data.setup).toEqual({ type: "pico" });
+    expect(data.setup).toEqual({ kind: "pico" });
     expect(keys.filter((key) => key !== "setup" && key !== "credit").indexOf("test")).toBe(
       before.indexOf("scriptDoes"),
     );
@@ -161,7 +161,7 @@ describe("format 1 to 2: a `setup`, one `test`, and a credit for a circuit that 
     const after = readCircuit(outcome.source, "x.ts");
     const data = after.data as Data;
     const before = readCircuit(source, "x.ts").data as Data;
-    expect(data.setup).toEqual({ type: "supply", ...(before.supply as Data) });
+    expect(data.setup).toEqual({ kind: "supply", ...(before.supply as Data) });
     expect(Object.keys(data)[Object.keys(data).indexOf("format") + 1]).toBe("setup");
     expect(data).not.toHaveProperty("supply");
     expect(after.comments.get("setup")).toEqual(["// Three AA batteries, in a holder."]);

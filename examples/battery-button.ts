@@ -4,7 +4,7 @@ import type { Circuit } from "ratsnest";
 
 export default {
   format: 2,
-  setup: { type: "supply", volts: 4.5, rails: "bottom" },
+  setup: { kind: "supply", volts: 4.5, rails: "bottom" },
   name: { en: "Button on batteries", fr: "Bouton sur piles" },
   description: {
     en: "A red LED and a push button, BTN1, on three AA batteries and no Pico. The button joins the light to the + rail while it is held, so the light shines only then.",

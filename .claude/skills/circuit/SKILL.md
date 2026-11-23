@@ -81,11 +81,11 @@ powered by a supply? For a supply, ask then which voltage, suggesting 4.5 V, and
 suggesting the bottom ones.
 
 ```ts
-  setup: { type: "pico" },
+  setup: { kind: "pico" },
 ```
 
 ```ts
-  setup: { type: "supply", volts: 4.5, rails: "bottom" },
+  setup: { kind: "supply", volts: 4.5, rails: "bottom" },
 ```
 
 A circuit on a Pico names nothing else in its `setup`: the engine puts the Pico across the middle
@@ -100,7 +100,7 @@ of the board, and its page says so first.
 
 A circuit with a supply:
 
-- **declares `setup: { type: "supply", volts, rails }`**, `rails` being `"top"` or `"bottom"`, and
+- **declares `setup: { kind: "supply", volts, rails }`**, `rails` being `"top"` or `"bottom"`, and
   still ends `satisfies Circuit`;
 - **has plain lights and buttons, and they name no `pin`**: no buzzer, RGB LED or ring, which need a
   Pico to drive them;
@@ -237,6 +237,6 @@ Artifact holds one set of four inputs.
 type in `.ratsnest/`, and runs the checks. Read what it says it could not decide, and ask the person
 about each one; never guess a migration's answer. Then run the checks again, and offer to republish
 the project's Artifacts. Moving from format 1 to 2 (ADR 0036, ADR 0037) writes every circuit's
-`setup` after its format, `{ type: "pico" }` on a Pico, renames a Pico circuit's `scriptDoes` to
+`setup` after its format, `{ kind: "pico" }` on a Pico, renames a Pico circuit's `scriptDoes` to
 `test`, and gives a circuit with no credit ratsnest's, so that its pages keep their footer: say so,
 and that the person may reword the credit or take it out.

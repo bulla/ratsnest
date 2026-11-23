@@ -20,25 +20,26 @@ breaks no file anyone has.
 ## Decision
 
 **Every circuit says what its breadboard starts with, in a required `setup`**, written after its
-format: an object whose `type` names the start, with whatever that start needs beside it.
+format: an object whose `kind` names the start, as a part's and a pin's `kind` says what they are,
+with whatever that start needs beside it.
 
-- `setup: { type: "pico" }`: a Pico 2 W across the middle of the breadboard (ADR 0002).
-- `setup: { type: "supply", volts: 3, rails: "bottom" }`: a supply on one pair of rails, its voltage
+- `setup: { kind: "pico" }`: a Pico 2 W across the middle of the breadboard (ADR 0002).
+- `setup: { kind: "supply", volts: 3, rails: "bottom" }`: a supply on one pair of rails, its voltage
   and its rails as ADR 0032 has them. The circuit's own `supply` field goes.
 
 **`setup` is in `CircuitBase`**, and each shape narrows it: a `PicoCircuit`'s is a `PicoSetup`, and a
-`SupplyCircuit`'s a `SupplySetup`. Its `type` is what tells the two shapes apart, for an editor as
+`SupplyCircuit`'s a `SupplySetup`. Its `kind` is what tells the two shapes apart, for an editor as
 for the engine (ADR 0034).
 
-**`rnest check` reads the `setup` right after the format.** A circuit without one, or whose `type`
+**`rnest check` reads the `setup` right after the format.** A circuit without one, or whose `kind`
 it does not know, is refused with what to write, and nothing else in it is checked, since the setup
 decides what every other field may be.
 
-**A new start is a new `type`**, with what it needs beside it, in a record of its own.
+**A new start is a new `kind`**, with what it needs beside it, in a record of its own.
 
-**It is part of format 2**, which stays at 2. The migration from format 1 writes it: `{ type: "pico" }`
+**It is part of format 2**, which stays at 2. The migration from format 1 writes it: `{ kind: "pico" }`
 after the format of a circuit without a supply, and a circuit's `supply` moved into its `setup`, its
-comments with it, after `type: "supply"`. ratsnest's examples carry it.
+comments with it, after `kind: "supply"`. ratsnest's examples carry it.
 
 This amends ADR 0032, whose supply's voltage and rails are now its circuit's `setup`; ADR 0034, whose
 two shapes were told apart by `supply`; and ADR 0036, whose format 2 carries the `setup` and whose
@@ -46,13 +47,20 @@ migration writes it. Everything else in them stands.
 
 ## Considered options
 
-- **One required object, its `type` naming the start**: chosen. One field says what the board starts
-  with and how, nothing beside it can disagree with it, and another board is another `type`.
+- **One required object, its `kind` naming the start**: chosen. One field says what the board starts
+  with and how, nothing beside it can disagree with it, and another board is another `kind`.
 - **A word, `setup: "pico"` or `setup: "supply"`, with `supply` beside it**: rejected. It is shorter to
   read, but the two fields could disagree, the check would have to refuse a file for it, and the next
   board's own settings would need a field of their own as well.
-- **`kind` in the place of `type`**, as parts and pins say what they are: proposed, and rejected by
-  the owner, who wants `type` for what a board starts with.
+- **`type` in the place of `kind`**: chosen by the owner at first, and built, then given up. The
+  format would have named what a thing is in two words, `kind` for a part or a pin and `type` for a
+  setup.
+- **`type` for every part, pin and setup**: chosen by the owner next, and begun, then given up before
+  it was tested. `type` is no reserved word, and `{ type: "wire" }` is valid TypeScript, but in a
+  file that opens with `import type` and ends with `satisfies Circuit` it already names the
+  language's types, and the engine would have written `Extract<Part, { type: "wire" }>`. `kind` came
+  in with scratchpi's drawing, which no record had chosen, and the engine already says it of its own
+  things, a hole's place among them, so the format and the engine keep one word.
 - **`start` or `base` for the field's name**: rejected. `setup` says what the board is set up with,
   whichever step puts it in.
 - **A format 3**: rejected. Format 2 is in no release, so a format 3 would leave a format 2 that
@@ -64,8 +72,9 @@ migration writes it. Everything else in them stands.
 
 - **Every circuit file has one more line**, and a Pico circuit's says only what every Pico circuit
   says.
-- **The format names what a thing is in two words**: `kind` for a part or a pin, and `type` for a
-  setup. An author learns both.
+- **The format names what a thing is in one word**, `kind`, for a part, a pin and a setup alike,
+  which is TypeScript's own habit for a union told apart by a field, and not the plainer English
+  of "what type of part".
 - **The surface changes**: `Supply` becomes `SupplySetup`, `SupplyCircuit.supply` goes, and `setup`
   arrives in every shape. All of it lands in 0.2.0, which format 2 already makes a breaking release
   (ADR 0017, ADR 0021).

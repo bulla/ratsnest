@@ -25,7 +25,7 @@ export function fileOf(fixture: Fixture): PicoCircuit {
   }
   return {
     format: 2,
-    setup: { type: "pico" },
+    setup: { kind: "pico" },
     name: en(circuit.name),
     description: en(circuit.description),
     ...(circuit.credit === undefined ? {} : { credit: en(circuit.credit) }),
@@ -54,7 +54,7 @@ export function supplyFileOf(fixture: Fixture): SupplyCircuit {
   }: T) => named(part);
   return {
     format: 2,
-    setup: { type: "supply", ...circuit.supply },
+    setup: { kind: "supply", ...circuit.supply },
     name: en(circuit.name),
     description: en(circuit.description),
     ...(circuit.credit === undefined ? {} : { credit: en(circuit.credit) }),

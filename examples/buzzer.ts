@@ -3,7 +3,7 @@ import type { Circuit } from "ratsnest";
 
 export default {
   format: 2,
-  setup: { type: "pico" },
+  setup: { kind: "pico" },
   name: { en: "Buzzer", fr: "Buzzer" },
   description: {
     en: "A passive buzzer and a push button, BTN1. The buzzer is wired from its pin to ground, and switching the pin on and off hundreds of times a second makes a note: how fast is which note. The button is pulled down, so its pin reads low until it is held.",

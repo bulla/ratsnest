@@ -3,7 +3,7 @@ import type { Circuit } from "ratsnest";
 
 export default {
   format: 2,
-  setup: { type: "pico" },
+  setup: { kind: "pico" },
   name: { en: "Red/Green LEDs", fr: "LED rouge et verte" },
   description: {
     en: "Two LEDs, a red one and a green one, each wired from its own pin through a resistor to ground.",

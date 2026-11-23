@@ -3,7 +3,7 @@ import type { Circuit } from "ratsnest";
 
 export default {
   format: 2,
-  setup: { type: "pico" },
+  setup: { kind: "pico" },
   name: { en: "Two buttons", fr: "Deux boutons" },
   description: {
     en: "Two push buttons, one on each side of the Pico: BTN1 on GP16 and BTN2 on GP15. Each is pulled down, so its pin reads low until it is held. Held in both hands, it is a gamepad.",

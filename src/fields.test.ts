@@ -458,7 +458,7 @@ describe("a circuit with a supply (ADR 0032)", () => {
 
 describe("a circuit's setup (ADR 0037)", () => {
   const SETUPS =
-    '`{ type: "pico" }`, or `{ type: "supply", volts: 4.5, rails: "bottom" }` (ADR 0037)';
+    '`{ kind: "pico" }`, or `{ kind: "supply", volts: 4.5, rails: "bottom" }` (ADR 0037)';
 
   it("is said, or the file is refused with nothing else checked, since it decides every other field", () => {
     expect(said(changed((data) => delete data.setup))).toEqual([
@@ -472,27 +472,27 @@ describe("a circuit's setup (ADR 0037)", () => {
     expect(said(worse)).toHaveLength(1);
   });
 
-  it("is an object whose `type` is a start ratsnest knows", () => {
+  it("is an object whose `kind` is a start ratsnest knows", () => {
     expect(said(changed((data) => (data.setup = "pico")))).toEqual([
       `setup is not a setup, such as ${SETUPS}`,
     ]);
     expect(said(changed((data) => (data.setup = {})))).toEqual([
-      "setup has no `type`, which names what the breadboard is set up with: `pico` or `supply` (ADR 0037)",
+      "setup has no `kind`, which names what the breadboard is set up with: `pico` or `supply` (ADR 0037)",
     ]);
-    expect(said(changed((data) => (data.setup = { type: "pico-2" })))).toEqual([
-      "setup.type is not `pico` or `supply`: a Pico 2 W across the middle of the board, or a supply in its place (ADR 0037)",
+    expect(said(changed((data) => (data.setup = { kind: "pico-2" })))).toEqual([
+      "setup.kind is not `pico` or `supply`: a Pico 2 W across the middle of the board, or a supply in its place (ADR 0037)",
     ]);
   });
 
-  it("is only its type on a Pico, which the engine places", () => {
-    expect(said(changed((data) => (data.setup = { type: "pico", volts: 3 })))).toEqual([
-      "setup.volts is not a field of a Pico's setup: it has `type`",
+  it("is only its kind on a Pico, which the engine places", () => {
+    expect(said(changed((data) => (data.setup = { kind: "pico", volts: 3 })))).toEqual([
+      "setup.volts is not a field of a Pico's setup: it has `kind`",
     ]);
   });
 
   it("decides the shape every other field is checked against", () => {
     const resupplied = changed(
-      (data) => (data.setup = { type: "supply", volts: 4.5, rails: "bottom" }),
+      (data) => (data.setup = { kind: "supply", volts: 4.5, rails: "bottom" }),
     );
     expect(said(resupplied)).toContain(
       "script is not a field of a circuit with a supply: it has no Pico to run a script, and its `test` says what to do instead (ADR 0032)",

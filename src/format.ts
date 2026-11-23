@@ -192,7 +192,7 @@ export interface Step {
 
 /** A Pico 2 W across the middle of the breadboard, which the page puts in first (ADR 0002, ADR 0037). */
 export interface PicoSetup {
-  readonly type: "pico";
+  readonly kind: "pico";
 }
 
 /**
@@ -206,7 +206,7 @@ export interface PicoSetup {
  * - `5`: a USB charger, into a USB-C breakout board for breadboards
  */
 export interface SupplySetup {
-  readonly type: "supply";
+  readonly kind: "supply";
   readonly volts: 3 | 3.7 | 4.5 | 5;
   /** The pair of rails its leads go in. */
   readonly rails: "top" | "bottom";
@@ -214,11 +214,11 @@ export interface SupplySetup {
 
 /**
  * What a circuit's breadboard is set up with, which every part is placed around (ADR 0037): its
- * `type` names it, and whatever it needs goes beside it.
+ * `kind` names it, as a part's and a pin's does, and whatever it needs goes beside it.
  *
  * ```ts
- * setup: { type: "pico" },
- * setup: { type: "supply", volts: 4.5, rails: "bottom" },
+ * setup: { kind: "pico" },
+ * setup: { kind: "supply", volts: 4.5, rails: "bottom" },
  * ```
  */
 export type Setup = PicoSetup | SupplySetup;

@@ -26,7 +26,7 @@ export type Supply = Pick<SupplySetup, "volts" | "rails">;
 
 /** Whether a circuit's board is set up with a supply in the Pico's place (ADR 0032, ADR 0037). */
 export const isSupplied = (circuit: Circuit): circuit is SupplyCircuit =>
-  circuit.setup.type === "supply";
+  circuit.setup.kind === "supply";
 
 /**
  * The colours a light can be, every one of the format's. A closed set rather than any colour,
