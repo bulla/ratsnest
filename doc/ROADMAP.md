@@ -89,9 +89,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 ## Backlog
 
 - **New parts, each with the circuit that teaches it** (ADR 0038 to ADR 0041), in this order, after
-  the first two, the electrolytic capacitor's fading light and the NPN transistor's switch, which
-  are M13 and M14 (ADR 0042, ADR 0043). Each brings its
-  part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
+  the first three, the electrolytic capacitor's fading light and the NPN and PNP transistors'
+  switches, which are M13 to M15 (ADR 0042 to ADR 0044). Each brings its part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
   step's sentence and the parts list's line in English, French and Russian, an example and a test
   circuit, and the `circuit` skill's knowledge of it. Each part's drawing is mocked up on the board
   first, in both themes, at all four quarter turns, beside Fritzing's drawing of the same part, and
@@ -167,3 +166,4 @@ file's Log.
 | M12       | Circuits without a Pico: a supply on the rails, its wiring check, format 2, and 0.2.0   | 0032–0037                               |
 | M13       | The electrolytic capacitor: a light that fades out, the first new part with its circuit | 0038–0042                               |
 | M14       | The NPN transistor: a pin switches a light through a 2N3904                             | 0043                                    |
+| M15       | The PNP transistor: a pin switches a light on the high side, through a 2N3906           | 0044                                    |
