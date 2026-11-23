@@ -221,23 +221,45 @@ export interface SupplyButton {
   readonly colour: ButtonColour;
 }
 
-/** A circuit on a Pico: what it is, where its parts go, and the script that tests it. */
-export interface PicoCircuit {
+/**
+ * What every circuit has, on a Pico or with a supply in its place, written once (ADR 0036): what it
+ * is, how it is credited, how to build it, and what its last step tells the reader.
+ */
+export interface CircuitBase {
   /** The circuit format the file is written in (ADR 0015). */
-  readonly format: 1;
+  readonly format: 2;
   /** Its name. The languages it has are the circuit's languages (ADR 0010). */
   readonly name: Text;
   /** A sentence saying what it is. */
   readonly description: Text;
+  /**
+   * Where the drawing and the font come from, and under which licences: the page's footer, and the
+   * line along the drawing alone's bottom edge (ADR 0035). The `circuit` skill writes ratsnest's
+   * credit here, which its author may reword, or take out to credit the drawing elsewhere, as a
+   * tutorial of several drawings would once. Without it, the page has no footer and the drawing alone
+   * no credit line. The drawing is CC BY-SA 4.0, and crediting it is its author's to answer for.
+   */
+  readonly credit?: Text;
+  /**
+   * How to build it, in order. On a Pico, the Pico goes in first; with a supply, the supply goes in
+   * last. The test comes last, without a step.
+   */
+  readonly steps: readonly Step[];
+  /**
+   * What the reader does in the last step, and what a working circuit then does: on a Pico, what its
+   * script does, said to the person watching the board; with a supply, what to do once it is
+   * connected (ADR 0036).
+   */
+  readonly test: Text;
+}
+
+/** A circuit on a Pico: its parts on the Pico's pins, and the script that tests them. */
+export interface PicoCircuit extends CircuitBase {
   readonly leds?: readonly Led[];
   readonly buttons?: readonly Button[];
   readonly buzzers?: readonly Buzzer[];
-  /** How to build it, in order. The Pico goes in first and the test comes last, without a step. */
-  readonly steps: readonly Step[];
   /** A MicroPython script for Thonny that exercises every part, in each language's own names. */
   readonly script: Text;
-  /** What the script does, said to the person watching the board. */
-  readonly scriptDoes: Text;
   /** None: a circuit with a supply has no Pico, and is a `SupplyCircuit` (ADR 0034). */
   readonly supply?: never;
 }
@@ -246,24 +268,11 @@ export interface PicoCircuit {
  * A circuit with no Pico, powered by a supply on one pair of rails (ADR 0032): plain lights and
  * buttons, and nothing to program.
  */
-export interface SupplyCircuit {
-  /** The circuit format the file is written in (ADR 0015). */
-  readonly format: 1;
-  /** Its name. The languages it has are the circuit's languages (ADR 0010). */
-  readonly name: Text;
-  /** A sentence saying what it is. */
-  readonly description: Text;
+export interface SupplyCircuit extends CircuitBase {
   /** What powers it, in the Pico's place. */
   readonly supply: Supply;
   readonly leds?: readonly SupplyLed[];
   readonly buttons?: readonly SupplyButton[];
-  /**
-   * How to build it, in order: lights, resistors, buttons and wires. The supply goes in last, with
-   * the test, without a step.
-   */
-  readonly steps: readonly Step[];
-  /** What to do once the supply is connected, and what a working circuit then does. */
-  readonly test: Text;
 }
 
 /**

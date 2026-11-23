@@ -105,3 +105,5 @@ Each new record adds a row here.
 | [0032](0032-let-a-circuit-be-powered-from-one-pair-of-rails-by-a-supply-instead-of-a-pico.md)                    | Let a circuit be powered from one pair of rails by a supply, instead of a Pico                     |
 | [0033](0033-check-a-supply-circuits-wiring-against-its-plus-and-minus-rails.md)                                  | Check a supply circuit's wiring against its + and − rails                                          |
 | [0034](0034-make-circuit-one-type-with-two-shapes-a-pico-circuit-or-a-supply-circuit.md)                         | Make `Circuit` one type with two shapes, a Pico circuit or a supply circuit                        |
+| [0035](0035-let-each-circuit-carry-its-drawings-credit-in-its-own-words.md)                                      | Let each circuit carry its drawing's credit, in its own words                                      |
+| [0036](0036-write-what-every-circuit-has-once-its-test-among-it-in-format-2.md)                                  | Write what every circuit has once, its `test` among it, in format 2                                |

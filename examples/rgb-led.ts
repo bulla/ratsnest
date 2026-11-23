@@ -2,11 +2,15 @@
 import type { Circuit } from "ratsnest";
 
 export default {
-  format: 1,
+  format: 2,
   name: { en: "RGB LED", fr: "LED RVB" },
   description: {
     en: "Four buttons in a cross, and an RGB LED that can be lit in any colour. It is an addressable LED, with a controller of its own: it takes its colour as data on GP28 and its power from VBUS, and needs no resistor. It goes on a second breadboard above the first.",
     fr: "Quatre boutons en croix, et une LED RVB qu’on peut allumer dans n’importe quelle couleur. C’est une LED adressable, avec son propre contrôleur : elle reçoit sa couleur en données sur GP28 et son alimentation de VBUS, et n’a besoin d’aucune résistance. Elle se branche sur une seconde plaque, au-dessus de la première.",
+  },
+  credit: {
+    en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Le Pico 2 W est dessiné d’après sa fiche technique, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Ce dessin est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
   },
   leds: [
     {
@@ -251,7 +255,7 @@ while True:
     led_rvb.write()
     sleep(0.02)`,
   },
-  scriptDoes: {
+  test: {
     en: "Hold a button down and the LED lights in its cap's colour: BTN1 red, BTN2 green, BTN3 blue and BTN4 yellow. Let go and it goes out. Press Stop in Thonny to end the script.",
     fr: "Maintenez un bouton enfoncé et la LED s’allume de la couleur de son capuchon : BTN1 en rouge, BTN2 en vert, BTN3 en bleu et BTN4 en jaune. Relâchez-le et elle s’éteint. Appuyez sur Arrêter dans Thonny pour terminer le script.",
   },

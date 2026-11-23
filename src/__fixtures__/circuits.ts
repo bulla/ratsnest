@@ -1,4 +1,11 @@
 import type { Layout, ShownCircuit } from "../circuit";
+import { SKILL_CREDIT, SKILL_SUPPLY_CREDIT } from "./credit";
+
+/** The test circuits' credit: ratsnest's, as the `circuit` skill gives it (ADR 0035). */
+export const CREDIT = SKILL_CREDIT.en;
+
+/** The credit of a test circuit with a supply, which has no Pico to begin with. */
+export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
 
 /**
  * The engine's own circuits, for its tests to build on and break on purpose. Seven are copies of
@@ -30,6 +37,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       name: "Two lights",
       description:
         "A red light and a green one, each wired from its own pin through a resistor to ground.",
+      credit: CREDIT,
       leds: [
         { id: "red", name: "red LED", pin: { kind: "gpio", gpio: 15 }, colour: "red" },
         { id: "green", name: "green LED", pin: { kind: "gpio", gpio: 16 }, colour: "green" },
@@ -74,6 +82,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       name: "A light and a button",
       description:
         "A red light, and a push button pulled down so its pin reads low until it is held.",
+      credit: CREDIT,
       leds: [{ id: "red", name: "red LED", pin: { kind: "gpio", gpio: 15 }, colour: "red" }],
       buttons: [{ id: "button", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" }],
       buzzers: [],
@@ -127,6 +136,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
     circuit: {
       name: "A buzzer and a button",
       description: "A passive buzzer wired from its pin to ground, and a push button.",
+      credit: CREDIT,
       leds: [],
       buttons: [{ id: "button", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" }],
       buzzers: [{ id: "buzzer", name: "buzzer", pin: { kind: "gpio", gpio: 15 } }],
@@ -181,6 +191,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
     circuit: {
       name: "A button each side",
       description: "Two push buttons, one on each side of the Pico, each pulled down.",
+      credit: CREDIT,
       leds: [],
       buttons: [
         { id: "right", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" },
@@ -241,6 +252,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       name: "A d-pad",
       description:
         "Four push buttons in a cross, each pulled down, two of them reached by jumpers that arch over the board.",
+      credit: CREDIT,
       leds: [],
       buttons: [
         { id: "right", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" },
@@ -337,6 +349,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       name: "An RGB LED and a d-pad",
       description:
         "Four buttons in a cross, and an addressable RGB LED on a second breadboard above the first.",
+      credit: CREDIT,
       leds: [
         { id: "rgb", name: "RGB LED", pin: { kind: "rgb", gpio: 28, count: 1 }, colour: "rgb" },
       ],
@@ -458,6 +471,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
     circuit: {
       name: "A ring and a button",
       description: "A ring of twelve addressable RGB LEDs standing in row j, and a push button.",
+      credit: CREDIT,
       leds: [
         { id: "ring", name: "LED ring", pin: { kind: "rgb", gpio: 15, count: 12 }, colour: "rgb" },
       ],
@@ -531,6 +545,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       name: "Two lights on a supply",
       description:
         "A red light, always on, and a yellow one that BTN1 lights while it is held, on two AA batteries and no Pico.",
+      credit: SUPPLY_CREDIT,
       supply: { volts: 3, rails: "top" },
       leds: [
         { id: "red", name: "red LED", colour: "red" },

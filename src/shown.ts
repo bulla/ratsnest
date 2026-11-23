@@ -28,6 +28,7 @@ export function shownIn(
   const shown = {
     name: say(circuit.name),
     description: say(circuit.description),
+    ...(circuit.credit ? { credit: say(circuit.credit) } : {}),
     leds: (circuit.leds ?? []).map((led): Led => named(led)),
     buttons: (circuit.buttons ?? []).map(named),
   };
@@ -40,6 +41,6 @@ export function shownIn(
   }
   return {
     circuit: { ...shown, buzzers: (circuit.buzzers ?? []).map(named) },
-    layout: { steps, script: say(circuit.script), test: say(circuit.scriptDoes) },
+    layout: { steps, script: say(circuit.script), test: say(circuit.test) },
   };
 }

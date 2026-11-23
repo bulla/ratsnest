@@ -115,6 +115,8 @@ export interface Buzzer {
 export interface ShownCircuit {
   readonly name: string;
   readonly description: string;
+  /** Where the drawing and the font come from: the page's footer, and the drawing alone's edge. */
+  readonly credit?: string;
   /** What powers a circuit with no Pico; a circuit on a Pico has none. */
   readonly supply?: Supply;
   readonly leds: readonly Led[];

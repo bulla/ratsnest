@@ -1,6 +1,6 @@
 ---
 name: circuit
-description: Adds or changes a ratsnest circuit, translates it, makes its wiring page and publishes it as an Artifact, keeping every circuit file declarative so that every page looks like every other. Use when asked to add a circuit, change one, add a language to one, make a circuit's page in a given orientation, theme and language, publish or republish one, or update a project to a newer ratsnest.
+description: Adds or changes a ratsnest circuit, translates it, makes its wiring page or its drawing alone as an SVG, and publishes a page as an Artifact, keeping every circuit file declarative so that every page looks like every other. Use when asked to add a circuit, change one, add a language to one, make a circuit's page in a given orientation, theme and language, make its drawing as an SVG to embed elsewhere, publish or republish a page, or update a project to a newer ratsnest.
 argument-hint: [the circuit to add, change or translate, or the page to make]
 triggers:
   - add a circuit
@@ -8,6 +8,7 @@ triggers:
   - change a circuit
   - translate a circuit
   - make a wiring page
+  - make a circuit's drawing as an SVG
   - publish a circuit as an artifact
   - update ratsnest
 user-invocable: true
@@ -16,8 +17,8 @@ user-invocable: true
 # Circuit (`/circuit`)
 
 Every ratsnest page looks like every other because only the engine draws, and a circuit's file only
-declares. This skill adds and changes circuits without breaking that, makes their pages, and
-publishes them.
+declares. This skill adds and changes circuits without breaking that, makes their pages and their
+drawings alone, and publishes the pages.
 
 It is ratsnest's own, and the same text wherever it is: in ratsnest itself, and in every circuits
 project, where `rnest init` put it and `rnest update` replaces it. Never edit a project's copy;
@@ -35,12 +36,13 @@ ratsnest's, in `doc/adr/` of https://github.com/bulla/ratsnest.
   (ADR 0009), and the circuits are the examples, in `examples/`.
 
 If neither is there, say so and stop. Never draw a breadboard, write SVG or write a page by hand
-instead: a page is only ever the engine's output.
+instead: a page, and a drawing alone, is only ever the engine's output.
 
 | To | In a circuits project | In ratsnest itself |
 | --- | --- | --- |
 | Check every circuit | `rnest check` | `bun run ratsnest check examples` |
 | Make a page | `rnest generate <file> --orientation <0, 90, 180 or 270> --theme <dark or light> --language <en, fr or ru>` | the same, after `bun run` |
+| Make the drawing alone, as an SVG | the same, and `--format svg` | the same, after `bun run` |
 | Move to a newer ratsnest | `rnest update` | not needed: it is the newest |
 
 **When the executable says it is older or newer than the project**, run `rnest update` before
@@ -49,9 +51,11 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
 ## The rules (ADR 0006, ADR 0007, ADR 0015)
 
 - **One circuit, one file**, in `circuits/<name>.ts` (`examples/<name>.ts` in ratsnest). It holds
-  what the circuit is (its name, a sentence saying what it does, and what is on each pin, or the
-  supply it has in the Pico's place), where its parts go (the steps, each placing parts in holes such
-  as `a21` or `top-19`), and its MicroPython test script, or, with a supply, its `test`.
+  what the circuit is (its name, a sentence saying what it does, its credit, and what is on each
+  pin, or the supply it has in the Pico's place), where its parts go (the steps, each placing parts
+  in holes such as `a21` or `top-19`), and its `test`: what the reader does in the last step, and
+  what a working circuit then does. A circuit on a Pico also has its MicroPython `script`, and its
+  `test` says what the script does (ADR 0036).
 - **The file only declares.** `import type` lines and one `export default { … } satisfies Circuit`,
   the type imported from `ratsnest`. Every value is a string, a number, `true` or `false`, or an
   array or object of those, and a template string has no `${}`. No function, call, variable, spread,
@@ -86,19 +90,55 @@ A circuit with a supply:
   `satisfies Circuit`;
 - **has plain lights and buttons, and they name no `pin`**: no buzzer, RGB LED or ring, which need a
   Pico to drive them;
-- **has a `test` in place of `script` and `scriptDoes`**: what to do once the supply is connected,
-  and what a working circuit then does;
+- **has no `script`**, and its `test`, which every circuit has, says what to do once the supply is
+  connected, and what a working circuit then does;
 - **names no hole for the supply**: the engine puts its red lead in column 1 of the + rail and its
   black lead in column 1 of the − rail, so leave those two holes free;
 - **wires every light from + through one resistor of 220 Ω to 1 kΩ to −**, each button on a light's
   way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
   On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
 
+## Its credit (ADR 0035)
+
+A circuit may have a `credit`, after its description: where the drawing and the font come from, and
+under which licences. The page writes it as its footer, and the drawing alone along its bottom
+edge; a circuit without one has neither. When making a circuit, or adding a language to one, write
+ratsnest's credit in each of its languages, the one below for its kind of circuit, unless the person
+says otherwise. It is the
+circuit's own text, so its author may reword it, translate it, or take it out, as a tutorial built
+of several drawings would, to credit them once elsewhere.
+
+The drawing is an adaptation under CC BY-SA 4.0, which asks for it to be credited wherever it is
+shown. When asked to reword the credit, keep Raspberry Pi Ltd, CC BY-SA 4.0 and the licence's
+address in it. When asked to drop it, or any of those, say that the licence asks for them wherever
+the drawing is shown, so whatever shows the drawing must credit it, and then do as the person
+decides. Nothing checks what a credit says.
+
+For a circuit on a Pico:
+
+```ts
+  credit: {
+    en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Le Pico 2 W est dessiné d’après sa fiche technique, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Ce dessin est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
+    ru: "Pico 2 W нарисован по его спецификации, на основе распиновки Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). Этот рисунок распространяется по той же лицензии. Шрифт Nunito, по лицензии SIL Open Font License 1.1.",
+  },
+```
+
+For a circuit with a supply, whose drawing has no Pico on it (ADR 0032):
+
+```ts
+  credit: {
+    en: "This drawing comes from the one ratsnest makes of the Pico 2 W, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), and is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
+    fr: "Ce dessin vient de celui que ratsnest fait du Pico 2 W, en adaptant le brochage du Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), et il est partagé sous la même licence. Composé en Nunito, sous la licence SIL Open Font 1.1.",
+    ru: "Этот рисунок основан на рисунке Pico 2 W, который делает ratsnest, на основе распиновки Raspberry Pi Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0), и распространяется по той же лицензии. Шрифт Nunito, по лицензии SIL Open Font License 1.1.",
+  },
+```
+
 ## Its languages (ADR 0010, ADR 0011)
 
-- **Every text a reader sees is an object keyed by language**: its name, its sentence, its parts'
-  names, each step's title and note, and its test script. `en`, `fr` and `ru` are the engine's
-  languages, and a circuit needs one at least.
+- **Every text a reader sees is an object keyed by language**: its name, its sentence, its credit if
+  it has one, its parts' names, each step's title and note, its `test`, and its `script` on a Pico.
+  `en`, `fr` and `ru` are the engine's languages, and a circuit needs one at least.
 - **A circuit's languages are the languages of its name**, and every other text has exactly those.
   Adding a language to a circuit means writing every one of its texts in it.
 - **Write each language in its own script.** Russian is Cyrillic throughout, with a Latin word only
@@ -122,6 +162,13 @@ A page is made from four inputs, and the same four always make the same file.
 | Language | one of the circuit's own: the languages of its name | ask, offering only the circuit's own |
 | Orientation | `0`, `90`, `180` or `270` degrees clockwise: the USB left, top, right or bottom | `0` |
 
+**The page, or the drawing alone** (ADR 0031). `--format html`, the default, makes the whole page.
+`--format svg` makes the drawing alone, from the same four inputs, as an SVG file for other pages to
+embed by `<img>` or a Markdown image: it carries its font, its colours and its credit, and paints its
+own background in its theme. Make one when the request asks for an SVG, an image or the drawing to
+put somewhere else; a page otherwise. A host that wants both themes embeds both files, in a
+`<picture>` with `prefers-color-scheme`.
+
 **Check the language before calling the generator.** If the request names a language the circuit
 does not have, say so, name the ones it has, and offer to add the one asked for. Never generate in
 another language instead. The generator refuses one too, but the skill asks first.
@@ -135,14 +182,16 @@ another language instead. The generator refuses one too, but the skill asks firs
    the language checks and the overlap check, in every language the circuit has, must all pass.
    When one fails, go back to step 2. When it refuses a file's format as older, run the update first.
 4. **Check the four inputs**, the language against the circuit's own.
-5. **Generate the page** from them.
+5. **Generate the page**, or the drawing alone, from them.
 6. **Look at it in Chromium**, at its orientation and in its language. The checks say a circuit is
    correct, not that it is tidy, and parts that crowd each other send you back to step 2.
-7. **Hand over the file**, and say which four inputs made it. Publish it only if asked (below).
+7. **Hand over the file**, and say which four inputs made it. Publish a page only if asked (below).
+   Never publish a drawing alone: an Artifact opens only with a claude.ai sign-in, so no other page
+   could load it by `<img>`. Whoever embeds an SVG hosts it, and keeps its credit line in it.
 
 ## Publishing it as an Artifact (ADR 0013, ADR 0014, ADR 0019)
 
-Only when the request asks for it, and only in a circuits project. In ratsnest itself, say that its
+Only a page, only when the request asks for it, and only in a circuits project. In ratsnest itself, say that its
 examples are published from a circuits project, which `rnest init` makes, and stop. One
 Artifact holds one set of four inputs.
 
@@ -173,4 +222,6 @@ Artifact holds one set of four inputs.
 `ratsnest.json` on, migrates every circuit file to the current format, replaces this skill and the
 type in `.ratsnest/`, and runs the checks. Read what it says it could not decide, and ask the person
 about each one; never guess a migration's answer. Then run the checks again, and offer to republish
-the project's Artifacts.
+the project's Artifacts. Moving from format 1 to 2 (ADR 0036) renames a Pico circuit's `scriptDoes`
+to `test`, and gives a circuit with no credit ratsnest's, so that its pages keep their footer: say
+so, and that the person may reword the credit or take it out.

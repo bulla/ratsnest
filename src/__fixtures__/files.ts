@@ -2,7 +2,7 @@ import type { Circuit, PicoCircuit, SupplyCircuit, Text } from "../format";
 import type { Fixture } from "./circuits";
 
 /**
- * A test circuit as a circuit file would declare it, in format 1 and in English, and that file's
+ * A test circuit as a circuit file would declare it, in format 2 and in English, and that file's
  * source: what the reader and the checks are tested on (ADR 0007).
  */
 
@@ -24,9 +24,10 @@ export function fileOf(fixture: Fixture): PicoCircuit {
     throw new Error(`${circuit.name} has a supply: take it with supplyFileOf`);
   }
   return {
-    format: 1,
+    format: 2,
     name: en(circuit.name),
     description: en(circuit.description),
+    ...(circuit.credit === undefined ? {} : { credit: en(circuit.credit) }),
     leds: circuit.leds.map((led) => {
       if (led.colour !== "rgb" && !led.pin) throw new Error(`${led.id} has no pin`);
       return named(led) as NonNullable<PicoCircuit["leds"]>[number];
@@ -38,7 +39,7 @@ export function fileOf(fixture: Fixture): PicoCircuit {
     buzzers: circuit.buzzers.map(named),
     steps: stepsOf(fixture),
     script: en(layout.script),
-    scriptDoes: en(layout.test),
+    test: en(layout.test),
   };
 }
 
@@ -51,9 +52,10 @@ export function supplyFileOf(fixture: Fixture): SupplyCircuit {
     ...part
   }: T) => named(part);
   return {
-    format: 1,
+    format: 2,
     name: en(circuit.name),
     description: en(circuit.description),
+    ...(circuit.credit === undefined ? {} : { credit: en(circuit.credit) }),
     supply: circuit.supply,
     leds: circuit.leds.map((led) => {
       if (led.colour === "rgb") throw new Error(`${led.id} is an RGB LED, which needs a Pico`);

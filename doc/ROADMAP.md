@@ -38,13 +38,16 @@ M6 waits on the owner.
 - [x] The design, by interview: a supply on one pair of rails in the Pico's place (ADR 0032), the
       wiring check it is held to (ADR 0033), and `Circuit` as one type with two shapes (ADR 0034)
 - [x] The format: `supply`, lights and buttons without `pin`, and `test`, in `Circuit`'s second
-      shape, read and checked field by field, and a Pico's part refused in a supply circuit
+      shape, read and checked field by field, and a Pico's part refused in a supply circuit; and the
+      `credit` any circuit may have (ADR 0035), in both shapes
 - [x] The wiring check's rules for a supply circuit (ADR 0033), the short sought with every button
       held, and the lights that need about 3 V refused at 3 V
 - [x] The cell drawn beside the board's near end, its leads in column 1 of its rails, outlined for
       both themes, and its colours in `tokens.css`
 - [x] The page's words in English, French and Russian: the last step, the four supplies in the parts
-      list, the rails' legend, the notes, the drawing's introduction and the footer
+      list, the rails' legend, the notes, the drawing's introduction and the footer. The footer is
+      the circuit's credit since ADR 0035, and the `circuit` skill's default for a supply circuit
+      does not begin with the Pico
 - [x] The `circuit` skill asks: a Pico or a supply, and then which voltage and which rails
 - [x] `examples/battery-button.ts`, in English and French, and a supply circuit among the tests'
       fixtures, with a variant for every rule it is refused by
@@ -73,8 +76,10 @@ M6 waits on the owner.
 ## Open points
 
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
-  the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item.
-  A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
+  the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,
+  and ratsnest's Russian credits (ADR 0035), which the `circuit` skill writes into new circuits, in
+  `.claude/skills/circuit/SKILL.md`, and the migration to format 2 into old ones, in
+  `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
 
 ## Suggestions
@@ -98,8 +103,6 @@ M6 waits on the owner.
   starts to hurt (ADR 0007)
 - **A check that a circuit's test script drives the pins it declares** (ADR 0006)
 - **Each page's font cut to the letters it uses**, which needs a subsetting library (ADR 0012)
-- **The drawing alone, as an SVG file**, made by `generate --format svg` to embed in other pages:
-  decided in ADR 0031 and not built yet
 - **Pre-release versions**, such as `1.2.0-rc.1`, when a release needs testing by others first
   (ADR 0017)
 - **An npm package**, beside the executables, if people ask for one (ADR 0016)

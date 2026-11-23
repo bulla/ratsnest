@@ -6,8 +6,8 @@ import type { Orientation } from "../orientation";
 
 /**
  * Everything a page says of its own, in each language the engine writes (ADR 0010): the sentences it
- * builds from the parts, the headings, the notes and the footer. A circuit's own words, its name, its
- * description and its steps' titles and notes, are the circuit's, and are not here.
+ * builds from the parts, the headings and the notes. A circuit's own words, its name, its
+ * description, its credit and its steps' titles and notes, are the circuit's, and are not here.
  *
  * The pages are written for an adult with a breadboard, so the French says `vous`. Its sentences are
  * built around holes and part names, which is where French grammar has to be got right: a light is
@@ -47,8 +47,6 @@ export interface PageWords {
   readonly copy: string;
   readonly copied: string;
   readonly selected: string;
-  /** The attribution the drawing and the font are owed (ADR 0012, ADR 0018): markup, with links. */
-  readonly footer: string;
 
   /** The drawing's own title, on one breadboard or two (scratchpi's ADR 0226), and its description's start. */
   readonly drawingTitle: (circuit: string, boards: number) => string;
@@ -116,7 +114,7 @@ export interface PageWords {
   /** Where one of the circuit's pins lands once the Pico is in. */
   readonly land: (gpio: number, hole: string) => string;
   readonly testTitle: string;
-  readonly testBody: (scriptDoes: string) => string;
+  readonly testBody: (test: string) => string;
 
   /** The parts list. A name is escaped already, and capitalised where it starts a line. */
   readonly listPico: string;
@@ -160,11 +158,6 @@ export interface PageWords {
   /** The notes that say the Pico's pin or its cable, said of the supply instead. */
   readonly supplyLedPolarity: string;
   readonly supplyUnplug: string;
-  /**
-   * The attribution a page with no Pico on it still owes (ADR 0018): its breadboard and its cell are
-   * drawn by the code that adapts Raspberry Pi's figure.
-   */
-  readonly supplyFooter: string;
 }
 
 const ENGLISH_BANDS = [
@@ -250,11 +243,6 @@ export const ENGLISH_PAGE: PageWords = {
   copy: "Copy",
   copied: "Copied",
   selected: "Selected",
-  footer: `The Pico 2 W is drawn from the measurements in its datasheet, adapting the
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">Raspberry Pi Pico 2 W pinout</a>,
-    © Raspberry Pi Ltd, under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
-    This drawing is shared under the same licence. Set in Nunito, by the Nunito Project Authors,
-    under the <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>.`,
 
   drawingTitle: (circuit, boards) =>
     `${circuit}, on ${boards > 1 ? "two half-size breadboards" : "a half-size breadboard"}`,
@@ -297,8 +285,7 @@ export const ENGLISH_PAGE: PageWords = {
     (lands.length > 0 ? ` That puts ${englishList(lands)}.` : ""),
   land: (gpio, hole) => `GP${gpio} in ${hole}`,
   testTitle: "Plug in and test",
-  testBody: (scriptDoes) =>
-    `Plug the USB cable in and run the script on this page in Thonny. ${scriptDoes}`,
+  testBody: (test) => `Plug the USB cable in and run the script on this page in Thonny. ${test}`,
 
   listPico: "Raspberry Pi Pico 2 W, with its header pins soldered on. A Pico 2 WH comes with them.",
   listBreadboard: (count) =>
@@ -346,11 +333,6 @@ export const ENGLISH_PAGE: PageWords = {
   supplyLedPolarity:
     "An LED's long leg is + and goes towards the + rail. One put in backwards stays dark, but it is not damaged: turn it round.",
   supplyUnplug: "Disconnect the supply while you change the wiring.",
-  supplyFooter: `This drawing comes from the one ratsnest makes of the Pico 2 W, adapting the
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">Raspberry Pi Pico 2 W pinout</a>,
-    © Raspberry Pi Ltd, under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>,
-    and is shared under the same licence. Set in Nunito, by the Nunito Project Authors,
-    under the <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>.`,
 };
 
 // --- French. ---
@@ -472,11 +454,6 @@ export const FRENCH_PAGE: PageWords = {
   copy: "Copier",
   copied: "Copié",
   selected: "Sélectionné",
-  footer: `Le Pico 2 W est dessiné d’après les mesures de sa fiche technique, en adaptant le
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">brochage du Raspberry Pi Pico 2 W</a>,
-    © Raspberry Pi Ltd, sous licence <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
-    Ce dessin est partagé sous la même licence. Composé en Nunito, par les auteurs du projet Nunito,
-    sous la <a href="https://openfontlicense.org">licence SIL Open Font 1.1</a>.`,
 
   drawingTitle: (circuit, boards) =>
     `${circuit}, sur ${boards > 1 ? "deux plaques d’essai demi-taille" : "une plaque d’essai demi-taille"}`,
@@ -522,8 +499,8 @@ export const FRENCH_PAGE: PageWords = {
     (lands.length > 0 ? ` Ainsi, ${frenchList(lands)}.` : ""),
   land: (gpio, hole) => `GP${gpio} est en ${hole}`,
   testTitle: "Branchez et testez",
-  testBody: (scriptDoes) =>
-    `Branchez le câble USB et lancez dans Thonny le script de cette page. ${scriptDoes}`,
+  testBody: (test) =>
+    `Branchez le câble USB et lancez dans Thonny le script de cette page. ${test}`,
 
   listPico: "Raspberry Pi Pico 2 W, avec ses connecteurs soudés. Un Pico 2 WH est livré avec.",
   listBreadboard: (count) => {
@@ -585,11 +562,6 @@ export const FRENCH_PAGE: PageWords = {
   listSupply: (volts) => FRENCH_SUPPLIES[volts],
   supplyLedPolarity: `La grande patte d’une LED est le + et va du côté du rail +. Une LED mise à l’envers reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
   supplyUnplug: "Débranchez l’alimentation pendant que vous changez le câblage.",
-  supplyFooter: `Ce dessin vient de celui que ratsnest fait du Pico 2 W, en adaptant le
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">brochage du Raspberry Pi Pico 2 W</a>,
-    © Raspberry Pi Ltd, sous licence <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>,
-    et il est partagé sous la même licence. Composé en Nunito, par les auteurs du projet Nunito,
-    sous la <a href="https://openfontlicense.org">licence SIL Open Font 1.1</a>.`,
 };
 
 // --- Russian. ---
@@ -702,11 +674,6 @@ export const RUSSIAN_PAGE: PageWords = {
   copy: "Копировать",
   copied: "Скопировано",
   selected: "Выделено",
-  footer: `Pico 2 W нарисован по размерам из его спецификации, на основе
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">распиновки Raspberry Pi Pico 2 W</a>,
-    © Raspberry Pi Ltd, по лицензии <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
-    Этот рисунок распространяется по той же лицензии. Шрифт Nunito, авторы Nunito Project Authors,
-    по лицензии <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>.`,
 
   drawingTitle: (circuit, boards) =>
     `${circuit}: ${boards > 1 ? "на двух половинных макетных платах" : "на половинной макетной плате"}`,
@@ -750,8 +717,7 @@ export const RUSSIAN_PAGE: PageWords = {
     (lands.length > 0 ? ` Тогда ${russianList(lands)}.` : ""),
   land: (gpio, hole) => `GP${gpio} окажется в ${hole}`,
   testTitle: "Подключите и проверьте",
-  testBody: (scriptDoes) =>
-    `Подключите кабель USB и запустите скрипт с этой страницы в Thonny. ${scriptDoes}`,
+  testBody: (test) => `Подключите кабель USB и запустите скрипт с этой страницы в Thonny. ${test}`,
 
   listPico:
     "Raspberry Pi Pico 2 W с припаянными штыревыми выводами. Pico 2 WH продаётся уже с ними.",
@@ -800,9 +766,4 @@ export const RUSSIAN_PAGE: PageWords = {
   supplyLedPolarity:
     "Длинная ножка светодиода: это +, она идёт к шине +. Светодиод, вставленный наоборот, не горит, но и не портится: переверните его.",
   supplyUnplug: "Отключайте питание, пока меняете схему.",
-  supplyFooter: `Этот рисунок основан на рисунке Pico 2 W, который делает ratsnest, на основе
-    <a href="https://datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf">распиновки Raspberry Pi Pico 2 W</a>,
-    © Raspberry Pi Ltd, по лицензии <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>,
-    и распространяется по той же лицензии. Шрифт Nunito, авторы Nunito Project Authors,
-    по лицензии <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>.`,
 };

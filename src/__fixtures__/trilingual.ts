@@ -1,5 +1,6 @@
 import type { PicoCircuit } from "../format";
 import { FIXTURES } from "./circuits";
+import { SKILL_CREDIT } from "./credit";
 import { fileOf } from "./files";
 
 /**
@@ -31,6 +32,7 @@ export const TRILINGUAL: PicoCircuit = {
     fr: "Quatre boutons en croix et une LED adressable, sur deux plaques d’essai.",
     ru: "Четыре кнопки крестом и многоцветный адресуемый светодиод, собранные на двух половинных макетных платах.",
   },
+  credit: SKILL_CREDIT,
   leds: (english.leds ?? []).map((led) => {
     const name = led.name.en ?? "";
     return {
@@ -51,7 +53,7 @@ export const TRILINGUAL: PicoCircuit = {
     parts: step.parts,
   })),
   script: { en: english.script.en, fr: english.script.en, ru: english.script.en },
-  scriptDoes: {
+  test: {
     en: "The script tries every part in turn.",
     fr: "Le script essaie chaque composant à son tour.",
     ru: "Скрипт по очереди проверяет каждый компонент.",

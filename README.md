@@ -46,8 +46,8 @@ The latest release, and every executable it ships, is on the
    ```
 
 3. **Add a circuit, with Claude Code.** The project holds ratsnest's `circuit` skill, so in Claude
-   Code, `/circuit` adds a circuit, checks it, makes its page and publishes it as an Artifact on
-   request. By hand, a circuit is one file in `circuits/`, such as those in
+   Code, `/circuit` adds a circuit, checks it, makes its page, or its drawing alone as an SVG, and
+   publishes a page as an Artifact on request. By hand, a circuit is one file in `circuits/`, such as those in
    [`examples/`](examples/), and:
 
    ```sh
@@ -55,7 +55,9 @@ The latest release, and every executable it ships, is on the
    rnest generate circuits/my-circuit.ts --language en --theme dark --orientation 0
    ```
 
-   The page is written into `pages/`, named by its four inputs.
+   The page is written into `pages/`, named by its four inputs. `--format svg` writes the drawing
+   alone instead, as an SVG file to put in other pages with `<img>`: it carries its font and its
+   credit, and needs nothing else.
 
 4. **Move to a newer ratsnest** when one is released, from anywhere in the project:
 

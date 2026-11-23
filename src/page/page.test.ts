@@ -11,6 +11,7 @@ const read = (name: string) => readFileSync(new URL(name, import.meta.url), "utf
 
 const FILES: PageFiles = {
   tokens: read("./tokens.css"),
+  drawing: read("./drawing.css"),
   css: read("./page.css"),
   script: read("./steps.js"),
 };
@@ -53,6 +54,8 @@ function inFrench({ circuit, layout }: Fixture): { circuit: ShownCircuit; layout
     circuit: {
       name: "Circuit d’essai",
       description: "Un circuit d’essai, écrit en français.",
+      credit:
+        "Dessin d’après la fiche technique du Pico 2 W, © Raspberry Pi Ltd, sous licence CC BY-SA 4.0.",
       ...(circuit.supply ? { supply: circuit.supply } : {}),
       leds: circuit.leds.map(named),
       buttons: circuit.buttons.map(named),
@@ -150,11 +153,15 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
     expect(html).toContain(shown);
   });
 
-  it("credits the board drawing it adapts (ADR 0018), and the font it carries (ADR 0012)", () => {
-    expect(html).toContain("creativecommons.org/licenses/by-sa/4.0");
-    expect(html).toContain("Raspberry Pi Ltd");
-    expect(html).toContain("Nunito Project Authors");
-    expect(html).toContain("openfontlicense.org");
+  it("credits the drawing and the font in its circuit's own words, as its footer (ADR 0035)", () => {
+    expect(html).toContain(`<footer>\n    ${circuit.credit}\n  </footer>`);
+  });
+
+  it("has no footer at all when its circuit leaves its credit out (ADR 0035)", () => {
+    const { credit: _, ...uncredited } = circuit;
+    const bare = wiringPage(uncredited, layout, FILES);
+    expect(bare).not.toContain("<footer>");
+    expect(bare).not.toContain("CC BY-SA");
   });
 
   it("has no tooltip on anything, the browser's included", () => {
@@ -207,9 +214,10 @@ describe("a page with a supply in the Pico's place (ADR 0032)", () => {
     expect(html).toContain(`A 3 V supply to the left of the breadboard.`);
   });
 
-  it("still credits the drawing it is made by, under its licence (ADR 0018)", () => {
-    expect(html).toContain("datasheets.raspberrypi.com/picow/pico-2-w-datasheet.pdf");
-    expect(html).toContain("creativecommons.org/licenses/by-sa/4.0/");
+  it("still credits the drawing it is made by, in its circuit's own credit (ADR 0018, ADR 0035)", () => {
+    expect(html).toContain(`<footer>\n    ${circuit.credit}\n  </footer>`);
+    expect(circuit.credit).toContain("creativecommons.org/licenses/by-sa/4.0");
+    expect(circuit.credit).not.toStartWith("The Pico");
     expect(circuit.supply?.volts).toBe(3);
   });
 
@@ -473,9 +481,8 @@ describe.each([...FIXTURE_IDS])("the French page for %s", (id) => {
     expect(prose).not.toMatch(/ [:;?!]/);
   });
 
-  it("credits the board drawing it adapts, and has no tooltip", () => {
-    expect(html).toContain("creativecommons.org/licenses/by-sa/4.0");
-    expect(html).toContain("Raspberry Pi Ltd");
+  it("credits the drawing in its circuit's French, and has no tooltip", () => {
+    expect(html).toContain("sous licence CC BY-SA 4.0.\n  </footer>");
     expect(html).not.toMatch(/\stitle="/);
   });
 });

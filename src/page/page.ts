@@ -21,7 +21,7 @@ import {
   resistorBands,
 } from "../drawing/breadboard-svg";
 import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
-import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN } from "../fonts";
+import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN, widthOf } from "../fonts";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
 import { LIGHT_OHMS_RANGE } from "../netlist";
 import { isStanding, type Orientation } from "../orientation";
@@ -50,6 +50,8 @@ export const PAGE_WORDS: Readonly<Record<Language, PageWords>> = {
 export interface PageFiles {
   /** `src/page/tokens.css`. */
   readonly tokens: string;
+  /** `src/page/drawing.css`: the drawing's own styles, which a page and a drawing alone carry (ADR 0031). */
+  readonly drawing: string;
   /** `src/page/page.css`. */
   readonly css: string;
   /** `src/page/steps.js`. */
@@ -375,19 +377,15 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
   return notes.map((note) => `<li>${escaped(note)}</li>`).join("");
 }
 
-/** The whole document for one circuit, laid out as its layout says, in one language. */
-export function wiringPage(
-  circuit: ShownCircuit,
-  layout: Layout,
-  files: PageFiles,
-  given: Partial<PageInputs> = {},
-): string {
-  const inputs: PageInputs = { ...DEFAULT_INPUTS, ...given };
-  const { language, orientation, theme } = inputs;
+/**
+ * The drawing of a circuit, as one `<svg>` element: the one a page draws, and the one the drawing
+ * alone is made of (ADR 0031), so the two are the same drawing.
+ */
+function drawingOf(circuit: ShownCircuit, layout: Layout, inputs: PageInputs): string {
+  const { language, orientation } = inputs;
   const words = PAGE_WORDS[language];
   const names = namesOf(circuit);
   const parts = layout.steps.flatMap((step) => step.parts);
-
   const drawn: DrawnPart[] = layout.steps.flatMap((step, index) =>
     step.parts.map((part) => {
       const label = labelOf(part, names, words);
@@ -402,7 +400,7 @@ export function wiringPage(
     circuit.leds.find((l): l is PlainLed => l.id === led && l.colour !== "rgb")?.colour ?? "red";
   const supply = circuit.supply;
   const volts = supply ? words.volts(supply.volts) : "";
-  const svg = drawBreadboard({
+  return drawBreadboard({
     orientation,
     ohms: words.ohms,
     parts: drawn,
@@ -418,6 +416,23 @@ export function wiringPage(
       ),
     ].join(" "),
   });
+}
+
+/** The whole document for one circuit, laid out as its layout says, in one language. */
+export function wiringPage(
+  circuit: ShownCircuit,
+  layout: Layout,
+  files: PageFiles,
+  given: Partial<PageInputs> = {},
+): string {
+  const inputs: PageInputs = { ...DEFAULT_INPUTS, ...given };
+  const { language, orientation, theme } = inputs;
+  const words = PAGE_WORDS[language];
+  const names = namesOf(circuit);
+  const parts = layout.steps.flatMap((step) => step.parts);
+  const svg = drawingOf(circuit, layout, inputs);
+  const supply = circuit.supply;
+  const volts = supply ? words.volts(supply.volts) : "";
 
   // A circuit on a Pico starts with the Pico and ends with its script; one with a supply has no
   // Pico, and ends with its supply connected and its test (ADR 0032).
@@ -467,6 +482,9 @@ export function wiringPage(
   ];
 
   const usesPower = parts.some((p) => p.kind === "wire" && p.role === "power");
+  // The circuit's own credit (ADR 0035), and no footer at all when it has none.
+  const footer =
+    circuit.credit === undefined ? "" : `\n  <footer>\n    ${escaped(circuit.credit)}\n  </footer>`;
 
   return finished(`<!doctype html>
 <html lang="${words.tag}" data-theme="${theme}">
@@ -477,6 +495,7 @@ export function wiringPage(
 <meta name="ratsnest" content="${escaped(inputsTag(inputs))}">
 <meta name="description" content="${escaped(circuit.description)}">
 <style>${files.tokens}</style>
+<style>${files.drawing}</style>
 <style>${files.css}</style>
 </head>
 <body>
@@ -519,10 +538,7 @@ ${
       <ul class="notes">${notesHtml(circuit, parts, words)}</ul>
     </section>
   </div>
-
-  <footer>
-    ${supply ? words.supplyFooter : words.footer}
-  </footer>
+${footer}
 </main>
 <script>${files.script}</script>
 </body>
@@ -591,9 +607,100 @@ function narrowSpaces(html: string): string {
  * draws it.
  */
 function finished(html: string): string {
-  const files = [LATIN, ...([...html].some(isCyrillic) ? [CYRILLIC] : [])];
-  return narrowSpaces(html).replace(
-    "<style>",
-    `<style>${files.map(fontFace).join("")}</style>\n<style>`,
+  return narrowSpaces(html).replace("<style>", `<style>${fontFacesFor(html)}</style>\n<style>`);
+}
+
+/** Nunito's files as a document carries them: the Latin one always, the Cyrillic one when it writes a Cyrillic letter. */
+const fontFacesFor = (text: string): string =>
+  [LATIN, ...([...text].some(isCyrillic) ? [CYRILLIC] : [])].map(fontFace).join("");
+
+/**
+ * The credit line along the drawing alone's bottom edge (ADR 0031), as `drawing.css` sets it: its
+ * size in millimetres and its weight, the height of each line, the gap above it and the margin
+ * around it.
+ */
+export const CREDIT = { size: 1.5, weight: 600, line: 2, gap: 1.5, margin: 1.5 } as const;
+
+/** How many pixels the drawing alone says a millimetre is (ADR 0031): about the page's own scale. */
+export const PX_PER_MM = 6;
+
+const mm = (value: number): number => Math.round(value * 1000) / 1000;
+
+/** Text as XML writes it inside an element. */
+const xmlText = (text: string): string =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * Words broken into lines no wider than `width`, each measured in Nunito at the credit's size, and
+ * broken only at a space: a word wider than the line has a line of its own.
+ */
+export function creditLines(text: string, width: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(" ")) {
+    const longer = line ? `${line} ${word}` : word;
+    if (line && widthOf(longer, CREDIT.size, CREDIT.weight) > width) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = longer;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/** The box a drawing's `<svg>` draws, read from the one place it says it. */
+function viewOf(svg: string): { x: number; y: number; w: number; h: number } {
+  const found = /^<svg class="breadboard-drawing" viewBox="(\S+) (\S+) (\S+) (\S+)"/.exec(svg);
+  if (!found) throw new Error("The drawing no longer opens with its class and its viewBox");
+  const [x, y, w, h] = found.slice(1).map(Number) as [number, number, number, number];
+  return { x, y, w, h };
+}
+
+/**
+ * A circuit's drawing alone, as one SVG file that needs nothing else (ADR 0031): a picture for other
+ * pages to embed by `<img>`. It carries Nunito, the tokens in its theme and the drawing's own styles,
+ * paints its own background, writes its circuit's credit along its bottom edge when it has one, and
+ * says its size in pixels.
+ * Like a page, it is a function of its four inputs and nothing else.
+ */
+export function drawingFile(
+  circuit: ShownCircuit,
+  layout: Layout,
+  files: PageFiles,
+  given: Partial<PageInputs> = {},
+): string {
+  const inputs: PageInputs = { ...DEFAULT_INPUTS, ...given };
+  const drawing = drawingOf(circuit, layout, inputs);
+  const view = viewOf(drawing);
+  // The circuit's own credit (ADR 0035), and no line, nor room for one, when it has none. A narrow
+  // space is Nunito's thin one in a drawing (ADR 0012), so it is measured as it is drawn.
+  const credit = circuit.credit?.replaceAll(NARROW, THIN);
+  const lines = credit === undefined ? [] : creditLines(credit, view.w - 2 * CREDIT.margin);
+  const below =
+    lines.length === 0
+      ? 0
+      : CREDIT.gap + CREDIT.size + (lines.length - 1) * CREDIT.line + CREDIT.margin;
+  const height = view.h + below;
+  const box = `${mm(view.x)} ${mm(view.y)} ${mm(view.w)} ${mm(height)}`;
+  const nested = drawing.replace(
+    '<svg class="breadboard-drawing" ',
+    `<svg class="breadboard-drawing" x="${mm(view.x)}" y="${mm(view.y)}" width="${mm(view.w)}" height="${mm(view.h)}" `,
   );
+  const top = view.y + view.h + CREDIT.gap + CREDIT.size;
+  const text = lines
+    .map(
+      (line, index) =>
+        `<text class="drawing-credit" x="${mm(view.x + CREDIT.margin)}" y="${mm(top + index * CREDIT.line)}">${xmlText(line)}</text>`,
+    )
+    .join("");
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" data-theme="${inputs.theme}" ` +
+    `width="${mm(view.w * PX_PER_MM)}" height="${mm(height * PX_PER_MM)}" viewBox="${box}">` +
+    `<style><![CDATA[${files.tokens}${files.drawing}]]></style>` +
+    `<rect x="${mm(view.x)}" y="${mm(view.y)}" width="${mm(view.w)}" height="${mm(height)}" fill="var(--color-surface)"/>` +
+    `${nested}${text}</svg>\n`;
+  const faces = `<style><![CDATA[${fontFacesFor(svg)}]]></style>`;
+  return svg.replace("<style>", `${faces}<style>`).replaceAll(NARROW, THIN);
 }

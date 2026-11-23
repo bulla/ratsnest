@@ -1501,7 +1501,7 @@ function anchorOf(part: Part): { left: number; right: number; y: number } | unde
 
 /** Where the labels start: a little past the board's right-hand edge. */
 const MARGIN_X = BREADBOARD_WIDTH_MM + 3;
-/** A label's title and the line under it, as `page.css` sets them: their size in millimetres, and weight. */
+/** A label's title and the line under it, as `drawing.css` sets them: their size in millimetres, and weight. */
 export const CALLOUT_TITLE = { size: 2.5, weight: 900 } as const;
 export const CALLOUT_DETAIL = { size: 1.85, weight: 600 } as const;
 

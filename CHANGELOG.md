@@ -12,6 +12,12 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Added
 
+- `rnest generate --format svg` writes a circuit's drawing alone, as an SVG file to embed in other
+  pages with `<img>` or a Markdown image, from the same four inputs as its page, into
+  `pages/<circuit>.<orientation>.<theme>.<language>.svg`. It carries Nunito, its colours and its
+  styles, paints its own background in its theme, writes its circuit's credit, if it has one, along
+  its bottom edge, and is 6 px to the millimetre. `--format html`, the default, makes the page as before. The
+  `circuit` skill makes one when asked, and never publishes it.
 - A circuit can do without a Pico, powered by a supply on the top or the bottom rails:
   `supply: { volts, rails }`, at 3 or 4.5 V from AA batteries, 3.7 V from a protected Li-Po cell or
   5 V from a USB charger. It holds plain LEDs and buttons, which name no pin, and a `test` in place
@@ -25,8 +31,21 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Changed
 
-- The `Circuit` type is now `PicoCircuit | SupplyCircuit`. Every circuit file stays valid as it is,
-  still ending `satisfies Circuit`, and `rnest update` puts the new type in `.ratsnest/`.
+- A circuit file may have a `credit`, a text in each of its languages, after its description,
+  saying where the drawing and the font come from and under which licences. A page writes it as its
+  footer, in place of the engine's own credit, as plain text, and the drawing alone along its bottom
+  edge; without one, a page has no footer and a drawing no credit line. It is the circuit's to
+  reword, translate or take out, and nothing checks what it says. The `circuit` skill writes
+  ratsnest's credit, in English, French or Russian, into every circuit it makes, on a Pico or with a
+  supply.
+- A circuit file is written in format 2. What every circuit has is one `CircuitBase`: its format,
+  name, description, credit, steps and `test`, what the reader does in the last step and what a
+  working circuit then does. A circuit on a Pico calls that `test` too, where it said `scriptDoes`,
+  and keeps its `script`. The `Circuit` type is `PicoCircuit | SupplyCircuit`, both extending it,
+  still ending `satisfies Circuit`.
+- `rnest update` moves a format 1 circuit on to format 2: it renames `scriptDoes` to `test`, with its
+  comments, and gives a circuit with no `credit` ratsnest's, for its kind and in each of its
+  languages, so that its pages keep their footer. It puts the new type in `.ratsnest/`.
 
 ### Removed
 

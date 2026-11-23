@@ -340,3 +340,32 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
 - 2026-11-22: Between milestones. The parts list's lines for an RGB LED and a ring, in every
   language, no longer suggest where to buy one, as scratchpi's had: a page names what a part is, never
   a shop. The line in the roadmap's Backlog that asked for this came out with it.
+- 2026-11-22: Between milestones, ADR 0031 by interview, then built: `generate --format svg` makes
+  the drawing alone, to embed in other pages by `<img>`. The drawing's styles moved out of
+  `page.css` into `drawing.css`, which the page and the SVG both carry, and the page's call to the
+  drawing became one the SVG makes too, so a test finds the page's own drawing inside the SVG. The
+  drawing is nested in an `<svg>` of its own, which carries Nunito, the tokens and those styles in
+  CDATA, its theme's surface as its background, and the credit, wrapped by measured width. Push
+  button's file is 145 KB, more than the record's estimate of 120 KB, since its tokens and styles
+  come with it. Through `<img>` in Chromium it drew in Nunito, Cyrillic included, on light and dark
+  hosts, and the compiled check makes every example's SVG beside its page.
+- 2026-11-22: Between milestones, ADR 0035 at the owner's asking, on the same pull request as the SVG:
+  a circuit may carry its credit, in its own words and languages, which the page writes as its footer
+  and the SVG along its edge, and without which it has neither. The owner chose one credit for both,
+  and no check of what it says. It was built first as a required field, which made format 2 and
+  ratsnest's first migration, with the examples in format 1 kept for its test; the owner then made it
+  optional, since a tutorial of several drawings would credit them once, and all of that came out
+  again before it landed, the format still 1. The skill holds the default alone, and the tests read
+  it from the skill. Meanwhile `develop` gained ADR 0032 to ADR 0034 for supply circuits, so the
+  record became 0035, and says how a supply circuit's credit fits them. When M12 itself landed, its
+  engine-written footer for a supply circuit became the `circuit` skill's second default credit, and
+  its example and test circuit carry it.
+- 2026-11-23: Between milestones, ADR 0036 at the owner's asking, on the same pull request: having
+  changed a good deal of the format, the owner wanted it to say each thing once. What every circuit
+  has is one `CircuitBase`, which both shapes extend, and a Pico circuit's `scriptDoes` is its `test`,
+  as a supply circuit's is. The format rose to 2, with ratsnest's first migration, which also gives
+  a circuit with no credit ratsnest's, so that an update keeps the footer its pages had. The examples
+  in format 1, as `develop` had them, are kept for its test, which finds each migrated to the
+  example as it is now, and the compiled check migrates one through a real update. The public surface
+  now records what an interface extends, since a shape that stopped sharing the base would otherwise
+  lose its members unseen.

@@ -116,12 +116,12 @@ h2 {
   padding: 1rem 0.75rem 0.5rem;
 }
 
+/* How large the drawing is on the page. What it looks like is in `drawing.css`. */
 .breadboard-drawing {
   display: block;
   width: 100%;
   min-width: 45rem;
   height: auto;
-  font-family: var(--font-page);
 }
 
 /* A standing board is tall rather than wide, so it reads at a third of the width (ADR 0003). */
@@ -151,117 +151,6 @@ figcaption {
   width: 1.125rem;
   height: 0.1875rem;
   border-radius: 2px;
-}
-
-.breadboard-drawing .part {
-  transition: opacity var(--duration-quick) var(--ease-swift);
-}
-
-.breadboard-drawing.focus .part:not(.on) {
-  opacity: 0.14;
-}
-
-.breadboard-drawing .callout-leader {
-  stroke: var(--color-ink-muted);
-  stroke-width: 0.25;
-}
-
-.breadboard-drawing .callout-dot {
-  fill: var(--color-ink-muted);
-}
-
-.breadboard-drawing .callout-title {
-  font-size: 2.5px;
-  font-weight: 900;
-  fill: var(--color-ink);
-}
-
-.breadboard-drawing .callout-detail {
-  font-size: 1.85px;
-  font-weight: 600;
-  fill: var(--color-ink-muted);
-}
-
-/* A light is dark until the last step, when it shows what the script will do. */
-.breadboard-drawing .glow,
-.breadboard-drawing .lit {
-  opacity: 0;
-}
-
-.breadboard-drawing.testing [data-kind="led"] .glow,
-.breadboard-drawing.testing [data-kind="rgbLed"] .glow {
-  opacity: 1;
-}
-
-.breadboard-drawing.testing [data-kind="led"] .lit,
-.breadboard-drawing.testing [data-kind="rgbLed"] .lit {
-  opacity: 0.4;
-}
-
-.breadboard-drawing.testing [data-phase] .glow {
-  animation: glow 1s steps(1, end) infinite;
-}
-
-.breadboard-drawing.testing [data-phase] .lit {
-  animation: lit 1s steps(1, end) infinite;
-}
-
-.breadboard-drawing.testing [data-phase="1"] .glow,
-.breadboard-drawing.testing [data-phase="1"] .lit {
-  animation-delay: -0.5s;
-}
-
-@keyframes glow {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
-
-@keyframes lit {
-  0% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0;
-  }
-}
-
-/* The ring's test (scratchpi's ADR 0238): the script's light going round it from LED 0, a twelfth of the way
-   round at a time, each LED's turn set by its own delay. */
-.breadboard-drawing.testing [data-kind="ring"] .glow,
-.breadboard-drawing.testing [data-kind="ring"] .lit {
-  animation: ring-round 2.4s steps(1, end) infinite;
-}
-
-@keyframes ring-round {
-  0% {
-    opacity: 1;
-  }
-  8.333% {
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .breadboard-drawing .part {
-    transition: none;
-  }
-
-  .breadboard-drawing.testing [data-phase] .glow,
-  .breadboard-drawing.testing [data-phase] .lit,
-  .breadboard-drawing.testing [data-kind="ring"] .glow,
-  .breadboard-drawing.testing [data-kind="ring"] .lit {
-    animation: none;
-  }
-
-  /* Without the light going round, LED 0 stays lit. */
-  .breadboard-drawing.testing [data-kind="ring"] [data-led="0"] .glow,
-  .breadboard-drawing.testing [data-kind="ring"] [data-led="0"] .lit {
-    opacity: 1;
-  }
 }
 
 /* --- The steps, the parts and the script. --- */

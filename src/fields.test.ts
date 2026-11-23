@@ -43,26 +43,32 @@ describe("every test circuit, as a file", () => {
 });
 
 describe("a file's format (ADR 0015)", () => {
-  it("is this engine's, which is 1", () => {
-    expect(FORMAT).toBe(1);
+  it("is this engine's, which is 2, since every circuit has one base and one `test` (ADR 0036)", () => {
+    expect(FORMAT).toBe(2);
   });
 
   it("is said, or the file is refused", () => {
     expect(said(changed((data) => delete data.format))).toEqual([
-      "format says no format: a circuit file says which it is written in, `format: 1` (ADR 0015)",
+      "format says no format: a circuit file says which it is written in, `format: 2` (ADR 0015)",
     ]);
     expect(said(changed((data) => (data.format = "1")))[0]).toContain("says no format");
   });
 
   it("is refused when newer, saying the project's ratsnest is older", () => {
-    expect(said(changed((data) => (data.format = 2)))).toEqual([
-      "format is written in format 2, newer than this ratsnest reads (1): run `ratsnest update`",
+    expect(said(changed((data) => (data.format = 3)))).toEqual([
+      "format is written in format 3, newer than this ratsnest reads (2): run `ratsnest update`",
+    ]);
+  });
+
+  it("is refused when older, saying the circuit needs moving on", () => {
+    expect(said(changed((data) => (data.format = 1)))).toEqual([
+      "format is written in format 1, older than this ratsnest reads (2): run `ratsnest update`",
     ]);
   });
 
   it("is refused before anything else, so a person fixes that first", () => {
     const data = changed((data) => {
-      data.format = 2;
+      data.format = 3;
       data.name = 42;
       delete data.steps;
     });
@@ -73,7 +79,7 @@ describe("a file's format (ADR 0015)", () => {
 describe("a file's fields (ADR 0016)", () => {
   it("are only a circuit's, so a misspelt one is caught", () => {
     expect(said(changed((data) => (data.descripton = { en: "Typo" })))).toEqual([
-      "descripton is not a field of a circuit: it has `format`, `name`, `description`, `leds`, `buttons`, `buzzers`, `steps`, `script` or `scriptDoes`",
+      "descripton is not a field of a circuit: it has `format`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `steps`, `script` or `test`",
     ]);
   });
 
@@ -106,6 +112,16 @@ describe("a file's fields (ADR 0016)", () => {
     expect(said(changed((data) => (data.description = { en: "  " })))).toEqual([
       "description.en is not a string with something in it",
     ]);
+  });
+
+  it("may leave the credit out, and holds one that is there to the circuit's languages (ADR 0035)", () => {
+    expect(said(changed((data) => delete data.credit))).toEqual([]);
+    expect(said(changed((data) => (data.credit = { en: "" })))).toEqual([
+      "credit.en is not a string with something in it",
+    ]);
+    const french = said(changed((data) => (data.credit = { fr: "Dessin d’après Raspberry Pi." })));
+    expect(french.length).toBeGreaterThan(0);
+    expect(french.every((line) => line.startsWith("credit"))).toBe(true);
   });
 
   it("put a light, a button and a buzzer on a pin the Pico breaks out", () => {
@@ -194,6 +210,7 @@ describe("a circuit's languages (ADR 0010)", () => {
       ...data,
       name: french(data.name),
       description: french(data.description),
+      ...(data.credit ? { credit: french(data.credit) } : {}),
       leds: (data.leds ?? []).map((led) => ({ ...led, name: french(led.name) })),
       steps: data.steps.map((each) => ({
         ...each,
@@ -201,7 +218,7 @@ describe("a circuit's languages (ADR 0010)", () => {
         ...(each.note ? { note: french(each.note) } : {}),
       })),
       script: french(data.script),
-      scriptDoes: french(data.scriptDoes),
+      test: french(data.test),
     } as PicoCircuit;
     except(both);
     return both;
@@ -221,11 +238,9 @@ describe("a circuit's languages (ADR 0010)", () => {
   });
 
   it("are every text's only, so a text in another is refused", () => {
-    const data = changed(
-      (data) => (data.scriptDoes = { en: "They blink.", fr: "Elles clignotent." }),
-    );
+    const data = changed((data) => (data.test = { en: "They blink.", fr: "Elles clignotent." }));
     expect(said(data)).toEqual([
-      "scriptDoes.fr is in a language the circuit's name is not: a circuit's languages are its name's",
+      "test.fr is in a language the circuit's name is not: a circuit's languages are its name's",
     ]);
   });
 });
@@ -279,6 +294,7 @@ describe("ADR 0011's rules for a circuit's words", () => {
       ...data,
       name: ru("Два светодиода"),
       description: ru("Красный и зелёный светодиоды, каждый через резистор на землю."),
+      credit: ru("Рисунок по спецификации Pico 2 W, © Raspberry Pi Ltd, по лицензии CC BY-SA 4.0."),
       leds: (data.leds ?? []).map((led, index) => ({
         ...led,
         name: ru(["красный светодиод", "зелёный светодиод"][index] ?? "светодиод"),
@@ -288,7 +304,7 @@ describe("ADR 0011's rules for a circuit's words", () => {
         parts: step.parts,
       })),
       script: ru(data.script.en ?? ""),
-      scriptDoes: ru("Светодиоды мигают по очереди."),
+      test: ru("Светодиоды мигают по очереди."),
     } as PicoCircuit;
     change(russian);
     return russian;
@@ -387,12 +403,12 @@ describe("a circuit with a supply (ADR 0032)", () => {
     ]);
   });
 
-  it("has no buzzer, RGB LED, script or `scriptDoes`, which need a Pico", () => {
+  it("has no buzzer, RGB LED or script, which need a Pico", () => {
     expect(said(supplied((data) => (data.buzzers = [])))).toEqual([
       "buzzers is not a field of a circuit with a supply: a buzzer needs a Pico to drive it (ADR 0032)",
     ]);
     expect(said(supplied((data) => (data.script = { en: "print(1)" })))).toEqual([
-      "script is not a field of a circuit with a supply: it has no Pico to run a script: it has `test` in its place (ADR 0032)",
+      "script is not a field of a circuit with a supply: it has no Pico to run a script, and its `test` says what to do instead (ADR 0032)",
     ]);
     expect(said(supplied((data) => (led(data, 0).colour = "rgb")))[0]).toStartWith(
       "leds[0].colour is `rgb`, an addressable LED, which needs a Pico",
@@ -428,9 +444,9 @@ describe("a circuit with a supply (ADR 0032)", () => {
     expect(said(higher)).toEqual([]);
   });
 
-  it("is a supply circuit by its `supply` alone, so a Pico circuit with a `test` is refused", () => {
-    expect(said(changed((data) => (data.test = { en: "It works." })))[0]).toStartWith(
-      "test is not a field of a circuit:",
-    );
+  it("is a supply circuit by its `supply` alone, so a circuit without one needs a Pico's script", () => {
+    expect(said(changed((data) => delete data.script))).toEqual([
+      "the circuit has no `script`, a text",
+    ]);
   });
 });
