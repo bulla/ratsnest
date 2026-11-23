@@ -10,6 +10,8 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-23
+
 ### Added
 
 - `rnest generate --format svg` writes a circuit's drawing alone, as an SVG file to embed in other
