@@ -369,3 +369,11 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
   example as it is now, and the compiled check migrates one through a real update. The public surface
   now records what an interface extends, since a shape that stopped sharing the base would otherwise
   lose its members unseen.
+- 2026-11-23: Between milestones, ADR 0037 at the owner's asking: every circuit says what its
+  breadboard is set up with, in a required `setup` after its format, `{ type: "pico" }` or
+  `{ type: "supply", volts, rails }`, the supply's own field folded into it. The owner chose one
+  field holding the supply, and `type` for its name's word, where parts and pins say `kind`, since
+  other boards will follow. Format 2 was in no release, so it stays 2 and its migration from format 1
+  writes the setup, moving a supply and its comments into it. `rnest check` reads the setup right
+  after the format, and checks nothing more in a file without one. The engine's own model still has a
+  supply or none.

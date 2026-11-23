@@ -19,8 +19,8 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   its bottom edge, and is 6 px to the millimetre. `--format html`, the default, makes the page as before. The
   `circuit` skill makes one when asked, and never publishes it.
 - A circuit can do without a Pico, powered by a supply on the top or the bottom rails:
-  `supply: { volts, rails }`, at 3 or 4.5 V from AA batteries, 3.7 V from a protected Li-Po cell or
-  5 V from a USB charger. It holds plain LEDs and buttons, which name no pin, and a `test` in place
+  `setup: { type: "supply", volts, rails }`, at 3 or 4.5 V from AA batteries, 3.7 V from a protected
+  Li-Po cell or 5 V from a USB charger. It holds plain LEDs and buttons, which name no pin, and a `test` in place
   of the script. Its page draws the supply as a small cell beside the board, its leads in column 1,
   ends by connecting it, lists what gives its voltage, and has no Thonny section.
 - `rnest check` holds a circuit with a supply to its + and − rails: every LED through one resistor
@@ -39,13 +39,17 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   ratsnest's credit, in English, French or Russian, into every circuit it makes, on a Pico or with a
   supply.
 - A circuit file is written in format 2. What every circuit has is one `CircuitBase`: its format,
-  name, description, credit, steps and `test`, what the reader does in the last step and what a
-  working circuit then does. A circuit on a Pico calls that `test` too, where it said `scriptDoes`,
+  setup, name, description, credit, steps and `test`, what the reader does in the last step and what
+  a working circuit then does. A circuit on a Pico calls that `test` too, where it said `scriptDoes`,
   and keeps its `script`. The `Circuit` type is `PicoCircuit | SupplyCircuit`, both extending it,
   still ending `satisfies Circuit`.
-- `rnest update` moves a format 1 circuit on to format 2: it renames `scriptDoes` to `test`, with its
-  comments, and gives a circuit with no `credit` ratsnest's, for its kind and in each of its
-  languages, so that its pages keep their footer. It puts the new type in `.ratsnest/`.
+- Every circuit says what its breadboard is set up with, in a required `setup` after its format:
+  `{ type: "pico" }` for a Pico 2 W across the middle, or `{ type: "supply", volts, rails }`.
+  `rnest check` refuses a circuit without one, or with a `type` it does not know, before it checks
+  anything else in it.
+- `rnest update` moves a format 1 circuit on to format 2: it writes its `setup`, renames `scriptDoes`
+  to `test`, with its comments, and gives a circuit with no `credit` ratsnest's, for its kind and in
+  each of its languages, so that its pages keep their footer. It puts the new type in `.ratsnest/`.
 
 ### Removed
 

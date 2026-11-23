@@ -1,6 +1,6 @@
 # ADR 0032: Let a circuit be powered from one pair of rails by a supply, instead of a Pico
 
-**Status:** Accepted · 2026-11-22 · Amends ADR-0002 (a circuit has a Pico, or a supply in its place) · Amended by ADR-0035 (its footer is its circuit's credit)
+**Status:** Accepted · 2026-11-22 · Amends ADR-0002 (a circuit has a Pico, or a supply in its place) · Amended by ADR-0035 (its footer is its circuit's credit) · Amended by ADR-0037 (its voltage and rails are in the circuit's `setup`)
 
 ## Context
 

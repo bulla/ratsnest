@@ -1,5 +1,5 @@
 /**
- * The circuit format, format 1: what a circuit file declares (ADR 0006, ADR 0007, ADR 0022).
+ * The circuit format, format 2: what a circuit file declares (ADR 0006, ADR 0007, ADR 0022).
  *
  * A circuit file is `import type { Circuit } from "ratsnest"` and one
  * `export default { … } satisfies Circuit`, every value a string, a number, `true` or `false`, or an
@@ -190,21 +190,38 @@ export interface Step {
   readonly parts: readonly Part[];
 }
 
+/** A Pico 2 W across the middle of the breadboard, which the page puts in first (ADR 0002, ADR 0037). */
+export interface PicoSetup {
+  readonly type: "pico";
+}
+
 /**
- * What powers a circuit that has no Pico (ADR 0032): a supply whose red lead goes in the + rail and
- * whose black lead goes in the − rail, both in column 1, on the side it names. The engine places it
- * and draws it, so a circuit names no hole for it.
+ * A supply in the Pico's place, which the page connects last (ADR 0032, ADR 0037): its red lead goes
+ * in the + rail and its black lead in the − rail, both in column 1, on the side it names. The engine
+ * places it and draws it, so a circuit names no hole for it.
  *
  * - `3`: two AA batteries, in a holder with a red and a black lead
  * - `3.7`: one protected Li-Po cell, with an adapter from its plug to two pins
  * - `4.5`: three AA batteries, in a holder with a red and a black lead
  * - `5`: a USB charger, into a USB-C breakout board for breadboards
  */
-export interface Supply {
+export interface SupplySetup {
+  readonly type: "supply";
   readonly volts: 3 | 3.7 | 4.5 | 5;
   /** The pair of rails its leads go in. */
   readonly rails: "top" | "bottom";
 }
+
+/**
+ * What a circuit's breadboard is set up with, which every part is placed around (ADR 0037): its
+ * `type` names it, and whatever it needs goes beside it.
+ *
+ * ```ts
+ * setup: { type: "pico" },
+ * setup: { type: "supply", volts: 4.5, rails: "bottom" },
+ * ```
+ */
+export type Setup = PicoSetup | SupplySetup;
 
 /** A light of one colour, lit from a supply through its resistor: it names no pin (ADR 0032). */
 export interface SupplyLed {
@@ -228,6 +245,8 @@ export interface SupplyButton {
 export interface CircuitBase {
   /** The circuit format the file is written in (ADR 0015). */
   readonly format: 2;
+  /** What the breadboard starts with: a Pico, or a supply in its place (ADR 0037). */
+  readonly setup: Setup;
   /** Its name. The languages it has are the circuit's languages (ADR 0010). */
   readonly name: Text;
   /** A sentence saying what it is. */
@@ -255,13 +274,12 @@ export interface CircuitBase {
 
 /** A circuit on a Pico: its parts on the Pico's pins, and the script that tests them. */
 export interface PicoCircuit extends CircuitBase {
+  readonly setup: PicoSetup;
   readonly leds?: readonly Led[];
   readonly buttons?: readonly Button[];
   readonly buzzers?: readonly Buzzer[];
   /** A MicroPython script for Thonny that exercises every part, in each language's own names. */
   readonly script: Text;
-  /** None: a circuit with a supply has no Pico, and is a `SupplyCircuit` (ADR 0034). */
-  readonly supply?: never;
 }
 
 /**
@@ -270,13 +288,13 @@ export interface PicoCircuit extends CircuitBase {
  */
 export interface SupplyCircuit extends CircuitBase {
   /** What powers it, in the Pico's place. */
-  readonly supply: Supply;
+  readonly setup: SupplySetup;
   readonly leds?: readonly SupplyLed[];
   readonly buttons?: readonly SupplyButton[];
 }
 
 /**
- * A circuit: on a Pico, or powered by a supply in its place (ADR 0034). Its `supply` says which, and
- * every circuit file ends `satisfies Circuit`.
+ * A circuit: on a Pico, or powered by a supply in its place (ADR 0034). Its `setup` says which
+ * (ADR 0037), and every circuit file ends `satisfies Circuit`.
  */
 export type Circuit = PicoCircuit | SupplyCircuit;

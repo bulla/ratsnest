@@ -3,6 +3,7 @@ import type { Circuit } from "ratsnest";
 
 export default {
   format: 2,
+  setup: { type: "pico" },
   name: { en: "Light ring", fr: "Anneau lumineux" },
   description: {
     en: "A ring of twelve RGB LEDs and a push button, BTN1. The ring's LEDs are addressable: each takes its colour as data, one after the other down one wire from GP15, so each can be lit in a colour of its own. The ring takes its power from VBUS and needs no resistor.",

@@ -83,7 +83,11 @@ try {
   const after = (await $`${copy} --version`.text()).trim();
   if (after !== version) throw new Error(`the updated executable says ${after}, not ${version}`);
   const migrated = readFileSync(older, "utf8");
-  if (!migrated.includes(`format: ${FORMAT},`) || !migrated.includes("test:")) {
+  if (
+    !migrated.includes(`format: ${FORMAT},`) ||
+    !migrated.includes('setup: { type: "pico" },') ||
+    !migrated.includes("test:")
+  ) {
     throw new Error(`${older} was not moved on to format ${FORMAT}`);
   }
   console.log(

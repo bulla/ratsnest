@@ -1,5 +1,6 @@
 import {
   BUTTON_COLOURS,
+  isSupplied,
   LED_COLOURS,
   SUPPLY_RAILS,
   SUPPLY_VOLTS,
@@ -7,14 +8,15 @@ import {
 } from "./circuit";
 import { parseHole } from "./drawing/breadboard";
 import { fileOf } from "./fonts";
-import type { Circuit, Language, SupplyCircuit, Text } from "./format";
+import type { Circuit, Language, Setup, SupplyCircuit, Text } from "./format";
 import { LANGUAGES } from "./language";
 import { isUsableGpio } from "./pins";
 import { pathOf } from "./read";
 
 /**
  * Every field of a circuit's data checked by the engine itself, because a circuits project may never
- * run a type checker (ADR 0016): its format first (ADR 0015), then the shape of every field, then
+ * run a type checker (ADR 0016): its format first (ADR 0015), then its setup (ADR 0037), then the
+ * shape of every field, then
  * its languages (ADR 0010), then what its words may say (ADR 0006). What the wiring means is the
  * wiring check's (`netlist.ts`), which runs once these pass.
  *
@@ -338,8 +340,13 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   const problems: FieldProblem[] = [];
   if (!isRecord(data)) return [{ path: "", message: "is not an object" }];
   const circuit = new Fields(data, "", problems);
+  // What the board is set up with decides what every other field may be (ADR 0037), so a circuit
+  // whose setup says nothing this engine knows is checked no further.
+  const type = setupType(data, problems);
+  if (type === undefined) return problems;
   // A circuit with a supply has no Pico (ADR 0032), and none of what a Pico drives or runs.
-  const supplied = Object.hasOwn(data, "supply");
+  const supplied = type === "supply";
+  const setup = new Fields(data.setup as Record_, "setup", problems);
   if (supplied) {
     const needsPico: Readonly<Record<string, string>> = {
       buzzers: "a buzzer needs a Pico to drive it",
@@ -353,10 +360,10 @@ export function shapeProblems(data: unknown): FieldProblem[] {
     circuit.only(
       [
         "format",
+        "setup",
         "name",
         "description",
         "credit",
-        "supply",
         "leds",
         "buttons",
         "steps",
@@ -364,11 +371,12 @@ export function shapeProblems(data: unknown): FieldProblem[] {
       ].concat(Object.keys(needsPico)),
       "a circuit with a supply",
     );
-    supplyProblems(data.supply, problems);
+    supplyProblems(setup);
   } else {
     circuit.only(
       [
         "format",
+        "setup",
         "name",
         "description",
         "credit",
@@ -381,6 +389,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
       ],
       "a circuit",
     );
+    setup.only(["type"], "a Pico's setup");
   }
   circuit.text("name");
   circuit.text("description");
@@ -474,17 +483,53 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   return problems;
 }
 
-/** A supply's two fields: a voltage it can give, and the rails its leads go in (ADR 0032). */
-function supplyProblems(supply: unknown, problems: FieldProblem[]): void {
-  if (!isRecord(supply)) {
+/** What a board can be set up with (ADR 0037), each a `type` of the format's `Setup`. */
+const SETUPS = ["pico", "supply"] as const satisfies readonly Setup["type"][];
+
+const SETUP_EXAMPLES = '`{ type: "pico" }`, or `{ type: "supply", volts: 4.5, rails: "bottom" }`';
+
+/**
+ * What a circuit's board is set up with (ADR 0037), or nothing, and a problem saying what to write:
+ * asked before any other field, since it decides what every other field may be.
+ */
+function setupType(data: Record_, problems: FieldProblem[]): Setup["type"] | undefined {
+  if (!Object.hasOwn(data, "setup")) {
     problems.push({
-      path: "supply",
-      message: 'is not a supply, such as `{ volts: 4.5, rails: "bottom" }` (ADR 0032)',
+      path: "",
+      message: `has no \`setup\`, what its breadboard is set up with: ${SETUP_EXAMPLES} (ADR 0037)`,
     });
-    return;
+    return undefined;
   }
-  const fields = new Fields(supply, "supply", problems);
-  fields.only(["volts", "rails"], "a supply");
+  const setup = data.setup;
+  if (!isRecord(setup)) {
+    problems.push({
+      path: "setup",
+      message: `is not a setup, such as ${SETUP_EXAMPLES} (ADR 0037)`,
+    });
+    return undefined;
+  }
+  const type = setup.type;
+  if ((SETUPS as readonly unknown[]).includes(type)) return type as Setup["type"];
+  problems.push(
+    Object.hasOwn(setup, "type")
+      ? {
+          path: pathOf("setup", "type"),
+          message: `is not ${quoted(SETUPS)}: a Pico 2 W across the middle of the board, or a supply in its place (ADR 0037)`,
+        }
+      : {
+          path: "setup",
+          message: `has no \`type\`, which names what the breadboard is set up with: ${quoted(SETUPS)} (ADR 0037)`,
+        },
+  );
+  return undefined;
+}
+
+/**
+ * A supply's setup: its type, a voltage it can give, and the rails its leads go in (ADR 0032,
+ * ADR 0037).
+ */
+function supplyProblems(fields: Fields): void {
+  fields.only(["type", "volts", "rails"], "a supply's setup");
   const volts = fields.required("volts", "the voltage it gives");
   if (volts !== undefined && !(SUPPLY_VOLTS as readonly unknown[]).includes(volts)) {
     fields.problem(
@@ -500,7 +545,7 @@ function supplyProblems(supply: unknown, problems: FieldProblem[]): void {
  * themselves, which no resistor leaves enough for.
  */
 export function supplyLightProblems(circuit: SupplyCircuit): FieldProblem[] {
-  if (circuit.supply.volts !== 3) return [];
+  if (circuit.setup.volts !== 3) return [];
   return (circuit.leds ?? []).flatMap((led, index) =>
     (THREE_VOLT_COLOURS as readonly string[]).includes(led.colour)
       ? [
@@ -523,12 +568,12 @@ export function textsOf(circuit: Circuit): [string, Text][] {
     ...(circuit.credit ? [["credit", circuit.credit] as [string, Text]] : []),
     ...names("leds", circuit.leds),
     ...names("buttons", circuit.buttons),
-    ...(circuit.supply ? [] : names("buzzers", circuit.buzzers)),
+    ...(isSupplied(circuit) ? [] : names("buzzers", circuit.buzzers)),
     ...circuit.steps.flatMap((step, index): [string, Text][] => [
       [pathOf(pathOf("steps", index), "title"), step.title],
       ...(step.note ? [[pathOf(pathOf("steps", index), "note"), step.note] as [string, Text]] : []),
     ]),
-    ...(circuit.supply ? [] : [["script", circuit.script] as [string, Text]]),
+    ...(isSupplied(circuit) ? [] : [["script", circuit.script] as [string, Text]]),
     ["test", circuit.test],
   ];
 }
@@ -614,7 +659,7 @@ const HOLE_NAME =
 export function wordProblems(circuit: Circuit): FieldProblem[] {
   // A circuit with a supply has no pin, so every GPIO its words name is one no part is on.
   const used = new Set(
-    circuit.supply
+    isSupplied(circuit)
       ? []
       : [
           ...(circuit.leds ?? []).map((led) => led.pin.gpio),
@@ -770,7 +815,7 @@ export function fieldProblems(data: unknown): FieldProblem[] {
   if (shape.length > 0) return shape;
   const circuit = data as Circuit;
   return [
-    ...(circuit.supply ? supplyLightProblems(circuit) : []),
+    ...(isSupplied(circuit) ? supplyLightProblems(circuit) : []),
     ...languageProblems(circuit),
     ...wordProblems(circuit),
     ...writingProblems(circuit),

@@ -1,5 +1,13 @@
 import type { Part } from "./drawing/breadboard";
-import type { ButtonColour, GpioPin, LedColour, RgbPin, Supply } from "./format";
+import type {
+  ButtonColour,
+  Circuit,
+  GpioPin,
+  LedColour,
+  RgbPin,
+  SupplyCircuit,
+  SupplySetup,
+} from "./format";
 
 /**
  * The engine's model of a circuit, shown in one language: what is on which pin, and the layout of
@@ -8,7 +16,17 @@ import type { ButtonColour, GpioPin, LedColour, RgbPin, Supply } from "./format"
  * into this model once it has passed its checks (ADR 0022).
  */
 
-export type { ButtonColour, GpioPin, LedColour, RgbPin, Supply };
+export type { ButtonColour, GpioPin, LedColour, RgbPin };
+
+/**
+ * A supply's voltage and the rails its leads go in, as the engine places, draws and checks it
+ * (ADR 0032): a circuit's `setup`, once it says it is a supply (ADR 0037).
+ */
+export type Supply = Pick<SupplySetup, "volts" | "rails">;
+
+/** Whether a circuit's board is set up with a supply in the Pico's place (ADR 0032, ADR 0037). */
+export const isSupplied = (circuit: Circuit): circuit is SupplyCircuit =>
+  circuit.setup.type === "supply";
 
 /**
  * The colours a light can be, every one of the format's. A closed set rather than any colour,

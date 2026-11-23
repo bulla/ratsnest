@@ -20,7 +20,9 @@ turn, every word upright and nothing crowding at any of them (M5). `ratsnest upd
 and its executable to a newer ratsnest (M10), the first release, 0.1.1, is published (M9), and the
 executable makes circuits projects, the owner's first among them (M7), and the `circuit` skill
 publishes their pages as Artifacts (M8). M6 waits on the owner, below. Circuits without a Pico,
-powered by a supply on the rails, are decided in ADR 0032 to ADR 0034, and are M12, in flight.
+powered by a supply on the rails, are decided in ADR 0032 to ADR 0034, and are M12, in flight;
+format 2, which every circuit's `setup` and one `test` make, waits for its release (ADR 0036,
+ADR 0037).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -37,9 +39,10 @@ M6 waits on the owner.
 
 - [x] The design, by interview: a supply on one pair of rails in the Pico's place (ADR 0032), the
       wiring check it is held to (ADR 0033), and `Circuit` as one type with two shapes (ADR 0034)
-- [x] The format: `supply`, lights and buttons without `pin`, and `test`, in `Circuit`'s second
-      shape, read and checked field by field, and a Pico's part refused in a supply circuit; and the
-      `credit` any circuit may have (ADR 0035), in both shapes
+- [x] The format: a supply's `setup`, lights and buttons without `pin`, and `test`, in `Circuit`'s
+      second shape, read and checked field by field, and a Pico's part refused in a supply circuit;
+      the `credit` any circuit may have (ADR 0035), in both shapes; and the `setup` every circuit
+      says it starts from, a Pico or a supply (ADR 0037), in format 2 (ADR 0036)
 - [x] The wiring check's rules for a supply circuit (ADR 0033), the short sought with every button
       held, and the lights that need about 3 V refused at 3 V
 - [x] The cell drawn beside the board's near end, its leads in column 1 of its rails, outlined for
