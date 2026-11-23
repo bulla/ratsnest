@@ -474,6 +474,29 @@ read by the model's type, and the drawing, printed `PNP`, is the NPN's.
   `Circuit`'s new shapes, break it, which before 1.0.0 raises the middle number (ADR 0017,
   ADR 0021). Its commit reaches `develop` by pull request, merged with a merge commit, and its tag is
   pushed after the merge (ADR 0030).
+- 2026-11-23: Between milestones. 0.2.0's release run warned that `actions/upload-artifact@v4` and
+  `actions/download-artifact@v4` target Node.js 20, which GitHub has deprecated and now runs on
+  Node.js 24. ratsnest runs no Node, but a JavaScript action runs on the runner's own. They are now
+  `@v7` and `@v8`, the latest majors, which target Node.js 24 and still take the `name` and `path`
+  the workflow gives them. The release workflow runs only on a tag, so the next release is the first
+  to run them.
+- 2026-11-23: Between milestones, ADR 0042 at the owner's asking: `generate --format png` and
+  `--format webp` make the drawing as a picture, for places that take no SVG. Bun 1.4.5 encodes both
+  itself, as `Bun.Image`, but reads no SVG, so two ways of drawing it were tried on Push button.
+  resvg, in WebAssembly, drew every colour black, since it reads no CSS variable, and every word at
+  Nunito's lightest weight; Bun's own `WebView` drew what the page draws. The owner chose the
+  `WebView`, at 12 px to the millimetre, and a lossless WebP, which for Push button at that size was
+  59 % of the PNG's size. Two first trials went wrong in ways the code now guards: the SVG put
+  inside an HTML page lost its theme, and a `data:` address with no character set lost its `Ω`.
+  Chrome's viewport also came out shorter than asked until it was resized after loading. A picture
+  takes about a second, and the compiled check draws the first example's on all three systems, the
+  same bytes as the source draws with the same browser.
+- 2026-11-23: Between milestones. Merging `develop` brought its ADR 0038 to ADR 0041, on new parts,
+  so the picture record, never merged, became ADR 0042. On the merge, macOS's test job first got no
+  runner for 16 minutes and was cancelled, then, re-run, timed out in the CLI test that draws a PNG
+  then a WebP, which had passed on the commit before, with only comments changed since. The test
+  said nothing of where WebKit stopped, and `generate` would have waited for ever too, so every
+  browser step now has 15 seconds and fails naming itself.
 - 2026-11-23: New parts, by interview: capacitors, transistors and diodes, each with the circuit
   that teaches it (ADR 0038). Asked whether a new part could go anywhere, held to generic rules, the
   owner kept the wiring check's promise instead, so each part comes with one use. The order changed
