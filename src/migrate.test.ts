@@ -104,7 +104,7 @@ describe("the migrations' runner (ADR 0015)", () => {
   });
 });
 
-describe("format 1 to 2: one `test`, and a credit for a circuit that had none (ADR 0036)", () => {
+describe("format 1 to 2: a `setup`, one `test`, and a credit for a circuit that had none (ADR 0036, ADR 0037)", () => {
   it("has ratsnest's examples in format 1 to be tested on, one for each example", () => {
     expect(formatOne.map(({ name }) => name)).toEqual(examples.map(({ name }) => name));
     for (const { source } of formatOne) expect(source).toContain("  format: 1,\n");
@@ -122,7 +122,7 @@ describe("format 1 to 2: one `test`, and a credit for a circuit that had none (A
       expect(Object.keys(migrated)).toEqual(Object.keys(example));
       expect(migrated).toEqual(example);
       // The credit is the migration's own, fixed with it, whatever the skill's becomes.
-      const kind = "supply" in migrated ? "supply" : "pico";
+      const kind = (migrated.setup as Data).kind === "supply" ? "supply" : "pico";
       const languages = Object.keys(migrated.name as Data);
       expect(credit).toEqual(
         Object.fromEntries(
@@ -134,15 +134,37 @@ describe("format 1 to 2: one `test`, and a credit for a circuit that had none (A
     },
   );
 
-  it("puts `test` where `scriptDoes` stood, and the credit just after the description", () => {
+  it("puts the `setup` after the format, `test` where `scriptDoes` stood, and the credit after the description", () => {
     const pico = formatOne.find(({ source }) => source.includes("  scriptDoes: {"));
     const outcome = migrateSource(pico?.source ?? "", "x.ts");
     if (outcome.kind !== "migrated") throw new Error(JSON.stringify(outcome));
-    const keys = Object.keys(readCircuit(outcome.source, "x.ts").data as Data);
+    const data = readCircuit(outcome.source, "x.ts").data as Data;
+    const keys = Object.keys(data);
     const before = Object.keys(readCircuit(pico?.source ?? "", "x.ts").data as Data);
-    expect(keys.indexOf("test")).toBe(before.indexOf("scriptDoes") + 1);
+    expect(keys[keys.indexOf("format") + 1]).toBe("setup");
+    expect(data.setup).toEqual({ kind: "pico" });
+    expect(keys.filter((key) => key !== "setup" && key !== "credit").indexOf("test")).toBe(
+      before.indexOf("scriptDoes"),
+    );
     expect(keys[keys.indexOf("description") + 1]).toBe("credit");
     expect(keys).not.toContain("scriptDoes");
+  });
+
+  it("moves a circuit's `supply` into its `setup`, after the format, its comments with it", () => {
+    const supplied = formatOne.find(({ source }) => source.includes("  supply: {"));
+    const source = (supplied?.source ?? "").replace(
+      "  supply: {",
+      "  // Three AA batteries, in a holder.\n  supply: {",
+    );
+    const outcome = migrateSource(source, "x.ts");
+    if (outcome.kind !== "migrated") throw new Error(JSON.stringify(outcome));
+    const after = readCircuit(outcome.source, "x.ts");
+    const data = after.data as Data;
+    const before = readCircuit(source, "x.ts").data as Data;
+    expect(data.setup).toEqual({ kind: "supply", ...(before.supply as Data) });
+    expect(Object.keys(data)[Object.keys(data).indexOf("format") + 1]).toBe("setup");
+    expect(data).not.toHaveProperty("supply");
+    expect(after.comments.get("setup")).toEqual(["// Three AA batteries, in a holder."]);
   });
 
   it("keeps a credit the circuit already has", () => {

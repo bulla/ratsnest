@@ -79,7 +79,7 @@ describe("a file's format (ADR 0015)", () => {
 describe("a file's fields (ADR 0016)", () => {
   it("are only a circuit's, so a misspelt one is caught", () => {
     expect(said(changed((data) => (data.descripton = { en: "Typo" })))).toEqual([
-      "descripton is not a field of a circuit: it has `format`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `steps`, `script` or `test`",
+      "descripton is not a field of a circuit: it has `format`, `setup`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `steps`, `script` or `test`",
     ]);
   });
 
@@ -376,7 +376,7 @@ describe("a circuit with a supply (ADR 0032)", () => {
     change(data);
     return data;
   };
-  const supply = (data: Record<string, unknown>) => data.supply as Record<string, unknown>;
+  const supply = (data: Record<string, unknown>) => data.setup as Record<string, unknown>;
   const led = (data: Record<string, unknown>, index: number) =>
     (data.leds as Record<string, unknown>[])[index] as Record<string, unknown>;
 
@@ -386,14 +386,14 @@ describe("a circuit with a supply (ADR 0032)", () => {
 
   it("gives one of the four voltages, on the top rails or the bottom ones", () => {
     expect(said(supplied((data) => (supply(data).volts = 3.3)))).toEqual([
-      "supply.volts is not `3`, `3.7`, `4.5` or `5`: 3 or 4.5 from AA batteries, 3.7 from a Li-Po cell, or 5 from a USB charger (ADR 0032)",
+      "setup.volts is not `3`, `3.7`, `4.5` or `5`: 3 or 4.5 from AA batteries, 3.7 from a Li-Po cell, or 5 from a USB charger (ADR 0032)",
     ]);
     expect(said(supplied((data) => (supply(data).rails = "left")))).toEqual([
-      "supply.rails is not one of `top` or `bottom`",
+      "setup.rails is not one of `top` or `bottom`",
     ]);
-    expect(said(supplied((data) => (data.supply = 4.5)))[0]).toStartWith(
-      "supply is not a supply, such as",
-    );
+    expect(said(supplied((data) => delete supply(data).volts))).toEqual([
+      "setup has no `volts`, the voltage it gives",
+    ]);
   });
 
   it("names no pin for a light or a button, which the supply powers", () => {
@@ -444,9 +444,58 @@ describe("a circuit with a supply (ADR 0032)", () => {
     expect(said(higher)).toEqual([]);
   });
 
-  it("is a supply circuit by its `supply` alone, so a circuit without one needs a Pico's script", () => {
+  it("is a supply circuit by its `setup` alone, so a circuit set up with a Pico needs its script", () => {
     expect(said(changed((data) => delete data.script))).toEqual([
       "the circuit has no `script`, a text",
     ]);
+  });
+
+  it("keeps its voltage and rails in its `setup`, and has no `supply` of its own (ADR 0037)", () => {
+    const beside = supplied((data) => (data.supply = { volts: 4.5, rails: "bottom" }));
+    expect(said(beside)[0]).toStartWith("supply is not a field of a circuit with a supply");
+  });
+});
+
+describe("a circuit's setup (ADR 0037)", () => {
+  const SETUPS =
+    '`{ kind: "pico" }`, or `{ kind: "supply", volts: 4.5, rails: "bottom" }` (ADR 0037)';
+
+  it("is said, or the file is refused with nothing else checked, since it decides every other field", () => {
+    expect(said(changed((data) => delete data.setup))).toEqual([
+      `the circuit has no \`setup\`, what its breadboard is set up with: ${SETUPS}`,
+    ]);
+    const worse = changed((data) => {
+      delete data.setup;
+      data.name = 42;
+      delete data.steps;
+    });
+    expect(said(worse)).toHaveLength(1);
+  });
+
+  it("is an object whose `kind` is a start ratsnest knows", () => {
+    expect(said(changed((data) => (data.setup = "pico")))).toEqual([
+      `setup is not a setup, such as ${SETUPS}`,
+    ]);
+    expect(said(changed((data) => (data.setup = {})))).toEqual([
+      "setup has no `kind`, which names what the breadboard is set up with: `pico` or `supply` (ADR 0037)",
+    ]);
+    expect(said(changed((data) => (data.setup = { kind: "pico-2" })))).toEqual([
+      "setup.kind is not `pico` or `supply`: a Pico 2 W across the middle of the board, or a supply in its place (ADR 0037)",
+    ]);
+  });
+
+  it("is only its kind on a Pico, which the engine places", () => {
+    expect(said(changed((data) => (data.setup = { kind: "pico", volts: 3 })))).toEqual([
+      "setup.volts is not a field of a Pico's setup: it has `kind`",
+    ]);
+  });
+
+  it("decides the shape every other field is checked against", () => {
+    const resupplied = changed(
+      (data) => (data.setup = { kind: "supply", volts: 4.5, rails: "bottom" }),
+    );
+    expect(said(resupplied)).toContain(
+      "script is not a field of a circuit with a supply: it has no Pico to run a script, and its `test` says what to do instead (ADR 0032)",
+    );
   });
 });

@@ -73,10 +73,13 @@ test on files of the format before; a change that breaks the format ships its mi
 
 **One Pico 2 W, one half-size breadboard** (ADR 0002). Another board or breadboard is a record of its
 own, written when a circuit needs it. **A circuit may have a supply on one pair of rails in the Pico's
-place** (ADR 0032): `supply: { volts, rails }`, at 3, 3.7, 4.5 or 5 V, placed by the engine, with
-plain lights and buttons that name no pin and no script. Its wiring is checked
+place** (ADR 0032): `setup: { kind: "supply", volts, rails }`, at 3, 3.7, 4.5 or 5 V, placed by the
+engine, with plain lights and buttons that name no pin and no script. Its wiring is checked
 against its + and − rails (ADR 0033), and `Circuit` is one type with two shapes (ADR 0034), which
-extend one base: every circuit's name, description, credit, steps and `test` (ADR 0036).
+extend one base: every circuit's setup, name, description, credit, steps and `test` (ADR 0036). The
+`setup` is required, and its `kind` says what the breadboard is set up with, `"pico"` or
+`"supply"`, as a part's and a pin's `kind` says what they are, a new start being a new `kind`
+(ADR 0037).
 
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the

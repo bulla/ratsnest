@@ -25,6 +25,7 @@ export function fileOf(fixture: Fixture): PicoCircuit {
   }
   return {
     format: 2,
+    setup: { kind: "pico" },
     name: en(circuit.name),
     description: en(circuit.description),
     ...(circuit.credit === undefined ? {} : { credit: en(circuit.credit) }),
@@ -53,10 +54,10 @@ export function supplyFileOf(fixture: Fixture): SupplyCircuit {
   }: T) => named(part);
   return {
     format: 2,
+    setup: { kind: "supply", ...circuit.supply },
     name: en(circuit.name),
     description: en(circuit.description),
     ...(circuit.credit === undefined ? {} : { credit: en(circuit.credit) }),
-    supply: circuit.supply,
     leds: circuit.leds.map((led) => {
       if (led.colour === "rgb") throw new Error(`${led.id} is an RGB LED, which needs a Pico`);
       return unpinned(led) as NonNullable<SupplyCircuit["leds"]>[number];

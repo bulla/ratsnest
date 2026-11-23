@@ -49,15 +49,18 @@ export const FORMAT_2_CREDIT: Readonly<
 };
 
 /**
- * Format 1 to 2 (ADR 0036): a Pico circuit's `scriptDoes` is its `test`, as a supply circuit's is, and
- * a circuit with no `credit` is given ratsnest's for its kind, in each of its languages, after its
- * description, so that its pages keep the footer the engine used to write.
+ * Format 1 to 2 (ADR 0036, ADR 0037): every circuit says what its breadboard is set up with, after its
+ * format, a circuit's `supply` moving into its `setup`; a Pico circuit's `scriptDoes` is its `test`,
+ * as a supply circuit's is; and a circuit with no `credit` is given ratsnest's for its kind, in each
+ * of its languages, after its description, so that its pages keep the footer the engine used to write.
  */
-const oneTest: Migration = {
+const formatTwo: Migration = {
   from: 1,
-  says: "a Pico circuit's `scriptDoes` is its `test` now, and a circuit with no `credit` has ratsnest's, which you may reword or take out",
+  says: "every circuit says what its breadboard is set up with, in its `setup`, a Pico circuit's `scriptDoes` is its `test` now, and a circuit with no `credit` has ratsnest's, which you may reword or take out",
   migrate: (data) => {
-    const defaults = FORMAT_2_CREDIT[Object.hasOwn(data, "supply") ? "supply" : "pico"];
+    const supply = data.supply;
+    const supplied = typeof supply === "object" && supply !== null && !Array.isArray(supply);
+    const defaults = FORMAT_2_CREDIT[supplied ? "supply" : "pico"];
     const languages = data.name && typeof data.name === "object" ? Object.keys(data.name) : [];
     const credited = Object.hasOwn(data, "credit");
     const lacking = credited ? [] : languages.filter((language) => !(language in defaults));
@@ -65,7 +68,14 @@ const oneTest: Migration = {
       return { undecided: lacking.map((language) => `its \`credit\` in \`${language}\``) };
     }
     const credit = Object.fromEntries(languages.map((language) => [language, defaults[language]]));
+    const setup = supplied ? { kind: "supply", ...supply } : { kind: "pico" };
     const entries = Object.entries(data).flatMap(([key, value]): [string, unknown][] => {
+      if (key === "format")
+        return [
+          [key, value],
+          ["setup", setup],
+        ];
+      if (key === "supply" && supplied) return [];
       if (key === "scriptDoes") return [["test", value]];
       if (key === "description" && !credited)
         return [
@@ -76,13 +86,16 @@ const oneTest: Migration = {
     });
     return {
       data: Object.fromEntries(entries),
-      moved: new Map([["scriptDoes", "test"]]),
+      moved: new Map([
+        ["scriptDoes", "test"],
+        ["supply", "setup"],
+      ]),
     };
   },
 };
 
 /** Every migration ratsnest ships, in order. */
-export const MIGRATIONS: readonly Migration[] = [oneTest];
+export const MIGRATIONS: readonly Migration[] = [formatTwo];
 
 /** What became of a file. */
 export type Outcome =

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SKILL_CREDIT, SKILL_SUPPLY_CREDIT } from "../src/__fixtures__/credit";
 import { checkFile } from "../src/check";
+import { isSupplied } from "../src/circuit";
 import { main } from "../src/cli";
 import { languagesOf } from "../src/fields";
 import type { Circuit } from "../src/format";
@@ -32,7 +33,7 @@ afterAll(() => rmSync(pages, { recursive: true, force: true }));
 describe("the examples", () => {
   it("are scratchpi's seven circuits, and one with a supply in the Pico's place (ADR 0032)", () => {
     expect(EXAMPLES).toHaveLength(8);
-    expect(EXAMPLES.filter((name) => circuitOf(name).supply)).toEqual(["battery-button.ts"]);
+    expect(EXAMPLES.filter((name) => isSupplied(circuitOf(name)))).toEqual(["battery-button.ts"]);
   });
 
   it("pass `ratsnest check`, as anyone's circuits do", () => {
@@ -49,7 +50,7 @@ describe("the examples", () => {
     "carry the credit the circuit skill gives their kind, in each language: %s",
     (name) => {
       const circuit = circuitOf(name);
-      const credit = circuit.supply ? SKILL_SUPPLY_CREDIT : SKILL_CREDIT;
+      const credit = isSupplied(circuit) ? SKILL_SUPPLY_CREDIT : SKILL_CREDIT;
       for (const language of languagesOf(circuit)) {
         expect(circuit.credit?.[language]).toBe(credit[language]);
       }

@@ -3,6 +3,7 @@ import type { Circuit } from "ratsnest";
 
 export default {
   format: 2,
+  setup: { kind: "pico" },
   name: { en: "RGB LED", fr: "LED RVB" },
   description: {
     en: "Four buttons in a cross, and an RGB LED that can be lit in any colour. It is an addressable LED, with a controller of its own: it takes its colour as data on GP28 and its power from VBUS, and needs no resistor. It goes on a second breadboard above the first.",

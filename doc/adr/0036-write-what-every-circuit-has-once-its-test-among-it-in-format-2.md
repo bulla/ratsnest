@@ -1,6 +1,6 @@
 # ADR 0036: Write what every circuit has once, its `test` among it, in format 2
 
-**Status:** Accepted · 2026-11-23 · Amends ADR-0034 (its shapes share one base, and the format is 2) and ADR-0035 (a circuit written before is given ratsnest's credit)
+**Status:** Accepted · 2026-11-23 · Amends ADR-0034 (its shapes share one base, and the format is 2) and ADR-0035 (a circuit written before is given ratsnest's credit) · Amended by ADR-0037 (format 2 carries the `setup`, and the migration from format 1 writes it)
 
 ## Context
 

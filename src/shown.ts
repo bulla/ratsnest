@@ -1,4 +1,4 @@
-import type { Layout, Led, ShownCircuit } from "./circuit";
+import { isSupplied, type Layout, type Led, type ShownCircuit } from "./circuit";
 import type { Circuit, Language, Text } from "./format";
 
 /**
@@ -32,10 +32,14 @@ export function shownIn(
     leds: (circuit.leds ?? []).map((led): Led => named(led)),
     buttons: (circuit.buttons ?? []).map(named),
   };
-  if (circuit.supply) {
+  if (isSupplied(circuit)) {
     // A circuit with a supply has no Pico, and so no script and no buzzer (ADR 0032).
     return {
-      circuit: { ...shown, supply: circuit.supply, buzzers: [] },
+      circuit: {
+        ...shown,
+        supply: { volts: circuit.setup.volts, rails: circuit.setup.rails },
+        buzzers: [],
+      },
       layout: { steps, test: say(circuit.test) },
     };
   }

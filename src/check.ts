@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { isSupplied } from "./circuit";
 import { crowdingProblems } from "./drawing/breadboard-svg";
 import { fieldProblems, languagesOf } from "./fields";
 import type { Circuit } from "./format";
@@ -58,7 +59,7 @@ export function checkSource(source: string, file: string): Checked {
         parts,
         orientation,
         PAGE_WORDS[each].ohms,
-        !circuit.supply,
+        !isSupplied(circuit),
       )) {
         const key = `${orientation}°|${problem}`;
         met.set(key, (met.get(key) ?? new Set()).add(each));

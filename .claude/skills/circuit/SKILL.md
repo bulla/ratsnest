@@ -51,8 +51,9 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
 ## The rules (ADR 0006, ADR 0007, ADR 0015)
 
 - **One circuit, one file**, in `circuits/<name>.ts` (`examples/<name>.ts` in ratsnest). It holds
-  what the circuit is (its name, a sentence saying what it does, its credit, and what is on each
-  pin, or the supply it has in the Pico's place), where its parts go (the steps, each placing parts
+  what its breadboard is set up with (its `setup`, right after its format: a Pico, or a supply in
+  its place), what the circuit is (its name, a sentence saying what it does, its credit, and what is
+  on each pin, if it is on a Pico), where its parts go (the steps, each placing parts
   in holes such as `a21` or `top-19`), and its `test`: what the reader does in the last step, and
   what a working circuit then does. A circuit on a Pico also has its MicroPython `script`, and its
   `test` says what the script does (ADR 0036).
@@ -71,11 +72,24 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
   record.
 - **Never edit a generated page.** Change the circuit, or ratsnest, and generate it again.
 
-## A Pico, or a supply in its place (ADR 0032, ADR 0033, ADR 0034)
+## A Pico, or a supply in its place (ADR 0032, ADR 0033, ADR 0034, ADR 0037)
 
-A circuit is on a Pico, or has a supply on one pair of rails instead. **When adding a circuit and
-the request does not say which, ask first**: with a Pico, or powered by a supply? For a supply, ask
-then which voltage, suggesting 4.5 V, and which rails, suggesting the bottom ones.
+A circuit is on a Pico, or has a supply on one pair of rails instead, and its `setup` says which,
+right after its format. Every circuit has one, and `rnest check` reads nothing else in a file
+without it. **When adding a circuit and the request does not say which, ask first**: with a Pico, or
+powered by a supply? For a supply, ask then which voltage, suggesting 4.5 V, and which rails,
+suggesting the bottom ones.
+
+```ts
+  setup: { kind: "pico" },
+```
+
+```ts
+  setup: { kind: "supply", volts: 4.5, rails: "bottom" },
+```
+
+A circuit on a Pico names nothing else in its `setup`: the engine puts the Pico across the middle
+of the board, and its page says so first.
 
 | Volts | What gives it |
 | --- | --- |
@@ -86,8 +100,8 @@ then which voltage, suggesting 4.5 V, and which rails, suggesting the bottom one
 
 A circuit with a supply:
 
-- **declares `supply: { volts, rails }`**, `rails` being `"top"` or `"bottom"`, and still ends
-  `satisfies Circuit`;
+- **declares `setup: { kind: "supply", volts, rails }`**, `rails` being `"top"` or `"bottom"`, and
+  still ends `satisfies Circuit`;
 - **has plain lights and buttons, and they name no `pin`**: no buzzer, RGB LED or ring, which need a
   Pico to drive them;
 - **has no `script`**, and its `test`, which every circuit has, says what to do once the supply is
@@ -222,6 +236,7 @@ Artifact holds one set of four inputs.
 `ratsnest.json` on, migrates every circuit file to the current format, replaces this skill and the
 type in `.ratsnest/`, and runs the checks. Read what it says it could not decide, and ask the person
 about each one; never guess a migration's answer. Then run the checks again, and offer to republish
-the project's Artifacts. Moving from format 1 to 2 (ADR 0036) renames a Pico circuit's `scriptDoes`
-to `test`, and gives a circuit with no credit ratsnest's, so that its pages keep their footer: say
-so, and that the person may reword the credit or take it out.
+the project's Artifacts. Moving from format 1 to 2 (ADR 0036, ADR 0037) writes every circuit's
+`setup` after its format, `{ kind: "pico" }` on a Pico, renames a Pico circuit's `scriptDoes` to
+`test`, and gives a circuit with no credit ratsnest's, so that its pages keep their footer: say so,
+and that the person may reword the credit or take it out.

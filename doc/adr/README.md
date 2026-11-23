@@ -107,3 +107,4 @@ Each new record adds a row here.
 | [0034](0034-make-circuit-one-type-with-two-shapes-a-pico-circuit-or-a-supply-circuit.md)                         | Make `Circuit` one type with two shapes, a Pico circuit or a supply circuit                        |
 | [0035](0035-let-each-circuit-carry-its-drawings-credit-in-its-own-words.md)                                      | Let each circuit carry its drawing's credit, in its own words                                      |
 | [0036](0036-write-what-every-circuit-has-once-its-test-among-it-in-format-2.md)                                  | Write what every circuit has once, its `test` among it, in format 2                                |
+| [0037](0037-say-what-every-circuits-breadboard-starts-with-in-its-setup.md)                                      | Say what every circuit's breadboard starts with, in its `setup`                                    |
