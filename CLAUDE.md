@@ -82,6 +82,15 @@ extend one base: every circuit's setup, name, description, credit, steps and `te
 `"supply"`, as a part's and a pin's `kind` says what they are, a new start being a new `kind`
 (ADR 0037).
 
+**A new part comes with a circuit that needs it, and the wiring check learns that one use**
+(ADR 0038), so that every page still shows a circuit that works. A part bought by its model is one
+of a closed list the engine holds, with its pinout, its print and its parts list's line, 2N3904 and
+2N3906 first (ADR 0039); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
+part apart is printed on its body, upright at every turn and the same in every language, `NPN` and
+`470 µF`, and on a tag only where it cannot fit (ADR 0040). A new part is placed in its step as a
+resistor is, its legs named by role, with no name or callout of its own (ADR 0041). The parts to
+come, in order, are in the roadmap's Backlog.
+
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the
 drawing's attribution, with nothing else to load. **A page is a pure function of four inputs**: the
