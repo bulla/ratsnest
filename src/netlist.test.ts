@@ -565,3 +565,85 @@ describe("an electrolytic capacitor keeping a light lit (ADR 0042)", () => {
     );
   });
 });
+
+describe("a transistor switching a light (ADR 0043)", () => {
+  const { circuit, layout } = FIXTURES["light-on-a-transistor"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const NAME = "the 2N3904 with its emitter in e24";
+
+  it("takes one with its emitter on ground, its base on the pin through a resistor, and the light on its collector", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its legs out of order, its flat face turned away", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "transistor", {
+        kind: "transistor",
+        model: "2N3904",
+        emitter: "e26",
+        base: "e25",
+        collector: "e24",
+      }),
+    );
+    expect(turned).toContain(
+      "the 2N3904 with its emitter in e26 needs its legs side by side in one row: emitter, base, collector, left to right, its flat face towards row j",
+    );
+  });
+
+  it("finds its light in backwards", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "led", {
+        kind: "led",
+        led: "green",
+        anode: "e29",
+        cathode: "e30",
+      }),
+    );
+    expect(turned).toContain(
+      "the green LED is in backwards: its long leg must be towards 3V3(OUT), and its short leg towards the 2N3904's collector",
+    );
+  });
+
+  it("finds its emitter off ground", () => {
+    const off = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "a24", null),
+    );
+    expect(off).toContain(`${NAME} has its emitter off ground`);
+  });
+
+  it("finds its base straight on the pin, or through a resistor out of range", () => {
+    const base = (next: Part) => (parts: Part[]) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "b20", next);
+    expect(problems(base({ kind: "wire", from: "b20", to: "b25", role: "signal" }))).toContain(
+      `${NAME} has its base straight on GP17: a resistor of 1 kΩ to 10 kΩ goes between them`,
+    );
+    expect(problems(base({ kind: "resistor", ohms: 100000, from: "b20", to: "b25" }))).toContain(
+      `${NAME}'s base resistor is 100 kΩ, outside 1 kΩ to 10 kΩ`,
+    );
+  });
+
+  it("finds its light with no resistor of its own", () => {
+    const bare = problems((parts) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "a26", {
+        kind: "wire",
+        from: "a26",
+        to: "a29",
+        role: "signal",
+      }),
+    );
+    expect(bare).toContain(
+      "the green LED is not wired from 3V3(OUT) through one resistor to the 2N3904's collector",
+    );
+  });
+
+  it("finds one that switches no light", () => {
+    const spare = problems((parts) => [
+      ...parts,
+      { kind: "transistor", model: "2N3904", emitter: "h23", base: "h24", collector: "h25" },
+    ]);
+    expect(spare).toContain(
+      "the 2N3904 with its emitter in h23 switches no light: its emitter goes on ground, its base through a resistor from a light's pin, and its collector under the light",
+    );
+  });
+});

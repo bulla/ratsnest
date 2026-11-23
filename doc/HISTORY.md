@@ -234,6 +234,29 @@ on its legs, a navy can with its value printed on it and a stripe down its − s
 - [x] `examples/fading-light.ts`, in English and French, and a test circuit with a variant for every
       rule it is refused by
 
+### M14: the NPN transistor
+
+M14 is done: a pin switches a light through a 2N3904, the second new part with the circuit that
+teaches it (ADR 0038, ADR 0043). The pin feeds only the transistor's base through a resistor, and the
+light's current comes from 3V3. The drawing stands a black TO-92 on its legs, `NPN` and its model
+on its flat face and each leg's letter above it.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0043)
+- [x] The models ratsnest knows, in `src/transistors.ts`, the 2N3904 first (ADR 0039)
+- [x] The format: `{ kind: "transistor", model, emitter, base, collector }`, read and checked field
+      by field, and refused in a circuit with a supply
+- [x] The wiring check's rule: its legs in its model's order, its flat face towards row j; the
+      light the right way round; the emitter on ground; the base on the light's pin through one
+      resistor of 1 kΩ to 10 kΩ; the light between 3V3(OUT) and the collector through one of its
+      own; and every transistor switching a light
+- [x] The drawing: a black TO-92 case with its formed legs, its type, model and legs printed upright
+      at every quarter turn, its colours in `tokens.css`, its print held to 4.5:1; a value tag keeps
+      off it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
+      the legs' order and the BC547 that differs, the base resistor's range, and the long leg's note
+- [x] `examples/transistor-switch.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -455,3 +478,12 @@ on its legs, a navy can with its value printed on it and a stripe down its − s
   fetch Fritzing's parts. Writing the example's description with its value in it showed that the
   check on values in a circuit's words knew no unit of capacitance; it knows µF, nF and pF now, and
   мкФ, нФ and пФ.
+- 2026-11-23: M14, the NPN transistor, worked out alone (ADR 0043). Laying its example out took the
+  longest: a standing part hides the rows above its legs, so each of its three legs can be reached
+  only from the row below, or from the row above its case. In the bottom half every arrangement
+  crossed a wire or a tag, or put a value tag on GP15's chip; the top half, between the top rails,
+  has a row above the case and the rails above that, and needed no wire across the channel. A short
+  resistor's tag landed on the printed column number 30, which the crowding check measures only by
+  its middle point, so the transistor moved a column left and its light's resistor grew a hole. The
+  light runs from 3V3: VBUS's 5 V, which shows best what a transistor is for, would have changed the
+  - rail's legend and the wire colours' rule, and waits for a circuit that needs it.

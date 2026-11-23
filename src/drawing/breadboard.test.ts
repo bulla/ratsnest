@@ -322,6 +322,8 @@ describe("a resistor's value tag", () => {
       // With no Pico on the board (ADR 0032), a tag may stand where the Pico would be: asked here,
       // outside a drawing, the Pico is assumed.
       if (FIXTURES[id].circuit.supply) continue;
+      // A transistor's case stands where a tag always went, and a tag keeps off it (ADR 0043).
+      if (parts.some((part) => part.kind === "transistor")) continue;
       for (const part of parts) {
         if (part.kind !== "resistor") continue;
         if ([part.from, part.to].some((hole) => /^(?:2:)?(?:top|bottom)/.test(hole))) continue;

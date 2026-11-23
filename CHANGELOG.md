@@ -19,6 +19,13 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   page draws it standing, a navy can with its value printed on it and a stripe down its − side,
   says where its legs go, lists it rated 16 V or more, and notes that it goes in one way round.
   On a Pico it is refused, with no use there yet.
+- A transistor, `{ kind: "transistor", model: "2N3904", emitter, base, collector }`, in a circuit on
+  a Pico: a pin switches a light through it. `rnest check` holds its legs in its model's order, left
+  to right, its flat face towards row j; its emitter on ground; its base on the light's pin through
+  one resistor of 1 kΩ to 10 kΩ; and the light between 3V3(OUT) and its collector through one
+  resistor of 220 Ω to 1 kΩ. The page draws it as a black TO-92 case with `NPN` and `2N3904` printed
+  on its flat face and its legs' letters above them, lists it, and notes its legs' order and that
+  another model, such as a BC547, may differ. On a supply it is refused, with no use there yet.
 - `rnest check` refuses a capacitance, such as `470 µF`, written in a circuit's own words, as it
   refuses a resistance: the engine writes every value.
 

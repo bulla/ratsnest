@@ -1,3 +1,4 @@
+import type { TransistorName } from "../transistors";
 import { PIN_EDGE_INSET_MM, PIN_PITCH_MM, PIN_TOP_INSET_MM, PINS_PER_SIDE } from "./geometry";
 
 /**
@@ -292,6 +293,17 @@ export type Part =
       readonly microfarads: number;
       readonly plus: Hole;
       readonly minus: Hole;
+    }
+  /**
+   * A transistor in a TO-92 case, standing up, its legs side by side in one row (ADR 0043): emitter,
+   * base and collector, left to right, its flat face towards row j. Its model is one ratsnest knows.
+   */
+  | {
+      readonly kind: "transistor";
+      readonly model: TransistorName;
+      readonly emitter: Hole;
+      readonly base: Hole;
+      readonly collector: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -353,6 +365,8 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.plus, part.minus];
     case "rgbLed":
       return [part.power, part.dataOut, part.ground, part.dataIn];
+    case "transistor":
+      return [part.emitter, part.base, part.collector];
     case "ring":
       return [part.dataIn, part.power, part.ground, part.dataOut];
   }

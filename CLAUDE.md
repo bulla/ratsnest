@@ -25,7 +25,8 @@ the first release, 0.1.1, is published (M9), and `ratsnest update` moves a proje
 to a newer ratsnest (M10), and the `circuit` skill publishes a project's pages as Artifacts (M8). A
 circuit can do without a Pico, on a supply, and every circuit is in format 2, since 0.2.0 (M12). New
 parts come one at a time, each with the circuit that teaches it, in the roadmap's Backlog: the
-electrolytic capacitor, keeping a light lit on a supply, is the first (M13).
+electrolytic capacitor, keeping a light lit on a supply, is the first (M13), and the NPN transistor,
+a pin switching a light through it, the second (M14).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -216,8 +217,9 @@ there.
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported, `battery-button.ts`, the first on a
-│                        supply (ADR 0032), and `fading-light.ts`, the first with a capacitor
-│                        (ADR 0042): ratsnest's own, checked like anyone's, and in `format-1/` the
+│                        supply (ADR 0032), `fading-light.ts`, the first with a capacitor
+│                        (ADR 0042), and `transistor-switch.ts`, the first with a transistor
+│                        (ADR 0043): ratsnest's own, checked like anyone's, and in `format-1/` the
 │                        files the migration to format 2 is tested on, one for each example older
 │                        than format 2, left out of the type check (ADR 0014, ADR 0015, ADR 0036)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
@@ -247,6 +249,7 @@ there.
 │   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
 │   ├── language.ts      The languages a page is written in
 │   ├── pins.ts, rgb.ts  The GPIO a Pico 2 W breaks out, and an RGB LED's colours
+│   ├── transistors.ts   The transistors ratsnest knows, by model: each one's type and legs (ADR 0039)
 │   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, and one
 │   │                    on a supply, and the `circuit` skill's default credits, read from the skill
 │   ├── drawing/         The Pico, the breadboard and a supply's cell, drawn: CC BY-SA 4.0, unlike
@@ -438,7 +441,8 @@ does not pay for it again.
 - **A standing part stands over the rows above its legs**, on the drawing, as a light's lens does,
   and wires are drawn over everything. So a hole a reader needs to see, a wire's end above all, goes
   below a standing part, never above it: the fading light's capacitor has its − leg wired from row j,
-  under its legs in row i.
+  under its legs in row i. A part with three legs is harder still: the transistor's example found room only in
+  the top half, its emitter and its light reached from row a, above its case, and the rails above.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

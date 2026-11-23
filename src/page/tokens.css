@@ -103,6 +103,10 @@
   --color-capacitor-stripe: #c9d4e8;
   --color-capacitor-ink: #ffffff;
   --color-capacitor-stripe-ink: #1f3d78;
+  /* A transistor's black TO-92 case (ADR 0043), and its type, model and legs' letters printed white
+     on its flat face, at 4.5:1 at least. */
+  --color-transistor: #2a2b2f;
+  --color-transistor-ink: #ffffff;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

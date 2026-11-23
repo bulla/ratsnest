@@ -113,3 +113,4 @@ Each new record adds a row here.
 | [0040](0040-print-what-identifies-a-part-on-its-body-upright-and-the-same-in-every-language.md)                  | Print what identifies a part on its body, upright and the same in every language                   |
 | [0041](0041-place-a-new-part-in-its-step-as-a-resistor-is-with-no-name-of-its-own.md)                            | Place a new part in its step as a resistor is, with no name of its own                             |
 | [0042](0042-keep-a-light-lit-with-an-electrolytic-capacitor-on-a-supply.md)                                      | Keep a light lit with an electrolytic capacitor, on a supply                                       |
+| [0043](0043-let-a-pin-switch-a-light-through-an-npn-transistor.md)                                               | Let a pin switch a light through an NPN transistor                                                 |

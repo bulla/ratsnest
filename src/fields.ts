@@ -12,6 +12,7 @@ import type { Circuit, Language, Setup, SupplyCircuit, Text } from "./format";
 import { LANGUAGES } from "./language";
 import { isUsableGpio } from "./pins";
 import { pathOf } from "./read";
+import { TRANSISTOR_NAMES } from "./transistors";
 
 /**
  * Every field of a circuit's data checked by the engine itself, because a circuits project may never
@@ -226,6 +227,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   rgbLed: ["kind", "led", "power", "dataOut", "ground", "dataIn"],
   ring: ["kind", "led", "dataIn", "power", "ground", "dataOut"],
   electrolytic: ["kind", "microfarads", "plus", "minus"],
+  transistor: ["kind", "model", "emitter", "base", "collector"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
@@ -329,6 +331,10 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
       fields.hole("minus");
       return;
     }
+    case "transistor":
+      fields.oneOf("model", TRANSISTOR_NAMES);
+      for (const leg of ["emitter", "base", "collector"]) fields.hole(leg);
+      return;
     case "rgbLed":
     case "ring":
       reference("led", ids.rgbLeds, "RGB lights");

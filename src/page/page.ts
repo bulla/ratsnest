@@ -23,9 +23,10 @@ import {
 import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN, widthOf } from "../fonts";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
-import { LIGHT_OHMS_RANGE } from "../netlist";
+import { BASE_OHMS_RANGE, LIGHT_OHMS_RANGE } from "../netlist";
 import { isStanding, type Orientation } from "../orientation";
 import { DEFAULT_THEME, type Theme } from "../theme";
+import { TRANSISTORS, type TransistorName } from "../transistors";
 import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place, RUSSIAN_PAGE } from "./words";
 
 /**
@@ -204,6 +205,14 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
       );
     case "electrolytic":
       return words.electrolytic(words.microfarads(part.microfarads), at(part.plus), at(part.minus));
+    case "transistor":
+      return words.transistor(
+        part.model,
+        TRANSISTORS[part.model].type,
+        at(part.emitter),
+        at(part.base),
+        at(part.collector),
+      );
   }
 }
 
@@ -345,6 +354,10 @@ function partsListHtml(
     const count = parts.filter((p) => p.kind === "electrolytic" && p.microfarads === value).length;
     items.push([count, words.listElectrolytic(words.microfarads(value), count)]);
   }
+  for (const model of transistorModelsOf(parts)) {
+    const count = parts.filter((p) => p.kind === "transistor" && p.model === model).length;
+    items.push([count, words.listTransistor(model, TRANSISTORS[model].type, count)]);
+  }
   for (const arch of [false, true]) {
     for (const role of ["ground", "power", "signal"] as const) {
       const count = parts.filter(
@@ -369,14 +382,29 @@ function dataPinOf(circuit: ShownCircuit, led: string): string {
   return `GP${circuit.leds.find((each) => each.id === led)?.pin?.gpio ?? "?"}`;
 }
 
+/** The models of the transistors a circuit has, each once, in the order the steps place them. */
+const transistorModelsOf = (parts: readonly Part[]): TransistorName[] => [
+  ...new Set(parts.flatMap((p) => (p.kind === "transistor" ? [p.model] : []))),
+];
+
 function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWords): string {
   const notes: string[] = [];
+  const models = transistorModelsOf(parts);
   if (parts.some((p) => p.kind === "led")) {
     const [low, high] = LIGHT_OHMS_RANGE;
     notes.push(
-      circuit.supply ? words.supplyLedPolarity : words.ledPolarity,
+      circuit.supply
+        ? words.supplyLedPolarity
+        : models.length > 0
+          ? words.switchedLedPolarity
+          : words.ledPolarity,
       words.anyResistor(words.ohms(low), words.ohms(high)),
     );
+  }
+  for (const model of models) notes.push(words.transistorPinout(model, TRANSISTORS[model].legs));
+  if (models.length > 0) {
+    const [low, high] = BASE_OHMS_RANGE;
+    notes.push(words.baseResistor(words.ohms(low), words.ohms(high)));
   }
   for (const part of parts) {
     if (part.kind === "rgbLed") notes.push(words.rgbLedPolarity(dataPinOf(circuit, part.led)));
