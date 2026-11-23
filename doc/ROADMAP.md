@@ -88,7 +88,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 ## Backlog
 
 - **New parts, each with the circuit that teaches it** (ADR 0038 to ADR 0041), in this order, after
-  the first, the electrolytic capacitor's fading light, which is M13 (ADR 0042). Each brings its
+  the first two, the electrolytic capacitor's fading light and the NPN transistor's switch, which
+  are M13 and M14 (ADR 0042, ADR 0043). Each brings its
   part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
   step's sentence and the parts list's line in English, French and Russian, an example and a test
   circuit, and the `circuit` skill's knowledge of it. Each part's drawing is mocked up on the board
