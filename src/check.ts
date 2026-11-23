@@ -54,7 +54,12 @@ export function checkSource(source: string, file: string): Checked {
   const met = new Map<string, Set<string>>();
   for (const each of languages) {
     for (const orientation of ORIENTATIONS) {
-      for (const problem of crowdingProblems(parts, orientation, PAGE_WORDS[each].ohms)) {
+      for (const problem of crowdingProblems(
+        parts,
+        orientation,
+        PAGE_WORDS[each].ohms,
+        !circuit.supply,
+      )) {
         const key = `${orientation}°|${problem}`;
         met.set(key, (met.get(key) ?? new Set()).add(each));
       }

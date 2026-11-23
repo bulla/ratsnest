@@ -1,5 +1,5 @@
 import type { Part } from "./drawing/breadboard";
-import type { ButtonColour, GpioPin, LedColour, RgbPin } from "./format";
+import type { ButtonColour, GpioPin, LedColour, RgbPin, Supply } from "./format";
 
 /**
  * The engine's model of a circuit, shown in one language: what is on which pin, and the layout of
@@ -8,7 +8,7 @@ import type { ButtonColour, GpioPin, LedColour, RgbPin } from "./format";
  * into this model once it has passed its checks (ADR 0022).
  */
 
-export type { ButtonColour, GpioPin, LedColour, RgbPin };
+export type { ButtonColour, GpioPin, LedColour, RgbPin, Supply };
 
 /**
  * The colours a light can be, every one of the format's. A closed set rather than any colour,
@@ -27,13 +27,35 @@ export const LED_COLOURS = [
   "white",
 ] as const satisfies readonly LedColour[];
 
-/** A light of one colour, on a pin it drives high or low: every light but an RGB LED. */
+/** The voltages a supply can give, each something real to buy (ADR 0032). */
+export const SUPPLY_VOLTS = [3, 3.7, 4.5, 5] as const satisfies readonly Supply["volts"][];
+
+/** The pairs of rails a supply's leads can go in. */
+export const SUPPLY_RAILS = ["top", "bottom"] as const satisfies readonly Supply["rails"][];
+
+/**
+ * The lights that need about 3 V, whose 5 mm LEDs are made the way a blue one is (ADR 0033): the 3 V
+ * supply cannot light them through a resistor. The rest need about 2 V.
+ */
+export const THREE_VOLT_COLOURS = [
+  "green",
+  "blue",
+  "pink",
+  "purple",
+  "aqua",
+  "white",
+] as const satisfies readonly LedColour[];
+
+/**
+ * A light of one colour, on a pin it drives high or low: every light but an RGB LED. A circuit with a
+ * supply lights it from the supply, and it has no pin (ADR 0032).
+ */
 export interface PlainLed {
   /** How the layout refers to it. */
   readonly id: string;
   /** What the page calls it: "red LED", never "GP15". */
   readonly name: string;
-  readonly pin: GpioPin;
+  readonly pin?: GpioPin;
   readonly colour: LedColour;
 }
 
@@ -68,12 +90,15 @@ export const BUTTON_COLOURS = [
   "green",
 ] as const satisfies readonly (ButtonColour & LedColour)[];
 
-/** A push button, on the pin it pulls up to 3V3 while held. */
+/**
+ * A push button, on the pin it pulls up to 3V3 while held. In a circuit with a supply it switches the
+ * current itself, and has no pin (ADR 0032).
+ */
 export interface Button {
   readonly id: string;
   /** Its pin's name, `BTN1` to `BTN4`, never an article before it. */
   readonly name: string;
-  readonly pin: GpioPin;
+  readonly pin?: GpioPin;
   readonly colour: ButtonColour;
 }
 
@@ -83,10 +108,15 @@ export interface Buzzer {
   readonly pin: GpioPin;
 }
 
-/** What a circuit is: its name, a sentence saying what it does, and what is on its pins. */
+/**
+ * What a circuit is: its name, a sentence saying what it does, and what is on its pins, or the supply
+ * it has in the Pico's place (ADR 0032).
+ */
 export interface ShownCircuit {
   readonly name: string;
   readonly description: string;
+  /** What powers a circuit with no Pico; a circuit on a Pico has none. */
+  readonly supply?: Supply;
   readonly leds: readonly Led[];
   readonly buttons: readonly Button[];
   readonly buzzers: readonly Buzzer[];
@@ -103,8 +133,11 @@ export interface LayoutStep {
 /** Where every part of a circuit goes on the breadboard, in the order it is put there. */
 export interface Layout {
   readonly steps: readonly LayoutStep[];
-  /** A MicroPython script for Thonny that exercises every part. */
-  readonly script: string;
-  /** What the script does, said to the person watching the board. */
-  readonly scriptDoes: string;
+  /** A MicroPython script for Thonny that exercises every part, on a Pico: a supply has none. */
+  readonly script?: string;
+  /**
+   * What a working circuit does once it is tested, said to the person watching the board: what the
+   * script does, on a Pico, and what to do once the supply is connected, on a supply (ADR 0032).
+   */
+  readonly test: string;
 }

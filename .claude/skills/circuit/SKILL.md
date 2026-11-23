@@ -49,9 +49,9 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
 ## The rules (ADR 0006, ADR 0007, ADR 0015)
 
 - **One circuit, one file**, in `circuits/<name>.ts` (`examples/<name>.ts` in ratsnest). It holds
-  what the circuit is (its name, a sentence saying what it does, and what is on each pin), where its
-  parts go (the steps, each placing parts in holes such as `a21` or `top-19`), and its MicroPython
-  test script.
+  what the circuit is (its name, a sentence saying what it does, and what is on each pin, or the
+  supply it has in the Pico's place), where its parts go (the steps, each placing parts in holes such
+  as `a21` or `top-19`), and its MicroPython test script, or, with a supply, its `test`.
 - **The file only declares.** `import type` lines and one `export default { … } satisfies Circuit`,
   the type imported from `ratsnest`. Every value is a string, a number, `true` or `false`, or an
   array or object of those, and a template string has no `${}`. No function, call, variable, spread,
@@ -66,6 +66,33 @@ anything else. Never edit `ratsnest.json`, or the type in `.ratsnest/`, by hand.
   tests included. A change the engine needs is a change to ratsnest, for every circuit, with its own
   record.
 - **Never edit a generated page.** Change the circuit, or ratsnest, and generate it again.
+
+## A Pico, or a supply in its place (ADR 0032, ADR 0033, ADR 0034)
+
+A circuit is on a Pico, or has a supply on one pair of rails instead. **When adding a circuit and
+the request does not say which, ask first**: with a Pico, or powered by a supply? For a supply, ask
+then which voltage, suggesting 4.5 V, and which rails, suggesting the bottom ones.
+
+| Volts | What gives it |
+| --- | --- |
+| `3` | two AA batteries |
+| `4.5` | three AA batteries |
+| `3.7` | one protected Li-Po cell |
+| `5` | a USB charger, through a USB-C breakout board |
+
+A circuit with a supply:
+
+- **declares `supply: { volts, rails }`**, `rails` being `"top"` or `"bottom"`, and still ends
+  `satisfies Circuit`;
+- **has plain lights and buttons, and they name no `pin`**: no buzzer, RGB LED or ring, which need a
+  Pico to drive them;
+- **has a `test` in place of `script` and `scriptDoes`**: what to do once the supply is connected,
+  and what a working circuit then does;
+- **names no hole for the supply**: the engine puts its red lead in column 1 of the + rail and its
+  black lead in column 1 of the − rail, so leave those two holes free;
+- **wires every light from + through one resistor of 220 Ω to 1 kΩ to −**, each button on a light's
+  way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
+  On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
 
 ## Its languages (ADR 0010, ADR 0011)
 
@@ -101,7 +128,8 @@ another language instead. The generator refuses one too, but the skill asks firs
 
 ## How to run it
 
-1. **Read the records the change touches**, by their numbers above.
+1. **Read the records the change touches**, by their numbers above. For a new circuit, settle a
+   Pico or a supply first (above).
 2. **Write or change the one circuit file**, and nothing else among the circuits.
 3. **Run the check** (the table above). The declarative check, the field checks, the wiring check,
    the language checks and the overlap check, in every language the circuit has, must all pass.

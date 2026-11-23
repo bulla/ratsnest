@@ -22,7 +22,10 @@ describe("the public surface (ADR 0017)", () => {
     expect(surface.format).toEqual(["1"]);
     expect(surface["type Language"]).toEqual(["en", "fr", "ru"]);
     expect(surface["type Part"]).toContain("RingPart");
-    expect(surface["Circuit.leds"]).toEqual(["optional readonly Led[]"]);
+    expect(surface["type Circuit"]).toEqual(["PicoCircuit", "SupplyCircuit"]);
+    expect(surface["PicoCircuit.leds"]).toEqual(["optional readonly Led[]"]);
+    expect(surface["SupplyCircuit.supply"]).toEqual(["required Supply"]);
+    expect(surface["Supply.volts"]).toEqual(["required 3 | 3.7 | 4.5 | 5"]);
     expect(surface["command generate --orientation"]).toEqual(["0", "90", "180", "270"]);
     expect(surface["ratsnest.json"]).toEqual(["ratsnest"]);
   });

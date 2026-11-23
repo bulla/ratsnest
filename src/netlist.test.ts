@@ -396,3 +396,90 @@ describe("a jumper that arches over the board (scratchpi's ADR 0166)", () => {
     expect(wiringProblems(FOUR, cut)).toContain("BTN1 is not between GP16 and 3V3(OUT)");
   });
 });
+
+describe("a circuit with a supply (ADR 0033)", () => {
+  const { circuit, layout } = FIXTURES["two-lights-on-a-supply"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const add = (part: Part) => (parts: Part[]) => [...parts, part];
+
+  it("lets a part stand where the Pico would be, since there is none", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("keeps the holes its supply's leads are in", () => {
+    expect(problems(add({ kind: "wire", from: "a1", to: "top+1", role: "power" }))).toContain(
+      "the red wire from a1 to top+1 and the supply's red lead both have a leg in top+1",
+    );
+  });
+
+  it("finds a light in backwards", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "led" && p.led === "red", {
+        kind: "led",
+        led: "red",
+        anode: "c10",
+        cathode: "c9",
+      }),
+    );
+    expect(turned).toContain("the red LED is in backwards: its long leg must be towards +");
+  });
+
+  it("finds a light with no resistor, or one outside the range", () => {
+    const bare = problems((parts) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "b5", {
+        kind: "wire",
+        from: "b5",
+        to: "b9",
+        role: "power",
+      }),
+    );
+    expect(bare).toContain("the red LED has no resistor between + and −");
+    const low = problems((parts) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "b5", {
+        kind: "resistor",
+        ohms: 100,
+        from: "b5",
+        to: "b9",
+      }),
+    );
+    expect(low).toContain("the red LED's resistor is 100 Ω, outside 220 Ω to 1 kΩ");
+  });
+
+  it("finds a button that switches no light", () => {
+    // Joined to + on both sides, it lights nothing that was not lit already.
+    const spare = problems(add({ kind: "wire", from: "a16", to: "top+16", role: "power" }));
+    expect(spare).toContain(
+      "BTN1 switches no light: it goes on a light's way, between + and the light or between the light and −",
+    );
+  });
+
+  it("finds a short across the supply, with nothing held and with every button held", () => {
+    expect(problems(add({ kind: "wire", from: "top+3", to: "top-3", role: "power" }))).toEqual([
+      "the supply's + and − are joined: a short across it",
+    ]);
+    expect(problems(add({ kind: "wire", from: "a16", to: "top-16", role: "ground" }))).toEqual([
+      "the supply's + and − are joined while every button is held: a short",
+    ]);
+  });
+
+  it("finds a wire not in the colour of what it carries", () => {
+    const yellow = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "a5", {
+        kind: "wire",
+        from: "a5",
+        to: "top+5",
+        role: "signal",
+      }),
+    );
+    expect(yellow).toContain(
+      "the yellow wire from a5 to top+5 is yellow, but carries +: red is for +, black for −, yellow for anything else",
+    );
+  });
+
+  it("finds a resistor that is no light's", () => {
+    expect(problems(add({ kind: "resistor", ohms: 330, from: "g25", to: "g28" }))).toContain(
+      "the 330 Ω resistor from g25 to g28 is not a light's resistor",
+    );
+  });
+});

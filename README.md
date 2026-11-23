@@ -13,7 +13,8 @@ focus on new challenges, and give him great, slick schematics for his next circu
 _Graphical wiring for breadboards._ From a circuit described in one declarative file, ratsnest makes
 one self-contained page showing how to build it on a breadboard with a Raspberry Pi Pico 2 W, step
 by step: the drawing, the steps that pick out their parts, the parts list and a MicroPython script to
-test it with. A page is drawn at any quarter turn, in a dark or a light theme, and in English, French
+test it with. A circuit can also do without the Pico, its LEDs and buttons powered by batteries or a
+USB charger on the breadboard's rails. A page is drawn at any quarter turn, in a dark or a light theme, and in English, French
 or Russian. Its command is `rnest`, a shorter name for `ratsnest`: the two are synonymous, and the
 examples here use `rnest`.
 

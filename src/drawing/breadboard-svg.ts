@@ -28,6 +28,7 @@ import {
   rowsOf,
   rowY,
   SECOND_BOARD_Y_MM,
+  supplyLeadsOf,
   usesSecondBoard,
   type WireRole,
 } from "./breadboard";
@@ -75,6 +76,18 @@ export interface DrawnPart {
   readonly label?: { readonly title: string; readonly detail: string };
 }
 
+/**
+ * What powers a circuit with no Pico (ADR 0032), drawn as one small cell beside the board's near end,
+ * its leads in column 1 of the rails it names.
+ */
+export interface DrawnSupply {
+  readonly rails: "top" | "bottom";
+  /** Its voltage, as the page's language writes it: `4.5 V`, `4,5 V`, `4,5 В`. */
+  readonly label: string;
+  /** Which of the page's steps it belongs to. */
+  readonly group: string;
+}
+
 /** A header pin's name, printed on the Pico beside it, for a pin the circuit uses. */
 export interface PinTag {
   readonly pin: number;
@@ -88,6 +101,8 @@ export interface Breadboard {
   readonly ohms?: (value: number) => string;
   readonly parts: readonly DrawnPart[];
   readonly tags: readonly PinTag[];
+  /** The supply a circuit has in the Pico's place, which is then not drawn (ADR 0032). */
+  readonly supply?: DrawnSupply;
   /** The colour of a circuit's light, by its id. */
   readonly ledColour: (led: string) => LedColour;
   /** The colour of a button's cap, by its id (scratchpi's ADR 0174). */
@@ -102,8 +117,18 @@ export const PICO_GROUP = "pico";
 
 const token = (name: string) => `var(--color-${name})`;
 
+/** The colours of a supply's cell (ADR 0032): a silver pouch, its edge, its ink and its tape. */
+export const SUPPLY_TOKENS = {
+  body: "cell",
+  panel: "cell-panel",
+  edge: "cell-edge",
+  ink: "cell-ink",
+  tape: "cell-tape",
+} as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
+  ...Object.values(SUPPLY_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -170,6 +195,13 @@ let turn: Orientation = 0;
  * Set for the length of `drawBreadboard` and `crowdingProblems`, and English otherwise.
  */
 let sayOhms: (value: number) => string = (value) => formatOhms(value);
+
+/**
+ * Whether the Pico is on the board, as it is unless a circuit has a supply in its place (ADR 0032):
+ * a value tag keeps off it only when it is there. Set for the length of `drawBreadboard` and
+ * `crowdingProblems`, and true otherwise.
+ */
+let pico = true;
 
 /** What turns an element back about a point, so that it stands upright on the page. */
 const upright = (x: number, y: number): string =>
@@ -467,6 +499,74 @@ function drawPico(): string {
     ),
   );
   return `<g class="part" data-g="${PICO_GROUP}">${out.join("")}</g>`;
+}
+
+// --- A supply, in the Pico's place (ADR 0032). ---
+
+/** The cell's size, square enough that its voltage stands upright in it at any quarter turn. */
+const CELL = { x: -12.6, w: 7.4, h: 6.4 } as const;
+
+/**
+ * A supply, drawn as one small silver pouch cell beside the board's near end, whatever gives the
+ * voltage: its tape at the end its tabs are on, both leads leaving that end, the side nearer the
+ * board, red into column 1 of the + rail and black into column 1 of the − rail. The cell and its
+ * leads are edged, so that they read on either theme.
+ */
+function drawSupply(supply: DrawnSupply): string {
+  const leads = supplyLeadsOf(supply.rails);
+  const plus = holeCentre(leads.plus);
+  const minus = holeCentre(leads.minus);
+  const middle = (plus.y + minus.y) / 2;
+  const y = middle - CELL.h / 2;
+  const right = CELL.x + CELL.w;
+  const colour = (key: keyof typeof SUPPLY_TOKENS) => token(SUPPLY_TOKENS[key]);
+  const out: string[] = [
+    rect(
+      CELL.x,
+      y,
+      CELL.w,
+      CELL.h,
+      `rx="0.6" fill="${colour("body")}" stroke="${colour("edge")}" stroke-width="0.25"`,
+    ),
+    rect(
+      CELL.x + 0.55,
+      y + 0.55,
+      CELL.w - 2.1,
+      CELL.h - 1.1,
+      `rx="0.35" fill="${colour("panel")}"`,
+    ),
+    line(
+      CELL.x + 1,
+      y + 0.95,
+      right - 2.2,
+      y + 0.95,
+      `stroke="${token("shine")}" stroke-opacity="0.7" stroke-width="0.3" stroke-linecap="round"`,
+    ),
+    rect(right - 1.15, y + 0.12, 0.5, CELL.h - 0.24, `fill="${colour("tape")}"`),
+  ];
+  // Each lead leaves its tab on the side of the rail it goes to, so the two never cross.
+  const toward = Math.sign(plus.y - minus.y);
+  for (const [hole, role, at] of [
+    [minus, "ground", middle - toward * 0.95],
+    [plus, "power", middle + toward * 0.95],
+  ] as const) {
+    out.push(rect(right - 0.1, at - 0.45, 0.75, 0.9, `rx="0.1" fill="${token("board-metal")}"`));
+    const path = `M${n(right + 0.6)} ${n(at)}C${n(right + 3.6)} ${n(at)} ${n(hole.x - 3.4)} ${n(hole.y)} ${n(hole.x)} ${n(hole.y)}`;
+    out.push(
+      `<path d="${path}" fill="none" stroke="${colour("edge")}" stroke-width="0.95" stroke-linecap="round"/>`,
+      `<path d="${path}" fill="none" stroke="${token(WIRE_TOKEN[role])}" stroke-width="0.7" stroke-linecap="round"/>`,
+      circle(hole.x, hole.y, 0.42, `fill="${token("lead")}"`),
+    );
+  }
+  out.push(
+    word(
+      CELL.x + 0.55 + (CELL.w - 2.1) / 2,
+      middle,
+      supply.label,
+      `font-size="1.75" font-weight="800" fill="${colour("ink")}"`,
+    ),
+  );
+  return `<g class="part" data-g="${supply.group}" data-kind="supply">${out.join("")}</g>`;
 }
 
 /** How tall a pin's tag is, and how far a second row of them sits from the first. */
@@ -799,18 +899,19 @@ function placeTag(
     for (const at of PRINTED_NUMBERS) {
       if (inside(at, 1.3)) return false;
     }
-    // The Pico, turned on its side.
-    const pico = {
+    // The Pico, turned on its side, where there is one.
+    const outline = {
       x: PICO_ORIGIN_MM.x,
       y: PICO_ORIGIN_MM.y,
       w: BOARD_LENGTH_MM,
       h: BOARD_WIDTH_MM,
     };
     if (
-      box.x < pico.x + pico.w &&
-      box.x + box.w > pico.x &&
-      box.y < pico.y + pico.h &&
-      box.y + box.h > pico.y
+      pico &&
+      box.x < outline.x + outline.w &&
+      box.x + box.w > outline.x &&
+      box.y < outline.y + outline.h &&
+      box.y + box.h > outline.y
     )
       return false;
     for (const other of others) {
@@ -1638,11 +1739,13 @@ function glowGradient(colour: LedColour): string {
 export function drawBreadboard(drawing: Breadboard): string {
   turn = drawing.orientation ?? 0;
   sayOhms = drawing.ohms ?? formatOhms;
+  pico = !drawing.supply;
   try {
     return drawTurned(drawing);
   } finally {
     turn = 0;
     sayOhms = formatOhms;
+    pico = true;
   }
 }
 
@@ -1735,8 +1838,9 @@ function drawTurned(drawing: Breadboard): string {
     (turn === 0 ? "" : `<g transform="rotate(${turn})">`) +
     (second ? drawPlastic(SECOND_BOARD_Y_MM) : "") +
     drawPlastic() +
-    drawPico() +
-    drawing.tags.map((tag) => drawTag(tag, rows.get(tag) ?? 0)).join("") +
+    (drawing.supply
+      ? drawSupply(drawing.supply)
+      : drawPico() + drawing.tags.map((tag) => drawTag(tag, rows.get(tag) ?? 0)).join("")) +
     ordered
       .map((part) =>
         drawPart(
@@ -1781,9 +1885,11 @@ export function crowdingProblems(
   parts: readonly Part[],
   orientation: Orientation,
   ohms: (value: number) => string = formatOhms,
+  onPico = true,
 ): string[] {
   turn = orientation;
   sayOhms = ohms;
+  pico = onPico;
   try {
     const problems: string[] = [];
     const resistors = parts.flatMap((part) => (part.kind === "resistor" ? [part] : []));
@@ -1801,9 +1907,14 @@ export function crowdingProblems(
         box: { x: clear.x - w / 2, y: clear.y - h / 2, w, h },
       });
     }
-    const pins = [
-      ...new Set(parts.flatMap((part) => legsOf(part).flatMap((hole) => pinOfStrip(hole) ?? []))),
-    ];
+    // A circuit with a supply has no Pico, and so no pin's chip (ADR 0032).
+    const pins = pico
+      ? [
+          ...new Set(
+            parts.flatMap((part) => legsOf(part).flatMap((hole) => pinOfStrip(hole) ?? [])),
+          ),
+        ]
+      : [];
     const pinTags = pins.map((pin) => ({ pin, group: "" }));
     const rows = tagRows(pinTags);
     const chips = pinTags.map((tag) => {
@@ -1821,5 +1932,6 @@ export function crowdingProblems(
   } finally {
     turn = 0;
     sayOhms = formatOhms;
+    pico = true;
   }
 }
