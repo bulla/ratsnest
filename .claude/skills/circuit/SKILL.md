@@ -111,6 +111,28 @@ A circuit with a supply:
 - **wires every light from + through one resistor of 220 Ω to 1 kΩ to −**, each button on a light's
   way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
   On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
+- **may have electrolytic capacitors, each keeping a light lit** (below).
+
+## Capacitors, transistors and diodes (ADR 0038 to ADR 0042)
+
+ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
+(ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
+name of its own and no list at the top of the circuit (ADR 0041). Its value is never written in the
+circuit's own words, as a resistor's is not: point at it by the step that places it.
+
+- **An electrolytic capacitor**, on a supply, keeps a light lit once its button is let go
+  (ADR 0042):
+
+  ```ts
+  { kind: "electrolytic", microfarads: 470, plus: "i5", minus: "i4" },
+  ```
+
+  Its legs are side by side in one row. Its − leg goes straight to −, by a black wire, and its + leg
+  between a button and a light's resistor, so that the button fills it and the light empties it.
+  Its microfarads times that resistor's ohms, over a million, is 0.2 s at least, or the light goes
+  out too fast to see it fade: 470 µF through 1 kΩ is about right. The can is drawn standing over
+  the three rows above its legs, so keep those holes free, and wire its − leg from the row below.
+  On a Pico it has no use yet, and is refused.
 
 ## Its credit (ADR 0035)
 

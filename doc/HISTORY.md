@@ -210,6 +210,30 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
       fixtures, with a variant for every rule it is refused by
 - [x] 0.2.0, made by `bun run release` and brought to `develop` by pull request (ADR 0030)
 
+### M13: the electrolytic capacitor
+
+M13 is done: the first new part, with the circuit that teaches it (ADR 0038). On a supply, a button
+charges an electrolytic capacitor across a light and its resistor, and once it is let go the light
+fades out. The wiring check holds the capacitor to that one use (ADR 0042), and the drawing stands it
+on its legs, a navy can with its value printed on it and a stripe down its − side.
+
+- [x] The design, by interview: new parts each with the circuit that needs it (ADR 0038), real
+      models from a closed list (ADR 0039), print on the body (ADR 0040), and no name of their own
+      (ADR 0041); and this part's details, worked out alone at the owner's asking (ADR 0042)
+- [x] The format: `{ kind: "electrolytic", microfarads, plus, minus }`, read and checked field by
+      field, and allowed in a circuit with a supply
+- [x] The wiring check's rule: the right way round, its − leg on −, its + leg between a button and a
+      light's resistor, and the two slow enough to see the light fade, 0.2 s at least; and on a Pico,
+      refused, with no use there yet
+- [x] The drawing: a navy can, a pale stripe with minus signs, an aluminium top, a kinked + leg and
+      its value printed upright at every quarter turn, its colours in `tokens.css` and its prints held
+      to 4.5:1; a value tag keeps off it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
+      rated 16 V or more, and the note that it goes in one way round
+- [x] A capacitance written in a circuit's own words refused, as a resistance is (ADR 0011)
+- [x] `examples/fading-light.ts`, in English and French, and a test circuit with a variant for every
+      rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -412,3 +436,22 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
   `Circuit`'s new shapes, break it, which before 1.0.0 raises the middle number (ADR 0017,
   ADR 0021). Its commit reaches `develop` by pull request, merged with a merge commit, and its tag is
   pushed after the merge (ADR 0030).
+- 2026-11-23: New parts, by interview: capacitors, transistors and diodes, each with the circuit
+  that teaches it (ADR 0038). Asked whether a new part could go anywhere, held to generic rules, the
+  owner kept the wiring check's promise instead, so each part comes with one use. The order changed
+  twice: the owner first set aside the capacitor's fading light for something more ambitious, the
+  two-transistor flasher that tests a capacitor, from a schematic of their own, and then brought the
+  fading light back as the easier start, with the flasher after both transistors. TO-92 pinouts that
+  differ between models made parts a closed list of real ones (ADR 0039). The interview's own
+  ADR 0041 first had the flasher's words name a capacitor by its value, which ADR 0011 forbids; it
+  points at the step that places it instead. The owner then asked for the work to go on alone, in
+  pull requests stacked one on the next.
+- 2026-11-23: M13, the electrolytic capacitor, worked out alone (ADR 0042). The can was first drawn
+  tall, as real ones are, and stood over the button and over the hole its − leg's wire needed, so it
+  became short, standing over three rows. Laying the example out showed why the drawing's every
+  standing part rises over the rows above it: the − leg's wire comes from the row below, and the
+  button sits to the left. Three colourings were mocked up, and navy kept clear of the black wires
+  and of the − rail's blue. Fritzing's drawing was not set beside it, since this session could not
+  fetch Fritzing's parts. Writing the example's description with its value in it showed that the
+  check on values in a circuit's words knew no unit of capacitance; it knows µF, nF and pF now, and
+  мкФ, нФ and пФ.

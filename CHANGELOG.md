@@ -10,6 +10,18 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ## [Unreleased]
 
+### Added
+
+- An electrolytic capacitor, `{ kind: "electrolytic", microfarads, plus, minus }`, in a circuit with a
+  supply: it keeps a light lit once its button is let go, and the light fades out. `rnest check`
+  holds it the right way round, its − leg on −, its + leg between a button and a light's resistor,
+  and slow enough to see the fade, its microfarads times that resistor's ohms 0.2 s at least. The
+  page draws it standing, a navy can with its value printed on it and a stripe down its − side,
+  says where its legs go, lists it rated 16 V or more, and notes that it goes in one way round.
+  On a Pico it is refused, with no use there yet.
+- `rnest check` refuses a capacitance, such as `470 µF`, written in a circuit's own words, as it
+  refuses a resistance: the engine writes every value.
+
 ## [0.2.0] - 2026-11-23
 
 ### Added

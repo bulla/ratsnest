@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BUTTON_COLOURS, LED_COLOURS } from "../circuit";
-import { BREADBOARD_TOKENS, SUPPLY_TOKENS } from "../drawing/breadboard-svg";
+import { BREADBOARD_TOKENS, ELECTROLYTIC_TOKENS, SUPPLY_TOKENS } from "../drawing/breadboard-svg";
 import { CHIP_STYLES } from "../drawing/chips";
 import { contrastRatio } from "./contrast";
 
@@ -197,6 +197,21 @@ describe.each(SCOPES)("the %s scale", (scope) => {
         contrastRatio(colour(SUPPLY_TOKENS.edge, scope), colour(surface, scope)),
       ).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it("prints a capacitor's value on its sleeve, and its minus signs on its stripe, legibly (ADR 0042)", () => {
+    expect(
+      contrastRatio(
+        colour(ELECTROLYTIC_TOKENS.ink, scope),
+        colour(ELECTROLYTIC_TOKENS.sleeve, scope),
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(
+        colour(ELECTROLYTIC_TOKENS.stripeInk, scope),
+        colour(ELECTROLYTIC_TOKENS.stripe, scope),
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each(Object.entries(CHIP_STYLES))(

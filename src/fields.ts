@@ -225,10 +225,11 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   buzzer: ["kind", "buzzer", "plus", "minus"],
   rgbLed: ["kind", "led", "power", "dataOut", "ground", "dataIn"],
   ring: ["kind", "led", "dataIn", "power", "ground", "dataOut"],
+  electrolytic: ["kind", "microfarads", "plus", "minus"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
-const SUPPLY_PARTS = ["wire", "resistor", "led", "button"];
+const SUPPLY_PARTS = ["wire", "resistor", "led", "button", "electrolytic"];
 
 function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean): void {
   const kind = part.kind;
@@ -316,6 +317,18 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
       fields.hole("plus");
       fields.hole("minus");
       return;
+    case "electrolytic": {
+      const microfarads = fields.required("microfarads", "a value in microfarads");
+      if (
+        microfarads !== undefined &&
+        (typeof microfarads !== "number" || !(microfarads > 0) || !Number.isFinite(microfarads))
+      ) {
+        fields.problem("microfarads", "is not a value in microfarads above 0, such as `470`");
+      }
+      fields.hole("plus");
+      fields.hole("minus");
+      return;
+    }
     case "rgbLed":
     case "ring":
       reference("led", ids.rgbLeds, "RGB lights");
@@ -698,7 +711,7 @@ export function wordProblems(circuit: Circuit): FieldProblem[] {
  * in the page's language (ADR 0011). `3V3`, a pin's name, has no space and a digit after, and passes.
  */
 const VALUE =
-  /(?<![\p{L}\d])\d+(?:[.,]\d+)?\s?(?:k?Ω|к?Ом|[mм]?[AА]|[VВ]|mm|мм|cm|см|kHz|Hz|кГц|Гц|ms|мс)(?![\p{L}\d])/u;
+  /(?<![\p{L}\d])\d+(?:[.,]\d+)?\s?(?:k?Ω|к?Ом|[mм]?[AА]|[VВ]|[µμnp]F|мкФ|нФ|пФ|mm|мм|cm|см|kHz|Hz|кГц|Гц|ms|мс)(?![\p{L}\d])/u;
 
 /** What each language's typography asks of the punctuation in a text (ADR 0011). */
 function typographyProblems(language: string, words: string): string[] {
