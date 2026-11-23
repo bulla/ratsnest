@@ -55,7 +55,8 @@ script, and no npm package. It reads a circuit file as data and never runs it, a
 itself. A project names the version it expects in `ratsnest.json`, gets the `Circuit` type in
 `.ratsnest/` for editors, and `ratsnest update` replaces the executable before it migrates. The
 install puts `rnest` beside it, a link to the same executable, and the docs' examples type that
-shorter name (ADR 0029).
+shorter name (ADR 0029). Its one need from outside is a browser, for a drawing as a PNG or a WebP:
+macOS's own WebKit, or on Linux and Windows a Chrome, Chromium, Edge or Brave (ADR 0042).
 
 **Every release is numbered by strict SemVer, computed and never chosen** (ADR 0017). The public
 surface (the circuit format and its type, the commands and their options, `ratsnest.json`) is
@@ -100,6 +101,9 @@ pick out their parts, the parts list with its colour bands, a MicroPython test s
 drawing's attribution, with nothing else to load. **A page is a pure function of four inputs**: the
 circuit, an orientation of 0°, 90°, 180° or 270° clockwise (ADR 0003), a theme and a language
 (ADR 0005). Nothing on the page switches any of them, and the same inputs make the same file.
+When asked, a circuit's output is its drawing alone instead, from the same inputs: an SVG to embed
+(ADR 0031), or a PNG or a WebP drawn from that SVG by a browser, the same file only from the same
+browser (ADR 0042).
 
 **A circuit is written in English, French or Russian, one language at least, and a page is made only
 in a language its circuit has** (ADR 0010). Every text a reader sees is keyed by language, a circuit's
@@ -164,6 +168,7 @@ on a range or on a running Bun other than the one pinned.
 | Versions               | Strict SemVer, computed by `bun run release` and compared with `Bun.semver` (ADR 0017)                                                   |
 | Continuous integration | GitHub Actions on Bun alone: one workflow for every pull request and push to `develop`, one for every `v*` tag (ADR 0020)                |
 | Looking at a page      | The Playwright and Chromium installed where the work is done, never a dependency                                                         |
+| Drawing a picture      | Bun's own `WebView`, driving the browser on the machine, and `Bun.Image`, encoding PNG and WebP (ADR 0042)                               |
 
 Two standing constraints:
 
@@ -259,7 +264,8 @@ there.
 │   │                    the rest (ADR 0018)
 │   └── page/            The page and the drawing alone: their generator, their words, the page's
 │                        stylesheet and its one script, `drawing.css`, which both carry (ADR 0031),
-│                        and `tokens.css`, the only file that writes a colour (ADR 0004)
+│                        `tokens.css`, the only file that writes a colour (ADR 0004), and
+│                        `picture.ts`, which has a browser draw the SVG as a PNG or a WebP (ADR 0042)
 ├── pages/               What `bun run ratsnest generate` writes (ADR 0023), ignored by git
 ├── LICENSE              MIT, held by bulla, for everything but `src/drawing/` and `fonts/` (ADR 0018)
 ├── ATTRIBUTION.md       The drawing's source and licence, and which folder it covers (ADR 0018)

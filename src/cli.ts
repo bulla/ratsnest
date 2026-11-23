@@ -8,6 +8,7 @@ import { LANGUAGES, type Language } from "./language";
 import type { Orientation } from "./orientation";
 import { PAGE_FILES } from "./page/files";
 import { drawingFile, wiringPage } from "./page/page";
+import { isPicture, NoPicture, PICTURES, pictureOf } from "./page/picture";
 import { findProject, PROJECT_FILE, versionProblem } from "./project";
 import { shownIn } from "./shown";
 import { THEMES, type Theme } from "./theme";
@@ -37,8 +38,11 @@ export interface Io {
 /** The orientations ADR 0003 names, and the ones the engine draws so far. */
 const ORIENTATIONS = ["0", "90", "180", "270"];
 
-/** What `generate` makes (ADR 0031): the whole page, or the drawing alone. Each is its file's extension. */
-const FORMATS = ["html", "svg"];
+/**
+ * What `generate` makes: the whole page, or the drawing alone as an SVG (ADR 0031) or as a picture
+ * (ADR 0042). Each is its file's extension.
+ */
+const FORMATS = ["html", "svg", ...PICTURES];
 
 /**
  * The commands and the options each takes, with the values an option allows: part of ratsnest's
@@ -92,7 +96,8 @@ Usage:
       --orientation  0, 90, 180 or 270 degrees clockwise: the USB left, top, right or bottom
       --theme        dark or light
       --language     one of the circuit's languages; needed when it has more than one
-      --format       html, the whole page, or svg, the drawing alone, to embed in other pages
+      --format       html, the whole page; svg, the drawing alone, to embed in other pages; or
+                     png or webp, the drawing as a picture, for where an SVG is not taken
 
   ratsnest update [--version <version>] [--from <file>]
       Moves the project to a newer ratsnest, the latest release by default: puts that version's
@@ -105,7 +110,7 @@ Usage:
   ratsnest --help
 
 A circuit file is written in format ${FORMAT}. Exit status: 0 when all is well, 1 when a circuit has a
-problem, 2 when the command is used wrongly.`;
+problem or the command could not finish, 2 when the command is used wrongly.`;
 
 /**
  * A path as the command says it, with forward slashes on every system, as a person types it and as
@@ -206,7 +211,7 @@ function choice(
   return value;
 }
 
-function generate(args: readonly string[], cwd: string, io: Io): number {
+function generate(args: readonly string[], cwd: string, io: Io): number | Promise<number> {
   const { values, rest } = optionsOf(args, optionNames("generate"));
   const [file, ...more] = rest;
   if (!file) throw new Usage("generate needs the circuit file to make a page of");
@@ -255,19 +260,27 @@ function generate(args: readonly string[], cwd: string, io: Io): number {
     orientation: Number(orientation) as Orientation,
     theme: theme as Theme,
   };
-  // The page, or the drawing alone (ADR 0031), from the same four inputs.
-  const made =
-    format === "svg"
-      ? drawingFile(shown.circuit, shown.layout, PAGE_FILES, inputs)
-      : wiringPage(shown.circuit, shown.layout, PAGE_FILES, inputs);
   const out = resolve(
     cwd,
     values.get("out") ?? join(PAGES, `${name}.${orientation}.${theme}.${language}.${format}`),
   );
-  mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, made);
-  io.out(slashed(relative(cwd, out)));
-  return 0;
+  const write = (made: string | Uint8Array): number => {
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, made);
+    io.out(slashed(relative(cwd, out)));
+    return 0;
+  };
+  // The page, or the drawing alone (ADR 0031), from the same four inputs.
+  if (format === "html") return write(wiringPage(shown.circuit, shown.layout, PAGE_FILES, inputs));
+  const drawing = drawingFile(shown.circuit, shown.layout, PAGE_FILES, inputs);
+  if (!isPicture(format)) return write(drawing);
+  // A picture of that same drawing, drawn by a browser (ADR 0042), which may not be there, or
+  // may not finish.
+  return pictureOf(drawing, format).then(write, (error: unknown) => {
+    if (!(error instanceof NoPicture)) throw error;
+    io.err(`ratsnest: ${error.message}`);
+    return 1;
+  });
 }
 
 function initialise(args: readonly string[], cwd: string, io: Io): number {
