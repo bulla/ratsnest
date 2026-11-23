@@ -47,38 +47,36 @@
   "BuzzerPart.plus": [
     "required Hole"
   ],
-  "Circuit.buttons": [
-    "optional readonly Button[]"
+  "CircuitBase.credit": [
+    "optional Text"
   ],
-  "Circuit.buzzers": [
-    "optional readonly Buzzer[]"
-  ],
-  "Circuit.description": [
+  "CircuitBase.description": [
     "required Text"
   ],
-  "Circuit.format": [
-    "required 1"
+  "CircuitBase.format": [
+    "required 2"
   ],
-  "Circuit.leds": [
-    "optional readonly Led[]"
-  ],
-  "Circuit.name": [
+  "CircuitBase.name": [
     "required Text"
   ],
-  "Circuit.script": [
-    "required Text"
+  "CircuitBase.setup": [
+    "required Setup"
   ],
-  "Circuit.scriptDoes": [
-    "required Text"
-  ],
-  "Circuit.steps": [
+  "CircuitBase.steps": [
     "required readonly Step[]"
+  ],
+  "CircuitBase.test": [
+    "required Text"
   ],
   "command check": [
     "[<file or folder> ...]"
   ],
   "command generate": [
     "<file>"
+  ],
+  "command generate --format": [
+    "html",
+    "svg"
   ],
   "command generate --language": [
     "en",
@@ -111,7 +109,7 @@
     "<version>"
   ],
   "format": [
-    "1"
+    "2"
   ],
   "LedPart.anode": [
     "required Hole"
@@ -124,6 +122,27 @@
   ],
   "LedPart.led": [
     "required string"
+  ],
+  "PicoCircuit extends": [
+    "CircuitBase"
+  ],
+  "PicoCircuit.buttons": [
+    "optional readonly Button[]"
+  ],
+  "PicoCircuit.buzzers": [
+    "optional readonly Buzzer[]"
+  ],
+  "PicoCircuit.leds": [
+    "optional readonly Led[]"
+  ],
+  "PicoCircuit.script": [
+    "required Text"
+  ],
+  "PicoCircuit.setup": [
+    "required PicoSetup"
+  ],
+  "PicoSetup.kind": [
+    "required \"pico\""
   ],
   "PlainLed.colour": [
     "required LedColour"
@@ -209,6 +228,45 @@
   "Step.title": [
     "required Text"
   ],
+  "SupplyButton.colour": [
+    "required ButtonColour"
+  ],
+  "SupplyButton.id": [
+    "required string"
+  ],
+  "SupplyButton.name": [
+    "required Text"
+  ],
+  "SupplyCircuit extends": [
+    "CircuitBase"
+  ],
+  "SupplyCircuit.buttons": [
+    "optional readonly SupplyButton[]"
+  ],
+  "SupplyCircuit.leds": [
+    "optional readonly SupplyLed[]"
+  ],
+  "SupplyCircuit.setup": [
+    "required SupplySetup"
+  ],
+  "SupplyLed.colour": [
+    "required LedColour"
+  ],
+  "SupplyLed.id": [
+    "required string"
+  ],
+  "SupplyLed.name": [
+    "required Text"
+  ],
+  "SupplySetup.kind": [
+    "required \"supply\""
+  ],
+  "SupplySetup.rails": [
+    "required \"top\" | \"bottom\""
+  ],
+  "SupplySetup.volts": [
+    "required 3 | 3.7 | 4.5 | 5"
+  ],
   "type BoardHole": [
     "`${\"top\" | \"bottom\"}${\"+\" | \"-\"}${number}`",
     "`${Row}${number}`"
@@ -224,6 +282,10 @@
     "readonly [\"b\", \"e\"]",
     "readonly [\"f\", \"i\"]",
     "readonly [\"g\", \"j\"]"
+  ],
+  "type Circuit": [
+    "PicoCircuit",
+    "SupplyCircuit"
   ],
   "type GpioPin": [
     "{ readonly kind: \"gpio\"; readonly gpio: number }"
@@ -276,6 +338,10 @@
     "h",
     "i",
     "j"
+  ],
+  "type Setup": [
+    "PicoSetup",
+    "SupplySetup"
   ],
   "type Text": [
     "{ readonly [language in Language]?: string }"
