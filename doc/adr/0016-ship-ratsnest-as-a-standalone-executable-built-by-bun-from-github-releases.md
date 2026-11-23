@@ -1,6 +1,6 @@
 # ADR 0016: Ship ratsnest as a standalone executable, built by Bun, from GitHub Releases
 
-**Status:** Accepted · 2026-11-20 · Amends ADR-0014
+**Status:** Accepted · 2026-11-20 · Amends ADR-0014 · Amended by ADR-0038 (on Linux and Windows, a PNG or a WebP needs a browser installed)
 
 ## Context
 

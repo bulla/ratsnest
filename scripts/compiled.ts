@@ -1,7 +1,9 @@
 /**
  * The examples run with a compiled ratsnest, as a circuits project runs them (ADR 0016, ADR 0020): its
  * `check`, then every example's page, and its drawing alone (ADR 0031), in every language,
- * orientation and theme, each the same file, byte for byte, as the source makes. Bun's compiler
+ * orientation and theme, each the same file, byte for byte, as the source makes. Then the first
+ * example's drawing as a PNG and a WebP (ADR 0038), drawn by the browser the executable finds, the
+ * system's WebKit on macOS, each the same file as the source draws with it. Bun's compiler
  * packs only what is imported, so a file read from beside the source works from it and is missing
  * from the executable; this is what finds that. Then a copy of it updates a project of its own
  * `--from` the executable, migrating a circuit of format 1 in it, so that it stages, runs and puts
@@ -28,9 +30,11 @@ import { $ } from "bun";
 import { version } from "../package.json";
 import { checkFile } from "../src/check";
 import { FORMAT, languagesOf } from "../src/fields";
+import type { Language } from "../src/language";
 import { ORIENTATIONS } from "../src/orientation";
 import { PAGE_FILES } from "../src/page/files";
 import { drawingFile, wiringPage } from "../src/page/page";
+import { PICTURES, pictureOf } from "../src/page/picture";
 import { shownIn } from "../src/shown";
 import { THEMES } from "../src/theme";
 
@@ -40,7 +44,10 @@ const out = mkdtempSync(join(tmpdir(), "ratsnest-compiled-"));
 let made = 0;
 try {
   await $`${executable} check examples`.cwd(ROOT);
-  for (const name of readdirSync(join(ROOT, "examples")).filter((each) => each.endsWith(".ts"))) {
+  const names = readdirSync(join(ROOT, "examples"))
+    .filter((each) => each.endsWith(".ts"))
+    .sort();
+  for (const name of names) {
     const circuit = checkFile(join(ROOT, "examples", name)).circuit;
     if (!circuit) throw new Error(`examples/${name} does not pass its checks`);
     const stem = name.replace(/\.ts$/, "");
@@ -68,6 +75,28 @@ try {
     }
   }
   console.log(`${made} pages and drawings made by ${executable}, each the source's own.`);
+
+  // A picture is drawn by a browser, and only one example's is made: each takes a second, and what
+  // can fail is the executable reaching the browser, not one circuit's drawing.
+  const first = names[0] as string;
+  const circuit = checkFile(join(ROOT, "examples", first)).circuit;
+  if (!circuit) throw new Error(`examples/${first} does not pass its checks`);
+  const language = languagesOf(circuit)[0] as Language;
+  const shown = shownIn(circuit, language);
+  const stem = first.replace(/\.ts$/, "");
+  const drawing = drawingFile(shown.circuit, shown.layout, PAGE_FILES, { circuit: stem, language });
+  for (const format of PICTURES) {
+    const file = join(out, `${stem}.0.dark.${language}.${format}`);
+    await $`${executable} generate examples/${first} --language ${language} --format ${format} --out ${file}`
+      .cwd(ROOT)
+      .quiet();
+    if (Buffer.compare(readFileSync(file), await pictureOf(drawing, format)) !== 0) {
+      throw new Error(`${file} is not the picture the source draws`);
+    }
+  }
+  console.log(
+    `${first}'s drawing as a PNG and a WebP, drawn by ${executable}, each the source's own.`,
+  );
 
   const bin = join(out, "bin");
   mkdirSync(bin);

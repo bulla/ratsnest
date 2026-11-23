@@ -108,3 +108,4 @@ Each new record adds a row here.
 | [0035](0035-let-each-circuit-carry-its-drawings-credit-in-its-own-words.md)                                      | Let each circuit carry its drawing's credit, in its own words                                      |
 | [0036](0036-write-what-every-circuit-has-once-its-test-among-it-in-format-2.md)                                  | Write what every circuit has once, its `test` among it, in format 2                                |
 | [0037](0037-say-what-every-circuits-breadboard-starts-with-in-its-setup.md)                                      | Say what every circuit's breadboard starts with, in its `setup`                                    |
+| [0038](0038-offer-the-drawing-as-a-png-or-a-webp-drawn-by-buns-webview-from-its-svg.md)                          | Offer the drawing as a PNG or a WebP, drawn by Bun's WebView from its SVG                          |

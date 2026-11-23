@@ -1,6 +1,6 @@
 # ADR 0031: Offer the drawing alone as a self-contained SVG, made by `generate --format svg`
 
-**Status:** Accepted · 2026-11-22 · Amends ADR-0004 (a circuit's output is its page, or its drawing alone when asked) and ADR-0023 (a drawing is written as `.svg`) · Amended by ADR-0035 (the credit line is the circuit's, if it has one)
+**Status:** Accepted · 2026-11-22 · Amends ADR-0004 (a circuit's output is its page, or its drawing alone when asked) and ADR-0023 (a drawing is written as `.svg`) · Amended by ADR-0035 (the credit line is the circuit's, if it has one) and ADR-0038 (the drawing alone is also a PNG or a WebP)
 
 ## Context
 

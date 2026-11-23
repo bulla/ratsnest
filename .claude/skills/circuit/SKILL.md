@@ -1,6 +1,6 @@
 ---
 name: circuit
-description: Adds or changes a ratsnest circuit, translates it, makes its wiring page or its drawing alone as an SVG, and publishes a page as an Artifact, keeping every circuit file declarative so that every page looks like every other. Use when asked to add a circuit, change one, add a language to one, make a circuit's page in a given orientation, theme and language, make its drawing as an SVG to embed elsewhere, publish or republish a page, or update a project to a newer ratsnest.
+description: Adds or changes a ratsnest circuit, translates it, makes its wiring page or its drawing alone as an SVG, a PNG or a WebP, and publishes a page as an Artifact, keeping every circuit file declarative so that every page looks like every other. Use when asked to add a circuit, change one, add a language to one, make a circuit's page in a given orientation, theme and language, make its drawing as an SVG, a PNG or a WebP to put elsewhere, publish or republish a page, or update a project to a newer ratsnest.
 argument-hint: [the circuit to add, change or translate, or the page to make]
 triggers:
   - add a circuit
@@ -8,7 +8,7 @@ triggers:
   - change a circuit
   - translate a circuit
   - make a wiring page
-  - make a circuit's drawing as an SVG
+  - make a circuit's drawing as an SVG, a PNG or a WebP
   - publish a circuit as an artifact
   - update ratsnest
 user-invocable: true
@@ -42,7 +42,7 @@ instead: a page, and a drawing alone, is only ever the engine's output.
 | --- | --- | --- |
 | Check every circuit | `rnest check` | `bun run ratsnest check examples` |
 | Make a page | `rnest generate <file> --orientation <0, 90, 180 or 270> --theme <dark or light> --language <en, fr or ru>` | the same, after `bun run` |
-| Make the drawing alone, as an SVG | the same, and `--format svg` | the same, after `bun run` |
+| Make the drawing alone, as an SVG, a PNG or a WebP | the same, and `--format svg`, `--format png` or `--format webp` | the same, after `bun run` |
 | Move to a newer ratsnest | `rnest update` | not needed: it is the newest |
 
 **When the executable says it is older or newer than the project**, run `rnest update` before
@@ -183,6 +183,14 @@ own background in its theme. Make one when the request asks for an SVG, an image
 put somewhere else; a page otherwise. A host that wants both themes embeds both files, in a
 `<picture>` with `prefers-color-scheme`.
 
+**The drawing as a picture** (ADR 0038). `--format png` and `--format webp` make a picture of that
+same SVG, at twice its size, its credit and background with it; a WebP is lossless. Make one when the
+request asks for a PNG, a WebP, or a picture for somewhere that takes no SVG, such as a chat, a
+forum or slides; an SVG when the drawing goes into a web page. A browser draws it, so on Linux and
+Windows the executable needs Chrome, Chromium, Edge or Brave installed. When it says none could be
+started, pass on what it says to install, and never make the picture another way, from a screenshot
+of the page or by converting the SVG yourself.
+
 **Check the language before calling the generator.** If the request names a language the circuit
 does not have, say so, name the ones it has, and offer to add the one asked for. Never generate in
 another language instead. The generator refuses one too, but the skill asks first.
@@ -201,7 +209,8 @@ another language instead. The generator refuses one too, but the skill asks firs
    correct, not that it is tidy, and parts that crowd each other send you back to step 2.
 7. **Hand over the file**, and say which four inputs made it. Publish a page only if asked (below).
    Never publish a drawing alone: an Artifact opens only with a claude.ai sign-in, so no other page
-   could load it by `<img>`. Whoever embeds an SVG hosts it, and keeps its credit line in it.
+   could load it by `<img>`. Whoever puts an SVG, a PNG or a WebP somewhere hosts it, and keeps its
+   credit line in it.
 
 ## Publishing it as an Artifact (ADR 0013, ADR 0014, ADR 0019)
 

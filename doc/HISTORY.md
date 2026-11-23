@@ -418,3 +418,14 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
   `@v7` and `@v8`, the latest majors, which target Node.js 24 and still take the `name` and `path`
   the workflow gives them. The release workflow runs only on a tag, so the next release is the first
   to run them.
+- 2026-11-23: Between milestones, ADR 0038 at the owner's asking: `generate --format png` and
+  `--format webp` make the drawing as a picture, for places that take no SVG. Bun 1.4.5 encodes both
+  itself, as `Bun.Image`, but reads no SVG, so two ways of drawing it were tried on Push button.
+  resvg, in WebAssembly, drew every colour black, since it reads no CSS variable, and every word at
+  Nunito's lightest weight; Bun's own `WebView` drew what the page draws. The owner chose the
+  `WebView`, at 12 px to the millimetre, and a lossless WebP, which for Push button at that size was
+  59 % of the PNG's size. Two first trials went wrong in ways the code now guards: the SVG put
+  inside an HTML page lost its theme, and a `data:` address with no character set lost its `Ω`.
+  Chrome's viewport also came out shorter than asked until it was resized after loading. A picture
+  takes about a second, and the compiled check draws the first example's on all three systems, the
+  same bytes as the source draws with the same browser.
