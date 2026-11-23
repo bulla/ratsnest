@@ -112,4 +112,5 @@ Each new record adds a row here.
 | [0039](0039-take-each-new-part-from-a-closed-list-of-real-models-each-with-its-pinout-and-print.md)              | Take each new part from a closed list of real models, each with its pinout and print               |
 | [0040](0040-print-what-identifies-a-part-on-its-body-upright-and-the-same-in-every-language.md)                  | Print what identifies a part on its body, upright and the same in every language                   |
 | [0041](0041-place-a-new-part-in-its-step-as-a-resistor-is-with-no-name-of-its-own.md)                            | Place a new part in its step as a resistor is, with no name of its own                             |
+| [0042](0042-offer-the-drawing-as-a-png-or-a-webp-drawn-by-buns-webview-from-its-svg.md)                          | Offer the drawing as a PNG or a WebP, drawn by Bun's WebView from its SVG                          |
 | [0043](0043-keep-a-light-lit-with-an-electrolytic-capacitor-on-a-supply.md)                                      | Keep a light lit with an electrolytic capacitor, on a supply                                       |

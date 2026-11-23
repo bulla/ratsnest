@@ -81,6 +81,10 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 - [ ] **A release tagged from GitHub's web form.** The form makes the GitHub Release with the tag, so
       the workflow's last step, which makes it, fails. That step could fill a release that exists
       instead, which changes ADR 0020's "only then the GitHub Release" and is a record of its own.
+- [ ] **A PNG or a WebP made on a Mac with a high-density screen** (ADR 0042). A browser there may
+      take the picture at twice the size asked for, which `sized` in `src/page/picture.ts` brings
+      back to it, as its test does to a picture made so, but no such Mac has run
+      `rnest generate --format png`: the continuous integration's Mac has no screen of its own.
 - [ ] **The files GitHub's community profile asks for**: a code of conduct, a security policy, and
       templates for issues and pull requests. None of them blocks a contributor.
 

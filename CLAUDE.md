@@ -53,7 +53,8 @@ script, and no npm package. It reads a circuit file as data and never runs it, a
 itself. A project names the version it expects in `ratsnest.json`, gets the `Circuit` type in
 `.ratsnest/` for editors, and `ratsnest update` replaces the executable before it migrates. The
 install puts `rnest` beside it, a link to the same executable, and the docs' examples type that
-shorter name (ADR 0029).
+shorter name (ADR 0029). Its one need from outside is a browser, for a drawing as a PNG or a WebP:
+macOS's own WebKit, or on Linux and Windows a Chrome, Chromium, Edge or Brave (ADR 0042).
 
 **Every release is numbered by strict SemVer, computed and never chosen** (ADR 0017). The public
 surface (the circuit format and its type, the commands and their options, `ratsnest.json`) is
@@ -98,6 +99,9 @@ pick out their parts, the parts list with its colour bands, a MicroPython test s
 drawing's attribution, with nothing else to load. **A page is a pure function of four inputs**: the
 circuit, an orientation of 0°, 90°, 180° or 270° clockwise (ADR 0003), a theme and a language
 (ADR 0005). Nothing on the page switches any of them, and the same inputs make the same file.
+When asked, a circuit's output is its drawing alone instead, from the same inputs: an SVG to embed
+(ADR 0031), or a PNG or a WebP drawn from that SVG by a browser, the same file only from the same
+browser (ADR 0042).
 
 **A circuit is written in English, French or Russian, one language at least, and a page is made only
 in a language its circuit has** (ADR 0010). Every text a reader sees is keyed by language, a circuit's
@@ -162,6 +166,7 @@ on a range or on a running Bun other than the one pinned.
 | Versions               | Strict SemVer, computed by `bun run release` and compared with `Bun.semver` (ADR 0017)                                                   |
 | Continuous integration | GitHub Actions on Bun alone: one workflow for every pull request and push to `develop`, one for every `v*` tag (ADR 0020)                |
 | Looking at a page      | The Playwright and Chromium installed where the work is done, never a dependency                                                         |
+| Drawing a picture      | Bun's own `WebView`, driving the browser on the machine, and `Bun.Image`, encoding PNG and WebP (ADR 0042)                               |
 
 Two standing constraints:
 
@@ -253,7 +258,8 @@ there.
 │   │                    the rest (ADR 0018)
 │   └── page/            The page and the drawing alone: their generator, their words, the page's
 │                        stylesheet and its one script, `drawing.css`, which both carry (ADR 0031),
-│                        and `tokens.css`, the only file that writes a colour (ADR 0004)
+│                        `tokens.css`, the only file that writes a colour (ADR 0004), and
+│                        `picture.ts`, which has a browser draw the SVG as a PNG or a WebP (ADR 0042)
 ├── pages/               What `bun run ratsnest generate` writes (ADR 0023), ignored by git
 ├── LICENSE              MIT, held by bulla, for everything but `src/drawing/` and `fonts/` (ADR 0018)
 ├── ATTRIBUTION.md       The drawing's source and licence, and which folder it covers (ADR 0018)
@@ -431,6 +437,24 @@ does not pay for it again.
   `tagOf` asked on its own, as a test does, keeps a value tag off a Pico that a circuit with a supply
   does not have (ADR 0032), so the tag it gives can differ from the one drawn. The test of where a
   tag always was leaves the supply's test circuit out for that reason.
+- **GitHub Actions runs Node for ratsnest, though ratsnest runs none.** A `uses:` step is a
+  JavaScript action, run on the runner's own Node.js at the version its `action.yml` names, so the
+  0.2.0 release warned about `upload-artifact@v4` and `download-artifact@v4`, which named Node.js 20
+  after GitHub deprecated it. A warning that names an action is the action's: raise it to a major
+  whose `action.yml` names a current Node. `release.yml` runs only on a tag, so a change to it is
+  first run by the next release.
+- **A browser draws the SVG it is given as the document it is given.** Put inside an HTML page, the
+  SVG's `:root` became the page's, its `data-theme` set nothing, and a dark drawing came out in light
+  colours; and a `data:` address with no `charset=utf-8` turned every `Ω` into two other letters.
+  `pictureOf` in `src/page/picture.ts` loads the SVG alone, as UTF-8, and its test reads the corner
+  pixels against the theme's surface. Chrome's viewport also came out about 90 px shorter than the
+  `WebView` asked for, so the picture was cut and had scrollbars: it is sized with `view.resize`
+  after the SVG loads, and a picture of any other size is refused. Bun's Chrome would also connect to
+  a person's own browser if it found one with remote debugging on, which `url: false` rules out.
+  macOS's WebKit once hung in continuous integration, on the CLI test that draws a PNG then a WebP,
+  while the same pictures passed in their own file and the compiled check: the job ran until the
+  test's timeout said nothing of where. Every browser step is now wrapped in `within`, which gives
+  it 15 seconds and fails naming the step, so the next hang says which.
 - **The check on values in a circuit's words knows its units by name.** `VALUE` in `src/fields.ts`
   is a list of units, and it knew no capacitance until the first capacitor's example wrote `470 µF`
   in its description and passed. A part whose value the engine writes brings its unit to that list,
