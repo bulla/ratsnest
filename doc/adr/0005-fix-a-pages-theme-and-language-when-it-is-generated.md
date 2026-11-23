@@ -1,6 +1,6 @@
 # ADR 0005: Fix a page's theme and language when it is generated
 
-**Status:** Accepted · 2026-11-20
+**Status:** Accepted · 2026-11-20 · Amended by ADR-0042 (a PNG or a WebP is the same file only from the same browser)
 
 ## Context
 
