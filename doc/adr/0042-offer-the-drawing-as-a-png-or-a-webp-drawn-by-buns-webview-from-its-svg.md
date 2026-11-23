@@ -47,7 +47,8 @@ UTF-8, sized to the picture, and the picture is taken once its fonts have loaded
 writes it with the same encoders, and the file holds nothing of the browser's but the pixels.
 
 **With no browser to draw it, `generate` says what to install** and that `BUN_CHROME_PATH` names a
-browser it does not find by itself, and makes nothing.
+browser it does not find by itself, and makes nothing. **A step the browser has not finished in 15
+seconds is given up**, and `generate` says which step and makes nothing, rather than wait for ever.
 
 **The `circuit` skill makes a PNG or a WebP when asked, and hands the file over**, as it does an SVG.
 It never publishes one, and `ARTIFACTS.md` lists pages alone (ADR 0013).
@@ -104,6 +105,9 @@ them stands.
   changes only when ratsnest moves to another Bun, and the tests and the compiled check on three
   systems run it then.
 - **A picture takes about a second**, most of it starting the browser.
+- **macOS's WebKit once did not finish a picture in continuous integration**, where the same test
+  had passed before and passed in every other file. A stuck step now fails after 15 seconds and
+  names itself, so a hang is a failure that says where, not a wait for ever.
 - **The tests need a browser where they run**: `CONTRIBUTING.md` says so for Linux. GitHub's runners
   have Chrome and Edge, and macOS its WebKit, which only the compiled check on macOS runs, since no
   Mac is at hand where the work is done.

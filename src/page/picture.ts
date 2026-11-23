@@ -16,8 +16,39 @@ export const isPicture = (format: string): format is Picture =>
 /** A picture's pixels per millimetre of the drawing: twice the SVG's (ADR 0042). */
 export const PICTURE_PX_PER_MM = 12;
 
-/** No browser drew the picture: what went wrong, and what to install. */
-export class NoBrowser extends Error {}
+/**
+ * No picture was drawn: no browser could be started, and what to install, or one started and did
+ * not finish a step in time.
+ */
+export class NoPicture extends Error {}
+
+/**
+ * How long the browser has for each step. Each takes a second or two, and one that has taken this
+ * long is stuck, as macOS's WebKit was once in continuous integration: `generate` says which step
+ * rather than wait for ever.
+ */
+export const STEP_MS = 15_000;
+
+/** A step in the browser, given `ms` to finish before the picture is given up. */
+export async function within<T>(step: string, work: Promise<T>, ms = STEP_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new NoPicture(
+            `a PNG or a WebP is drawn by a browser, which did not ${step} within ${ms / 1000} s`,
+          ),
+        ),
+      ms,
+    );
+  });
+  try {
+    return await Promise.race([work, late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /**
  * The browser Bun drives: the system's WebKit on macOS, and elsewhere a Chrome, Chromium, Edge or
@@ -67,23 +98,30 @@ export async function pictureOf(svg: string, kind: Picture): Promise<Uint8Array>
     view = new Bun.WebView({ backend: BACKEND });
     // A document of its own, so that its `:root` is the `<svg>` and its theme holds, and UTF-8, so
     // that an `Ω` stays one (ADR 0042).
-    await view.navigate(
-      `data:image/svg+xml;charset=utf-8;base64,${Buffer.from(svg).toString("base64")}`,
+    await within(
+      "load the drawing",
+      view.navigate(
+        `data:image/svg+xml;charset=utf-8;base64,${Buffer.from(svg).toString("base64")}`,
+      ),
     );
   } catch (error) {
     view?.close();
-    throw new NoBrowser(
+    if (error instanceof NoPicture) throw error;
+    throw new NoPicture(
       `a PNG or a WebP is drawn by a browser, and none could be started (${(error as Error).message}): ` +
         "install Chrome, Chromium, Edge or Brave, or name one with BUN_CHROME_PATH",
     );
   }
   try {
-    const [width, height] = (await view.evaluate(SIZE_IT(PICTURE_PX_PER_MM / PX_PER_MM))) as [
-      number,
-      number,
-    ];
-    await view.resize(width, height);
-    const shot = await view.screenshot({ encoding: "buffer", format: "png" });
+    const [width, height] = (await within(
+      "size the drawing and load its font",
+      view.evaluate(SIZE_IT(PICTURE_PX_PER_MM / PX_PER_MM)),
+    )) as [number, number];
+    await within("resize its window to the drawing", view.resize(width, height));
+    const shot = await within(
+      "take the picture",
+      view.screenshot({ encoding: "buffer", format: "png" }),
+    );
     const image = await sized(shot, width, height);
     return await (kind === "png" ? image.png() : image.webp({ lossless: true })).bytes();
   } finally {

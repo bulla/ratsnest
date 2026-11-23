@@ -8,7 +8,7 @@ import { LANGUAGES, type Language } from "./language";
 import type { Orientation } from "./orientation";
 import { PAGE_FILES } from "./page/files";
 import { drawingFile, wiringPage } from "./page/page";
-import { isPicture, NoBrowser, PICTURES, pictureOf } from "./page/picture";
+import { isPicture, NoPicture, PICTURES, pictureOf } from "./page/picture";
 import { findProject, PROJECT_FILE, versionProblem } from "./project";
 import { shownIn } from "./shown";
 import { THEMES, type Theme } from "./theme";
@@ -274,9 +274,10 @@ function generate(args: readonly string[], cwd: string, io: Io): number | Promis
   if (format === "html") return write(wiringPage(shown.circuit, shown.layout, PAGE_FILES, inputs));
   const drawing = drawingFile(shown.circuit, shown.layout, PAGE_FILES, inputs);
   if (!isPicture(format)) return write(drawing);
-  // A picture of that same drawing, drawn by a browser (ADR 0042), which may not be there.
+  // A picture of that same drawing, drawn by a browser (ADR 0042), which may not be there, or
+  // may not finish.
   return pictureOf(drawing, format).then(write, (error: unknown) => {
-    if (!(error instanceof NoBrowser)) throw error;
+    if (!(error instanceof NoPicture)) throw error;
     io.err(`ratsnest: ${error.message}`);
     return 1;
   });

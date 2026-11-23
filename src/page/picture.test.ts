@@ -4,7 +4,7 @@ import { FIXTURES } from "../__fixtures__/circuits";
 import type { Theme } from "../theme";
 import { PAGE_FILES } from "./files";
 import { drawingFile } from "./page";
-import { PICTURE_PX_PER_MM, type Picture, pictureOf, sized } from "./picture";
+import { NoPicture, PICTURE_PX_PER_MM, type Picture, pictureOf, sized, within } from "./picture";
 
 /**
  * The drawing as a PNG or a WebP (ADR 0042): the SVG drawn by a browser, so these tests need one
@@ -192,4 +192,13 @@ describe("the drawing as a picture, a PNG or a WebP (ADR 0042)", () => {
     },
     SLOW,
   );
+
+  it("gives up a step the browser does not finish, and says which, rather than wait for ever", async () => {
+    const stuck = () => within("take the picture", new Promise<never>(() => {}), 20);
+    await expect(stuck()).rejects.toBeInstanceOf(NoPicture);
+    await expect(stuck()).rejects.toThrow(
+      "a PNG or a WebP is drawn by a browser, which did not take the picture within 0.02 s",
+    );
+    expect(await within("load the drawing", Promise.resolve(7), 20)).toBe(7);
+  });
 });

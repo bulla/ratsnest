@@ -429,3 +429,9 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
   Chrome's viewport also came out shorter than asked until it was resized after loading. A picture
   takes about a second, and the compiled check draws the first example's on all three systems, the
   same bytes as the source draws with the same browser.
+- 2026-11-23: Between milestones. Merging `develop` brought its ADR 0038 to ADR 0041, on new parts,
+  so the picture record, never merged, became ADR 0042. On the merge, macOS's test job first got no
+  runner for 16 minutes and was cancelled, then, re-run, timed out in the CLI test that draws a PNG
+  then a WebP, which had passed on the commit before, with only comments changed since. The test
+  said nothing of where WebKit stopped, and `generate` would have waited for ever too, so every
+  browser step now has 15 seconds and fails naming itself.

@@ -448,6 +448,10 @@ does not pay for it again.
   `WebView` asked for, so the picture was cut and had scrollbars: it is sized with `view.resize`
   after the SVG loads, and a picture of any other size is refused. Bun's Chrome would also connect to
   a person's own browser if it found one with remote debugging on, which `url: false` rules out.
+  macOS's WebKit once hung in continuous integration, on the CLI test that draws a PNG then a WebP,
+  while the same pictures passed in their own file and the compiled check: the job ran until the
+  test's timeout said nothing of where. Every browser step is now wrapped in `within`, which gives
+  it 15 seconds and fails naming the step, so the next hang says which.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
