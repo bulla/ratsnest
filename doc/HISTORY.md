@@ -183,6 +183,33 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
 - [x] A page published, then found again from a fresh cloud session without `ARTIFACTS.md`, signed
       off by the owner on 2026-11-22
 
+### M12: circuits without a Pico
+
+M12 is done: a circuit can do without a Pico, powered by a supply on one pair of rails in its place,
+at 3, 3.7, 4.5 or 5 V, with plain lights and buttons that name no pin, held by the wiring check to
+its + and − rails, and drawn with a small cell beside the board. On the way the format rose to 2:
+every circuit says what its breadboard is set up with, has one `test`, and may carry its own credit
+(ADR 0035 to ADR 0037), and `rnest update` moves a format 1 circuit on. 0.2.0 releases it.
+
+- [x] The design, by interview: a supply on one pair of rails in the Pico's place (ADR 0032), the
+      wiring check it is held to (ADR 0033), and `Circuit` as one type with two shapes (ADR 0034)
+- [x] The format: a supply's `setup`, lights and buttons without `pin`, and `test`, in `Circuit`'s
+      second shape, read and checked field by field, and a Pico's part refused in a supply circuit;
+      the `credit` any circuit may have (ADR 0035), in both shapes; and the `setup` every circuit
+      says it starts from, a Pico or a supply (ADR 0037), in format 2 (ADR 0036)
+- [x] The wiring check's rules for a supply circuit (ADR 0033), the short sought with every button
+      held, and the lights that need about 3 V refused at 3 V
+- [x] The cell drawn beside the board's near end, its leads in column 1 of its rails, outlined for
+      both themes, and its colours in `tokens.css`
+- [x] The page's words in English, French and Russian: the last step, the four supplies in the parts
+      list, the rails' legend, the notes, the drawing's introduction and the footer. The footer is
+      the circuit's credit since ADR 0035, and the `circuit` skill's default for a supply circuit
+      does not begin with the Pico
+- [x] The `circuit` skill asks: a Pico or a supply, and then which voltage and which rails
+- [x] `examples/battery-button.ts`, in English and French, and a supply circuit among the tests'
+      fixtures, with a variant for every rule it is refused by
+- [x] 0.2.0, made by `bun run release` and brought to `develop` by pull request (ADR 0030)
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -381,3 +408,7 @@ this way. The owner signed off the second item; no fresh-session trial of it is 
   writes the setup, moving a supply and its comments into it. `rnest check` reads the setup right
   after the format, and checks nothing more in a file without one. The engine's own model still has a
   supply or none.
+- 2026-11-23: M12, with 0.2.0. `bun run release` computed it from the surface: format 2, and
+  `Circuit`'s new shapes, break it, which before 1.0.0 raises the middle number (ADR 0017,
+  ADR 0021). Its commit reaches `develop` by pull request, merged with a merge commit, and its tag is
+  pushed after the merge (ADR 0030).
