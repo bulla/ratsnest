@@ -1,4 +1,4 @@
-# ADR 0043: Let a pin switch a light through an NPN transistor
+# ADR 0044: Let a pin switch a light through an NPN transistor
 
 **Status:** Accepted · 2026-11-23
 
@@ -9,7 +9,7 @@ a pin switches a light through a 2N3904, the pin feeding only the transistor's b
 current coming from 3V3. ADR 0039 made a transistor a model from a closed list, ADR 0040 printed its
 type, its model and its legs' letters on it, and ADR 0041 placed it as a resistor is. This record
 settles what is left: its fields, which way it faces, the rule the wiring check holds it to, and its
-drawing. As with ADR 0042, the owner had the work go on alone, and signs the drawing off on its pull
+drawing. As with ADR 0043, the owner had the work go on alone, and signs the drawing off on its pull
 request.
 
 ## Decision
@@ -72,7 +72,7 @@ it in the top half, between the top rails.
 - **A wider base resistor range, up to 47 kΩ**: rejected. At 47 kΩ the base takes 55 µA, and a
   2N3904 whose gain is at its low end lets through too little for a light to be bright.
 - **The case drawn tall, as a real one is, or seen from above**: rejected, as the capacitor's was
-  (ADR 0042). A tall case stands over every hole its legs' neighbours need; seen from above it hides
+  (ADR 0043). A tall case stands over every hole its legs' neighbours need; seen from above it hides
   its print, which is on its flat face.
 - **Fritzing's transistor**, a TO-92 seen at an angle with its model on it: ratsnest's prints its
   type larger than its model, and names each leg. It was not set beside ratsnest's: this session

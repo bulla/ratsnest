@@ -17,7 +17,7 @@ export interface TransistorModel {
 }
 
 export const TRANSISTORS = {
-  /** The most widely sold small NPN transistor, in a TO-92 case (ADR 0043). */
+  /** The most widely sold small NPN transistor, in a TO-92 case (ADR 0044). */
   "2N3904": { type: "NPN", legs: ["emitter", "base", "collector"] },
 } as const satisfies Record<string, TransistorModel>;
 

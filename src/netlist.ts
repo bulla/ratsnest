@@ -48,11 +48,11 @@ export const LIGHT_OHMS_RANGE = [220, 1000] as const;
 export const PULL_DOWN_OHMS_RANGE = [1000, 8200] as const;
 /**
  * How long a capacitor keeps a light lit, at the least: its capacitance times the light's resistor,
- * in seconds (ADR 0042). Shorter, and the light goes out too fast to be seen fading.
+ * in seconds (ADR 0043). Shorter, and the light goes out too fast to be seen fading.
  */
 export const FADE_SECONDS = 0.2;
 /**
- * What a transistor's base resistor can be, from a 3.3 V pin (ADR 0043): enough current into the base
+ * What a transistor's base resistor can be, from a 3.3 V pin (ADR 0044): enough current into the base
  * to switch a light's, and no more than a pin gives easily. 1 kΩ lets 2.6 mA in, and 10 kΩ 0.26 mA,
  * which a 2N3904 turns into all of a light's 15 mA.
  */
@@ -307,11 +307,11 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   problems.push(...placedProblems(circuit, parts));
   if (supply) return [...problems, ...supplyWiringProblems(circuit, parts, supply)];
 
-  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0042).
+  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0043).
   for (const part of parts) {
     if (part.kind === "electrolytic") {
       problems.push(
-        `${describe(part, circuit)} has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0042)`,
+        `${describe(part, circuit)} has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0043)`,
       );
     }
   }
@@ -352,7 +352,7 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     r.ohms >= low && r.ohms <= high;
 
   // A light: pin, one resistor, the LED the right way round, ground; or a transistor's, switched by
-  // its pin through the transistor's base (ADR 0043).
+  // its pin through the transistor's base (ADR 0044).
   const transistors = parts.filter(
     (part): part is Extract<Part, { kind: "transistor" }> => part.kind === "transistor",
   );
@@ -710,7 +710,7 @@ function supplyWiringProblems(
     }
   }
 
-  // Every capacitor keeps a light lit (ADR 0042): its − leg on −, its + leg between a button and a
+  // Every capacitor keeps a light lit (ADR 0043): its − leg on −, its + leg between a button and a
   // light's resistor, which a button charges and the light empties, slowly enough to be seen.
   for (const capacitor of parts) {
     if (capacitor.kind !== "electrolytic") continue;

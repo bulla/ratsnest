@@ -285,7 +285,7 @@ export type Part =
       readonly dataOut: Hole;
     }
   /**
-   * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0042): its value in
+   * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0043): its value in
    * microfarads, its + leg the longer, and its − leg under the stripe down its can.
    */
   | {
@@ -295,7 +295,7 @@ export type Part =
       readonly minus: Hole;
     }
   /**
-   * A transistor in a TO-92 case, standing up, its legs side by side in one row (ADR 0043): emitter,
+   * A transistor in a TO-92 case, standing up, its legs side by side in one row (ADR 0044): emitter,
    * base and collector, left to right, its flat face towards row j. Its model is one ratsnest knows.
    */
   | {

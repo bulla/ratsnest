@@ -218,8 +218,8 @@ there.
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported, `battery-button.ts`, the first on a
 │                        supply (ADR 0032), `fading-light.ts`, the first with a capacitor
-│                        (ADR 0042), and `transistor-switch.ts`, the first with a transistor
-│                        (ADR 0043): ratsnest's own, checked like anyone's, and in `format-1/` the
+│                        (ADR 0043), and `transistor-switch.ts`, the first with a transistor
+│                        (ADR 0044): ratsnest's own, checked like anyone's, and in `format-1/` the
 │                        files the migration to format 2 is tested on, one for each example older
 │                        than format 2, left out of the type check (ADR 0014, ADR 0015, ADR 0036)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)

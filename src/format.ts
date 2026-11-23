@@ -178,7 +178,7 @@ export interface RingPart {
 }
 
 /**
- * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0042). Its value is in
+ * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0043). Its value is in
  * microfarads, `470` for 470 µF, and printed on its can. Its + leg is the longer one, and its − leg is
  * under the pale stripe down its side: it goes in one way round only.
  */
@@ -196,7 +196,7 @@ export interface ElectrolyticPart {
 export type TransistorModel = "2N3904";
 
 /**
- * A transistor in a TO-92 case, standing up, its three legs side by side in one row (ADR 0043): the
+ * A transistor in a TO-92 case, standing up, its three legs side by side in one row (ADR 0044): the
  * emitter, the base and the collector, left to right, so that its flat face is towards row j.
  */
 export interface TransistorPart {

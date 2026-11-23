@@ -1,4 +1,4 @@
-// The first example with a capacitor (ADR 0038, ADR 0042): a button charges it across a light and its
+// The first example with a capacitor (ADR 0038, ADR 0043): a button charges it across a light and its
 // resistor, and once the button is let go the capacitor empties into the light, which fades out.
 import type { Circuit } from "ratsnest";
 

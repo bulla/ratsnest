@@ -104,9 +104,9 @@ export interface PageWords {
     ground: Place,
     dataOut: Place,
   ) => string;
-  /** An electrolytic capacitor (ADR 0042), its value written already: its + leg, then its − leg. */
+  /** An electrolytic capacitor (ADR 0043), its value written already: its + leg, then its − leg. */
   readonly electrolytic: (microfarads: string, plus: Place, minus: Place) => string;
-  /** A transistor (ADR 0043), by its model and type, and where each of its legs goes. */
+  /** A transistor (ADR 0044), by its model and type, and where each of its legs goes. */
   readonly transistor: (
     model: string,
     type: TransistorType,
@@ -140,9 +140,9 @@ export interface PageWords {
   /** A button, and the colour of the cap to fit on it (scratchpi's ADR 0174). */
   readonly listButton: (name: string, cap: ButtonColour) => string;
   readonly listBuzzer: (name: string) => string;
-  /** Electrolytic capacitors of one value, written already, and how many (ADR 0042). */
+  /** Electrolytic capacitors of one value, written already, and how many (ADR 0043). */
   readonly listElectrolytic: (microfarads: string, count: number) => string;
-  /** Transistors of one model, and how many (ADR 0043). */
+  /** Transistors of one model, and how many (ADR 0044). */
   readonly listTransistor: (model: string, type: TransistorType, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
   readonly listLongWire: (colour: string, count: number) => string;
@@ -157,7 +157,7 @@ export interface PageWords {
   readonly anyResistor: (low: string, high: string) => string;
   /** Which way round an electrolytic capacitor goes, and what turning it round would do. */
   readonly electrolyticPolarity: string;
-  /** Which way round a light goes on a Pico whose lights a transistor may switch (ADR 0043). */
+  /** Which way round a light goes on a Pico whose lights a transistor may switch (ADR 0044). */
   readonly switchedLedPolarity: string;
   /** A transistor model's legs, left to right, and that another model's can differ (ADR 0039). */
   readonly transistorPinout: (model: string, legs: readonly TransistorLeg[]) => string;

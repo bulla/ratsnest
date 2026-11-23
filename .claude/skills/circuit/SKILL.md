@@ -113,7 +113,7 @@ A circuit with a supply:
   On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
 - **may have electrolytic capacitors, each keeping a light lit** (below).
 
-## Capacitors, transistors and diodes (ADR 0038 to ADR 0042)
+## Capacitors, transistors and diodes (ADR 0038 to ADR 0041, ADR 0043)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -121,7 +121,7 @@ name of its own and no list at the top of the circuit (ADR 0041). Its value is n
 circuit's own words, as a resistor's is not: point at it by the step that places it.
 
 - **An electrolytic capacitor**, on a supply, keeps a light lit once its button is let go
-  (ADR 0042):
+  (ADR 0043):
 
   ```ts
   { kind: "electrolytic", microfarads: 470, plus: "i5", minus: "i4" },
@@ -133,7 +133,7 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   out too fast to see it fade: 470 µF through 1 kΩ is about right. The can is drawn standing over
   the three rows above its legs, so keep those holes free, and wire its − leg from the row below.
   On a Pico it has no use yet, and is refused.
-- **A transistor**, on a Pico, lets a pin switch a light (ADR 0043):
+- **A transistor**, on a Pico, lets a pin switch a light (ADR 0044):
 
   ```ts
   { kind: "transistor", model: "2N3904", emitter: "e24", base: "e25", collector: "e26" },
