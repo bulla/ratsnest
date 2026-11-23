@@ -412,3 +412,9 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
   `Circuit`'s new shapes, break it, which before 1.0.0 raises the middle number (ADR 0017,
   ADR 0021). Its commit reaches `develop` by pull request, merged with a merge commit, and its tag is
   pushed after the merge (ADR 0030).
+- 2026-11-23: Between milestones. 0.2.0's release run warned that `actions/upload-artifact@v4` and
+  `actions/download-artifact@v4` target Node.js 20, which GitHub has deprecated and now runs on
+  Node.js 24. ratsnest runs no Node, but a JavaScript action runs on the runner's own. They are now
+  `@v7` and `@v8`, the latest majors, which target Node.js 24 and still take the `name` and `path`
+  the workflow gives them. The release workflow runs only on a tag, so the next release is the first
+  to run them.

@@ -419,6 +419,12 @@ does not pay for it again.
   `tagOf` asked on its own, as a test does, keeps a value tag off a Pico that a circuit with a supply
   does not have (ADR 0032), so the tag it gives can differ from the one drawn. The test of where a
   tag always was leaves the supply's test circuit out for that reason.
+- **GitHub Actions runs Node for ratsnest, though ratsnest runs none.** A `uses:` step is a
+  JavaScript action, run on the runner's own Node.js at the version its `action.yml` names, so the
+  0.2.0 release warned about `upload-artifact@v4` and `download-artifact@v4`, which named Node.js 20
+  after GitHub deprecated it. A warning that names an action is the action's: raise it to a major
+  whose `action.yml` names a current Node. `release.yml` runs only on a tag, so a change to it is
+  first run by the next release.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
