@@ -25,6 +25,7 @@ const formatOne = sourcesIn(join(EXAMPLES, "format-1"));
 /** The examples written since, in format 2, which have no copy in format 1. */
 const BORN_IN_FORMAT_2 = [
   "capacitor-tester.ts",
+  "capacitor-timer.ts",
   "fading-light.ts",
   "high-side-switch.ts",
   "transistor-switch.ts",

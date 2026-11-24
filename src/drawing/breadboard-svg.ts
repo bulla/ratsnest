@@ -1,3 +1,4 @@
+import { ceramicCode } from "../ceramics";
 import type { ButtonColour, LedColour } from "../circuit";
 import { DIODES } from "../diodes";
 import { widthOf } from "../fonts";
@@ -153,12 +154,16 @@ export const DIODE_TOKENS = {
   blackBand: "diode-black-band",
 } as const;
 
+/** The colours of a ceramic capacitor's disc, and of the code printed on it (ADR 0051). */
+export const CERAMIC_TOKENS = { body: "ceramic", ink: "ceramic-ink" } as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
   ...Object.values(ELECTROLYTIC_TOKENS),
   ...Object.values(TRANSISTOR_TOKENS),
   ...Object.values(DIODE_TOKENS),
+  ...Object.values(CERAMIC_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -994,6 +999,7 @@ function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: num
       }
       if (other.kind === "electrolytic" && overlap(box, canBoxOf(other))) return false;
       if (other.kind === "transistor" && overlap(box, to92BoxOf(other))) return false;
+      if (other.kind === "ceramic" && overlap(box, discBoxOf(other))) return false;
       for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
     }
     return true;
@@ -1523,6 +1529,62 @@ function drawTransistor(part: Extract<Part, { kind: "transistor" }>): string {
 }
 
 /**
+ * A ceramic capacitor, standing on its two legs and seen from the front (ADR 0040, ADR 0051): a
+ * mustard disc, larger than life so that its code reads, printed with its value as the real ones are,
+ * `104`, upright at every quarter turn and the same in every language. Its legs come straight down
+ * from it to their holes, one hole apart, so that it stands over the two rows above them.
+ */
+export const DISC_MM = { radius: 2.3, lift: 1.4 } as const;
+
+/** The middle of a ceramic capacitor's disc, as it stands over its holes. */
+function discCentreOf(part: Extract<Part, { kind: "ceramic" }>): Point {
+  const a = holeCentre(part.from);
+  const b = holeCentre(part.to);
+  return { x: (a.x + b.x) / 2, y: a.y - DISC_MM.lift - DISC_MM.radius };
+}
+
+/** The box a ceramic capacitor's disc stands over on the board's own drawing. */
+export function discBoxOf(part: Extract<Part, { kind: "ceramic" }>): Box {
+  const { x, y } = discCentreOf(part);
+  return {
+    x: x - DISC_MM.radius,
+    y: y - DISC_MM.radius,
+    w: 2 * DISC_MM.radius,
+    h: 2 * DISC_MM.radius,
+  };
+}
+
+function drawCeramic(part: Extract<Part, { kind: "ceramic" }>): string {
+  const centre = discCentreOf(part);
+  const r = DISC_MM.radius;
+  const legs = [part.from, part.to].map(holeCentre);
+  const ink = `font-size="1.55" font-weight="900" fill="${token(CERAMIC_TOKENS.ink)}"`;
+  const code = text(centre.x, centre.y + 0.05, ceramicCode(part.nanofarads) ?? "", ink);
+  return (
+    legs
+      .map(
+        (leg) =>
+          line(
+            leg.x,
+            leg.y,
+            leg.x,
+            centre.y + 1.6,
+            `stroke="${token("lead")}" stroke-width="0.45"`,
+          ) + legEnd(leg.x, leg.y),
+      )
+      .join("") +
+    circle(
+      centre.x,
+      centre.y,
+      r,
+      `fill="${token(CERAMIC_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`,
+    ) +
+    `<ellipse cx="${n(centre.x - 0.9)}" cy="${n(centre.y - 1.1)}" rx="0.75" ry="0.45" fill="${token("shine")}" fill-opacity="0.35"/>` +
+    (turn === 0 ? code : `<g${upright(centre.x, centre.y)}>${code}</g>`)
+  );
+}
+
+/**
  * A 10 mm addressable RGB LED (scratchpi's ADR 0222), standing up: four leads, data out's kinked as the
  * longest, a frosted lens over them, and its pie of red, green and blue showing through
  * (scratchpi's ADR 0224). Its glow is white, all three at once, when the step that tests it is picked.
@@ -1772,6 +1834,8 @@ function standingBoxOf(part: Part): Box | undefined {
       return to92BoxOf(part);
     case "electrolytic":
       return canBoxOf(part);
+    case "ceramic":
+      return discBoxOf(part);
     case "led": {
       const a = holeCentre(part.anode);
       const mid = (a.x + holeCentre(part.cathode).x) / 2;
@@ -2113,6 +2177,9 @@ function drawPart(
       break;
     case "diode":
       body = drawDiode(part, tagOf(part, others), placeTag(part, others)?.lines ?? 1);
+      break;
+    case "ceramic":
+      body = drawCeramic(part);
       break;
   }
   const label =

@@ -226,6 +226,18 @@ export interface DiodePart {
   readonly cathode: Hole;
 }
 
+/**
+ * A ceramic capacitor, a small disc standing on its two legs, one hole apart in one row (ADR 0051).
+ * Its value is in nanofarads, `100` for 100 nF, and the disc prints it as its code in picofarads,
+ * `104`. It goes in either way round, as a resistor does.
+ */
+export interface CeramicPart {
+  readonly kind: "ceramic";
+  readonly nanofarads: number;
+  readonly from: Hole;
+  readonly to: Hole;
+}
+
 /** Anything plugged into the breadboard. */
 export type Part =
   | Wire
@@ -237,7 +249,8 @@ export type Part =
   | RingPart
   | ElectrolyticPart
   | TransistorPart
-  | DiodePart;
+  | DiodePart
+  | CeramicPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the

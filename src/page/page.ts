@@ -1,3 +1,4 @@
+import { ceramicCode } from "../ceramics";
 import type { ButtonColour, Layout, PlainLed, ShownCircuit } from "../circuit";
 import { DIODE_NAMES, DIODES, type DiodeName } from "../diodes";
 import {
@@ -24,7 +25,12 @@ import {
 import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN, widthOf } from "../fonts";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
-import { BASE_OHMS_RANGE, FLASHER_BASE_OHMS_RANGE, LIGHT_OHMS_RANGE } from "../netlist";
+import {
+  BASE_OHMS_RANGE,
+  CHARGE_OHMS_RANGE,
+  FLASHER_BASE_OHMS_RANGE,
+  LIGHT_OHMS_RANGE,
+} from "../netlist";
 import { isStanding, type Orientation } from "../orientation";
 import { DEFAULT_THEME, type Theme } from "../theme";
 import { TRANSISTORS, type TransistorName } from "../transistors";
@@ -216,6 +222,13 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
       );
     case "diode":
       return words.diode(part.model, at(part.anode), at(part.cathode));
+    case "ceramic":
+      return words.ceramic(
+        words.nanofarads(part.nanofarads),
+        ceramicCode(part.nanofarads) ?? "",
+        at(part.from),
+        at(part.to),
+      );
   }
 }
 
@@ -242,6 +255,12 @@ const isComponent = (part: Part) =>
   part.kind === "buzzer" ||
   part.kind === "rgbLed" ||
   part.kind === "ring";
+
+/**
+ * The parts the test step picks out: the components a reader watches and presses, and a ceramic
+ * capacitor, which is what its circuit's script times (ADR 0051).
+ */
+const isTested = (part: Part) => isComponent(part) || part.kind === "ceramic";
 
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
@@ -361,6 +380,13 @@ function partsListHtml(
     const count = parts.filter((p) => p.kind === "transistor" && p.model === model).length;
     items.push([count, words.listTransistor(model, TRANSISTORS[model].type, count)]);
   }
+  for (const value of nanofaradsOf(parts)) {
+    const count = parts.filter((p) => p.kind === "ceramic" && p.nanofarads === value).length;
+    items.push([
+      count,
+      words.listCeramic(words.nanofarads(value), ceramicCode(value) ?? "", count),
+    ]);
+  }
   for (const model of diodeModelsOf(parts)) {
     const count = parts.filter((p) => p.kind === "diode" && p.model === model).length;
     items.push([count, words.listDiode(model, DIODES[model].use, count)]);
@@ -394,6 +420,12 @@ const transistorModelsOf = (parts: readonly Part[]): TransistorName[] => [
   ...new Set(parts.flatMap((p) => (p.kind === "transistor" ? [p.model] : []))),
 ];
 
+/** The values of the ceramic capacitors a circuit has, each once, smallest first. */
+const nanofaradsOf = (parts: readonly Part[]): number[] =>
+  [...new Set(parts.flatMap((p) => (p.kind === "ceramic" ? [p.nanofarads] : [])))].sort(
+    (a, b) => a - b,
+  );
+
 /** The models of the diodes a circuit has, each once, in the order the steps place them. */
 const diodeModelsOf = (parts: readonly Part[]): DiodeName[] => [
   ...new Set(parts.flatMap((p) => (p.kind === "diode" ? [p.model] : []))),
@@ -426,6 +458,14 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     if (part.kind === "ring") notes.push(words.ringPolarity(dataPinOf(circuit, part.led)));
   }
   if (parts.some((p) => p.kind === "electrolytic")) notes.push(words.electrolyticPolarity);
+  const [ceramic] = nanofaradsOf(parts);
+  if (ceramic !== undefined) {
+    const [low, high] = CHARGE_OHMS_RANGE;
+    notes.push(
+      words.ceramicCode(ceramicCode(ceramic) ?? "", words.nanofarads(ceramic)),
+      words.chargeResistor(words.ohms(low), words.ohms(high)),
+    );
+  }
   if (diodeModelsOf(parts).length > 0)
     notes.push(words.diodePolarity, words.diodeAlike(DIODE_NAMES));
   notes.push(words.rowsLettered, circuit.supply ? words.supplyUnplug : words.unplug);
@@ -446,7 +486,7 @@ function drawingOf(circuit: ShownCircuit, layout: Layout, inputs: PageInputs): s
       const label = labelOf(part, names, words);
       return {
         part,
-        group: isComponent(part) ? `${stepGroup(index)} ${TEST_GROUP}` : stepGroup(index),
+        group: isTested(part) ? `${stepGroup(index)} ${TEST_GROUP}` : stepGroup(index),
         ...(label ? { label } : {}),
       };
     }),

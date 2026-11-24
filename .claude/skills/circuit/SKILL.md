@@ -114,7 +114,7 @@ A circuit with a supply:
 - **may have electrolytic capacitors, each keeping a light lit, two NPN transistors that flash
   two lights, and diodes on lights' ways** (below).
 
-## Capacitors, transistors and diodes (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049, ADR 0050)
+## Capacitors, transistors and diodes (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0051)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -170,6 +170,22 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   diode is refused, and on 3.7 V a blue, white, green, aqua, pink or purple one is. Its model goes on
   a tag beside it, as a resistor's value does, so leave it a row free on one side. On a Pico it has
   no use yet, and is refused.
+
+- **A ceramic capacitor**, on a Pico, is timed by two pins (ADR 0051):
+
+  ```ts
+  { kind: "ceramic", nanofarads: 100, from: "e26", to: "e27" },
+  ```
+
+  Its value is in nanofarads, two figures at most and 0.01 or more, and the disc prints it as its
+  code, `104` for 100 nF. It goes in either way round, its legs side by side in one row. One leg goes
+  straight to ground; the other straight to a pin that reads it, and through one resistor of 1 kΩ to
+  8.2 kΩ to a second pin, which charges it, with nothing else on that leg. Its nanofarads times that
+  resistor's ohms, over a thousand million, is 0.1 ms at least, or the script cannot time it: 100 nF
+  through 4.7 kΩ is about right. Its script sets the charging pin low, waits, sets it high and counts
+  until the reading pin reads high, as `capacitor-timer.ts` does. A step's words may name those two
+  pins, though no component is on them. The disc stands over the two rows above its legs. On a
+  supply it has no use yet, and is refused.
 
 A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
 each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So

@@ -1,3 +1,4 @@
+import { formatNanofarads } from "../ceramics";
 import type { ButtonColour, Supply } from "../circuit";
 import type { DiodeUse } from "../diodes";
 import type { WireRole } from "../drawing/breadboard";
@@ -68,6 +69,8 @@ export interface PageWords {
   readonly ohms: (value: number) => string;
   /** A value in microfarads, as the language writes it: `470 µF`, `0,47 µF`, `470 мкФ`. */
   readonly microfarads: (value: number) => string;
+  /** A value in nanofarads, as the language writes it: `100 nF`, `4,7 nF`, `100 нФ`. */
+  readonly nanofarads: (value: number) => string;
   /** A resistor's colour, band by band. */
   readonly band: (band: Band) => string;
   /** A jumper's colour, by what it carries, agreeing with how many there are. */
@@ -117,6 +120,8 @@ export interface PageWords {
   ) => string;
   /** A diode (ADR 0049), by its model: its anode, then its cathode, the end its band is at. */
   readonly diode: (model: string, anode: Place, cathode: Place) => string;
+  /** A ceramic capacitor (ADR 0051), its value written already, the code it prints, and its legs. */
+  readonly ceramic: (nanofarads: string, code: string, from: Place, to: Place) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
@@ -149,6 +154,8 @@ export interface PageWords {
   readonly listTransistor: (model: string, type: TransistorType, count: number) => string;
   /** Diodes of one model, what they are sold as, and how many (ADR 0049). */
   readonly listDiode: (model: string, use: DiodeUse, count: number) => string;
+  /** Ceramic capacitors of one value, written already, the code they print, and how many (ADR 0051). */
+  readonly listCeramic: (nanofarads: string, code: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
   readonly listLongWire: (colour: string, count: number) => string;
   readonly listCable: string;
@@ -179,6 +186,10 @@ export interface PageWords {
   readonly diodePolarity: string;
   /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
   readonly diodeAlike: (models: readonly string[]) => string;
+  /** That a ceramic capacitor goes either way round, and how its code says its value (ADR 0051). */
+  readonly ceramicCode: (code: string, nanofarads: string) => string;
+  /** What a ceramic capacitor's charging resistor can be (ADR 0051). */
+  readonly chargeResistor: (low: string, high: string) => string;
   readonly rowsLettered: string;
   readonly unplug: string;
 
@@ -304,6 +315,7 @@ export const ENGLISH_PAGE: PageWords = {
 
   ohms: formatOhms,
   microfarads: formatMicrofarads,
+  nanofarads: formatNanofarads,
   band: (band) => (band === "gold" ? "gold" : (ENGLISH_BANDS[Number(band)] ?? band)),
   wire: (role) => ENGLISH_WIRES[role],
 
@@ -327,6 +339,8 @@ export const ENGLISH_PAGE: PageWords = {
     `A ${model} ${type} transistor, its flat face towards row <span class="hole">j</span>: its emitter ${englishIn(emitter)}, its base ${englishIn(base)} and its collector ${englishIn(collector)}.`,
   diode: (model, anode, cathode) =>
     `A ${model} diode: its anode ${englishIn(anode)}, and its cathode, at the band, ${englishIn(cathode)}.`,
+  ceramic: (nanofarads, code, from, to) =>
+    `A ${nanofarads} ceramic capacitor, marked ${code}, either way round: one leg ${englishIn(from)} and the other ${englishIn(to)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
@@ -364,6 +378,8 @@ export const ENGLISH_PAGE: PageWords = {
     `${model} ${type} ${plural("en", count, { one: "transistor", other: "transistors" })}, in a TO-92 case.`,
   listDiode: (model, use, count) =>
     `${model} ${use} ${plural("en", count, { one: "diode", other: "diodes" })}, in ${use === "signal" ? "an orange glass case" : "a black case"}.`,
+  listCeramic: (nanofarads, code, count) =>
+    `${nanofarads} ceramic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, marked ${code}.`,
   listWire: (colour, count) =>
     `${capitalised(colour)} ${plural("en", count, ENGLISH_JUMPERS)}, short.`,
   listLongWire: (colour, count) =>
@@ -389,6 +405,10 @@ export const ENGLISH_PAGE: PageWords = {
     "A diode lets current through one way only: from its anode to its cathode, the end with the band, which goes towards −. One put in backwards lets none through, and its light stays dark, but it is not damaged: turn it round.",
   diodeAlike: (models) =>
     `The ${englishList(models)} all do on a light's way: a light takes far less current than any of them can carry.`,
+  ceramicCode: (code, nanofarads) =>
+    `A ceramic capacitor goes in either way round. Its value is printed on it as a code in picofarads, two figures and then how many zeros follow them: ${code} is ${nanofarads}.`,
+  chargeResistor: (low, high) =>
+    `Any resistor from ${low} to ${high} works to charge the capacitor. A bigger one, or a bigger capacitor, takes longer.`,
   rowsLettered:
     "Some breadboards letter their rows the other way up. If yours does, follow the picture rather than the letters.",
   unplug: "Unplug the USB cable while you change the wiring.",
@@ -546,6 +566,7 @@ export const FRENCH_PAGE: PageWords = {
 
   ohms: (value) => formatOhms(value).replace(".", ","),
   microfarads: (value) => formatMicrofarads(value).replace(".", ","),
+  nanofarads: (value) => formatNanofarads(value).replace(".", ","),
   band: (band) => (band === "gold" ? "or" : (FRENCH_BANDS[Number(band)] ?? band)),
   wire: (role, count) => {
     const [one, more] = FRENCH_WIRES[role];
@@ -572,6 +593,8 @@ export const FRENCH_PAGE: PageWords = {
     `Un transistor ${type} ${model}, sa face plate vers la rangée <span class="hole">j</span>${NNBSP}: son émetteur ${frenchIn(emitter)}, sa base ${frenchIn(base)} et son collecteur ${frenchIn(collector)}.`,
   diode: (model, anode, cathode) =>
     `Une diode ${model}${NNBSP}: son anode ${frenchIn(anode)}, et sa cathode, du côté de la bande, ${frenchIn(cathode)}.`,
+  ceramic: (nanofarads, code, from, to) =>
+    `Un condensateur céramique de ${nanofarads}, marqué ${code}, dans un sens ou dans l’autre${NNBSP}: une patte ${frenchIn(from)} et l’autre ${frenchIn(to)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
@@ -613,6 +636,8 @@ export const FRENCH_PAGE: PageWords = {
     `${plural("fr", count, { one: "Transistor", many: "Transistors", other: "Transistors" })} ${type} ${model}, en boîtier TO-92.`,
   listDiode: (model, use, count) =>
     `${plural("fr", count, { one: "Diode", many: "Diodes", other: "Diodes" })} ${use === "signal" ? "de signal" : "de redressement"} ${model}, en boîtier ${use === "signal" ? "de verre orange" : "noir"}.`,
+  listCeramic: (nanofarads, code, count) =>
+    `${plural("fr", count, { one: "Condensateur céramique", many: "Condensateurs céramiques", other: "Condensateurs céramiques" })} de ${nanofarads}, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
   listWire: (colour, count) => {
     const more = `Fils de connexion ${colour}, courts.`;
     return plural("fr", count, {
@@ -648,6 +673,10 @@ export const FRENCH_PAGE: PageWords = {
   diodePolarity: `Une diode ne laisse passer le courant que dans un sens${NNBSP}: de son anode à sa cathode, le bout marqué d’une bande, qui va vers le −. Une diode mise à l’envers ne laisse rien passer, et sa LED reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
   diodeAlike: (models) =>
     `Les diodes ${frenchList(models)} conviennent toutes sur le chemin d’une LED${NNBSP}: une LED consomme bien moins de courant que chacune d’elles n’en supporte.`,
+  ceramicCode: (code, nanofarads) =>
+    `Un condensateur céramique se plante dans un sens ou dans l’autre. Sa valeur y est imprimée en code, en picofarads${NNBSP}: deux chiffres, puis le nombre de zéros qui les suivent. ${code} vaut ${nanofarads}.`,
+  chargeResistor: (low, high) =>
+    `N’importe quelle résistance de ${low} à ${high} convient pour charger le condensateur. Plus elle est grande, ou plus le condensateur l’est, plus il met de temps à se charger.`,
   rowsLettered:
     "Sur certaines plaques d’essai, les lettres des rangées vont dans l’autre sens. Si c’est le cas de la vôtre, suivez le dessin plutôt que les lettres.",
   unplug: "Débranchez le câble USB pendant que vous changez le câblage.",
@@ -799,6 +828,7 @@ export const RUSSIAN_PAGE: PageWords = {
 
   ohms: russianOhms,
   microfarads: russianMicrofarads,
+  nanofarads: (value) => formatNanofarads(value).replace(".", ",").replace("nF", "нФ"),
   band: (band) => (band === "gold" ? "золотой" : (RUSSIAN_BANDS[Number(band)] ?? band)),
   wire: (role) => RUSSIAN_WIRES[role],
 
@@ -823,6 +853,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `Транзистор ${type} ${model}, плоской стороной к ряду <span class="hole">j</span>: эмиттер ${russianIn(emitter)}, база ${russianIn(base)}, коллектор ${russianIn(collector)}.`,
   diode: (model, anode, cathode) =>
     `Диод ${model}: анод ${russianIn(anode)}, катод, со стороны полосы, ${russianIn(cathode)}.`,
+  ceramic: (nanofarads, code, from, to) =>
+    `Керамический конденсатор ${nanofarads} с маркировкой ${code}, любой стороной: одна ножка ${russianIn(from)}, другая ${russianIn(to)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
@@ -863,6 +895,7 @@ export const RUSSIAN_PAGE: PageWords = {
     use === "signal"
       ? `Импульсный диод ${model} в оранжевом стеклянном корпусе.`
       : `Выпрямительный диод ${model} в чёрном корпусе.`,
+  listCeramic: (nanofarads, code) => `Керамический конденсатор ${nanofarads}, маркировка ${code}.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
   listCable:
@@ -887,6 +920,10 @@ export const RUSSIAN_PAGE: PageWords = {
     "Диод пропускает ток только в одну сторону: от анода к катоду, концу с полосой, который смотрит к −. Диод, вставленный наоборот, ничего не пропускает, и его светодиод не горит, но диод не портится: переверните его.",
   diodeAlike: (models) =>
     `На пути светодиода подойдёт любой из диодов ${russianList(models)}: светодиоду нужно гораздо меньше тока, чем выдерживает каждый из них.`,
+  ceramicCode: (code, nanofarads) =>
+    `Керамический конденсатор ставится любой стороной. Номинал напечатан на корпусе кодом в пикофарадах: две цифры, затем число нулей после них. ${code} означает ${nanofarads}.`,
+  chargeResistor: (low, high) =>
+    `Для зарядки конденсатора подойдёт любой резистор от ${low} до ${high}. Чем больше сопротивление или ёмкость, тем дольше зарядка.`,
   rowsLettered:
     "На некоторых макетных платах ряды подписаны в обратном порядке. Если на вашей так, следуйте рисунку, а не буквам.",
   unplug: "Отключайте кабель USB, пока меняете схему.",

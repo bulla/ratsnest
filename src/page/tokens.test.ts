@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { BUTTON_COLOURS, LED_COLOURS } from "../circuit";
 import {
   BREADBOARD_TOKENS,
+  CERAMIC_TOKENS,
   DIODE_TOKENS,
   ELECTROLYTIC_TOKENS,
   SUPPLY_TOKENS,
@@ -233,6 +234,12 @@ describe.each(SCOPES)("the %s scale", (scope) => {
     ] as const) {
       expect(contrastRatio(colour(band, scope), colour(body, scope))).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it("prints a ceramic capacitor's code legibly on its disc (ADR 0051)", () => {
+    expect(
+      contrastRatio(colour(CERAMIC_TOKENS.ink, scope), colour(CERAMIC_TOKENS.body, scope)),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each(Object.entries(CHIP_STYLES))(

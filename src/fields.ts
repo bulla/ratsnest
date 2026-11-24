@@ -1,3 +1,4 @@
+import { ceramicCode } from "./ceramics";
 import {
   BUTTON_COLOURS,
   isSupplied,
@@ -7,7 +8,8 @@ import {
   THREE_VOLT_COLOURS,
 } from "./circuit";
 import { DIODE_NAMES } from "./diodes";
-import { parseHole } from "./drawing/breadboard";
+import { legsOf, type Part as Placed, parseHole, pinOfStrip } from "./drawing/breadboard";
+import { HEADER_PINS } from "./drawing/geometry";
 import { fileOf } from "./fonts";
 import type { Circuit, Language, Setup, SupplyCircuit, Text } from "./format";
 import { LANGUAGES } from "./language";
@@ -230,6 +232,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   electrolytic: ["kind", "microfarads", "plus", "minus"],
   transistor: ["kind", "model", "emitter", "base", "collector"],
   diode: ["kind", "model", "anode", "cathode"],
+  ceramic: ["kind", "nanofarads", "from", "to"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
@@ -342,6 +345,21 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
       fields.hole("anode");
       fields.hole("cathode");
       return;
+    case "ceramic": {
+      const nanofarads = fields.required("nanofarads", "a value in nanofarads");
+      if (
+        nanofarads !== undefined &&
+        (typeof nanofarads !== "number" || !ceramicCode(nanofarads))
+      ) {
+        fields.problem(
+          "nanofarads",
+          "is not a value in nanofarads a ceramic capacitor's code can print: two figures at most, and 0.01 or more, such as `100` or `4.7`",
+        );
+      }
+      fields.hole("from");
+      fields.hole("to");
+      return;
+    }
     case "rgbLed":
     case "ring":
       reference("led", ids.rgbLeds, "RGB lights");
@@ -683,7 +701,9 @@ const HOLE_NAME =
  * a page never names one the drawing does not show, or a GPIO no part of the circuit is on.
  */
 export function wordProblems(circuit: Circuit): FieldProblem[] {
-  // A circuit with a supply has no pin, so every GPIO its words name is one no part is on.
+  // A circuit with a supply has no pin, so every GPIO its words name is one no part is on. On a Pico,
+  // a part is on the pins its components name, and on those its layout wires it to, which a part with
+  // no name of its own, a ceramic capacitor's resistor, has only so (ADR 0051).
   const used = new Set(
     isSupplied(circuit)
       ? []
@@ -691,6 +711,14 @@ export function wordProblems(circuit: Circuit): FieldProblem[] {
           ...(circuit.leds ?? []).map((led) => led.pin.gpio),
           ...(circuit.buttons ?? []).map((button) => button.pin.gpio),
           ...(circuit.buzzers ?? []).map((buzzer) => buzzer.pin.gpio),
+          ...circuit.steps.flatMap((step) =>
+            step.parts.flatMap((part) =>
+              legsOf(part as Placed).flatMap((hole) => {
+                const pin = pinOfStrip(hole);
+                return HEADER_PINS.find((header) => header.number === pin)?.gpio ?? [];
+              }),
+            ),
+          ),
         ],
   );
   const problems: FieldProblem[] = [];

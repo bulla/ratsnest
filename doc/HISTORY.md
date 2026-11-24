@@ -315,6 +315,29 @@ buttons in its way, each to a lane of its own (ADR 0050).
 - [x] `examples/two-buttons-three-lights.ts`, in English and French, and a test circuit with a
       variant for every rule it is refused by
 
+### M18: the ceramic capacitor
+
+M18 is done: on a Pico, GP16 charges a 100 nF ceramic capacitor through 4.7 kΩ while GP17 reads it,
+and the script prints how long it takes to charge (ADR 0051). The disc prints its code, `104`, as the
+real one does, and the page says its value beside it and how the code reads.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0051), the disc's print settled as its
+      code
+- [x] The format: `{ kind: "ceramic", nanofarads, from, to }`, read and checked field by field, its
+      value one its code can print, and refused in a circuit with a supply
+- [x] The wiring check's rule: one leg on ground; the other on the pin that reads it and on one
+      resistor of 1 kΩ to 8.2 kΩ from a second pin, nothing else; 0.1 ms at least; and on a supply,
+      refused
+- [x] A step's words free to name a pin the layout wires a part to, and the test step picking the
+      capacitor out
+- [x] The drawing: a mustard disc printed with its code, upright at every quarter turn, its colours
+      in `tokens.css` and its code held to 4.5:1; a value tag keeps off it, and a light's leader rises
+      over it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
+      and the notes on the code and on the resistor's range
+- [x] `examples/capacitor-timer.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -617,3 +640,11 @@ buttons in its way, each to a lane of its own (ADR 0050).
   not know of. The diode was drawn once, in the two cases its models have, rather than mocked up in
   several colourings, and Fritzing's was not set beside it, since this session could not fetch
   Fritzing's parts.
+- 2026-11-24: M18, the ceramic capacitor, worked out alone (ADR 0051), stacked on M17. The disc's
+  print was the roadmap's open question, and the code won, `104`, since it is what a reader finds in
+  their box; the page gives the value in its own language beside it. Erratum E9 set the charging
+  resistor's top at 8.2 kΩ, as it set a pull-down's, though tutorials take 10 kΩ. The example's words
+  named GP16 and GP17, and the check refused them, since it knew only the pins a component is on; it
+  now knows those the layout wires a part to as well. Its test step picked out nothing, the circuit
+  having no component to watch, and picks out the capacitor now. A resistor's value tag first fell on
+  GP16's chip, and the resistor grew a hole. No example's drawing changed.

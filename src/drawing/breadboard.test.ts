@@ -329,8 +329,9 @@ describe("a resistor's value tag", () => {
       // With no Pico on the board (ADR 0032), a tag may stand where the Pico would be: asked here,
       // outside a drawing, the Pico is assumed.
       if (FIXTURES[id].circuit.supply) continue;
-      // A transistor's case stands where a tag always went, and a tag keeps off it (ADR 0044).
-      if (parts.some((part) => part.kind === "transistor")) continue;
+      // A transistor's case, or a ceramic capacitor's disc, stands where a tag always went, and a tag
+      // keeps off it (ADR 0044, ADR 0051).
+      if (parts.some((part) => part.kind === "transistor" || part.kind === "ceramic")) continue;
       for (const part of parts) {
         if (part.kind !== "resistor") continue;
         if ([part.from, part.to].some((hole) => /^(?:2:)?(?:top|bottom)/.test(hole))) continue;
@@ -557,5 +558,37 @@ describe("a light's leader, lifted over the lights and buttons in its way (ADR 0
     const blue = leaderOf(led("blue"), labelled, parts);
     expect(blue?.run).toEqual(blue?.dot);
     expect(leaderOf(button("right"), labelled, parts)?.run.y).toBe(CHANNEL_Y_MM);
+  });
+});
+
+describe("a ceramic capacitor, standing as a disc (ADR 0040, ADR 0051)", () => {
+  const parts = FIXTURES["capacitor-timed-by-two-pins"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const disc = parts.find((part) => part.kind === "ceramic") as Part;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: disc, group: "step-1" }],
+      tags: [],
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A capacitor",
+      description: "A capacitor.",
+    });
+
+  it("prints its value as the real one's code, the same in every language, upright at every quarter turn", () => {
+    expect(drawn(0)).toContain(">473</text>");
+    for (const turn of [90, 180, 270] as const) {
+      expect(drawn(turn)).toContain(`rotate(${-turn} `);
+      expect(drawn(turn)).toContain(">473</text></g>");
+    }
+  });
+
+  it("stands over the rows above its legs, which a value tag keeps off", () => {
+    expect(drawn(0)).toContain("var(--color-ceramic)");
+    for (const turn of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems(parts, turn)).toEqual([]);
+    }
   });
 });
