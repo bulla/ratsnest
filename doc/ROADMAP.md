@@ -23,7 +23,8 @@ publishes their pages as Artifacts (M8). M6 waits on the owner, below. Circuits 
 powered by a supply on the rails (ADR 0032 to ADR 0034), are M12, released in 0.2.0 with format 2:
 every circuit's `setup`, one `test` and a credit of its own (ADR 0035 to ADR 0037). New parts,
 capacitors, transistors and diodes, each with the circuit that teaches it, are planned in the
-Backlog (ADR 0038 to ADR 0041), the first, the electrolytic capacitor, is M13 (ADR 0043), and the NPN transistor M14 (ADR 0044).
+Backlog (ADR 0038 to ADR 0041), the first, the electrolytic capacitor, is M13 (ADR 0043), the NPN transistor M14 (ADR 0044), and
+the PNP transistor M15 (ADR 0045).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -64,8 +65,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
 
-- **The new parts' drawings** (ADR 0043, ADR 0044): the electrolytic capacitor's and the NPN
-  transistor's, mocked up and chosen while the owner had the work go on alone, so the owner signs
+- **The new parts' drawings** (ADR 0043 to ADR 0045): the electrolytic capacitor's and the
+  transistors', mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
   reader.
@@ -92,29 +93,25 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 ## Backlog
 
 - **New parts, each with the circuit that teaches it** (ADR 0038 to ADR 0041), in this order, after
-  the first two, the electrolytic capacitor's fading light and the NPN transistor's switch, which
-  are M13 and M14 (ADR 0043, ADR 0044). Each brings its
-  part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
+  the first three, the electrolytic capacitor's fading light and the NPN and PNP transistors'
+  switches, which are M13 to M15 (ADR 0043 to ADR 0045). Each brings its part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
   step's sentence and the parts list's line in English, French and Russian, an example and a test
   circuit, and the `circuit` skill's knowledge of it. Each part's drawing is mocked up on the board
   first, in both themes, at all four quarter turns, beside Fritzing's drawing of the same part, and
   the owner picks one; the looks turned down go in the record that settles that part. Each is an
   addition to format 2, and a minor release.
-  1. **The PNP transistor: the same switch on the high side.** On a Pico, a 2N3906's emitter on
-     3V3, its collector over a light and its resistor to ground, and the light lit while the pin is
-     low. The NPN's body, printed `PNP` and `2N3906`; its rule is the NPN's, mirrored.
-  2. **The capacitor tester and flasher.** On the 3 V supply, two 2N3904s and two electrolytic
+  1. **The capacitor tester and flasher.** On the 3 V supply, two 2N3904s and two electrolytic
      capacitors make an astable multivibrator: each transistor's collector under a light and its
      resistor, its base on + through a large resistor, and a capacitor from each collector to the
      other's base, + towards the collector. One capacitor is the one under test: with a good one the
      two lights flash in turn, a larger one more slowly, and an open or a shorted one stops them.
      Nothing new to draw; its rule is the multivibrator. The capacitor to test goes in a step of its
      own, so that its words can point at it with neither a value nor a name (ADR 0011, ADR 0041).
-  3. **The diode: two buttons, three lights.** On a supply, each button lights a light of its own
+  2. **The diode: two buttons, three lights.** On a supply, each button lights a light of its own
      and a shared one, and two diodes keep one button from lighting the other's light. Drawn lying,
      as a resistor is, with its band at the cathode and its model on a tag (ADR 0040); its rule is a
      one-way part on a light's way. Left to its own record: which models, several of them.
-  4. **The ceramic capacitor: the Pico times a capacitor.** On a Pico, a 100 nF capacitor charges
+  3. **The ceramic capacitor: the Pico times a capacitor.** On a Pico, a 100 nF capacitor charges
      through a resistor while the Pico counts how long it takes, and the script prints it. Drawn
      standing, a small disc; its rule is a resistor and a capacitor on a pair of pins. Left to its
      own record: what the disc prints, `104` as the real one does or `100 nF`.
@@ -173,3 +170,4 @@ file's Log.
 | M12       | Circuits without a Pico: a supply on the rails, its wiring check, format 2, and 0.2.0   | 0032–0037                               |
 | M13       | The electrolytic capacitor: a light that fades out, the first new part with its circuit | 0038–0041, 0043                         |
 | M14       | The NPN transistor: a pin switches a light through a 2N3904                             | 0044                                    |
+| M15       | The PNP transistor: a pin switches a light on the high side, through a 2N3906           | 0045                                    |

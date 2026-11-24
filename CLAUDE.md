@@ -25,8 +25,8 @@ the first release, 0.1.1, is published (M9), and `ratsnest update` moves a proje
 to a newer ratsnest (M10), and the `circuit` skill publishes a project's pages as Artifacts (M8). A
 circuit can do without a Pico, on a supply, and every circuit is in format 2, since 0.2.0 (M12). New
 parts come one at a time, each with the circuit that teaches it, in the roadmap's Backlog: the
-electrolytic capacitor, keeping a light lit on a supply, is the first (M13), and the NPN transistor,
-a pin switching a light through it, the second (M14).
+electrolytic capacitor, keeping a light lit on a supply, is the first (M13), and the NPN and PNP
+transistors, a pin switching a light through either, the second and third (M14, M15).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -223,10 +223,11 @@ there.
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported, `battery-button.ts`, the first on a
 │                        supply (ADR 0032), `fading-light.ts`, the first with a capacitor
-│                        (ADR 0043), and `transistor-switch.ts`, the first with a transistor
-│                        (ADR 0044): ratsnest's own, checked like anyone's, and in `format-1/` the
-│                        files the migration to format 2 is tested on, one for each example older
-│                        than format 2, left out of the type check (ADR 0014, ADR 0015, ADR 0036)
+│                        (ADR 0043), and `transistor-switch.ts` and `high-side-switch.ts`, with an
+│                        NPN and a PNP transistor (ADR 0044, ADR 0045): ratsnest's own, checked like
+│                        anyone's, and in `format-1/` the files the migration to format 2 is tested
+│                        on, one for each example older than format 2, left out of the type check
+│                        (ADR 0014, ADR 0015, ADR 0036)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done

@@ -173,7 +173,10 @@ describe("a file's fields (ADR 0016)", () => {
         "light-on-a-transistor",
       );
     expect(said(transistor("2N3904"))).toEqual([]);
-    expect(said(transistor("BC547"))).toEqual(["steps[1].parts[0].model is not one of `2N3904`"]);
+    expect(said(transistor("2N3906"))).toEqual([]);
+    expect(said(transistor("BC547"))).toEqual([
+      "steps[1].parts[0].model is not one of `2N3904` or `2N3906`",
+    ]);
   });
 
   it("put every leg in a hole a half-size breadboard prints", () => {

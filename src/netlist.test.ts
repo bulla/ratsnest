@@ -647,3 +647,64 @@ describe("a transistor switching a light (ADR 0044)", () => {
     );
   });
 });
+
+describe("a PNP transistor switching a light on the high side (ADR 0045)", () => {
+  const { circuit, layout } = FIXTURES["light-under-a-pnp-transistor"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const NAME = "the 2N3906 with its emitter in e24";
+
+  it("takes one with its emitter on 3V3, its base on the pin through a resistor, and the light from its collector to ground", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its light in backwards", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "led", {
+        kind: "led",
+        led: "yellow",
+        anode: "e30",
+        cathode: "e29",
+      }),
+    );
+    expect(turned).toContain(
+      "the yellow LED is in backwards: its long leg must be towards the 2N3906's collector, and its short leg towards ground",
+    );
+  });
+
+  it("finds its emitter off 3V3, on ground as an NPN's would be", () => {
+    const grounded = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "a24", {
+        kind: "wire",
+        from: "a24",
+        to: "top-25",
+        role: "ground",
+      }),
+    );
+    expect(grounded).toContain(`${NAME} has its emitter off 3V3(OUT)`);
+  });
+
+  it("finds its light with no resistor of its own", () => {
+    const bare = problems((parts) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "a26", {
+        kind: "wire",
+        from: "a26",
+        to: "a29",
+        role: "signal",
+      }),
+    );
+    expect(bare).toContain(
+      "the yellow LED is not wired from the 2N3906's collector through one resistor to ground",
+    );
+  });
+
+  it("finds one that switches no light", () => {
+    const spare = problems((parts) => [
+      ...parts,
+      { kind: "transistor", model: "2N3906", emitter: "h23", base: "h24", collector: "h25" },
+    ]);
+    expect(spare).toContain(
+      "the 2N3906 with its emitter in h23 switches no light: its emitter goes on 3V3(OUT), its base through a resistor from a light's pin, and its collector over the light",
+    );
+  });
+});

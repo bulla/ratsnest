@@ -139,12 +139,14 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   { kind: "transistor", model: "2N3904", emitter: "e24", base: "e25", collector: "e26" },
   ```
 
-  Its model is one ratsnest knows, `2N3904` for NPN. Its legs are side by side in one row, emitter,
-  base and collector from left to right, so that its flat face is towards row j. The light keeps its
-  `pin`, the pin that switches it. Its emitter goes on ground; its base on the light's pin through
-  one resistor of 1 kΩ to 10 kΩ; and the light between 3V3(OUT) and its collector through one
-  resistor of 220 Ω to 1 kΩ. The case stands over the two rows above its legs, so reach each leg from
-  the row below it, or from the row above its case. On a supply it is refused.
+  Its model is one ratsnest knows: `2N3904`, NPN, or `2N3906`, PNP (ADR 0045). Its legs are side by
+  side in one row, emitter, base and collector from left to right, so that its flat face is towards
+  row j. The light keeps its `pin`, the pin that switches it, and its base goes on that pin through
+  one resistor of 1 kΩ to 10 kΩ. An NPN's emitter goes on ground, and the light between 3V3(OUT) and
+  its collector; a PNP's emitter goes on 3V3(OUT), never VBUS, and the light between its collector and
+  ground, lit while the pin is low. Either way, the light has one resistor of 220 Ω to 1 kΩ. The case
+  stands over the two rows above its legs, so reach each leg from the row below it, or from the row
+  above its case. On a supply it is refused.
 
 ## Its credit (ADR 0035)
 

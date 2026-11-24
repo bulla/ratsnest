@@ -34,6 +34,11 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   resistor of 220 Ω to 1 kΩ. The page draws it as a black TO-92 case with `NPN` and `2N3904` printed
   on its flat face and its legs' letters above them, lists it, and notes its legs' order and that
   another model, such as a BC547, may differ. On a supply it is refused, with no use there yet.
+- The 2N3906, a PNP transistor, `model: "2N3906"`: a pin switches a light through it on the high
+  side, the light lit while the pin is low. `rnest check` holds its emitter on 3V3(OUT), and never
+  VBUS, its base on the light's pin through one resistor of 1 kΩ to 10 kΩ, and the light between its
+  collector and ground through one of its own. It is drawn as the 2N3904 is, printed `PNP`. Each
+  transistor's note on its legs names a look-alike whose legs differ, the BC547 or the BC557.
 - `rnest check` refuses a capacitance, such as `470 µF`, written in a circuit's own words, as it
   refuses a resistance: the engine writes every value.
 

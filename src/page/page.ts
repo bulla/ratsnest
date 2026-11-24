@@ -401,7 +401,9 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
       words.anyResistor(words.ohms(low), words.ohms(high)),
     );
   }
-  for (const model of models) notes.push(words.transistorPinout(model, TRANSISTORS[model].legs));
+  for (const model of models) {
+    notes.push(words.transistorPinout(model, TRANSISTORS[model].legs, TRANSISTORS[model].unlike));
+  }
   if (models.length > 0) {
     const [low, high] = BASE_OHMS_RANGE;
     notes.push(words.baseResistor(words.ohms(low), words.ohms(high)));

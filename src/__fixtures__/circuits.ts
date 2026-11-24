@@ -12,8 +12,9 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * scratchpi's circuits and layouts (ADR 0001), renamed by what they hold, so that no test in `src/`
  * names a circuit that ships (ADR 0007): the ones that ship are `examples/`, from M3. The eighth has
  * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches, the
- * ninth a capacitor that keeps a light lit once its button is let go (ADR 0043), and the tenth a light
- * that a pin switches through a transistor (ADR 0044).
+ * ninth a capacitor that keeps a light lit once its button is let go (ADR 0043), the tenth a light
+ * that a pin switches through an NPN transistor (ADR 0044), and the eleventh one it switches through a
+ * PNP transistor, on the high side (ADR 0045).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -26,6 +27,7 @@ export const FIXTURE_IDS = [
   "two-lights-on-a-supply",
   "light-kept-lit-by-a-capacitor",
   "light-on-a-transistor",
+  "light-under-a-pnp-transistor",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -664,6 +666,51 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       script: "from machine import Pin\n\nPin(17, Pin.OUT).on()",
       test: "The green LED lights, and stays lit until the Pico is unplugged.",
+    },
+  },
+  "light-under-a-pnp-transistor": {
+    circuit: {
+      name: "A light under a PNP transistor",
+      description:
+        "A yellow light that GP17 switches through a 2N3906 on the high side, lit while the pin is low.",
+      credit: CREDIT,
+      leds: [
+        { id: "yellow", name: "yellow LED", pin: { kind: "gpio", gpio: 17 }, colour: "yellow" },
+      ],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Ground and 3V3 on the top rails",
+          parts: [
+            { kind: "wire", from: "a19", to: "top-19", role: "ground" },
+            { kind: "wire", from: "a6", to: "top+7", role: "power" },
+          ],
+        },
+        {
+          title: "The transistor, its emitter on 3V3",
+          parts: [
+            { kind: "transistor", model: "2N3906", emitter: "e24", base: "e25", collector: "e26" },
+            { kind: "wire", from: "a24", to: "top+25", role: "power" },
+          ],
+        },
+        {
+          title: "Its base resistor, from GP17",
+          parts: [{ kind: "resistor", ohms: 4700, from: "b20", to: "b25" }],
+        },
+        {
+          title: "The yellow LED, from the collector to ground",
+          parts: [
+            { kind: "resistor", ohms: 470, from: "a26", to: "a29" },
+            { kind: "led", led: "yellow", anode: "e29", cathode: "e30" },
+            { kind: "wire", from: "a30", to: "top-29", role: "ground" },
+          ],
+        },
+      ],
+      script: "from machine import Pin\n\nPin(17, Pin.OUT).off()",
+      test: "The yellow LED lights, since GP17 is low, and stays lit until the Pico is unplugged.",
     },
   },
 };
