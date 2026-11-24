@@ -362,13 +362,12 @@ the switches can be set.
 
 ### M20: the slide potentiometer
 
-M20 is done: after day 7 of The Pi Hut's Let it Glow Maker Advent Calendar, a 10 kΩ slide
-potentiometer lies across both breadboards, its wiper and the end beside it straight in the strips
-of GP28 and 3V3(OUT), and the script colours two RGB LEDs from its reading (ADR 0053).
+M20 is done: from a tutorial the owner chose, a 10 kΩ slide potentiometer lies across both
+breadboards, its wiper and the end beside it straight in the strips of GP28 and 3V3(OUT), and the
+script colours two RGB LEDs from its reading (ADR 0053).
 
-- [x] The design, worked out alone at the owner's asking (ADR 0053): no analogue pin kind, the wiper's
-      pin read from the wiring; the legs as the tutorial's drawing places them; the tutorial credited
-      in the description
+- [x] The design, worked out alone at the owner's asking (ADR 0053): no analogue pin kind, the
+      wiper's pin read from the wiring; the legs as the tutorial's drawing places them
 - [x] The format: `{ kind: "slidePotentiometer", ohms, wiper, end, otherEnd }`, read and checked field
       by field,
       and refused in a circuit with a supply
@@ -683,13 +682,12 @@ on the Pico 2 W.
   decided first and are already on the pull requests above this one.
 - 2026-11-24: More new parts, at the owner's asking: a slide switch, a slide potentiometer and a DIP
   switch leave the roadmap's Later for the Backlog, after the ceramic capacitor, each with the
-  circuit that teaches it. The slider's circuit is the owner's choice, The Pi Hut's Let it Glow
-  Maker Advent Calendar, day 7, read from an extract of the page the owner saved: a 45 mm slider
-  across both breadboards, its wiper on GP28, beside the two RGB LEDs of its day 6. Asked which
-  circuit should teach a potentiometer, the owner named the same one, so a rotary potentiometer
-  stays in Later, with a toggle switch. The slide switch goes first, as the easiest start, and the
-  DIP switch last, since its four inputs need four pull-downs or a rule for the Pico's own
-  pull-ups.
+  circuit that teaches it. The slider's circuit is the owner's choice, from a tutorial, read from an
+  extract of its page the owner saved: a 45 mm slider across both breadboards, its wiper on GP28,
+  beside two RGB LEDs. Asked which circuit should teach a potentiometer, the owner named the same
+  one, so a rotary potentiometer stays in Later, with a toggle switch. The slide switch goes first,
+  as the easiest start, and the DIP switch last, since its four inputs need four pull-downs or a
+  rule for the Pico's own pull-ups.
 - 2026-11-24: Between milestones: the SVG tests that draw and parse every test circuit at every
   orientation have 30 seconds, not Bun's 5. One timed out on continuous integration's Mac, at
   5.7 s, on the pull request that planned the new switches, which changed only the roadmap, and
@@ -727,16 +725,18 @@ on the Pico 2 W.
   The test circuit's first layout put its lights' wires into rail columns 12 and 28, which a rail does
   not have, its holes being in groups of five. No example's drawing changed.
 - 2026-11-24: M20, the slide potentiometer, worked out alone (ADR 0053), stacked on M19. The extract
-  of day 7's page gave the wiring, and its drawing, measured hole by hole, the legs: two at one end,
-  two columns apart, and one 17 rows along, across the two boards' edges. No slider was measured, so
-  the owner checks the real one on the pull request. The roadmap had asked how a circuit names an
-  analogue pin, and the answer was that it need not: the ceramic capacitor had taught the check to
-  find a part's pins by its wiring. Laying it out, the slider's two legs at one end went straight into
-  the strips of 3V3(OUT) and GP28, two columns apart on the Pico's own row, and its other end landed
-  on the second breadboard, a jumper from ground away. The tutorial went into the example's
-  description, since the examples' credit is the skill's, which a test holds. The Russian note first
-  had a dash Nunito's files lack, and the page test said so. Its kind was `slider` until the owner
-  read it on the pull request: beside `slideSwitch` it could mean either part, so it became
+  of the tutorial's page gave the wiring, and its drawing, measured hole by hole, the legs: two at
+  one end, two columns apart, and one 17 rows along, across the two boards' edges. No slider was
+  measured, so the owner checks the real one on the pull request. The roadmap had asked how a
+  circuit names an analogue pin, and the answer was that it need not: the ceramic capacitor had
+  taught the check to find a part's pins by its wiring. Laying it out, the slider's two legs at one
+  end went straight into the strips of 3V3(OUT) and GP28, two columns apart on the Pico's own row,
+  and its other end landed on the second breadboard, a jumper from ground away. The tutorial went
+  into the example's description, since the examples' credit is the skill's, which a test holds, and
+  came out again at the owner's asking: ratsnest names no shop or product, and the example credits
+  no tutorial, though ADR 0053, left as it was, says it does. The Russian note first had a dash
+  Nunito's files lack, and the page test said so. Its kind was `slider` until the owner read it on
+  the pull request: beside `slideSwitch` it could mean either part, so it became
   `slidePotentiometer`, and the example's French, which had called the whole part its `curseur`, the
   word its page uses for the wiper, calls it the potentiometer.
 - 2026-11-24: M21, the DIP switch, worked out alone (ADR 0054), stacked on M20, the last of the parts

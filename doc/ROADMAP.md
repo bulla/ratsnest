@@ -62,9 +62,9 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 
 ## Open points
 
-- **The slide potentiometer's legs** (ADR 0053): taken from the drawing in The Pi Hut's day 7, two
-  at one end two holes apart and one 17 rows along, since no slide potentiometer was measured. The owner, who has
-  the calendar's, checks that its legs fall there, and says if they do not.
+- **The slide potentiometer's legs** (ADR 0053): taken from the drawing in a tutorial the owner
+  chose, two at one end two holes apart and one 17 rows along, since no slide potentiometer was
+  measured. The owner, who has one, checks that its legs fall there, and says if they do not.
 
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,
@@ -134,9 +134,9 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   them, which ADR 0004 would have to allow, is a record of its own.
 - **More parts, each when a circuit needs it** (ADR 0038): rotary potentiometers, toggle switches,
   relays, light-dependent resistors, MOSFETs, Zener and Schottky diodes, and film capacitors
-- **The LED bar graph and the resistor array**, at the owner's asking: The Pi Hut's Let it Glow
-  calendar lights a bar graph's segments through a resistor array, from GP9 to GP13, and its day 5
-  lights them from the DIP switch. Each comes with a circuit that needs it (ADR 0038).
+- **The LED bar graph and the resistor array**, at the owner's asking: a bar graph's segments lit
+  through a resistor array, from GP9 to GP13, and then from the DIP switch. Each comes with a
+  circuit that needs it (ADR 0038).
 - **A full-size breadboard**, probably drawn standing up, and **other boards**: the rest of the Pico
   family first (ADR 0002, ADR 0003)
 - **Solid 2**, when something on a page has to change after it is made, such as a page that picks the
