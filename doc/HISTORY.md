@@ -572,3 +572,8 @@ leader that rises over the parts in its way (ADR 0047).
   stays in Later, with a toggle switch. The slide switch goes first, as the easiest start, and the
   DIP switch last, since its four inputs need four pull-downs or a rule for the Pico's own
   pull-ups.
+- 2026-11-24: Between milestones: the SVG tests that draw and parse every test circuit at every
+  orientation have 30 seconds, not Bun's 5. One timed out on continuous integration's Mac, at
+  5.7 s, on the pull request that planned the new switches, which changed only the roadmap, and
+  passed when run again. Each takes a second and a half on a fast machine, and every part since M13
+  has added test circuits to them.

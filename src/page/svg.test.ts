@@ -42,18 +42,29 @@ const parsed = (svg: string) =>
 
 const numbers = (value: string | null) => (value ?? "").split(" ").map(Number);
 
+/**
+ * A test that draws and parses every file above, every test circuit at every orientation, sixty files
+ * and more with each new part, takes a second and a half on a fast machine and nearly four times that
+ * on continuous integration's Mac, past Bun's 5 s, so it has longer.
+ */
+const EVERY_FILE = 30_000;
+
 describe("the drawing alone, as an SVG file (ADR 0031)", () => {
   const english = DRAWN[0] as Drawn;
 
-  it("is an SVG document of its own, well formed at every orientation and in every language", () => {
-    for (const drawn of DRAWN) {
-      for (const orientation of ORIENTATIONS) {
-        const root = parsed(fileOfDrawn(drawn, orientation));
-        expect(root.namespaceURI).toBe(SVG);
-        expect(root.localName).toBe("svg");
+  it(
+    "is an SVG document of its own, well formed at every orientation and in every language",
+    () => {
+      for (const drawn of DRAWN) {
+        for (const orientation of ORIENTATIONS) {
+          const root = parsed(fileOfDrawn(drawn, orientation));
+          expect(root.namespaceURI).toBe(SVG);
+          expect(root.localName).toBe("svg");
+        }
       }
-    }
-  });
+    },
+    EVERY_FILE,
+  );
 
   it("makes the same file from the same inputs", () => {
     expect(fileOfDrawn(english, 90)).toBe(fileOfDrawn(english, 90));
@@ -126,25 +137,29 @@ describe("the drawing alone, as an SVG file (ADR 0031)", () => {
     }
   });
 
-  it("credits the drawing along its bottom edge, in its circuit's words, every line fitting", () => {
-    for (const drawn of DRAWN) {
-      for (const orientation of ORIENTATIONS) {
-        const root = parsed(fileOfDrawn(drawn, orientation));
-        const [x = 0, , w = 0] = numbers(root.getAttribute("viewBox"));
-        const lines = [...root.querySelectorAll(":scope > text.drawing-credit")];
-        const said = lines.map((line) => line.textContent ?? "");
-        expect(said.join(" ")).toBe((drawn.circuit.credit ?? "").replaceAll(" ", " "));
-        for (const line of said) {
-          expect(widthOf(line, CREDIT.size, CREDIT.weight)).toBeLessThanOrEqual(
-            w - 2 * CREDIT.margin,
-          );
-        }
-        for (const line of lines) {
-          expect(Number(line.getAttribute("x"))).toBeCloseTo(x + CREDIT.margin, 3);
+  it(
+    "credits the drawing along its bottom edge, in its circuit's words, every line fitting",
+    () => {
+      for (const drawn of DRAWN) {
+        for (const orientation of ORIENTATIONS) {
+          const root = parsed(fileOfDrawn(drawn, orientation));
+          const [x = 0, , w = 0] = numbers(root.getAttribute("viewBox"));
+          const lines = [...root.querySelectorAll(":scope > text.drawing-credit")];
+          const said = lines.map((line) => line.textContent ?? "");
+          expect(said.join(" ")).toBe((drawn.circuit.credit ?? "").replaceAll(" ", " "));
+          for (const line of said) {
+            expect(widthOf(line, CREDIT.size, CREDIT.weight)).toBeLessThanOrEqual(
+              w - 2 * CREDIT.margin,
+            );
+          }
+          for (const line of lines) {
+            expect(Number(line.getAttribute("x"))).toBeCloseTo(x + CREDIT.margin, 3);
+          }
         }
       }
-    }
-  });
+    },
+    EVERY_FILE,
+  );
 
   it("has no credit line, nor room kept for one, when its circuit leaves its credit out", () => {
     const { credit: _, ...uncredited } = english.circuit;

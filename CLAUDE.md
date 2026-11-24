@@ -477,6 +477,13 @@ does not pay for it again.
   below a standing part, never above it: the fading light's capacitor has its − leg wired from row j,
   under its legs in row i. A part with three legs is harder still: the transistor's example found room only in
   the top half, its emitter and its light reached from row a, above its case, and the rails above.
+- **A test that walks every test circuit at every orientation outgrows Bun's 5 s.** Bun gives each
+  test 5 seconds unless it says otherwise, and continuous integration's Mac runs the suite nearly
+  four times slower than a fast machine. The SVG tests that draw and parse every test circuit at all
+  four orientations, sixty files after M16, took a second and a half here and 5.7 s there, and failed
+  a pull request that changed only the roadmap. They have `EVERY_FILE`, 30 seconds, in
+  `src/page/svg.test.ts`: a new test that walks every file takes it too, and each new part's test
+  circuit makes them all slower.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.
