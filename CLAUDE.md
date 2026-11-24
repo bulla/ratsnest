@@ -26,7 +26,8 @@ to a newer ratsnest (M10), and the `circuit` skill publishes a project's pages a
 circuit can do without a Pico, on a supply, and every circuit is in format 2, since 0.2.0 (M12). New
 parts come one at a time, each with the circuit that teaches it, in the roadmap's Backlog: the
 electrolytic capacitor, keeping a light lit on a supply, is the first (M13), and the NPN and PNP
-transistors, a pin switching a light through either, the second and third (M14, M15).
+transistors, a pin switching a light through either, the second and third (M14, M15), with the owner's
+capacitor tester and flasher after them (M16).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -223,11 +224,12 @@ there.
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported, `battery-button.ts`, the first on a
 │                        supply (ADR 0032), `fading-light.ts`, the first with a capacitor
-│                        (ADR 0043), and `transistor-switch.ts` and `high-side-switch.ts`, with an
-│                        NPN and a PNP transistor (ADR 0044, ADR 0045): ratsnest's own, checked like
-│                        anyone's, and in `format-1/` the files the migration to format 2 is tested
-│                        on, one for each example older than format 2, left out of the type check
-│                        (ADR 0014, ADR 0015, ADR 0036)
+│                        (ADR 0043), `transistor-switch.ts` and `high-side-switch.ts`, with an NPN
+│                        and a PNP transistor (ADR 0044, ADR 0045), and `capacitor-tester.ts`, the
+│                        owner's flasher (ADR 0046): ratsnest's own, checked like anyone's, and in
+│                        `format-1/` the files the migration to format 2 is tested on, one for each
+│                        example older than format 2, left out of the type check (ADR 0014,
+│                        ADR 0015, ADR 0036)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
@@ -440,7 +442,8 @@ does not pay for it again.
   and `pico` in `breadboard-svg.ts` are set for the length of those two calls and put back after.
   `tagOf` asked on its own, as a test does, keeps a value tag off a Pico that a circuit with a supply
   does not have (ADR 0032), so the tag it gives can differ from the one drawn. The test of where a
-  tag always was leaves the supply's test circuit out for that reason.
+  tag always was leaves the supply's test circuits out for that reason, and the test that every tag
+  has a place asks a supply's layout through `crowdingProblems`, with no Pico, as the drawing does.
 - **GitHub Actions runs Node for ratsnest, though ratsnest runs none.** A `uses:` step is a
   JavaScript action, run on the runner's own Node.js at the version its `action.yml` names, so the
   0.2.0 release warned about `upload-artifact@v4` and `download-artifact@v4`, which named Node.js 20

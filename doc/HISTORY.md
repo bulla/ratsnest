@@ -272,6 +272,23 @@ read by the model's type, and the drawing, printed `PNP`, is the NPN's.
 - [x] `examples/high-side-switch.ts`, in English and French, and a test circuit with a variant for
       every rule it is refused by
 
+### M16: the capacitor tester and flasher
+
+M16 is done: the owner's circuit, two 2N3904s crosswise on two AA batteries, flashing a red light and
+a yellow one in turn, with the capacitor in one of its two places the one to test (ADR 0046). It
+needed no new part, but a transistor's first use on a supply and a capacitor's second, and a light's
+leader that rises over the parts in its way (ADR 0047).
+
+- [x] The design, worked out alone at the owner's asking (ADR 0046, ADR 0047)
+- [x] A transistor allowed in a circuit with a supply, and its rule there: half of a flasher, its
+      emitter on −, its light on its collector, its base fed from + through 10 kΩ to 100 kΩ, and a
+      capacitor from the other's collector to its base, the two holding it off for 0.1 s to 5 s
+- [x] A capacitor on a supply either between a collector and a base, or keeping a light lit
+- [x] A light's leader lifted over the transistors' cases and the capacitors' cans in its way
+- [x] The flasher's base resistor's range in the page's note
+- [x] `examples/capacitor-tester.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -530,6 +547,14 @@ read by the model's type, and the drawing, printed `PNP`, is the NPN's.
   model's type rather than a second copy. The PNP's emitter is held to 3V3(OUT) alone, since on VBUS
   a 3.3 V pin never turns it off. Its example's notes first wrote `3.3 V` and `5 V`, which the check
   on values refused, as it should.
+- 2026-11-23: M16, the capacitor tester and flasher, worked out alone (ADR 0046, ADR 0047). Its page
+  could not be fetched, so its values were worked out for two AA batteries. Its layout came quickly
+  once every part stood in row f, over the channel and the empty top half, with all the wiring in
+  the rows below: a left base resistor's tag had nowhere to go between its emitter's wire and the
+  printed column number 10, and the left half moved two columns right. The left light's leader ran
+  behind all four standing parts, and now rises over them. The test that asks for every tag on its
+  own assumed a Pico on the supply's layout, as CLAUDE.md warns, and asks a supply's layout through
+  the crowding check now.
 - 2026-11-24: Between milestones, ADR 0048, on the electrolytic capacitor's pull request, whose
   macOS test job failed twice on "load the drawing", as Linux's had on `develop` just after the
   pictures were merged. No machine at hand made a view miss its `load`, in more than a hundred

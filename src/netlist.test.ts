@@ -479,7 +479,7 @@ describe("a circuit with a supply (ADR 0033)", () => {
 
   it("finds a resistor that is no light's", () => {
     expect(problems(add({ kind: "resistor", ohms: 330, from: "g25", to: "g28" }))).toContain(
-      "the 330 Ω resistor from g25 to g28 is not a light's resistor",
+      "the 330 Ω resistor from g25 to g28 is not a light's resistor, or a flasher's base resistor",
     );
   });
 });
@@ -705,6 +705,99 @@ describe("a PNP transistor switching a light on the high side (ADR 0045)", () =>
     ]);
     expect(spare).toContain(
       "the 2N3906 with its emitter in h23 switches no light: its emitter goes on 3V3(OUT), its base through a resistor from a light's pin, and its collector over the light",
+    );
+  });
+});
+
+describe("two transistors flashing two lights, on a supply (ADR 0046)", () => {
+  const { circuit, layout } = FIXTURES["two-lights-flashing"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const LEFT = "the 2N3904 with its emitter in f9";
+  const RIGHT = "the 2N3904 with its emitter in f20";
+  const capacitor = (microfarads: number, next: Part) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "electrolytic" && p.microfarads === microfarads, next);
+
+  it("takes two crosswise, each with its light, its base resistor and its capacitor", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds a light in backwards", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "led" && p.led === "green", {
+        kind: "led",
+        led: "green",
+        anode: "f6",
+        cathode: "f5",
+      }),
+    );
+    expect(turned).toContain(
+      "the green LED is in backwards: its long leg must be towards +, and its short leg towards the 2N3904's collector",
+    );
+  });
+
+  it("finds an emitter off −", () => {
+    const off = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "j9", null),
+    );
+    expect(off).toContain(`${LEFT} has its emitter off −`);
+  });
+
+  it("finds a base resistor out of its range", () => {
+    const low = problems((parts) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "j10", {
+        kind: "resistor",
+        ohms: 1000,
+        from: "j10",
+        to: "bottom+10",
+      }),
+    );
+    expect(low).toContain(`${LEFT}'s base resistor is 1 kΩ, outside 10 kΩ to 100 kΩ`);
+  });
+
+  it("finds a capacitor in backwards, its stripe towards the collector", () => {
+    const turned = problems(
+      capacitor(47, { kind: "electrolytic", microfarads: 47, plus: "f15", minus: "f14" }),
+    );
+    expect(turned).toContain(
+      "the 47 µF capacitor with its + leg in f15 is in backwards: its + leg goes towards the collector, and its − leg, under the stripe, towards the base",
+    );
+  });
+
+  it("finds a transistor with no capacitor to its base", () => {
+    const lone = problems((parts) =>
+      parts.filter(
+        (p) =>
+          !(p.kind === "electrolytic" && p.microfarads === 47) &&
+          !(p.kind === "wire" && (p.from === "g11" || p.from === "h15")),
+      ),
+    );
+    expect(lone).toContain(
+      `${RIGHT} needs one capacitor from the other transistor's collector to its base: two transistors, each with one, make a flasher`,
+    );
+  });
+
+  it("finds a beat too fast to see", () => {
+    const fast = problems(
+      capacitor(4.7, { kind: "electrolytic", microfarads: 1, plus: "f18", minus: "f17" }),
+    );
+    expect(fast).toContain(
+      `the 33 kΩ resistor and the 1 µF capacitor with its + leg in f18 hold ${LEFT} off for about 0.02 s at a time, too fast to see the lights flash: 0.1 s at least`,
+    );
+  });
+
+  it("finds a PNP transistor, which has no use on a supply", () => {
+    const pnp = problems((parts) =>
+      replace(parts, (p) => p.kind === "transistor" && p.emitter === "f20", {
+        kind: "transistor",
+        model: "2N3906",
+        emitter: "f20",
+        base: "f21",
+        collector: "f22",
+      }),
+    );
+    expect(pnp).toContain(
+      "the 2N3906 with its emitter in f20 has no use ratsnest knows on a supply: two NPN transistors make a flasher (ADR 0046)",
     );
   });
 });

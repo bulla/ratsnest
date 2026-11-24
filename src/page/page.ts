@@ -23,7 +23,7 @@ import {
 import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN, widthOf } from "../fonts";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
-import { BASE_OHMS_RANGE, LIGHT_OHMS_RANGE } from "../netlist";
+import { BASE_OHMS_RANGE, FLASHER_BASE_OHMS_RANGE, LIGHT_OHMS_RANGE } from "../netlist";
 import { isStanding, type Orientation } from "../orientation";
 import { DEFAULT_THEME, type Theme } from "../theme";
 import { TRANSISTORS, type TransistorName } from "../transistors";
@@ -405,7 +405,8 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     notes.push(words.transistorPinout(model, TRANSISTORS[model].legs, TRANSISTORS[model].unlike));
   }
   if (models.length > 0) {
-    const [low, high] = BASE_OHMS_RANGE;
+    // A flasher's base resistors set its beat, and are larger than a switch's (ADR 0046).
+    const [low, high] = circuit.supply ? FLASHER_BASE_OHMS_RANGE : BASE_OHMS_RANGE;
     notes.push(words.baseResistor(words.ohms(low), words.ohms(high)));
   }
   for (const part of parts) {

@@ -452,18 +452,6 @@ describe("a circuit with a supply (ADR 0032)", () => {
       }),
     );
     expect(said(ring)[0]).toStartWith("steps[0].parts[4].kind is `ring`, which needs a Pico");
-    const transistor = supplied((data) =>
-      (step(data, 0).parts as unknown[]).push({
-        kind: "transistor",
-        model: "2N3904",
-        emitter: "j25",
-        base: "j26",
-        collector: "j27",
-      }),
-    );
-    expect(said(transistor)[0]).toStartWith(
-      "steps[0].parts[4].kind is `transistor`, which needs a Pico",
-    );
   });
 
   it("says what a working circuit does in `test`", () => {

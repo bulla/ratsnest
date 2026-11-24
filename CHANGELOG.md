@@ -39,6 +39,13 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   VBUS, its base on the light's pin through one resistor of 1 kΩ to 10 kΩ, and the light between its
   collector and ground through one of its own. It is drawn as the 2N3904 is, printed `PNP`. Each
   transistor's note on its legs names a look-alike whose legs differ, the BC547 or the BC557.
+- Two NPN transistors in a circuit with a supply flash two lights in turn: a flasher, and a tester
+  for the capacitor in one of its two places. `rnest check` holds each transistor's emitter on −,
+  its light from + to its collector, its base from + through one resistor of 10 kΩ to 100 kΩ, and
+  one capacitor from the other's collector to its base, + towards the collector, the two holding it
+  off for 0.1 s to 5 s at a time.
+- A light's callout leader rises over the transistors and capacitors in its way to its label, from
+  the top of its lens, rather than running behind them.
 - `rnest check` refuses a capacitance, such as `470 µF`, written in a circuit's own words, as it
   refuses a resistance: the engine writes every value.
 
