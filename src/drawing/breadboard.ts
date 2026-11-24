@@ -335,6 +335,18 @@ export type Part =
       readonly left: Hole;
       readonly middle: Hole;
       readonly right: Hole;
+    }
+  /**
+   * A slide potentiometer, lying across both breadboards (ADR 0053): its value in ohms, its wiper and
+   * the end beside it two holes apart in one row, and its other end in line with that end, 17 rows
+   * further along it, on the other board.
+   */
+  | {
+      readonly kind: "slidePotentiometer";
+      readonly ohms: number;
+      readonly wiper: Hole;
+      readonly end: Hole;
+      readonly otherEnd: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -402,9 +414,70 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.emitter, part.base, part.collector];
     case "slideSwitch":
       return [part.left, part.middle, part.right];
+    case "slidePotentiometer":
+      return [part.wiper, part.end, part.otherEnd];
     case "ring":
       return [part.dataIn, part.power, part.ground, part.dataOut];
   }
+}
+
+/**
+ * How far a slide potentiometer's legs are apart along it, from the end beside its wiper to its other
+ * end (ADR 0053): 17 rows, 43.18 mm, which no one board's rows reach, so it lies across both.
+ */
+export const SLIDE_POTENTIOMETER_LENGTH_MM = 17 * P;
+
+/** How far a slide potentiometer's body reaches past its legs' columns, and short of their rows. */
+export const SLIDE_POTENTIOMETER_BODY_MM = { side: 1.7, inset: 1.3 } as const;
+
+/**
+ * The box a slide potentiometer's body lies over, between its legs: from the end beside its wiper to
+ * its other end, across the columns of its end and its wiper.
+ */
+export function slidePotentiometerBoxOf(part: Extract<Part, { kind: "slidePotentiometer" }>): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  const [wiper, end, other] = [part.wiper, part.end, part.otherEnd].map(holeCentre) as [
+    { x: number; y: number },
+    { x: number; y: number },
+    { x: number; y: number },
+  ];
+  const left = Math.min(wiper.x, end.x) - SLIDE_POTENTIOMETER_BODY_MM.side;
+  const right = Math.max(wiper.x, end.x) + SLIDE_POTENTIOMETER_BODY_MM.side;
+  const top = Math.min(end.y, other.y) + SLIDE_POTENTIOMETER_BODY_MM.inset;
+  const bottom = Math.max(end.y, other.y) - SLIDE_POTENTIOMETER_BODY_MM.inset;
+  return { x: left, y: top, w: right - left, h: bottom - top };
+}
+
+/**
+ * The holes a slide potentiometer's body lies over, which nothing else can go in: every hole of
+ * either board, rails among them, whose middle is under it.
+ */
+export function coveredBySlidePotentiometer(
+  part: Extract<Part, { kind: "slidePotentiometer" }>,
+): Hole[] {
+  const box = slidePotentiometerBoxOf(part);
+  const holes: Hole[] = [];
+  for (const board of ["", SECOND]) {
+    for (let column = 1; column <= COLUMNS; column++) {
+      const names = [
+        ...ROWS.map((row) => `${row}${column}`),
+        ...(RAIL_COLUMNS.includes(column)
+          ? ["top+", "top-", "bottom-", "bottom+"].map((rail) => `${rail}${column}`)
+          : []),
+      ];
+      for (const name of names) {
+        const { x, y } = holeCentre(`${board}${name}`);
+        if (x > box.x && x < box.x + box.w && y > box.y && y < box.y + box.h) {
+          holes.push(`${board}${name}`);
+        }
+      }
+    }
+  }
+  return holes;
 }
 
 /** Whether anything in a layout is on the second board, which the drawing then draws too. */

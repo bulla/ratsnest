@@ -234,6 +234,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   diode: ["kind", "model", "anode", "cathode"],
   ceramic: ["kind", "nanofarads", "from", "to"],
   slideSwitch: ["kind", "left", "middle", "right"],
+  slidePotentiometer: ["kind", "ohms", "wiper", "end", "otherEnd"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
@@ -373,6 +374,17 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
     case "slideSwitch":
       for (const leg of ["left", "middle", "right"]) fields.hole(leg);
       return;
+    case "slidePotentiometer": {
+      const ohms = fields.required("ohms", "a value in ohms");
+      if (
+        ohms !== undefined &&
+        (typeof ohms !== "number" || !(ohms > 0) || !Number.isFinite(ohms))
+      ) {
+        fields.problem("ohms", "is not a value in ohms above 0");
+      }
+      for (const leg of ["wiper", "end", "otherEnd"]) fields.hole(leg);
+      return;
+    }
     case "rgbLed":
     case "ring":
       reference("led", ids.rgbLeds, "RGB lights");

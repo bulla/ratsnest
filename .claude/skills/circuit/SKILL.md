@@ -114,7 +114,7 @@ A circuit with a supply:
 - **may have electrolytic capacitors, each keeping a light lit, two NPN transistors that flash
   two lights, diodes on lights' ways, and slide switches lighting one light or another** (below).
 
-## Capacitors, transistors, diodes and switches (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0052)
+## Capacitors, transistors, diodes, switches and potentiometers (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0053)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -203,6 +203,23 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   words cannot say which way to slide it, since they name no hole: the test says what one way and the
   other do. The switch stands over the two rows above its legs, so reach them from the rows below. On
   a Pico it has no use yet, and is refused.
+
+- **A slide potentiometer**, on a Pico, is read on an analogue pin (ADR 0053):
+
+  ```ts
+  { kind: "slidePotentiometer", ohms: 10000, wiper: "a8", end: "a6", otherEnd: "2:e6" },
+  ```
+
+  Its value is free, from 1 kΩ to 100 kΩ, and 10 kΩ is the usual one. It is too long for one
+  breadboard, so it lies across both: its wiper and the end beside it two holes apart in one row, and
+  its other end in that end's column, 17 rows along, on the other breadboard. Row a of the first
+  board pairs with row e of the second, and row f of the first with row j of the second. Its wiper
+  goes straight to GP26, GP27 or GP28, with nothing else on it, and its ends to 3V3(OUT) and ground,
+  either way round; never its wiper on 3V3(OUT). On the Pico's row c side, `a6` and `a8` are 3V3(OUT)
+  and GP28 already, as `colours-on-a-slider.ts` uses them. Its body lies over the holes between its
+  legs, across their three columns, so put nothing there. Its script reads it with
+  `ADC(Pin(28)).read_u16()`, from 0 to 65535. A step's words may name its wiper's pin. On a supply it
+  has no use yet, and is refused. If the circuit follows a tutorial, say so in its description.
 
 A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
 each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So

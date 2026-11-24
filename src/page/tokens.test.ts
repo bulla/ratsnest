@@ -7,6 +7,7 @@ import {
   CERAMIC_TOKENS,
   DIODE_TOKENS,
   ELECTROLYTIC_TOKENS,
+  SLIDE_POTENTIOMETER_TOKENS,
   SLIDE_SWITCH_TOKENS,
   SUPPLY_TOKENS,
   TRANSISTOR_TOKENS,
@@ -240,6 +241,16 @@ describe.each(SCOPES)("the %s scale", (scope) => {
   it("prints a ceramic capacitor's code legibly on its disc (ADR 0051)", () => {
     expect(
       contrastRatio(colour(CERAMIC_TOKENS.ink, scope), colour(CERAMIC_TOKENS.body, scope)),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("sets a slide potentiometer's knob apart from its body at 3:1, and prints its value legibly on it (ADR 0053)", () => {
+    const body = colour(SLIDE_POTENTIOMETER_TOKENS.body, scope);
+    expect(
+      contrastRatio(colour(SLIDE_POTENTIOMETER_TOKENS.knob, scope), body),
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      contrastRatio(colour(SLIDE_POTENTIOMETER_TOKENS.ink, scope), body),
     ).toBeGreaterThanOrEqual(4.5);
   });
 

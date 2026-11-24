@@ -5,6 +5,7 @@ import { DIODE_VOLTS } from "./diodes";
 import {
   buttonHole,
   coveredBy,
+  coveredBySlidePotentiometer,
   type Hole,
   holeAt,
   holeCentre,
@@ -15,6 +16,7 @@ import {
   parseHole,
   type Row,
   rowsOf,
+  SLIDE_POTENTIOMETER_LENGTH_MM,
   stripOf,
   supplyLeadsOf,
 } from "./drawing/breadboard";
@@ -83,6 +85,13 @@ export const CHARGE_OHMS_RANGE = [1000, 8200] as const;
  * in seconds (ADR 0051). Shorter, and the script's loop cannot time it.
  */
 export const TIMING_SECONDS = 0.0001;
+/**
+ * What a slide potentiometer can be, from 3V3(OUT) to ground (ADR 0053): little current through it,
+ * 3.3 mA at most, and low enough for the Pico's analogue input to read it steadily.
+ */
+export const SLIDE_POTENTIOMETER_OHMS_RANGE = [1000, 100000] as const;
+/** The GPIOs a Pico 2 W can read a voltage on, its analogue inputs (ADR 0053). */
+export const ANALOGUE_GPIOS = [26, 27, 28] as const;
 /**
  * What a light's resistor needs left of a supply's voltage, at the least, once the light and the diodes
  * on its way have taken theirs (ADR 0049): below it, a light glows too dimly to be sure of.
@@ -230,6 +239,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${formatNanofarads(part.nanofarads)} capacitor with its legs in ${part.from} and ${part.to}`;
     case "slideSwitch":
       return `the slide switch with its middle leg in ${part.middle}`;
+    case "slidePotentiometer":
+      return `the ${formatOhms(part.ohms)} slide potentiometer with its wiper in ${part.wiper}`;
   }
 }
 
@@ -286,6 +297,24 @@ function shapeProblems(part: Part, name: string): string[] {
         ? []
         : [
             `${name} needs its legs side by side in one row: ${TRANSISTORS[part.model].legs.join(", ")}, left to right, its flat face towards row j`,
+          ];
+    }
+    case "slidePotentiometer": {
+      // Its wiper two holes from the end beside it, in one row, and its other end 17 rows along from
+      // that end, in its column, on the other board (ADR 0053).
+      const [wiper, end, other] = [part.wiper, part.end, part.otherEnd].map(holeAt);
+      const [e, o] = [holeCentre(part.end), holeCentre(part.otherEnd)];
+      const pair = sameRow(part.wiper, part.end, 2);
+      const along =
+        wiper?.kind === "main" &&
+        end?.kind === "main" &&
+        other?.kind === "main" &&
+        Math.abs(o.x - e.x) < 0.01 &&
+        Math.abs(Math.abs(o.y - e.y) - SLIDE_POTENTIOMETER_LENGTH_MM) < 0.01;
+      return pair && along
+        ? []
+        : [
+            `${name} needs its wiper two holes from the end beside it, in one row, and its other end in that end's column, 17 rows along, on the other breadboard`,
           ];
     }
     case "slideSwitch": {
@@ -401,10 +430,13 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
     problems.push(...shapeProblems(part, name));
   }
-  // Nothing in a hole a button's body covers: it sits on the board over them (scratchpi's ADR 0154).
+  // Nothing in a hole a button's body covers: it sits on the board over them (scratchpi's ADR 0154),
+  // nor under a slide potentiometer's, which lies on them (ADR 0053).
   for (const part of parts) {
-    if (part.kind !== "button") continue;
-    for (const hole of coveredBy(part)) {
+    if (part.kind !== "button" && part.kind !== "slidePotentiometer") continue;
+    for (const hole of part.kind === "button"
+      ? coveredBy(part)
+      : coveredBySlidePotentiometer(part)) {
       const under = taken.get(hole);
       if (under) problems.push(`${under} has a leg in ${hole}, under ${describe(part, circuit)}`);
     }
@@ -698,6 +730,62 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
+  // A slide potentiometer, read by the Pico (ADR 0053): a divider from 3V3(OUT) to ground, one end on
+  // each, and its wiper straight on an analogue pin, with nothing else on it.
+  for (const potentiometer of parts) {
+    if (potentiometer.kind !== "slidePotentiometer") continue;
+    const name = describe(potentiometer, circuit);
+    const ends = [net(potentiometer.end), net(potentiometer.otherEnd)];
+    const wiper = net(potentiometer.wiper);
+    const analogue = ANALOGUE_GPIOS.map((gpio) => `GP${gpio}`);
+    if (wiper === power || wiper === ground) {
+      problems.push(
+        `${name} has its wiper on ${wiper === power ? POWER_LABEL : "ground"}: its wiper, beside one end, goes to an analogue pin, ${analogue.join(", ").replace(/, (?=[^,]*$)/, " or ")}, and its two ends to ${POWER_LABEL} and ground`,
+      );
+      continue;
+    }
+    if (!(ends.includes(power) && ends.includes(ground))) {
+      const on = ends.map((end) =>
+        end === power
+          ? POWER_LABEL
+          : end === ground
+            ? "ground"
+            : (pinsIn(end)[0]?.label ?? "nothing"),
+      );
+      problems.push(
+        `${name} has its ends on ${on.join(" and ")}: one end goes on ${POWER_LABEL} and the other on ground`,
+      );
+      continue;
+    }
+    const pins = pinsIn(wiper).filter((pin) => pin.kind === "gpio");
+    const [pin] = pins;
+    if (!pin || pins.length !== 1) {
+      problems.push(
+        `${name} has its wiper on ${pins.length === 0 ? "no pin" : pins.map((p) => p.label).join(" and ")}: it goes straight to one analogue pin, ${analogue.join(", ").replace(/, (?=[^,]*$)/, " or ")}`,
+      );
+      continue;
+    }
+    if (!analogue.includes(pin.label)) {
+      problems.push(
+        `${name} has its wiper on ${pin.label}, which reads no voltage: an analogue pin, ${analogue.join(", ").replace(/, (?=[^,]*$)/, " or ")}, does`,
+      );
+      continue;
+    }
+    if ((terminals.get(wiper) ?? 0) !== 2) {
+      problems.push(
+        `${name} has something else on its wiper: only its analogue pin, ${pin.label}, goes there`,
+      );
+    }
+    if (
+      potentiometer.ohms < SLIDE_POTENTIOMETER_OHMS_RANGE[0] ||
+      potentiometer.ohms > SLIDE_POTENTIOMETER_OHMS_RANGE[1]
+    ) {
+      problems.push(
+        `${name} is ${formatOhms(potentiometer.ohms)}, outside ${SLIDE_POTENTIOMETER_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+      );
+    }
+  }
+
   for (const transistor of transistors) {
     if (!switching.has(transistor)) {
       problems.push(
@@ -860,11 +948,17 @@ function supplyWiringProblems(
     }
   }
 
-  // A ceramic capacitor's one use is on a Pico, which times it (ADR 0051).
+  // A ceramic capacitor's one use is on a Pico, which times it (ADR 0051), and a slide
+  // potentiometer's too, which reads it (ADR 0053).
   for (const part of parts) {
     if (part.kind === "ceramic") {
       problems.push(
         `${describe(part, circuit)} has no use ratsnest knows on a supply: a ceramic capacitor is timed by a Pico's pins (ADR 0051)`,
+      );
+    }
+    if (part.kind === "slidePotentiometer") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a supply: a slide potentiometer is read by a Pico's analogue pin (ADR 0053)`,
       );
     }
   }

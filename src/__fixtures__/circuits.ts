@@ -17,8 +17,10 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * PNP transistor, on the high side (ADR 0045), the twelfth two lights that two transistors flash in
  * turn, on a supply (ADR 0046), the thirteenth two buttons that each light a light of their own and
  * one they share, two diodes keeping each from the other's light (ADR 0049), the fourteenth a
- * ceramic capacitor that one pin charges through a resistor while another reads it (ADR 0051), and the
- * fifteenth a slide switch that lights one light or the other, on a supply (ADR 0052).
+ * ceramic capacitor that one pin charges through a resistor while another reads it (ADR 0051), the
+ * fifteenth a slide switch that lights one light or the other, on a supply (ADR 0052), and the
+ * sixteenth a slide potentiometer that the Pico reads on an analogue pin, across two breadboards
+ * (ADR 0053).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -36,6 +38,7 @@ export const FIXTURE_IDS = [
   "lights-kept-apart-by-diodes",
   "capacitor-timed-by-two-pins",
   "lights-chosen-by-a-slide-switch",
+  "slide-potentiometer-read-by-an-analogue-pin",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -930,6 +933,37 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
       ],
       test: "Slide the switch one way and the yellow LED lights; slide it the other way and the red one does instead.",
+    },
+  },
+  "slide-potentiometer-read-by-an-analogue-pin": {
+    circuit: {
+      name: "A potentiometer on GP26",
+      description:
+        "A slide potentiometer that the Pico reads on GP26, lying across two breadboards.",
+      credit: CREDIT,
+      leds: [],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "The slide potentiometer, across both breadboards",
+          parts: [
+            { kind: "slidePotentiometer", ohms: 10000, wiper: "a11", end: "a9", otherEnd: "2:e9" },
+          ],
+        },
+        {
+          title: "3V3 to its other end",
+          parts: [
+            { kind: "wire", from: "a6", to: "2:e6", role: "power" },
+            { kind: "wire", from: "2:d6", to: "2:d9", role: "power" },
+          ],
+        },
+      ],
+      script:
+        "from machine import ADC, Pin\nfrom time import sleep\n\npotentiometer = ADC(Pin(26))\n\nwhile True:\n    print(potentiometer.read_u16())\n    sleep(0.2)",
+      test: "The script prints the potentiometer's reading, which follows the knob from one end of its travel to the other.",
     },
   },
 };

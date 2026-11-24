@@ -28,8 +28,9 @@ parts come one at a time, each with the circuit that teaches it, in the roadmap'
 electrolytic capacitor, keeping a light lit on a supply, is the first (M13), and the NPN and PNP
 transistors, a pin switching a light through either, the second and third (M14, M15), with the owner's
 capacitor tester and flasher after them (M16), the diode, two buttons sharing a light, the fourth
-(M17), the ceramic capacitor, two pins timing it, the fifth (M18), and the slide switch, one light
-or the other, the sixth (M19).
+(M17), the ceramic capacitor, two pins timing it, the fifth (M18), the slide switch, one light or
+the other, the sixth (M19), and the slide potentiometer, read across both breadboards, the seventh
+(M20).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -230,8 +231,9 @@ there.
 │                        and a PNP transistor (ADR 0044, ADR 0045), `capacitor-tester.ts`, the
 │                        owner's flasher (ADR 0046), `two-buttons-three-lights.ts`, with two diodes
 │                        (ADR 0049), `capacitor-timer.ts`, with a ceramic capacitor (ADR 0051), and
-│                        `one-light-or-the-other.ts`, with a slide switch (ADR 0052): ratsnest's
-│                        own, checked like anyone's, and in
+│                        `one-light-or-the-other.ts`, with a slide switch (ADR 0052), and
+│                        `colours-on-a-slider.ts`, with a slide potentiometer (ADR 0053):
+│                        ratsnest's own, checked like anyone's, and in
 │                        `format-1/` the files the migration to format 2 is tested on, one for each
 │                        example older than format 2, left out of the type check (ADR 0014,
 │                        ADR 0015, ADR 0036)

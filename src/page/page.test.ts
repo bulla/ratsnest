@@ -309,13 +309,18 @@ describe("an RGB LED's page, on two breadboards (scratchpi's ADR 0226)", () => {
     expect(html).not.toContain("5 V on GP28");
   });
 
-  it("draws the second board, above the first, only on its own page", () => {
+  it("draws the second board, above the first, only on a page that uses it", () => {
     const boards = (html: string) => html.match(/<g class="breadboard"/g)?.length ?? 0;
-    expect(boards(page("rgb-led-and-d-pad"))).toBe(2);
-    expect(page("rgb-led-and-d-pad")).toContain(
-      '<g class="breadboard" transform="translate(0 -53.34)">',
-    );
-    for (const id of FIXTURE_IDS) if (id !== "rgb-led-and-d-pad") expect(boards(page(id))).toBe(1);
+    // The RGB LED's, and a slide potentiometer's, which lies across both (ADR 0053).
+    const two: readonly FixtureId[] = [
+      "rgb-led-and-d-pad",
+      "slide-potentiometer-read-by-an-analogue-pin",
+    ];
+    for (const id of two) {
+      expect(boards(page(id))).toBe(2);
+      expect(page(id)).toContain('<g class="breadboard" transform="translate(0 -53.34)">');
+    }
+    for (const id of FIXTURE_IDS) if (!two.includes(id)) expect(boards(page(id))).toBe(1);
   });
 
   it("says it in French", () => {
@@ -783,6 +788,47 @@ describe("a page with a slide switch (ADR 0052)", () => {
     expect(inLanguage("ru")).toContain(
       "Ползунковый переключатель SPDT: три ножки с шагом 2,54 мм, как отверстия макетной платы.",
     );
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});
+
+describe("a page with a slide potentiometer (ADR 0053)", () => {
+  const { circuit, layout } = FIXTURES["slide-potentiometer-read-by-an-analogue-pin"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says where its wiper goes, and each end, across both breadboards", () => {
+    expect(inLanguage("en")).toContain(
+      "A 10 kΩ slide potentiometer, lying across both breadboards: its wiper in a11 (GP26, pin 31), the end beside it in a9 (AGND, pin 33), and its other end in e9 on the second breadboard.",
+    );
+  });
+
+  it("lists it by its value and its length", () => {
+    expect(inLanguage("en")).toContain(
+      "110 kΩ slide potentiometer, 45 mm long, with two legs at one end and one at the other, and a cap for the knob.",
+    );
+  });
+
+  it("notes which leg is its wiper, and the analogue pins it may go to", () => {
+    expect(page("slide-potentiometer-read-by-an-analogue-pin")).toContain(
+      PAGE_WORDS.en.slidePotentiometerWiper(["GP26", "GP27", "GP28"]),
+    );
+  });
+
+  it("picks the potentiometer out in its test step, since the reader slides it", () => {
+    expect(page("slide-potentiometer-read-by-an-analogue-pin")).toContain(
+      'data-g="step-1 test" data-kind="slidePotentiometer"',
+    );
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain(
+      "son curseur en a11 (GP26, broche 31), l’extrémité à côté en a9 (AGND, broche 33)",
+    );
+    expect(inLanguage("ru")).toContain("Ползунковый потенциометр 10 кОм, длиной 45 мм");
     for (const language of ["fr", "ru"] as const) {
       const html = wiringPage(circuit, layout, FILES, { language });
       expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
