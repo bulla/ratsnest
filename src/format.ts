@@ -228,8 +228,8 @@ export interface DiodePart {
 
 /**
  * A ceramic capacitor, a small disc standing on its two legs, one hole apart in one row (ADR 0051).
- * Its value is in nanofarads, `100` for 100 nF, and the disc prints it as its code in picofarads,
- * `104`. It goes in either way round, as a resistor does.
+ * Its value is in nanofarads, `100` for 100 nF, which the drawing's disc prints, and the page gives the
+ * code a real one is marked with, `104`. It goes in either way round, as a resistor does.
  */
 export interface CeramicPart {
   readonly kind: "ceramic";

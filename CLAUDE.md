@@ -263,7 +263,7 @@ there.
 │   ├── transistors.ts   The transistors ratsnest knows, by model: each one's type and legs (ADR 0039)
 │   ├── diodes.ts        The diodes ratsnest knows, by model: each one's case, and what it is sold as
 │   │                    (ADR 0039, ADR 0049)
-│   ├── ceramics.ts      A ceramic capacitor's value and the code its disc prints (ADR 0051)
+│   ├── ceramics.ts      A ceramic capacitor's value, and the code a real disc prints (ADR 0051)
 │   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, and one
 │   │                    on a supply, and the `circuit` skill's default credits, read from the skill
 │   ├── drawing/         The Pico, the breadboard and a supply's cell, drawn: CC BY-SA 4.0, unlike

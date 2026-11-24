@@ -1,7 +1,8 @@
 /**
  * A ceramic capacitor's value and its code (ADR 0051). Its value is free, as a resistor's is
- * (ADR 0039), and the disc prints it as the real ones do: in picofarads, two figures and then how
- * many zeros follow them, `104` for 100 nF.
+ * (ADR 0039), and the drawing's disc prints it, `100 nF`. A real disc prints its code instead, which
+ * the page gives beside the value: in picofarads, two figures and then how many zeros follow them,
+ * `104` for 100 nF. A value is one the code can say.
  */
 
 /**

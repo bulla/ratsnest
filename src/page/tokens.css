@@ -114,7 +114,7 @@
   --color-diode-glass-band: #1d1d1b;
   --color-diode-black: #26272b;
   --color-diode-black-band: #c4c6c8;
-  /* A ceramic capacitor's mustard disc (ADR 0051), and the code printed on it, which is read, so it
+  /* A ceramic capacitor's mustard disc (ADR 0051), and the value printed on it, which is read, so it
      clears 4.5:1. */
   --color-ceramic: #d9a23a;
   --color-ceramic-ink: #3b2a12;

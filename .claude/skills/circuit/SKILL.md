@@ -177,15 +177,16 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   { kind: "ceramic", nanofarads: 100, from: "e26", to: "e27" },
   ```
 
-  Its value is in nanofarads, two figures at most and 0.01 or more, and the disc prints it as its
-  code, `104` for 100 nF. It goes in either way round, its legs side by side in one row. One leg goes
-  straight to ground; the other straight to a pin that reads it, and through one resistor of 1 kΩ to
-  8.2 kΩ to a second pin, which charges it, with nothing else on that leg. Its nanofarads times that
-  resistor's ohms, over a thousand million, is 0.1 ms at least, or the script cannot time it: 100 nF
-  through 4.7 kΩ is about right. Its script sets the charging pin low, waits, sets it high and counts
-  until the reading pin reads high, as `capacitor-timer.ts` does. A step's words may name those two
-  pins, though no component is on them. The disc stands over the two rows above its legs. On a
-  supply it has no use yet, and is refused.
+  Its value is in nanofarads, two figures at most and 0.01 or more, as the code a real disc prints can
+  say it, `104` for 100 nF: the drawing's disc prints the value, and the page gives the code. It goes
+  in either way round, its legs side by side in one row. One leg goes straight to ground; the other
+  straight to a pin that reads it, and through one resistor of 1 kΩ to 8.2 kΩ to a second pin, which
+  charges it, with nothing else on that leg. Its nanofarads times that resistor's ohms, over a
+  thousand million, is 0.1 ms at least, or the script cannot time it: 100 nF through 4.7 kΩ is about
+  right. Its script sets the charging pin low, waits, sets it high and counts until the reading pin
+  reads high, as `capacitor-timer.ts` does. A step's words may name those two pins, though no
+  component is on them. The disc stands over the two rows above its legs. On a supply it has no use
+  yet, and is refused.
 
 A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
 each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So

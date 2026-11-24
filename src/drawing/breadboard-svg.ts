@@ -1,4 +1,4 @@
-import { ceramicCode } from "../ceramics";
+import { formatNanofarads } from "../ceramics";
 import type { ButtonColour, LedColour } from "../circuit";
 import { DIODES } from "../diodes";
 import { widthOf } from "../fonts";
@@ -154,7 +154,7 @@ export const DIODE_TOKENS = {
   blackBand: "diode-black-band",
 } as const;
 
-/** The colours of a ceramic capacitor's disc, and of the code printed on it (ADR 0051). */
+/** The colours of a ceramic capacitor's disc, and of the value printed on it (ADR 0051). */
 export const CERAMIC_TOKENS = { body: "ceramic", ink: "ceramic-ink" } as const;
 
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
@@ -1530,11 +1530,12 @@ function drawTransistor(part: Extract<Part, { kind: "transistor" }>): string {
 
 /**
  * A ceramic capacitor, standing on its two legs and seen from the front (ADR 0040, ADR 0051): a
- * mustard disc, larger than life so that its code reads, printed with its value as the real ones are,
- * `104`, upright at every quarter turn and the same in every language. Its legs come straight down
- * from it to their holes, one hole apart, so that it stands over the two rows above them.
+ * mustard disc, larger than life so that its value reads, printed with it as a can is, the number over
+ * its unit, `100` over `nF`, upright at every quarter turn and the same in every language. Its legs
+ * come straight down from it to their holes, one hole apart, so that it stands over the two rows above
+ * them. A number wider than `number` at full size, `0.022`, is printed smaller, to cross the disc.
  */
-export const DISC_MM = { radius: 2.3, lift: 1.4 } as const;
+export const DISC_MM = { radius: 2.3, lift: 1.4, number: 3 } as const;
 
 /** The middle of a ceramic capacitor's disc, as it stands over its holes. */
 function discCentreOf(part: Extract<Part, { kind: "ceramic" }>): Point {
@@ -1558,8 +1559,12 @@ function drawCeramic(part: Extract<Part, { kind: "ceramic" }>): string {
   const centre = discCentreOf(part);
   const r = DISC_MM.radius;
   const legs = [part.from, part.to].map(holeCentre);
-  const ink = `font-size="1.55" font-weight="900" fill="${token(CERAMIC_TOKENS.ink)}"`;
-  const code = text(centre.x, centre.y + 0.05, ceramicCode(part.nanofarads) ?? "", ink);
+  const [number = "", unit = ""] = formatNanofarads(part.nanofarads).split(" ");
+  const size = Math.min(1.55, (1.55 * DISC_MM.number) / widthOf(number, 1.55, 900));
+  const ink = `font-weight="900" fill="${token(CERAMIC_TOKENS.ink)}"`;
+  const value =
+    text(centre.x, centre.y - 0.7, number, `font-size="${n(size)}" ${ink}`) +
+    text(centre.x, centre.y + 0.9, unit, `font-size="1.25" ${ink}`);
   return (
     legs
       .map(
@@ -1579,8 +1584,8 @@ function drawCeramic(part: Extract<Part, { kind: "ceramic" }>): string {
       r,
       `fill="${token(CERAMIC_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`,
     ) +
-    `<ellipse cx="${n(centre.x - 0.9)}" cy="${n(centre.y - 1.1)}" rx="0.75" ry="0.45" fill="${token("shine")}" fill-opacity="0.35"/>` +
-    (turn === 0 ? code : `<g${upright(centre.x, centre.y)}>${code}</g>`)
+    `<ellipse cx="${n(centre.x - 1.2)}" cy="${n(centre.y - 1.45)}" rx="0.5" ry="0.3" fill="${token("shine")}" fill-opacity="0.35"/>` +
+    (turn === 0 ? value : `<g${upright(centre.x, centre.y)}>${value}</g>`)
   );
 }
 

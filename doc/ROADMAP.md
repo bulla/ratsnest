@@ -69,7 +69,7 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 
 - **The new parts' drawings** (ADR 0043 to ADR 0047, ADR 0049 to ADR 0051): the electrolytic
   capacitor's, the transistors', the flasher's lifted leader, the diode's two cases, the leaders
-  lifted over lights and buttons, and the ceramic capacitor's disc and its code, mocked up and chosen while the owner had the work go on alone, so the owner signs
+  lifted over lights and buttons, and the ceramic capacitor's disc, mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
   reader.
@@ -175,22 +175,22 @@ One line per milestone. Its checklist and the paragraph that summed it up are in
 [`HISTORY.md`](HISTORY.md), under the same name. Work that landed between milestones is only in that
 file's Log.
 
-| Milestone | What it gave the project                                                                   | Records                                 |
-| --------- | ------------------------------------------------------------------------------------------ | --------------------------------------- |
-| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept              | 0001–0020                               |
-| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding     | 0009, 0017, 0018, 0020, 0021            |
-| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app                 | 0001, 0004, 0007, 0018                  |
-| M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples       | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
-| M4        | The font: Nunito carried by every page, every drawn word measured in it                    | 0011, 0012                              |
-| M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any         | 0003, 0007, 0024                        |
-| M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated            | 0015, 0016                              |
-| M9        | Releases: the version computed, the first release, 0.1.1, published on GitHub              | 0017, 0020, 0021, 0030                  |
-| M7        | The executable and circuits projects: five executables, `init`, `install.sh`, a project    | 0014, 0016, 0018, 0019, 0025            |
-| M8        | Publishing: a project's pages as Artifacts, kept in `ARTIFACTS.md` and found again         | 0013, 0014, 0019                        |
-| M12       | Circuits without a Pico: a supply on the rails, its wiring check, format 2, and 0.2.0      | 0032–0037                               |
-| M13       | The electrolytic capacitor: a light that fades out, the first new part with its circuit    | 0038–0041, 0043                         |
-| M14       | The NPN transistor: a pin switches a light through a 2N3904                                | 0044                                    |
-| M15       | The PNP transistor: a pin switches a light on the high side, through a 2N3906              | 0045                                    |
-| M16       | The capacitor tester and flasher: two transistors crosswise, on two AA batteries           | 0046, 0047                              |
-| M17       | The diode: two buttons share a light, two diodes keeping each from the other's             | 0049, 0050                              |
-| M18       | The ceramic capacitor: two pins time it through a resistor, the disc printed with its code | 0051                                    |
+| Milestone | What it gave the project                                                                    | Records                                 |
+| --------- | ------------------------------------------------------------------------------------------- | --------------------------------------- |
+| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept               | 0001–0020                               |
+| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding      | 0009, 0017, 0018, 0020, 0021            |
+| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app                  | 0001, 0004, 0007, 0018                  |
+| M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples        | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
+| M4        | The font: Nunito carried by every page, every drawn word measured in it                     | 0011, 0012                              |
+| M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any          | 0003, 0007, 0024                        |
+| M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated             | 0015, 0016                              |
+| M9        | Releases: the version computed, the first release, 0.1.1, published on GitHub               | 0017, 0020, 0021, 0030                  |
+| M7        | The executable and circuits projects: five executables, `init`, `install.sh`, a project     | 0014, 0016, 0018, 0019, 0025            |
+| M8        | Publishing: a project's pages as Artifacts, kept in `ARTIFACTS.md` and found again          | 0013, 0014, 0019                        |
+| M12       | Circuits without a Pico: a supply on the rails, its wiring check, format 2, and 0.2.0       | 0032–0037                               |
+| M13       | The electrolytic capacitor: a light that fades out, the first new part with its circuit     | 0038–0041, 0043                         |
+| M14       | The NPN transistor: a pin switches a light through a 2N3904                                 | 0044                                    |
+| M15       | The PNP transistor: a pin switches a light on the high side, through a 2N3906               | 0045                                    |
+| M16       | The capacitor tester and flasher: two transistors crosswise, on two AA batteries            | 0046, 0047                              |
+| M17       | The diode: two buttons share a light, two diodes keeping each from the other's              | 0049, 0050                              |
+| M18       | The ceramic capacitor: two pins time it through a resistor, the disc printed with its value | 0051                                    |

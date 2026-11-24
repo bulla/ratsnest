@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { FIXTURE_IDS, FIXTURES } from "../__fixtures__/circuits";
+import { widthOf } from "../fonts";
 import {
   BREADBOARD_HEIGHT_MM,
   CHANNEL_Y_MM,
@@ -25,6 +26,7 @@ import {
   type Breadboard,
   clearTagOf,
   crowdingProblems,
+  DISC_MM,
   drawBreadboard,
   formatOhms,
   labelEndOf,
@@ -577,12 +579,32 @@ describe("a ceramic capacitor, standing as a disc (ADR 0040, ADR 0051)", () => {
       description: "A capacitor.",
     });
 
-  it("prints its value as the real one's code, the same in every language, upright at every quarter turn", () => {
-    expect(drawn(0)).toContain(">473</text>");
+  it("prints its value, its number over its unit as a can's, the same in every language, upright at every quarter turn", () => {
+    expect(drawn(0)).toContain(">47</text>");
+    expect(drawn(0)).toContain(">nF</text>");
+    expect(drawn(0)).not.toContain(">473<");
     for (const turn of [90, 180, 270] as const) {
       expect(drawn(turn)).toContain(`rotate(${-turn} `);
-      expect(drawn(turn)).toContain(">473</text></g>");
+      expect(drawn(turn)).toContain(">nF</text></g>");
     }
+  });
+
+  it("prints a long number smaller, to cross the disc", () => {
+    const sizeOf = (nanofarads: number): number => {
+      const svg = drawBreadboard({
+        orientation: 0,
+        parts: [{ part: { ...disc, nanofarads } as Part, group: "step-1" }],
+        tags: [],
+        ledColour: () => "red",
+        buttonColour: () => "red",
+        title: "A capacitor",
+        description: "A capacitor.",
+      });
+      return Number(svg.match(new RegExp(`font-size="([\\d.]+)"[^>]*>${nanofarads}<`))?.[1]);
+    };
+    expect(sizeOf(100)).toBe(1.55);
+    expect(sizeOf(0.022)).toBeLessThan(1.55);
+    expect(widthOf("0.022", sizeOf(0.022), 900)).toBeLessThanOrEqual(DISC_MM.number + 0.001);
   });
 
   it("stands over the rows above its legs, which a value tag keeps off", () => {

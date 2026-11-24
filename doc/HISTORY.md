@@ -318,11 +318,11 @@ buttons in its way, each to a lane of its own (ADR 0050).
 ### M18: the ceramic capacitor
 
 M18 is done: on a Pico, GP16 charges a 100 nF ceramic capacitor through 4.7 kΩ while GP17 reads it,
-and the script prints how long it takes to charge (ADR 0051). The disc prints its code, `104`, as the
-real one does, and the page says its value beside it and how the code reads.
+and the script prints how long it takes to charge (ADR 0051). The disc prints its value, `100` over
+`nF`, as the can does, and the page gives the code the real one prints, `104`, and how it reads.
 
-- [x] The design, worked out alone at the owner's asking (ADR 0051), the disc's print settled as its
-      code
+- [x] The design, worked out alone at the owner's asking (ADR 0051), the disc's print chosen by the
+      owner on its pull request: its value, not its code
 - [x] The format: `{ kind: "ceramic", nanofarads, from, to }`, read and checked field by field, its
       value one its code can print, and refused in a circuit with a supply
 - [x] The wiring check's rule: one leg on ground; the other on the pin that reads it and on one
@@ -330,9 +330,9 @@ real one does, and the page says its value beside it and how the code reads.
       refused
 - [x] A step's words free to name a pin the layout wires a part to, and the test step picking the
       capacitor out
-- [x] The drawing: a mustard disc printed with its code, upright at every quarter turn, its colours
-      in `tokens.css` and its code held to 4.5:1; a value tag keeps off it, and a light's leader rises
-      over it
+- [x] The drawing: a mustard disc printed with its value, the number over its unit, upright at every
+      quarter turn, its colours in `tokens.css` and its value held to 4.5:1; a value tag keeps off it,
+      and a light's leader rises over it
 - [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
       and the notes on the code and on the resistor's range
 - [x] `examples/capacitor-timer.ts`, in English and French, and a test circuit with a variant for
@@ -641,8 +641,9 @@ real one does, and the page says its value beside it and how the code reads.
   several colourings, and Fritzing's was not set beside it, since this session could not fetch
   Fritzing's parts.
 - 2026-11-24: M18, the ceramic capacitor, worked out alone (ADR 0051), stacked on M17. The disc's
-  print was the roadmap's open question, and the code won, `104`, since it is what a reader finds in
-  their box; the page gives the value in its own language beside it. Erratum E9 set the charging
+  print was the roadmap's open question. The code won at first, `104`, since it is what a reader finds
+  in their box; on the pull request the owner chose the value, `100 nF`, as a resistor's and a can's
+  are written, and the page kept the code beside it. Erratum E9 set the charging
   resistor's top at 8.2 kΩ, as it set a pull-down's, though tutorials take 10 kΩ. The example's words
   named GP16 and GP17, and the check refused them, since it knew only the pins a component is on; it
   now knows those the layout wires a part to as well. Its test step picked out nothing, the circuit

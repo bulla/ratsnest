@@ -62,9 +62,9 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   charges it through a resistor while another reads it, and the script times it. `rnest check` holds
   one leg on ground, the other on the pin that reads it and on one resistor of 1 kΩ to 8.2 kΩ from a
   second pin, and the two slow enough to time, 0.1 ms at least; its value must be one its code can
-  print. The page draws it as a mustard disc printed with its code, `104` for 100 nF, says where its
-  legs go and the code it is marked with, lists it, and notes how the code reads and what its
-  resistor can be. On a supply it is refused.
+  print. The page draws it as a mustard disc printed with its value, `100` over `nF`, says where its
+  legs go and the code the real one is marked with, `104` for 100 nF, lists it, and notes how the
+  code reads and what its resistor can be. On a supply it is refused.
 - A step's words may name a pin the layout wires a part to, not only one a light, a button or a
   buzzer is on.
 

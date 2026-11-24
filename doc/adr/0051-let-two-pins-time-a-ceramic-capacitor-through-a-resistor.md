@@ -10,7 +10,8 @@ how long it takes. ADR 0039 left a capacitor's value free, as a resistor's is, A
 tells a part apart on its body, and ADR 0041 placed it as a resistor is. The roadmap left one
 question to this record, what the disc prints: `104`, as the real one does, or `100 nF`. This record
 settles that and what is left: its fields, its rule and its drawing. As with the parts before it, the
-owner had the work go on alone, and signs the drawing off on its pull request.
+owner had the work go on alone, and signs the drawing off on its pull request; there, the owner chose
+what the disc prints.
 
 Two things bear on the rule. A ceramic capacitor is named by no component, so the pins it is on are
 named by nothing but the wires and the resistor that reach them, and a step's words could name only
@@ -25,11 +26,13 @@ either way round, its legs in one row, one hole apart. Its value is in nanofarad
 picofarads its code counts and the microfarads a bag may say, and free (ADR 0039), as long as its
 code can print it: two significant figures, and 10 pF at least, `100`, `4.7` or `0.022`.
 
-**The disc prints its code, as the real one does**: in picofarads, two figures and how many zeros
-follow them, `104` for 100 nF, the same in every language (ADR 0040). The page says the value in its
-own language and the code beside it, "A 100 nF ceramic capacitor, marked 104, either way round: one
-leg in e26 and the other in e27.", lists it "100 nF ceramic capacitor, marked 104.", and a note says
-how the code reads: "104 is 100 nF".
+**The disc prints its value, as the can does** (ADR 0043): its number over its unit, `100` over `nF`,
+the same in every language (ADR 0040), as a resistor's tag says `4.7 kΩ` and a can `470 µF`. A number
+too long to cross the disc at full size, `0.022`, is printed smaller. The real disc prints a code
+instead, in picofarads, two figures and how many zeros follow them, `104` for 100 nF, so the page
+gives the code beside the value, as its parts list gives a resistor's bands: "A 100 nF ceramic
+capacitor, marked 104, either way round: one leg in e26 and the other in e27.", lists it "100 nF
+ceramic capacitor, marked 104.", and a note says how the code reads: "104 is 100 nF".
 
 **It has one use, on a Pico: being timed by two pins.** The wiring check holds every ceramic
 capacitor on a Pico to it:
@@ -51,23 +54,25 @@ ceramic capacitor's pins are named by nothing else. And the test step picks the 
 does the components a reader watches, since the script times it.
 
 **It is drawn standing, seen from the front**: a mustard disc 4.6 mm across, larger than life so
-that its code reads, standing 1.4 mm above the board on its two legs, so that it stands over the two
-rows above them. Its code is printed dark on it, upright at every quarter turn. A value tag keeps off
+that its value reads, standing 1.4 mm above the board on its two legs, so that it stands over the two
+rows above them. Its value is printed dark on it, upright at every quarter turn. A value tag keeps off
 it, and a light's leader rises over it (ADR 0050). Its two colours are tokens, the same in both
-themes, the code held to 4.5:1.
+themes, the value held to 4.5:1.
 
 The example is `examples/capacitor-timer.ts`: GP16 charges a 100 nF capacitor through 4.7 kΩ while
 GP17 reads it, all of it in the top half beside the Pico, and the script prints the time five times.
 
 ## Considered options
 
-- **The code on the disc, `104`**: chosen. It is what the part in the reader's hand says, and the
-  page says the value beside it and how to read it, so the reader learns the code rather than being
-  spared it.
-- **The value on the disc, `100 nF`**: rejected. No 100 nF disc says so, and a reader looking for
-  `100 nF` in a box of discs finds none.
-- **Both, the code on the disc and the value on a tag**: rejected. The tag is one more to place, and
-  the page's sentence and its parts list already give the value.
+- **The value on the disc, `100` over `nF`**: chosen, by the owner, on this record's pull request.
+  It is how the drawing writes every other value, a resistor's `4.7 kΩ` though its body carries
+  bands, and a can's `470 µF`; and the page gives the code beside it, by which the reader finds the
+  part in their box.
+- **The code on the disc, `104`, as the real one prints**: rejected by the owner, after this record
+  first chose it. It is what the part in the reader's hand says, but it would make the disc the one
+  part on the drawing whose value a reader decodes.
+- **Both, the value on the disc and the code on a tag**: rejected. The tag is one more to place, and
+  the page's sentence and its parts list already give the code.
 - **A value in picofarads, or in microfarads**: rejected. Picofarads write 100 nF as `100000`, and
   microfarads as `0.1`; nanofarads write the values a kit's discs have as plain numbers.
 - **One pin, charging through a resistor from 3V3 and emptying the capacitor itself**: rejected. A
@@ -84,7 +89,10 @@ GP17 reads it, all of it in the top half beside the Pico, and the script prints 
 
 ## Consequences
 
-- **A reader learns a capacitor's code**, and finds the part in their box by it.
+- **The drawing's disc says `100 nF` where the reader's says `104`.** The page's sentence, its parts
+  list and its note give the code; a drawing used alone, as an SVG or a picture put elsewhere
+  (ADR 0031, ADR 0042), gives the value and not the code.
+- **A long value prints smaller**: `0.022` crosses the disc at about three quarters of `100`'s size.
 - **The time the script prints is near the time constant, not equal to it**: it depends on where the
   RP2350's input reads high, and E9's leak bends the curve. The page says what the script does, not
   what it should print.

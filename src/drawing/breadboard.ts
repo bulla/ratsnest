@@ -318,7 +318,7 @@ export type Part =
     }
   /**
    * A ceramic capacitor, a disc standing on its legs, one hole apart in one row (ADR 0051): its value
-   * in nanofarads, printed on it as its code. It goes in either way round.
+   * in nanofarads, printed on it. It goes in either way round.
    */
   | {
       readonly kind: "ceramic";
