@@ -215,7 +215,8 @@ describe("ratsnest generate (ADR 0023)", () => {
       const picture = readFileSync(join(folder, "pages", `lights.0.dark.en.${format}`));
       expect(picture.subarray(0, 4).toString("latin1")).toBe(format === "png" ? "\x89PNG" : "RIFF");
     }
-  }, 30_000);
+    // Two pictures, each with time to be begun again once if the browser gets stuck.
+  }, 90_000);
 
   // macOS draws with its own WebKit, and never looks for another browser.
   it.skipIf(process.platform === "darwin")(

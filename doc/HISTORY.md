@@ -555,3 +555,11 @@ leader that rises over the parts in its way (ADR 0047).
   behind all four standing parts, and now rises over them. The test that asks for every tag on its
   own assumed a Pico on the supply's layout, as CLAUDE.md warns, and asks a supply's layout through
   the crowding check now.
+- 2026-11-24: Between milestones, ADR 0048, on the electrolytic capacitor's pull request, whose
+  macOS test job failed twice on "load the drawing", as Linux's had on `develop` just after the
+  pictures were merged. No machine at hand made a view miss its `load`, in more than a hundred
+  pictures, and no log could be read without signing in, so the jobs' times told it: each failure
+  cost one 15 s wait, and the pictures after it were drawn by the same browser. A stuck picture is
+  now begun again on a fresh view, three times in all, which a view made to hang by hand showed
+  drawing at the second. ADR 0048 took the number after the stack's last, since 0044 to 0047 were
+  decided first and are already on the pull requests above this one.

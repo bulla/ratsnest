@@ -18,25 +18,35 @@ export const PICTURE_PX_PER_MM = 12;
 
 /**
  * No picture was drawn: no browser could be started, and what to install, or one started and did
- * not finish a step in time.
+ * not finish a step in time, however many times it was asked.
  */
 export class NoPicture extends Error {}
 
+/** A step the browser did not finish in time, which a fresh view may: worth another try. */
+export class Stuck extends NoPicture {}
+
 /**
  * How long the browser has for each step. Each takes a second or two, and one that has taken this
- * long is stuck, as macOS's WebKit was once in continuous integration: `generate` says which step
- * rather than wait for ever.
+ * long is stuck, as macOS's WebKit and Linux's Chrome both were now and then in continuous
+ * integration: `generate` says which step rather than wait for ever.
  */
 export const STEP_MS = 15_000;
 
-/** A step in the browser, given `ms` to finish before the picture is given up. */
+/**
+ * How many times a picture is begun again, on a view of its own, before it is given up. A view
+ * sometimes waits for ever for its drawing's `load`, though the drawing is a `data:` address with
+ * nothing to fetch, while the next view, in the same browser, draws at once (ADR 0048).
+ */
+export const TRIES = 3;
+
+/** A step in the browser, given `ms` to finish before it is taken as stuck. */
 export async function within<T>(step: string, work: Promise<T>, ms = STEP_MS): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<never>((_, reject) => {
     timer = setTimeout(
       () =>
         reject(
-          new NoPicture(
+          new Stuck(
             `a PNG or a WebP is drawn by a browser, which did not ${step} within ${ms / 1000} s`,
           ),
         ),
@@ -48,6 +58,23 @@ export async function within<T>(step: string, work: Promise<T>, ms = STEP_MS): P
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * `attempt` run until it does not get stuck, `times` times at most. Any other failure, such as no
+ * browser at all, is not tried again: it would fail the same way.
+ */
+export async function tried<T>(attempt: () => Promise<T>, times = TRIES): Promise<T> {
+  let stuck: Stuck | undefined;
+  for (let at = 0; at < times; at++) {
+    try {
+      return await attempt();
+    } catch (error) {
+      if (!(error instanceof Stuck)) throw error;
+      stuck = error;
+    }
+  }
+  throw new NoPicture(`${stuck?.message}, in ${times} tries`);
 }
 
 /**
@@ -91,8 +118,15 @@ export async function sized(png: Uint8Array, width: number, height: number): Pro
   );
 }
 
-/** The drawing's SVG, drawn as a picture of the kind asked for. */
-export async function pictureOf(svg: string, kind: Picture): Promise<Uint8Array> {
+/**
+ * The drawing's SVG, drawn as a picture of the kind asked for, begun again on a fresh view when the
+ * browser gets stuck.
+ */
+export const pictureOf = (svg: string, kind: Picture): Promise<Uint8Array> =>
+  tried(() => drawnOnce(svg, kind));
+
+/** The drawing's SVG drawn once, on a view of its own, closed whatever happens. */
+async function drawnOnce(svg: string, kind: Picture): Promise<Uint8Array> {
   let view: Bun.WebView | undefined;
   try {
     view = new Bun.WebView({ backend: BACKEND });

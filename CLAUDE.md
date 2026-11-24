@@ -444,6 +444,30 @@ does not pay for it again.
   does not have (ADR 0032), so the tag it gives can differ from the one drawn. The test of where a
   tag always was leaves the supply's test circuits out for that reason, and the test that every tag
   has a place asks a supply's layout through `crowdingProblems`, with no Pico, as the drawing does.
+- **GitHub Actions runs Node for ratsnest, though ratsnest runs none.** A `uses:` step is a
+  JavaScript action, run on the runner's own Node.js at the version its `action.yml` names, so the
+  0.2.0 release warned about `upload-artifact@v4` and `download-artifact@v4`, which named Node.js 20
+  after GitHub deprecated it. A warning that names an action is the action's: raise it to a major
+  whose `action.yml` names a current Node. `release.yml` runs only on a tag, so a change to it is
+  first run by the next release.
+- **A browser draws the SVG it is given as the document it is given.** Put inside an HTML page, the
+  SVG's `:root` became the page's, its `data-theme` set nothing, and a dark drawing came out in light
+  colours; and a `data:` address with no `charset=utf-8` turned every `Ω` into two other letters.
+  `pictureOf` in `src/page/picture.ts` loads the SVG alone, as UTF-8, and its test reads the corner
+  pixels against the theme's surface. Chrome's viewport also came out about 90 px shorter than the
+  `WebView` asked for, so the picture was cut and had scrollbars: it is sized with `view.resize`
+  after the SVG loads, and a picture of any other size is refused. Bun's Chrome would also connect to
+  a person's own browser if it found one with remote debugging on, which `url: false` rules out.
+  macOS's WebKit once hung in continuous integration, on the CLI test that draws a PNG then a WebP,
+  while the same pictures passed in their own file and the compiled check: the job ran until the
+  test's timeout said nothing of where. Every browser step is now wrapped in `within`, which gives
+  it 15 seconds and fails naming the step, and the next hangs said which: "load the drawing", now
+  and then, on macOS's WebKit and on Linux's Chrome alike, on `develop` as on pull requests, and
+  never on a machine of ours. `navigate` resolves on the page's `load` event alone, and a view
+  sometimes never has one, while the next view in the same browser draws at once, as the jobs'
+  times showed: one 15 s wait, then every other picture. So `pictureOf` begins a stuck picture again
+  on a fresh view, `TRIES` times in all, through `tried` (ADR 0048); the tests' timeouts leave room
+  for it.
 - **The check on values in a circuit's words knows its units by name.** `VALUE` in `src/fields.ts`
   is a list of units, and it knew no capacitance until the first capacitor's example wrote `470 µF`
   in its description and passed. A part whose value the engine writes brings its unit to that list,

@@ -17,8 +17,9 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   the SVG of `--format svg`, its credit and background with it, drawn at 12 px to the millimetre,
   twice the SVG's size, and a WebP lossless. A browser draws it: macOS's own, and on Linux and
   Windows a Chrome, Chromium, Edge or Brave, which must be installed, or named by `BUN_CHROME_PATH`.
-  With none, or one that does not finish a step in 15 seconds, `generate` says so and makes nothing. The `circuit` skill makes one when asked, and
-  never publishes it.
+  A picture the browser does not finish a step of in 15 seconds is begun again, on a fresh page,
+  three times in all. With no browser, or one stuck all three times, `generate` says so and makes
+  nothing. The `circuit` skill makes one when asked, and never publishes it.
 - An electrolytic capacitor, `{ kind: "electrolytic", microfarads, plus, minus }`, in a circuit with a
   supply: it keeps a light lit once its button is let go, and the light fades out. `rnest check`
   holds it the right way round, its − leg on −, its + leg between a button and a light's resistor,

@@ -118,3 +118,4 @@ Each new record adds a row here.
 | [0045](0045-let-a-pin-switch-a-light-on-the-high-side-through-a-pnp-transistor.md)                               | Let a pin switch a light on the high side, through a PNP transistor                                |
 | [0046](0046-let-two-npn-transistors-flash-two-lights-on-a-supply-and-test-a-capacitor.md)                        | Let two NPN transistors flash two lights on a supply, and test a capacitor                         |
 | [0047](0047-lift-a-lights-leader-over-the-transistors-and-capacitors-in-its-way.md)                              | Lift a light's leader over the transistors and capacitors in its way                               |
+| [0048](0048-begin-a-stuck-picture-again-on-a-fresh-view-three-times-in-all.md)                                   | Begin a stuck picture again on a fresh view, three times in all                                    |
