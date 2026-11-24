@@ -342,7 +342,7 @@ export type Part =
    * further along it, on the other board.
    */
   | {
-      readonly kind: "slider";
+      readonly kind: "slidePotentiometer";
       readonly ohms: number;
       readonly wiper: Hole;
       readonly end: Hole;
@@ -426,7 +426,7 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.emitter, part.base, part.collector];
     case "slideSwitch":
       return [part.left, part.middle, part.right];
-    case "slider":
+    case "slidePotentiometer":
       return [part.wiper, part.end, part.otherEnd];
     case "dipSwitch":
       return dipLegsOf(part).flat();
@@ -457,16 +457,16 @@ export function dipLegsOf(part: {
  * How far a slide potentiometer's legs are apart along it, from the end beside its wiper to its other
  * end (ADR 0053): 17 rows, 43.18 mm, which no one board's rows reach, so it lies across both.
  */
-export const SLIDER_LENGTH_MM = 17 * P;
+export const SLIDE_POTENTIOMETER_LENGTH_MM = 17 * P;
 
 /** How far a slide potentiometer's body reaches past its legs' columns, and short of their rows. */
-export const SLIDER_BODY_MM = { side: 1.7, inset: 1.3 } as const;
+export const SLIDE_POTENTIOMETER_BODY_MM = { side: 1.7, inset: 1.3 } as const;
 
 /**
  * The box a slide potentiometer's body lies over, between its legs: from the end beside its wiper to
  * its other end, across the columns of its end and its wiper.
  */
-export function sliderBoxOf(part: Extract<Part, { kind: "slider" }>): {
+export function slidePotentiometerBoxOf(part: Extract<Part, { kind: "slidePotentiometer" }>): {
   x: number;
   y: number;
   w: number;
@@ -477,10 +477,10 @@ export function sliderBoxOf(part: Extract<Part, { kind: "slider" }>): {
     { x: number; y: number },
     { x: number; y: number },
   ];
-  const left = Math.min(wiper.x, end.x) - SLIDER_BODY_MM.side;
-  const right = Math.max(wiper.x, end.x) + SLIDER_BODY_MM.side;
-  const top = Math.min(end.y, other.y) + SLIDER_BODY_MM.inset;
-  const bottom = Math.max(end.y, other.y) - SLIDER_BODY_MM.inset;
+  const left = Math.min(wiper.x, end.x) - SLIDE_POTENTIOMETER_BODY_MM.side;
+  const right = Math.max(wiper.x, end.x) + SLIDE_POTENTIOMETER_BODY_MM.side;
+  const top = Math.min(end.y, other.y) + SLIDE_POTENTIOMETER_BODY_MM.inset;
+  const bottom = Math.max(end.y, other.y) - SLIDE_POTENTIOMETER_BODY_MM.inset;
   return { x: left, y: top, w: right - left, h: bottom - top };
 }
 
@@ -488,8 +488,10 @@ export function sliderBoxOf(part: Extract<Part, { kind: "slider" }>): {
  * The holes a slide potentiometer's body lies over, which nothing else can go in: every hole of
  * either board, rails among them, whose middle is under it.
  */
-export function coveredBySlider(part: Extract<Part, { kind: "slider" }>): Hole[] {
-  const box = sliderBoxOf(part);
+export function coveredBySlidePotentiometer(
+  part: Extract<Part, { kind: "slidePotentiometer" }>,
+): Hole[] {
+  const box = slidePotentiometerBoxOf(part);
   const holes: Hole[] = [];
   for (const board of ["", SECOND]) {
     for (let column = 1; column <= COLUMNS; column++) {

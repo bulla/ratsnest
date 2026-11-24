@@ -32,8 +32,8 @@ import {
   rowsOf,
   rowY,
   SECOND_BOARD_Y_MM,
-  SLIDER_BODY_MM,
-  sliderBoxOf,
+  SLIDE_POTENTIOMETER_BODY_MM,
+  slidePotentiometerBoxOf,
   supplyLeadsOf,
   usesSecondBoard,
   type WireRole,
@@ -171,11 +171,11 @@ export const SLIDE_SWITCH_TOKENS = {
  * The colours of a slide potentiometer's metal body, its slot, the cap on its knob, and the value
  * printed on it (ADR 0053).
  */
-export const SLIDER_TOKENS = {
-  body: "slider",
-  slot: "slider-slot",
-  knob: "slider-knob",
-  ink: "slider-ink",
+export const SLIDE_POTENTIOMETER_TOKENS = {
+  body: "slide-potentiometer",
+  slot: "slide-potentiometer-slot",
+  knob: "slide-potentiometer-knob",
+  ink: "slide-potentiometer-ink",
 } as const;
 
 /**
@@ -197,7 +197,7 @@ export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(DIODE_TOKENS),
   ...Object.values(CERAMIC_TOKENS),
   ...Object.values(SLIDE_SWITCH_TOKENS),
-  ...Object.values(SLIDER_TOKENS),
+  ...Object.values(SLIDE_POTENTIOMETER_TOKENS),
   ...Object.values(DIP_SWITCH_TOKENS),
   "breadboard",
   "breadboard-edge",
@@ -1036,7 +1036,8 @@ function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: num
       if (other.kind === "transistor" && overlap(box, to92BoxOf(other))) return false;
       if (other.kind === "ceramic" && overlap(box, discBoxOf(other))) return false;
       if (other.kind === "slideSwitch" && overlap(box, slideBoxOf(other))) return false;
-      if (other.kind === "slider" && overlap(box, sliderBoxOf(other))) return false;
+      if (other.kind === "slidePotentiometer" && overlap(box, slidePotentiometerBoxOf(other)))
+        return false;
       if (other.kind === "dipSwitch" && overlap(box, dipBoxOf(other))) return false;
       for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
     }
@@ -1730,10 +1731,10 @@ function drawSlideSwitch(part: Extract<Part, { kind: "slideSwitch" }>): string {
  * tag writes it, `10 kΩ`, between the knob and its other end, upright at every quarter turn and the
  * same in every language.
  */
-export const SLIDER_MM = { slot: 1, knob: 5, overhang: 0.5, print: 1.6 } as const;
+export const SLIDE_POTENTIOMETER_MM = { slot: 1, knob: 5, overhang: 0.5, print: 1.6 } as const;
 
-function drawSlider(part: Extract<Part, { kind: "slider" }>): string {
-  const box = sliderBoxOf(part);
+function drawSlidePotentiometer(part: Extract<Part, { kind: "slidePotentiometer" }>): string {
+  const box = slidePotentiometerBoxOf(part);
   const end = holeCentre(part.end);
   const other = holeCentre(part.otherEnd);
   const edge = `stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`;
@@ -1749,8 +1750,8 @@ function drawSlider(part: Extract<Part, { kind: "slider" }>): string {
     })
     .join("");
   const mid = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
-  const slotEnds = SLIDER_BODY_MM.inset + 1.8;
-  const knob = { w: box.w + 2 * SLIDER_MM.overhang, h: SLIDER_MM.knob };
+  const slotEnds = SLIDE_POTENTIOMETER_BODY_MM.inset + 1.8;
+  const knob = { w: box.w + 2 * SLIDE_POTENTIOMETER_MM.overhang, h: SLIDE_POTENTIOMETER_MM.knob };
   const ridges = [-1.2, 0, 1.2]
     .map((dy) =>
       line(
@@ -1768,11 +1769,17 @@ function drawSlider(part: Extract<Part, { kind: "slider" }>): string {
     at.x,
     at.y,
     escaped(formatOhms(part.ohms)),
-    `font-size="${SLIDER_MM.print}" font-weight="800" fill="${token(SLIDER_TOKENS.ink)}"`,
+    `font-size="${SLIDE_POTENTIOMETER_MM.print}" font-weight="800" fill="${token(SLIDE_POTENTIOMETER_TOKENS.ink)}"`,
   );
   return (
     legs +
-    rect(box.x, box.y, box.w, box.h, `rx="0.6" fill="${token(SLIDER_TOKENS.body)}" ${edge}`) +
+    rect(
+      box.x,
+      box.y,
+      box.w,
+      box.h,
+      `rx="0.6" fill="${token(SLIDE_POTENTIOMETER_TOKENS.body)}" ${edge}`,
+    ) +
     // The metal's edges catch the light along its length.
     rect(
       box.x + 0.45,
@@ -1782,18 +1789,18 @@ function drawSlider(part: Extract<Part, { kind: "slider" }>): string {
       `rx="0.4" fill="none" stroke="${token("shine")}" stroke-opacity="0.18" stroke-width="0.3"`,
     ) +
     rect(
-      mid.x - SLIDER_MM.slot / 2,
+      mid.x - SLIDE_POTENTIOMETER_MM.slot / 2,
       box.y + slotEnds,
-      SLIDER_MM.slot,
+      SLIDE_POTENTIOMETER_MM.slot,
       box.h - 2 * slotEnds,
-      `rx="0.5" fill="${token(SLIDER_TOKENS.slot)}"`,
+      `rx="0.5" fill="${token(SLIDE_POTENTIOMETER_TOKENS.slot)}"`,
     ) +
     rect(
       mid.x - knob.w / 2,
       mid.y - knob.h / 2,
       knob.w,
       knob.h,
-      `rx="0.7" fill="${token(SLIDER_TOKENS.knob)}" ${edge}`,
+      `rx="0.7" fill="${token(SLIDE_POTENTIOMETER_TOKENS.knob)}" ${edge}`,
     ) +
     ridges +
     (turn === 0 ? print : `<g${upright(at.x, at.y)}>${print}</g>`)
@@ -2477,8 +2484,8 @@ function drawPart(
     case "slideSwitch":
       body = drawSlideSwitch(part);
       break;
-    case "slider":
-      body = drawSlider(part);
+    case "slidePotentiometer":
+      body = drawSlidePotentiometer(part);
       break;
     case "dipSwitch":
       body = drawDipSwitch(part);

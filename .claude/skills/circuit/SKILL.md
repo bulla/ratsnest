@@ -114,7 +114,7 @@ A circuit with a supply:
 - **may have electrolytic capacitors, each keeping a light lit, two NPN transistors that flash
   two lights, diodes on lights' ways, and slide switches lighting one light or another** (below).
 
-## Capacitors, transistors, diodes, switches and sliders (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0054)
+## Capacitors, transistors, diodes, switches and potentiometers (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0054)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -207,7 +207,7 @@ circuit's own words, as a resistor's is not: point at it by the step that places
 - **A slide potentiometer**, on a Pico, is read on an analogue pin (ADR 0053):
 
   ```ts
-  { kind: "slider", ohms: 10000, wiper: "a8", end: "a6", otherEnd: "2:e6" },
+  { kind: "slidePotentiometer", ohms: 10000, wiper: "a8", end: "a6", otherEnd: "2:e6" },
   ```
 
   Its value is free, from 1 kΩ to 100 kΩ, and 10 kΩ is the usual one. It is too long for one

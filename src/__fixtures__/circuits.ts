@@ -39,7 +39,7 @@ export const FIXTURE_IDS = [
   "lights-kept-apart-by-diodes",
   "capacitor-timed-by-two-pins",
   "lights-chosen-by-a-slide-switch",
-  "slider-read-by-an-analogue-pin",
+  "slide-potentiometer-read-by-an-analogue-pin",
   "switches-read-by-pull-ups",
 ] as const;
 
@@ -937,9 +937,9 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       test: "Slide the switch one way and the yellow LED lights; slide it the other way and the red one does instead.",
     },
   },
-  "slider-read-by-an-analogue-pin": {
+  "slide-potentiometer-read-by-an-analogue-pin": {
     circuit: {
-      name: "A slider on GP26",
+      name: "A potentiometer on GP26",
       description:
         "A slide potentiometer that the Pico reads on GP26, lying across two breadboards.",
       credit: CREDIT,
@@ -951,7 +951,9 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       steps: [
         {
           title: "The slide potentiometer, across both breadboards",
-          parts: [{ kind: "slider", ohms: 10000, wiper: "a11", end: "a9", otherEnd: "2:e9" }],
+          parts: [
+            { kind: "slidePotentiometer", ohms: 10000, wiper: "a11", end: "a9", otherEnd: "2:e9" },
+          ],
         },
         {
           title: "3V3 to its other end",
@@ -962,8 +964,8 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
       ],
       script:
-        "from machine import ADC, Pin\nfrom time import sleep\n\nslider = ADC(Pin(26))\n\nwhile True:\n    print(slider.read_u16())\n    sleep(0.2)",
-      test: "The script prints the slider's reading, which follows the knob from one end of its travel to the other.",
+        "from machine import ADC, Pin\nfrom time import sleep\n\npotentiometer = ADC(Pin(26))\n\nwhile True:\n    print(potentiometer.read_u16())\n    sleep(0.2)",
+      test: "The script prints the potentiometer's reading, which follows the knob from one end of its travel to the other.",
     },
   },
   "switches-read-by-pull-ups": {

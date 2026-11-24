@@ -1111,12 +1111,14 @@ describe("a slide switch lighting one light or the other (ADR 0052)", () => {
 });
 
 describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
-  const { circuit, layout } = FIXTURES["slider-read-by-an-analogue-pin"];
+  const { circuit, layout } = FIXTURES["slide-potentiometer-read-by-an-analogue-pin"];
   const problems = (edit: (parts: Part[]) => Part[]) =>
     wiringProblems(circuit, edited(layout, edit));
-  /** The layout with the slider, and the jumper to its other end, replaced by `next`. */
+  /** The layout with the potentiometer, and the jumper to its other end, replaced by `next`. */
   const rebuilt = (next: Part[]) => (parts: Part[]) => [
-    ...parts.filter((p) => p.kind !== "slider" && !(p.kind === "wire" && p.from.startsWith("2:"))),
+    ...parts.filter(
+      (p) => p.kind !== "slidePotentiometer" && !(p.kind === "wire" && p.from.startsWith("2:")),
+    ),
     ...next,
   ];
 
@@ -1128,7 +1130,7 @@ describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
     expect(
       problems(
         rebuilt([
-          { kind: "slider", ohms: 10000, wiper: "a9", end: "a11", otherEnd: "2:e11" },
+          { kind: "slidePotentiometer", ohms: 10000, wiper: "a9", end: "a11", otherEnd: "2:e11" },
           { kind: "wire", from: "2:d6", to: "2:d11", role: "power" },
         ]),
       ),
@@ -1141,7 +1143,7 @@ describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
     expect(
       problems(
         rebuilt([
-          { kind: "slider", ohms: 10000, wiper: "a16", end: "a14", otherEnd: "2:e14" },
+          { kind: "slidePotentiometer", ohms: 10000, wiper: "a16", end: "a14", otherEnd: "2:e14" },
           { kind: "wire", from: "2:d6", to: "2:d14", role: "power" },
         ]),
       ),
@@ -1165,8 +1167,8 @@ describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
   it("finds its legs out of its shape", () => {
     expect(
       problems((parts) =>
-        replace(parts, (p) => p.kind === "slider", {
-          kind: "slider",
+        replace(parts, (p) => p.kind === "slidePotentiometer", {
+          kind: "slidePotentiometer",
           ohms: 10000,
           wiper: "a11",
           end: "a9",
@@ -1197,8 +1199,8 @@ describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
   it("finds a value too small or too large for the Pico to read", () => {
     expect(
       problems((parts) =>
-        replace(parts, (p) => p.kind === "slider", {
-          kind: "slider",
+        replace(parts, (p) => p.kind === "slidePotentiometer", {
+          kind: "slidePotentiometer",
           ohms: 470,
           wiper: "a11",
           end: "a9",
@@ -1216,7 +1218,7 @@ describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
       supplied,
       edited(suppliedLayout, (parts) => [
         ...parts,
-        { kind: "slider", ohms: 10000, wiper: "a28", end: "a26", otherEnd: "2:e26" },
+        { kind: "slidePotentiometer", ohms: 10000, wiper: "a28", end: "a26", otherEnd: "2:e26" },
       ]),
     );
     expect(found).toContain(

@@ -256,8 +256,8 @@ export interface SlideSwitchPart {
  * apart in one row, and its other end is in line with that end, 17 rows further along it, 43.18 mm,
  * on the other board: `a6` and `2:e6`.
  */
-export interface SliderPart {
-  readonly kind: "slider";
+export interface SlidePotentiometerPart {
+  readonly kind: "slidePotentiometer";
   readonly ohms: number;
   readonly wiper: Hole;
   readonly end: Hole;
@@ -291,7 +291,7 @@ export type Part =
   | DiodePart
   | CeramicPart
   | SlideSwitchPart
-  | SliderPart
+  | SlidePotentiometerPart
   | DipSwitchPart;
 
 /**

@@ -74,7 +74,8 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   resistor shared on its middle leg. The page draws it standing, a metal shell with its black slide
   on top, says where its middle and outer legs go, lists it with its legs 2.54 mm apart, and notes
   that it stays as it is slid. On a Pico it is refused, with no use there yet.
-- A slide potentiometer, `{ kind: "slider", ohms, wiper, end, otherEnd }`, in a circuit on a Pico,
+- A slide potentiometer, `{ kind: "slidePotentiometer", ohms, wiper, end, otherEnd }`, in a circuit
+  on a Pico,
   lying across both breadboards: the Pico reads its wiper on an analogue pin. `rnest check` holds its
   wiper two holes from the end beside it and its other end 17 rows along, on the other breadboard;
   nothing in the holes under its body; one end on 3V3(OUT) and the other on ground; its wiper straight

@@ -312,7 +312,10 @@ describe("an RGB LED's page, on two breadboards (scratchpi's ADR 0226)", () => {
   it("draws the second board, above the first, only on a page that uses it", () => {
     const boards = (html: string) => html.match(/<g class="breadboard"/g)?.length ?? 0;
     // The RGB LED's, and a slide potentiometer's, which lies across both (ADR 0053).
-    const two: readonly FixtureId[] = ["rgb-led-and-d-pad", "slider-read-by-an-analogue-pin"];
+    const two: readonly FixtureId[] = [
+      "rgb-led-and-d-pad",
+      "slide-potentiometer-read-by-an-analogue-pin",
+    ];
     for (const id of two) {
       expect(boards(page(id))).toBe(2);
       expect(page(id)).toContain('<g class="breadboard" transform="translate(0 -53.34)">');
@@ -793,7 +796,7 @@ describe("a page with a slide switch (ADR 0052)", () => {
 });
 
 describe("a page with a slide potentiometer (ADR 0053)", () => {
-  const { circuit, layout } = FIXTURES["slider-read-by-an-analogue-pin"];
+  const { circuit, layout } = FIXTURES["slide-potentiometer-read-by-an-analogue-pin"];
   const inLanguage = (language: "en" | "fr" | "ru") =>
     words(steps(wiringPage(circuit, layout, FILES, { language })));
 
@@ -810,14 +813,14 @@ describe("a page with a slide potentiometer (ADR 0053)", () => {
   });
 
   it("notes which leg is its wiper, and the analogue pins it may go to", () => {
-    expect(page("slider-read-by-an-analogue-pin")).toContain(
-      PAGE_WORDS.en.sliderWiper(["GP26", "GP27", "GP28"]),
+    expect(page("slide-potentiometer-read-by-an-analogue-pin")).toContain(
+      PAGE_WORDS.en.slidePotentiometerWiper(["GP26", "GP27", "GP28"]),
     );
   });
 
-  it("picks the slider out in its test step, since the reader slides it", () => {
-    expect(page("slider-read-by-an-analogue-pin")).toContain(
-      'data-g="step-1 test" data-kind="slider"',
+  it("picks the potentiometer out in its test step, since the reader slides it", () => {
+    expect(page("slide-potentiometer-read-by-an-analogue-pin")).toContain(
+      'data-g="step-1 test" data-kind="slidePotentiometer"',
     );
   });
 
