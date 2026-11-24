@@ -26,6 +26,7 @@ import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN, widthOf } from "../fonts";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
 import {
+  ANALOGUE_GPIOS,
   BASE_OHMS_RANGE,
   CHARGE_OHMS_RANGE,
   FLASHER_BASE_OHMS_RANGE,
@@ -231,6 +232,8 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
       );
     case "slideSwitch":
       return words.slideSwitch(at(part.middle), at(part.left), at(part.right));
+    case "slider":
+      return words.slider(words.ohms(part.ohms), at(part.wiper), at(part.end), at(part.otherEnd));
   }
 }
 
@@ -260,11 +263,14 @@ const isComponent = (part: Part) =>
 
 /**
  * The parts the test step picks out: the components a reader watches and presses, a ceramic
- * capacitor, which is what its circuit's script times (ADR 0051), and a slide switch, which the
- * reader slides (ADR 0052).
+ * capacitor, which is what its circuit's script times (ADR 0051), and a slide switch and a slide
+ * potentiometer, which the reader slides (ADR 0052, ADR 0053).
  */
 const isTested = (part: Part) =>
-  isComponent(part) || part.kind === "ceramic" || part.kind === "slideSwitch";
+  isComponent(part) ||
+  part.kind === "ceramic" ||
+  part.kind === "slideSwitch" ||
+  part.kind === "slider";
 
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
@@ -375,6 +381,13 @@ function partsListHtml(
   }
   const slides = parts.filter((p) => p.kind === "slideSwitch").length;
   if (slides > 0) items.push([slides, words.listSlideSwitch(slides)]);
+  const sliders = [...new Set(parts.flatMap((p) => (p.kind === "slider" ? [p.ohms] : [])))].sort(
+    (a, b) => a - b,
+  );
+  for (const value of sliders) {
+    const count = parts.filter((p) => p.kind === "slider" && p.ohms === value).length;
+    items.push([count, words.listSlider(words.ohms(value), count)]);
+  }
   const microfarads = [
     ...new Set(parts.flatMap((p) => (p.kind === "electrolytic" ? [p.microfarads] : []))),
   ].sort((a, b) => a - b);
@@ -465,6 +478,9 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
   }
   if (parts.some((p) => p.kind === "electrolytic")) notes.push(words.electrolyticPolarity);
   if (parts.some((p) => p.kind === "slideSwitch")) notes.push(words.slideSwitchNote);
+  if (parts.some((p) => p.kind === "slider")) {
+    notes.push(words.sliderWiper(ANALOGUE_GPIOS.map((gpio) => `GP${gpio}`)));
+  }
   const [ceramic] = nanofaradsOf(parts);
   if (ceramic !== undefined) {
     const [low, high] = CHARGE_OHMS_RANGE;

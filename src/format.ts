@@ -250,6 +250,20 @@ export interface SlideSwitchPart {
   readonly right: Hole;
 }
 
+/**
+ * A slide potentiometer, lying across both breadboards, as its legs are too far apart for one
+ * (ADR 0053). Its value is in ohms, `10000` for 10 kΩ. Its wiper and the end beside it are two holes
+ * apart in one row, and its other end is in line with that end, 17 rows further along it, 43.18 mm,
+ * on the other board: `a6` and `2:e6`.
+ */
+export interface SliderPart {
+  readonly kind: "slider";
+  readonly ohms: number;
+  readonly wiper: Hole;
+  readonly end: Hole;
+  readonly otherEnd: Hole;
+}
+
 /** Anything plugged into the breadboard. */
 export type Part =
   | Wire
@@ -263,7 +277,8 @@ export type Part =
   | TransistorPart
   | DiodePart
   | CeramicPart
-  | SlideSwitchPart;
+  | SlideSwitchPart
+  | SliderPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the

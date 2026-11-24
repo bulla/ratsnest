@@ -123,6 +123,13 @@
   --color-slide-switch: #b8bcc1;
   --color-slide-switch-base: #2a2b2f;
   --color-slide-switch-slide: #1d1e21;
+  /* A slide potentiometer (ADR 0053): its dark metal body, the slot along it, the pale cap on its
+     knob, which says where the slider is set, so it clears 3:1 on the body, and its value printed
+     on the body, which is read, so it clears 4.5:1. */
+  --color-slider: #3a3d43;
+  --color-slider-slot: #121315;
+  --color-slider-knob: #c9cbc6;
+  --color-slider-ink: #e9eae6;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

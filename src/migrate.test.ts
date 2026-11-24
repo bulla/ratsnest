@@ -26,6 +26,7 @@ const formatOne = sourcesIn(join(EXAMPLES, "format-1"));
 const BORN_IN_FORMAT_2 = [
   "capacitor-tester.ts",
   "capacitor-timer.ts",
+  "colours-on-a-slider.ts",
   "fading-light.ts",
   "high-side-switch.ts",
   "one-light-or-the-other.ts",

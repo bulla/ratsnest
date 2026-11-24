@@ -5,6 +5,7 @@ import {
   BREADBOARD_HEIGHT_MM,
   CHANNEL_Y_MM,
   coveredBy,
+  coveredBySlider,
   holeCentre,
   holeOfPin,
   isOnSecondBoard,
@@ -653,5 +654,50 @@ describe("a slide switch, standing on its three legs (ADR 0052)", () => {
     for (const turn of [0, 90, 180, 270] as const) {
       expect(crowdingProblems(parts, turn, formatOhms, false)).toEqual([]);
     }
+  });
+});
+
+describe("a slide potentiometer, lying across both breadboards (ADR 0053)", () => {
+  const parts = FIXTURES["slider-read-by-an-analogue-pin"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const slider = parts.find((part) => part.kind === "slider") as Extract<Part, { kind: "slider" }>;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: slider, group: "step-1" }],
+      tags: [],
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A slider",
+      description: "A slider.",
+    });
+
+  it("draws both breadboards, and its body, slot and knob between its legs", () => {
+    expect(usesSecondBoard(parts)).toBe(true);
+    const svg = drawn(0);
+    for (const token of ["slider", "slider-slot", "slider-knob", "slider-ink"]) {
+      expect(svg).toContain(`var(--color-${token})`);
+    }
+  });
+
+  it("prints its value as a resistor's tag writes it, upright at every quarter turn", () => {
+    expect(drawn(0)).toContain(">10 kΩ</text>");
+    for (const turn of [90, 180, 270] as const) {
+      expect(drawn(turn)).toContain(`rotate(${-turn} `);
+      expect(drawn(turn)).toContain(">10 kΩ</text></g>");
+    }
+  });
+
+  it("covers the holes between its legs, across its three columns, and no others", () => {
+    const covered = coveredBySlider(slider);
+    expect(covered).toContain("2:g10");
+    expect(covered).toContain("top+10");
+    expect(covered).toContain("2:bottom-9");
+    expect(covered).not.toContain("a9");
+    expect(covered).not.toContain("b9");
+    expect(covered).not.toContain("2:e9");
+    expect(covered).not.toContain("b8");
+    expect(covered).not.toContain("b12");
   });
 });

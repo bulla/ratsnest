@@ -124,6 +124,11 @@ export interface PageWords {
   readonly ceramic: (nanofarads: string, code: string, from: Place, to: Place) => string;
   /** A slide switch (ADR 0052): its middle leg, then its outer ones, left and right. */
   readonly slideSwitch: (middle: Place, left: Place, right: Place) => string;
+  /**
+   * A slide potentiometer (ADR 0053), its value written already: its wiper, the end beside it, and
+   * its other end, on the other breadboard.
+   */
+  readonly slider: (ohms: string, wiper: Place, end: Place, otherEnd: Place) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
@@ -158,6 +163,8 @@ export interface PageWords {
   readonly listDiode: (model: string, use: DiodeUse, count: number) => string;
   /** Slide switches, and how many (ADR 0052). */
   readonly listSlideSwitch: (count: number) => string;
+  /** Slide potentiometers of one value, written already, and how many (ADR 0053). */
+  readonly listSlider: (ohms: string, count: number) => string;
   /** Ceramic capacitors of one value, written already, the code they print, and how many (ADR 0051). */
   readonly listCeramic: (nanofarads: string, code: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
@@ -190,6 +197,8 @@ export interface PageWords {
   readonly diodePolarity: string;
   /** What a slide switch joins, and that it stays so when let go, as a button does not (ADR 0052). */
   readonly slideSwitchNote: string;
+  /** Which leg of a slide potentiometer is its wiper, the analogue pins it can go to, and why (ADR 0053). */
+  readonly sliderWiper: (pins: readonly string[]) => string;
   /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
   readonly diodeAlike: (models: readonly string[]) => string;
   /** That a ceramic capacitor goes either way round, and how its code says its value (ADR 0051). */
@@ -349,6 +358,8 @@ export const ENGLISH_PAGE: PageWords = {
     `A ${nanofarads} ceramic capacitor, marked ${code}, either way round: one leg ${englishIn(from)} and the other ${englishIn(to)}.`,
   slideSwitch: (middle, left, right) =>
     `A slide switch, either way round: its middle leg ${englishIn(middle)}, one outer leg ${englishIn(left)} and the other ${englishIn(right)}.`,
+  slider: (ohms, wiper, end, otherEnd) =>
+    `A ${ohms} slide potentiometer, lying across both breadboards: its wiper ${englishIn(wiper)}, the end beside it ${englishIn(end)}, and its other end ${englishIn(otherEnd)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
@@ -392,6 +403,8 @@ export const ENGLISH_PAGE: PageWords = {
       other:
         "SPDT slide switches, each with three legs 2.54 mm apart, as a breadboard's holes are.",
     }),
+  listSlider: (ohms, count) =>
+    `${ohms} slide ${plural("en", count, { one: "potentiometer", other: "potentiometers" })}, 45 mm long, with two legs at one end and one at the other, and a cap for the knob.`,
   listCeramic: (nanofarads, code, count) =>
     `${nanofarads} ceramic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, marked ${code}.`,
   listWire: (colour, count) =>
@@ -419,6 +432,8 @@ export const ENGLISH_PAGE: PageWords = {
     "A diode lets current through one way only: from its anode to its cathode, the end with the band, which goes towards −. One put in backwards lets none through, and its light stays dark, but it is not damaged: turn it round.",
   slideSwitchNote:
     "A slide switch joins its middle leg to one outer leg or the other, whichever way its slide is pushed, and stays so when let go, where a push button joins its legs only while it is held.",
+  sliderWiper: (pins) =>
+    `Of a slide potentiometer's two legs at one end, its wiper is the one with no leg in line with it at the other end. It goes to an analogue pin, ${englishList(pins).replace(" and ", " or ")}, and the two ends to 3V3(OUT) and ground, either way round. Wired to 3V3(OUT) instead, the wiper would join it to ground at one end of its travel.`,
   diodeAlike: (models) =>
     `The ${englishList(models)} all do on a light's way: a light takes far less current than any of them can carry.`,
   ceramicCode: (code, nanofarads) =>
@@ -613,6 +628,8 @@ export const FRENCH_PAGE: PageWords = {
     `Un condensateur céramique de ${nanofarads}, marqué ${code}, dans un sens ou dans l’autre${NNBSP}: une patte ${frenchIn(from)} et l’autre ${frenchIn(to)}.`,
   slideSwitch: (middle, left, right) =>
     `Un interrupteur à glissière, dans un sens ou dans l’autre${NNBSP}: sa patte du milieu ${frenchIn(middle)}, une patte extérieure ${frenchIn(left)} et l’autre ${frenchIn(right)}.`,
+  slider: (ohms, wiper, end, otherEnd) =>
+    `Un potentiomètre à glissière de ${ohms}, couché à cheval sur les deux plaques${NNBSP}: son curseur ${frenchIn(wiper)}, l’extrémité à côté ${frenchIn(end)}, et son autre extrémité ${frenchIn(otherEnd)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
@@ -661,6 +678,8 @@ export const FRENCH_PAGE: PageWords = {
       other:
         "Interrupteurs à glissière inverseurs (SPDT), chacun à trois pattes espacées de 2,54 mm, comme les trous d’une plaque d’essai.",
     }),
+  listSlider: (ohms, count) =>
+    `${plural("fr", count, { one: "Potentiomètre à glissière", many: "Potentiomètres à glissière", other: "Potentiomètres à glissière" })} de ${ohms}, de 45 mm de long, à deux pattes à un bout et une à l’autre, avec un capuchon pour le bouton.`,
   listCeramic: (nanofarads, code, count) =>
     `${plural("fr", count, { one: "Condensateur céramique", many: "Condensateurs céramiques", other: "Condensateurs céramiques" })} de ${nanofarads}, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
   listWire: (colour, count) => {
@@ -698,6 +717,8 @@ export const FRENCH_PAGE: PageWords = {
   diodePolarity: `Une diode ne laisse passer le courant que dans un sens${NNBSP}: de son anode à sa cathode, le bout marqué d’une bande, qui va vers le −. Une diode mise à l’envers ne laisse rien passer, et sa LED reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
   slideSwitchNote:
     "Un interrupteur à glissière relie sa patte du milieu à l’une ou l’autre de ses pattes extérieures, selon le côté où l’on pousse sa glissière, et reste ainsi une fois lâché, là où un bouton poussoir ne relie ses pattes que tant qu’on le maintient enfoncé.",
+  sliderWiper: (pins) =>
+    `Des deux pattes d’un même bout d’un potentiomètre à glissière, le curseur est celle qui n’a aucune patte dans son alignement à l’autre bout. Il va sur une broche analogique, ${frenchList(pins).replace(" et ", " ou ")}, et les deux extrémités sur le 3V3(OUT) et la masse, dans un sens ou dans l’autre. Relié au 3V3(OUT), le curseur le relierait à la masse à un bout de sa course.`,
   diodeAlike: (models) =>
     `Les diodes ${frenchList(models)} conviennent toutes sur le chemin d’une LED${NNBSP}: une LED consomme bien moins de courant que chacune d’elles n’en supporte.`,
   ceramicCode: (code, nanofarads) =>
@@ -884,6 +905,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `Керамический конденсатор ${nanofarads} с маркировкой ${code}, любой стороной: одна ножка ${russianIn(from)}, другая ${russianIn(to)}.`,
   slideSwitch: (middle, left, right) =>
     `Ползунковый переключатель, любой стороной: средняя ножка ${russianIn(middle)}, одна крайняя ножка ${russianIn(left)}, другая ${russianIn(right)}.`,
+  slider: (ohms, wiper, end, otherEnd) =>
+    `Ползунковый потенциометр ${ohms}, поперёк обеих плат: движок ${russianIn(wiper)}, вывод рядом с ним ${russianIn(end)}, другой вывод ${russianIn(otherEnd)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
@@ -926,6 +949,8 @@ export const RUSSIAN_PAGE: PageWords = {
       : `Выпрямительный диод ${model} в чёрном корпусе.`,
   listSlideSwitch: () =>
     "Ползунковый переключатель SPDT: три ножки с шагом 2,54 мм, как отверстия макетной платы.",
+  listSlider: (ohms) =>
+    `Ползунковый потенциометр ${ohms}, длиной 45 мм: два вывода с одного конца и один с другого, с колпачком для ручки.`,
   listCeramic: (nanofarads, code) => `Керамический конденсатор ${nanofarads}, маркировка ${code}.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
@@ -951,6 +976,8 @@ export const RUSSIAN_PAGE: PageWords = {
     "Диод пропускает ток только в одну сторону: от анода к катоду, концу с полосой, который смотрит к −. Диод, вставленный наоборот, ничего не пропускает, и его светодиод не горит, но диод не портится: переверните его.",
   slideSwitchNote:
     "Ползунковый переключатель соединяет среднюю ножку с одной или другой крайней, смотря куда сдвинут ползунок, и остаётся так, когда его отпускают, а кнопка соединяет свои ножки, только пока её держат.",
+  sliderWiper: (pins) =>
+    `Из двух выводов на одном конце ползункового потенциометра движком служит тот, напротив которого на другом конце вывода нет. Он идёт на аналоговый вывод ${russianList(pins).replace(" и ", " или ")}, а крайние выводы идут на 3V3(OUT) и землю, в любом порядке. Подключённый к 3V3(OUT), движок замкнул бы его на землю в одном конце хода.`,
   diodeAlike: (models) =>
     `На пути светодиода подойдёт любой из диодов ${russianList(models)}: светодиоду нужно гораздо меньше тока, чем выдерживает каждый из них.`,
   ceramicCode: (code, nanofarads) =>

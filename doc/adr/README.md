@@ -123,3 +123,4 @@ Each new record adds a row here.
 | [0050](0050-lift-a-lights-leader-over-the-lights-and-buttons-in-its-way-each-to-a-lane-of-its-own.md)            | Lift a light's leader over the lights and buttons in its way, each to a lane of its own            |
 | [0051](0051-let-two-pins-time-a-ceramic-capacitor-through-a-resistor.md)                                         | Let two pins time a ceramic capacitor through a resistor                                           |
 | [0052](0052-let-a-slide-switch-light-one-light-or-the-other-on-a-supply.md)                                      | Let a slide switch light one light or the other, on a supply                                       |
+| [0053](0053-let-the-pico-read-a-slide-potentiometer-lying-across-both-breadboards.md)                            | Let the Pico read a slide potentiometer, lying across both breadboards                             |

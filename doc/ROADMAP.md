@@ -26,8 +26,9 @@ capacitors, transistors, diodes, two switches and a slide potentiometer, each wi
 teaches it, are planned in the Backlog (ADR 0038 to ADR 0041). The electrolytic capacitor is M13 (ADR 0043), the NPN and PNP
 transistors M14 and M15 (ADR 0044, ADR 0045), the owner's capacitor tester and flasher M16
 (ADR 0046, ADR 0047), the diode, two buttons sharing a light, M17 (ADR 0049, ADR 0050), the
-ceramic capacitor, two pins timing it, M18 (ADR 0051), and the slide switch, one light or the other,
-M19 (ADR 0052).
+ceramic capacitor, two pins timing it, M18 (ADR 0051), the slide switch, one light or the other,
+M19 (ADR 0052), and the slide potentiometer, the Pico reading it across both breadboards, M20
+(ADR 0053).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -61,6 +62,10 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 
 ## Open points
 
+- **The slide potentiometer's legs** (ADR 0053): taken from the drawing in The Pi Hut's day 7, two
+  at one end two holes apart and one 17 rows along, since no slider was measured. The owner, who has
+  the calendar's, checks that its legs fall there, and says if they do not.
+
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,
   and ratsnest's Russian credits (ADR 0035), which the `circuit` skill writes into new circuits, in
@@ -68,10 +73,10 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
 
-- **The new parts' drawings** (ADR 0043 to ADR 0047, ADR 0049 to ADR 0052): the electrolytic
+- **The new parts' drawings** (ADR 0043 to ADR 0047, ADR 0049 to ADR 0053): the electrolytic
   capacitor's, the transistors', the flasher's lifted leader, the diode's two cases, the leaders
-  lifted over lights and buttons, the ceramic capacitor's disc, and the slide switch's shell, its
-  slide drawn towards its left leg, mocked up and chosen while the owner had the work go on alone, so the owner signs
+  lifted over lights and buttons, the ceramic capacitor's disc, the slide switch's shell, its slide
+  drawn towards its left leg, and the slide potentiometer's body, its value printed on it, mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
   reader.
@@ -98,28 +103,17 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 ## Backlog
 
 - **New parts, each with the circuit that teaches it** (ADR 0038 to ADR 0041), in this order, after
-  the first seven, the electrolytic capacitor's fading light, the NPN and PNP transistors' switches,
+  the first eight, the electrolytic capacitor's fading light, the NPN and PNP transistors' switches,
   the capacitor tester and flasher, the diode's two buttons and three lights, the ceramic
-  capacitor's timer, and the slide switch's one light or the other, which are M13 to M19 (ADR 0043 to
-  ADR 0047, ADR 0049 to ADR 0052). Each brings its
+  capacitor's timer, the slide switch's one light or the other, and the slide potentiometer's colours,
+  which are M13 to M20 (ADR 0043 to ADR 0047, ADR 0049 to ADR 0053). Each brings its
   part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
   step's sentence and the parts list's line in English, French and Russian, an example and a test
   circuit, and the `circuit` skill's knowledge of it. Each part's drawing is mocked up on the board
   first, in both themes, at all four quarter turns, beside Fritzing's drawing of the same part, and
   the owner picks one; the looks turned down go in the record that settles that part. Each is an
   addition to format 2, and a minor release.
-  1. **The slide potentiometer: a slider the Pico reads**, the circuit of The Pi Hut's Let it Glow
-     Maker Advent Calendar, day 7, which the owner chose. On a Pico, a 10 kΩ slide potentiometer,
-     45 mm long, lies across both breadboards, its two back legs on the second and its front leg on
-     the first: one end on 3V3(OUT), its wiper on GP28, an analogue pin, and its other end on
-     ground. The two addressable RGB LEDs of its day 6, which ratsnest already draws, stay on the
-     second board, and the script lights them from the slider's reading. Drawn lying, a long metal
-     body with its slot and its knob; its rule is a divider from 3V3(OUT) to ground, its wiper
-     straight on one of GP26 to GP28 and on nothing else, which catches the wiper and an end swapped,
-     a mistake that tutorial's own readers made. Left to its own record: how a circuit names an
-     analogue pin, a part with legs on both boards, the slider's real legs and their spacing, and how
-     its page credits the tutorial, whose words and code it does not copy.
-  2. **The DIP switch: five switches the Pico reads**, the circuit of The Pi Hut's Let it Glow Maker
+  1. **The DIP switch: five switches the Pico reads**, the circuit of The Pi Hut's Let it Glow Maker
      Advent Calendar, day 5, which the owner chose. On a Pico, a five-way DIP switch across the
      channel, every top leg on 3V3(OUT) and each lower leg on a pin of its own, switch 1 on GP6 to
      switch 5 on GP2, and the script prints which switches are on. Drawn as a small body across the
@@ -192,3 +186,4 @@ file's Log.
 | M17       | The diode: two buttons share a light, two diodes keeping each from the other's              | 0049, 0050                              |
 | M18       | The ceramic capacitor: two pins time it through a resistor, the disc printed with its value | 0051                                    |
 | M19       | The slide switch: one light or the other, which stays lit when let go                       | 0052                                    |
+| M20       | The slide potentiometer: the Pico reads it across both breadboards, and colours two LEDs    | 0053                                    |

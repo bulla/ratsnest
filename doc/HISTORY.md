@@ -360,6 +360,28 @@ the switches can be set.
 - [x] `examples/one-light-or-the-other.ts`, in English and French, and a test circuit with a variant
       for every rule it is refused by
 
+### M20: the slide potentiometer
+
+M20 is done: after day 7 of The Pi Hut's Let it Glow Maker Advent Calendar, a 10 kΩ slide
+potentiometer lies across both breadboards, its wiper and the end beside it straight in the strips
+of GP28 and 3V3(OUT), and the script colours two RGB LEDs from its reading (ADR 0053).
+
+- [x] The design, worked out alone at the owner's asking (ADR 0053): no analogue pin kind, the wiper's
+      pin read from the wiring; the legs as the tutorial's drawing places them; the tutorial credited
+      in the description
+- [x] The format: `{ kind: "slider", ohms, wiper, end, otherEnd }`, read and checked field by field,
+      and refused in a circuit with a supply
+- [x] The wiring check's rule: its shape across both boards; nothing under its body; its wiper on
+      neither 3V3(OUT) nor ground; its ends on 3V3(OUT) and ground; its wiper straight on GP26, GP27 or
+      GP28 alone; 1 kΩ to 100 kΩ; and on a supply, refused
+- [x] The drawing: a dark metal body lying between its legs, its slot and the cap on its knob, its
+      value printed upright on it, its colours in `tokens.css`, the cap held to 3:1 and the value to
+      4.5:1; a value tag keeps off it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line and
+      the note on its wiper, and the test step picking it out
+- [x] `examples/colours-on-a-slider.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -679,3 +701,13 @@ the switches can be set.
   judged at the first that wires it, which leaves every circuit without a switch checked as it was.
   The test circuit's first layout put its lights' wires into rail columns 12 and 28, which a rail does
   not have, its holes being in groups of five. No example's drawing changed.
+- 2026-11-24: M20, the slide potentiometer, worked out alone (ADR 0053), stacked on M19. The extract
+  of day 7's page gave the wiring, and its drawing, measured hole by hole, the legs: two at one end,
+  two columns apart, and one 17 rows along, across the two boards' edges. No slider was measured, so
+  the owner checks the real one on the pull request. The roadmap had asked how a circuit names an
+  analogue pin, and the answer was that it need not: the ceramic capacitor had taught the check to
+  find a part's pins by its wiring. Laying it out, the slider's two legs at one end went straight into
+  the strips of 3V3(OUT) and GP28, two columns apart on the Pico's own row, and its other end landed
+  on the second breadboard, a jumper from ground away. The tutorial went into the example's
+  description, since the examples' credit is the skill's, which a test holds. The Russian note first
+  had a dash Nunito's files lack, and the page test said so.

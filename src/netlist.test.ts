@@ -1109,3 +1109,118 @@ describe("a slide switch lighting one light or the other (ADR 0052)", () => {
     );
   });
 });
+
+describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
+  const { circuit, layout } = FIXTURES["slider-read-by-an-analogue-pin"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  /** The layout with the slider, and the jumper to its other end, replaced by `next`. */
+  const rebuilt = (next: Part[]) => (parts: Part[]) => [
+    ...parts.filter((p) => p.kind !== "slider" && !(p.kind === "wire" && p.from.startsWith("2:"))),
+    ...next,
+  ];
+
+  it("takes one with its ends on 3V3(OUT) and ground and its wiper straight on GP26", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its wiper on ground, swapped with the end beside it", () => {
+    expect(
+      problems(
+        rebuilt([
+          { kind: "slider", ohms: 10000, wiper: "a9", end: "a11", otherEnd: "2:e11" },
+          { kind: "wire", from: "2:d6", to: "2:d11", role: "power" },
+        ]),
+      ),
+    ).toEqual([
+      "the 10 kΩ slide potentiometer with its wiper in a9 has its wiper on ground: its wiper, beside one end, goes to an analogue pin, GP26, GP27 or GP28, and its two ends to 3V3(OUT) and ground",
+    ]);
+  });
+
+  it("finds its wiper on a pin that reads no voltage", () => {
+    expect(
+      problems(
+        rebuilt([
+          { kind: "slider", ohms: 10000, wiper: "a16", end: "a14", otherEnd: "2:e14" },
+          { kind: "wire", from: "2:d6", to: "2:d14", role: "power" },
+        ]),
+      ),
+    ).toEqual([
+      "the 10 kΩ slide potentiometer with its wiper in a16 has its wiper on GP20, which reads no voltage: an analogue pin, GP26, GP27 or GP28, does",
+    ]);
+  });
+
+  it("finds both its ends on ground", () => {
+    expect(
+      problems((parts) => [
+        ...parts.filter((p) => p.kind !== "wire"),
+        { kind: "wire", from: "a4", to: "2:e4", role: "ground" },
+        { kind: "wire", from: "2:d4", to: "2:d9", role: "ground" },
+      ]),
+    ).toEqual([
+      "the 10 kΩ slide potentiometer with its wiper in a11 has its ends on ground and ground: one end goes on 3V3(OUT) and the other on ground",
+    ]);
+  });
+
+  it("finds its legs out of its shape", () => {
+    expect(
+      problems((parts) =>
+        replace(parts, (p) => p.kind === "slider", {
+          kind: "slider",
+          ohms: 10000,
+          wiper: "a11",
+          end: "a9",
+          otherEnd: "2:d9",
+        }),
+      ),
+    ).toContain(
+      "the 10 kΩ slide potentiometer with its wiper in a11 needs its wiper two holes from the end beside it, in one row, and its other end in that end's column, 17 rows along, on the other breadboard",
+    );
+  });
+
+  it("finds a leg in a hole under its body", () => {
+    expect(
+      problems((parts) => [...parts, { kind: "wire", from: "2:g10", to: "2:g15", role: "signal" }]),
+    ).toContain(
+      "the yellow wire from 2:g10 to 2:g15 has a leg in 2:g10, under the 10 kΩ slide potentiometer with its wiper in a11",
+    );
+  });
+
+  it("finds something else on its wiper", () => {
+    expect(
+      problems((parts) => [...parts, { kind: "resistor", ohms: 4700, from: "b11", to: "b14" }]),
+    ).toContain(
+      "the 10 kΩ slide potentiometer with its wiper in a11 has something else on its wiper: only its analogue pin, GP26, goes there",
+    );
+  });
+
+  it("finds a value too small or too large for the Pico to read", () => {
+    expect(
+      problems((parts) =>
+        replace(parts, (p) => p.kind === "slider", {
+          kind: "slider",
+          ohms: 470,
+          wiper: "a11",
+          end: "a9",
+          otherEnd: "2:e9",
+        }),
+      ),
+    ).toEqual([
+      "the 470 Ω slide potentiometer with its wiper in a11 is 470 Ω, outside 1 kΩ to 100 kΩ",
+    ]);
+  });
+
+  it("finds one on a supply, where it has no use yet", () => {
+    const { circuit: supplied, layout: suppliedLayout } = FIXTURES["two-lights-on-a-supply"];
+    const found = wiringProblems(
+      supplied,
+      edited(suppliedLayout, (parts) => [
+        ...parts,
+        { kind: "slider", ohms: 10000, wiper: "a28", end: "a26", otherEnd: "2:e26" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 10 kΩ slide potentiometer with its wiper in a28 has no use ratsnest knows on a supply: a slide potentiometer is read by a Pico's analogue pin (ADR 0053)",
+    );
+  });
+});
