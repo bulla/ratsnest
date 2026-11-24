@@ -1,6 +1,6 @@
-// The first example with a DIP switch (ADR 0038, ADR 0054), after day 5 of The Pi Hut's Let it Glow
-// Maker Advent Calendar: five switches, each from ground to a pin of its own, which the script pulls
-// up inside the Pico and reads, printing which switches are on.
+// The first example with a DIP switch (ADR 0038, ADR 0054): five switches, each from ground to a
+// pin of its own, which the script pulls up inside the Pico and reads, printing which switches are
+// on.
 import type { Circuit } from "ratsnest";
 
 export default {
@@ -8,8 +8,8 @@ export default {
   setup: { kind: "pico" },
   name: { en: "Five switches", fr: "Cinq interrupteurs" },
   description: {
-    en: "A DIP switch of five switches on a second breadboard, each read by a pin of its own, GP22 to GP18. Each goes to ground, and the script holds its pin high with the Pico's own pull-up, so a switch turned on reads 0. The circuit follows day 5 of The Pi Hut's Let it Glow Maker Advent Calendar, whose switches go to 3V3 instead, which the Pico 2 W cannot hold low on its own.",
-    fr: "Un interrupteur DIP de cinq interrupteurs sur une seconde plaque, chacun lu par une broche à lui, de GP22 à GP18. Chacun va à la masse, et le script maintient sa broche au niveau haut avec la résistance de tirage du Pico, si bien qu’un interrupteur en marche lit 0. Le circuit suit le jour 5 du calendrier de l’Avent Let it Glow Maker de The Pi Hut, dont les interrupteurs vont au 3V3, ce que le Pico 2 W ne sait pas maintenir au niveau bas tout seul.",
+    en: "A DIP switch of five switches on a second breadboard, each read by a pin of its own, GP22 to GP18. Each goes to ground, and the script holds its pin high with the Pico's own pull-up, so a switch turned on reads 0. Wired to 3V3 instead, a switch turned off could still read on, since the Pico 2 W cannot hold its pin low on its own.",
+    fr: "Un interrupteur DIP de cinq interrupteurs sur une seconde plaque, chacun lu par une broche à lui, de GP22 à GP18. Chacun va à la masse, et le script maintient sa broche au niveau haut avec la résistance de tirage du Pico, si bien qu’un interrupteur en marche lit 0. Relié au 3V3, un interrupteur à l’arrêt pourrait encore se lire en marche, car le Pico 2 W ne sait pas maintenir sa broche au niveau bas tout seul.",
   },
   credit: {
     en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
