@@ -113,17 +113,15 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   first, in both themes, at all four quarter turns, beside Fritzing's drawing of the same part, and
   the owner picks one; the looks turned down go in the record that settles that part. Each is an
   addition to format 2, and a minor release.
-  1. **The DIP switch: five switches the Pico reads**, the circuit of The Pi Hut's Let it Glow Maker
-     Advent Calendar, day 5, which the owner chose. On a Pico, a five-way DIP switch across the
-     channel, every top leg on 3V3(OUT) and each lower leg on a pin of its own, switch 1 on GP6 to
-     switch 5 on GP2, and the script prints which switches are on. Drawn as a small body across the
-     channel, its five slides numbered; its rule is five inputs, each from 3V3(OUT) through one switch.
-     The tutorial holds each pin low with the Pico's own pull-down, which cannot be relied on, on the
-     Pico 2 W's RP2350 (erratum E9): a switch turned off can still read on. Its later activities
-     light the LED bar graph of an earlier day, which waits in Later. Left to its own record: five
-     pull-downs, as a button has, or the switches wired to ground and the Pico's own pull-ups, which
-     would be a rule of its own; where it sits; and how its page credits the tutorial, whose words
-     and code it does not copy.
+  1. **The DIP switch: five switches the Pico reads**, from a tutorial the owner chose. On a Pico, a
+     five-way DIP switch across the channel, every top leg on 3V3(OUT) and each lower leg on a pin
+     of its own, switch 1 on GP6 to switch 5 on GP2, and the script prints which switches are on.
+     Drawn as a small body across the channel, its five slides numbered; its rule is five inputs,
+     each from 3V3(OUT) through one switch. The tutorial holds each pin low with the Pico's own
+     pull-down, which cannot be relied on, on the Pico 2 W's RP2350 (erratum E9): a switch turned
+     off can still read on. Its later activities light an LED bar graph, which waits in Later. Left
+     to its own record: five pull-downs, as a button has, or the switches wired to ground and the
+     Pico's own pull-ups, which would be a rule of its own; and where it sits.
 
 - **Standard steps the engine knows by name**, if writing out common steps in every circuit file
   starts to hurt (ADR 0007)
@@ -146,9 +144,9 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   them, which ADR 0004 would have to allow, is a record of its own.
 - **More parts, each when a circuit needs it** (ADR 0038): rotary potentiometers, toggle switches,
   relays, light-dependent resistors, MOSFETs, Zener and Schottky diodes, and film capacitors
-- **The LED bar graph and the resistor array**, at the owner's asking: The Pi Hut's Let it Glow
-  calendar lights a bar graph's segments through a resistor array, from GP9 to GP13, and its day 5
-  lights them from the DIP switch. Each comes with a circuit that needs it (ADR 0038).
+- **The LED bar graph and the resistor array**, at the owner's asking: a bar graph's segments lit
+  through a resistor array, from GP9 to GP13, and then from the DIP switch. Each comes with a
+  circuit that needs it (ADR 0038).
 - **A full-size breadboard**, probably drawn standing up, and **other boards**: the rest of the Pico
   family first (ADR 0002, ADR 0003)
 - **Solid 2**, when something on a page has to change after it is made, such as a page that picks the

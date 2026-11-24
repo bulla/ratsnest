@@ -659,13 +659,12 @@ of GP28 and 3V3(OUT), and the script colours two RGB LEDs from its reading (ADR 
   decided first and are already on the pull requests above this one.
 - 2026-11-24: More new parts, at the owner's asking: a slide switch, a slide potentiometer and a DIP
   switch leave the roadmap's Later for the Backlog, after the ceramic capacitor, each with the
-  circuit that teaches it. The slider's circuit is the owner's choice, The Pi Hut's Let it Glow
-  Maker Advent Calendar, day 7, read from an extract of the page the owner saved: a 45 mm slider
-  across both breadboards, its wiper on GP28, beside the two RGB LEDs of its day 6. Asked which
-  circuit should teach a potentiometer, the owner named the same one, so a rotary potentiometer
-  stays in Later, with a toggle switch. The slide switch goes first, as the easiest start, and the
-  DIP switch last, since its four inputs need four pull-downs or a rule for the Pico's own
-  pull-ups.
+  circuit that teaches it. The slider's circuit is the owner's choice, from a tutorial, read from an
+  extract of its page the owner saved: a 45 mm slider across both breadboards, its wiper on GP28,
+  beside two RGB LEDs. Asked which circuit should teach a potentiometer, the owner named the same
+  one, so a rotary potentiometer stays in Later, with a toggle switch. The slide switch goes first,
+  as the easiest start, and the DIP switch last, since its four inputs need four pull-downs or a
+  rule for the Pico's own pull-ups.
 - 2026-11-24: Between milestones: the SVG tests that draw and parse every test circuit at every
   orientation have 30 seconds, not Bun's 5. One timed out on continuous integration's Mac, at
   5.7 s, on the pull request that planned the new switches, which changed only the roadmap, and
