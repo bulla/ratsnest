@@ -353,6 +353,14 @@ describe("ADR 0011's rules for a circuit's words", () => {
     );
   });
 
+  it("refuse a capacitor's value written out, as a resistor's is (rule 7, ADR 0043)", () => {
+    expect(
+      said(changed((data) => (data.description = { en: "A light, and a 470 µF capacitor." }))),
+    ).toEqual([
+      "description.en writes a value, `470 µF`: the engine writes every value, in the page's language (ADR 0011)",
+    ]);
+  });
+
   it("hold each language to its typography (rule 8)", () => {
     expect(said(changed((data) => (data.description = { en: "Ready ? Go." })))).toEqual([
       "description.en puts a space before `?`, which English does not (ADR 0011)",

@@ -202,6 +202,8 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         at(part.ground),
         at(part.dataOut),
       );
+    case "electrolytic":
+      return words.electrolytic(words.microfarads(part.microfarads), at(part.plus), at(part.minus));
   }
 }
 
@@ -336,6 +338,13 @@ function partsListHtml(
       items.push([1, words.listBuzzer(escaped(names.buzzer(part.buzzer)))]);
     }
   }
+  const microfarads = [
+    ...new Set(parts.flatMap((p) => (p.kind === "electrolytic" ? [p.microfarads] : []))),
+  ].sort((a, b) => a - b);
+  for (const value of microfarads) {
+    const count = parts.filter((p) => p.kind === "electrolytic" && p.microfarads === value).length;
+    items.push([count, words.listElectrolytic(words.microfarads(value), count)]);
+  }
   for (const arch of [false, true]) {
     for (const role of ["ground", "power", "signal"] as const) {
       const count = parts.filter(
@@ -373,6 +382,7 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     if (part.kind === "rgbLed") notes.push(words.rgbLedPolarity(dataPinOf(circuit, part.led)));
     if (part.kind === "ring") notes.push(words.ringPolarity(dataPinOf(circuit, part.led)));
   }
+  if (parts.some((p) => p.kind === "electrolytic")) notes.push(words.electrolyticPolarity);
   notes.push(words.rowsLettered, circuit.supply ? words.supplyUnplug : words.unplug);
   return notes.map((note) => `<li>${escaped(note)}</li>`).join("");
 }

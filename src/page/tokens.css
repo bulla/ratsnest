@@ -95,6 +95,14 @@
   --color-cell-edge: #6b7078;
   --color-cell-ink: #1d1f23;
   --color-cell-tape: #f2c511;
+  /* An electrolytic capacitor (ADR 0043): a navy sleeve over its can, a pale stripe down the side
+     its − leg is on, its value printed white on the sleeve and its minus signs navy on the stripe.
+     Its top is aluminium, the board's own metal. Both prints are read, so each clears 4.5:1 on what
+     it is printed on. */
+  --color-capacitor: #1f3d78;
+  --color-capacitor-stripe: #c9d4e8;
+  --color-capacitor-ink: #ffffff;
+  --color-capacitor-stripe-ink: #1f3d78;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

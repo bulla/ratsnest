@@ -17,8 +17,18 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   the SVG of `--format svg`, its credit and background with it, drawn at 12 px to the millimetre,
   twice the SVG's size, and a WebP lossless. A browser draws it: macOS's own, and on Linux and
   Windows a Chrome, Chromium, Edge or Brave, which must be installed, or named by `BUN_CHROME_PATH`.
-  With none, or one that does not finish a step in 15 seconds, `generate` says so and makes nothing. The `circuit` skill makes one when asked, and
-  never publishes it.
+  A picture the browser does not finish a step of in 15 seconds is begun again, on a fresh page,
+  three times in all. With no browser, or one stuck all three times, `generate` says so and makes
+  nothing. The `circuit` skill makes one when asked, and never publishes it.
+- An electrolytic capacitor, `{ kind: "electrolytic", microfarads, plus, minus }`, in a circuit with a
+  supply: it keeps a light lit once its button is let go, and the light fades out. `rnest check`
+  holds it the right way round, its − leg on −, its + leg between a button and a light's resistor,
+  and slow enough to see the fade, its microfarads times that resistor's ohms 0.2 s at least. The
+  page draws it standing, a navy can with its value printed on it and a stripe down its − side,
+  says where its legs go, lists it rated 16 V or more, and notes that it goes in one way round.
+  On a Pico it is refused, with no use there yet.
+- `rnest check` refuses a capacitance, such as `470 µF`, written in a circuit's own words, as it
+  refuses a resistance: the engine writes every value.
 
 ## [0.2.0] - 2026-11-23
 

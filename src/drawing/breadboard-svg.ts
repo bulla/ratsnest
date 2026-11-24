@@ -126,9 +126,21 @@ export const SUPPLY_TOKENS = {
   tape: "cell-tape",
 } as const;
 
+/**
+ * The colours of an electrolytic capacitor (ADR 0043): its can's sleeve, the pale stripe down its −
+ * side, the value printed on the sleeve, and the minus signs printed on the stripe.
+ */
+export const ELECTROLYTIC_TOKENS = {
+  sleeve: "capacitor",
+  stripe: "capacitor-stripe",
+  ink: "capacitor-ink",
+  stripeInk: "capacitor-stripe-ink",
+} as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
+  ...Object.values(ELECTROLYTIC_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -261,6 +273,14 @@ export function formatOhms(ohms: number): string {
   if (ohms >= 1_000_000) return `${ohms / 1_000_000} MΩ`;
   if (ohms >= 1000) return `${ohms / 1000} kΩ`;
   return `${ohms} Ω`;
+}
+
+/**
+ * `470 µF`, `0.47 µF`: a capacitor's value as its can prints it, which the drawing prints the same in
+ * every language (ADR 0040).
+ */
+export function formatMicrofarads(microfarads: number): string {
+  return `${microfarads} µF`;
 }
 
 // --- The board itself. ---
@@ -938,6 +958,7 @@ function placeTag(
         const centre = buttonCentre(other);
         if (inside(centre, BUTTON_BODY_MM / 2 + 0.4)) return false;
       }
+      if (other.kind === "electrolytic" && overlap(box, canBoxOf(other))) return false;
       for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
     }
     return true;
@@ -1210,6 +1231,104 @@ function drawBuzzer(plus: Hole, minus: Hole): string {
     `<ellipse cx="${n(mid)}" cy="${n(top)}" rx="${r}" ry="${ry}" fill="${token("board-chip")}" stroke="${token("shine")}" stroke-opacity="0.18" stroke-width="0.2"/>` +
     `<ellipse cx="${n(mid)}" cy="${n(top)}" rx="1.1" ry="0.42" fill="${token("shade")}" fill-opacity="0.7"/>` +
     word(p.x, bottom - 2.2, "+", `font-size="2.4" font-weight="800" fill="${token("board-silk")}"`)
+  );
+}
+
+/**
+ * An electrolytic capacitor, standing on its two legs and seen from the side, as a light is (ADR 0040,
+ * ADR 0043): a can in its sleeve, a pale stripe down the side its − leg is on, with minus signs on it,
+ * an aluminium top, and its value printed on the sleeve, the number over its unit, upright at every
+ * quarter turn. Its + leg is kinked, as a light's long leg is. It is drawn the same size whatever its
+ * value, and short, so that it stands over no more than the three rows above its legs.
+ */
+export const CAN_MM = { width: 5.4, height: 4.6, lift: 2, top: 0.55, stripe: 1.25 } as const;
+
+/** Where a can's value is printed: the middle of its sleeve, beside the stripe. */
+function canPrintOf(part: Extract<Part, { kind: "electrolytic" }>): {
+  x: number;
+  y: number;
+  towardMinus: number;
+} {
+  const p = holeCentre(part.plus);
+  const m = holeCentre(part.minus);
+  const towardMinus = Math.sign(m.x - p.x) || 1;
+  const mid = (p.x + m.x) / 2;
+  return {
+    x: mid - (towardMinus * CAN_MM.stripe) / 2,
+    y: p.y - CAN_MM.lift - CAN_MM.height / 2,
+    towardMinus,
+  };
+}
+
+/** The box a can stands over on the board's own drawing, its top included. */
+export function canBoxOf(part: Extract<Part, { kind: "electrolytic" }>): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  const p = holeCentre(part.plus);
+  const m = holeCentre(part.minus);
+  const mid = (p.x + m.x) / 2;
+  const bottom = p.y - CAN_MM.lift;
+  const top = bottom - CAN_MM.height - CAN_MM.top;
+  return { x: mid - CAN_MM.width / 2, y: top, w: CAN_MM.width, h: bottom - top };
+}
+
+function drawElectrolytic(part: Extract<Part, { kind: "electrolytic" }>): string {
+  const p = holeCentre(part.plus);
+  const m = holeCentre(part.minus);
+  const y = p.y;
+  const mid = (p.x + m.x) / 2;
+  const half = CAN_MM.width / 2;
+  const bottom = y - CAN_MM.lift;
+  const top = bottom - CAN_MM.height;
+  const ry = CAN_MM.top;
+  const print = canPrintOf(part);
+  const toward = print.towardMinus;
+  // The stripe runs down the side the − leg is on, the whole height of the sleeve.
+  const stripeInner = mid + toward * (half - CAN_MM.stripe);
+  const stripeOuter = mid + toward * half;
+  const stripeX = Math.min(stripeInner, stripeOuter);
+  const stripeMid = (stripeInner + stripeOuter) / 2;
+  const sleeve = `M${n(mid - half)} ${n(top)}V${n(bottom)}A${half} ${ry} 0 0 0 ${n(mid + half)} ${n(bottom)}V${n(top)}Z`;
+  const stripe = `M${n(stripeX)} ${n(top)}V${n(bottom + ry)}H${n(stripeX + CAN_MM.stripe)}V${n(top)}Z`;
+  const kink = 0.6 * -toward;
+  const [number, unit] = formatMicrofarads(part.microfarads).split(" ");
+  const ink = `font-weight="800" fill="${token(ELECTROLYTIC_TOKENS.ink)}"`;
+  const lines =
+    text(print.x, print.y - 0.85, number ?? "", `font-size="1.55" ${ink}`) +
+    text(print.x, print.y + 0.85, unit ?? "", `font-size="1.25" ${ink}`);
+  return (
+    // The − leg straight, and the + leg kinked, as a light's long leg is.
+    line(m.x, y, m.x, bottom, `stroke="${token("lead")}" stroke-width="0.45"`) +
+    `<path d="M${n(p.x)} ${n(bottom)}V${n(y - 1.55)}L${n(p.x + kink)} ${n(y - 1.05)}L${n(p.x)} ${n(y - 0.55)}V${n(y)}" fill="none" stroke="${token("lead")}" stroke-width="0.45" stroke-linejoin="round"/>` +
+    legEnd(p.x, y) +
+    legEnd(m.x, y) +
+    `<path d="${sleeve}" fill="${token(ELECTROLYTIC_TOKENS.sleeve)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"/>` +
+    `<clipPath id="can-${n(mid * 1000)}-${n(y * 1000)}"><path d="${sleeve}"/></clipPath>` +
+    `<path d="${stripe}" clip-path="url(#can-${n(mid * 1000)}-${n(y * 1000)})" fill="${token(ELECTROLYTIC_TOKENS.stripe)}"/>` +
+    // A sheen down the sleeve, on the side away from the stripe.
+    rect(
+      mid - toward * (half - 0.75) - 0.35,
+      top,
+      0.7,
+      CAN_MM.height,
+      `fill="${token("shine")}" fill-opacity="0.16"`,
+    ) +
+    `<ellipse cx="${n(mid)}" cy="${n(top)}" rx="${half}" ry="${ry}" fill="${token("board-metal")}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"/>` +
+    `<path d="M${n(mid - 1)} ${n(top - 0.12)}L${n(mid + 1)} ${n(top + 0.12)}M${n(mid - 1)} ${n(top + 0.12)}L${n(mid + 1)} ${n(top - 0.12)}" stroke="${token("shade")}" stroke-opacity="0.3" stroke-width="0.14"/>` +
+    [0.25, 0.5, 0.75]
+      .map((at) =>
+        word(
+          stripeMid,
+          top + CAN_MM.height * at,
+          "−",
+          `font-size="1.3" font-weight="900" fill="${token(ELECTROLYTIC_TOKENS.stripeInk)}"`,
+        ),
+      )
+      .join("") +
+    (turn === 0 ? lines : `<g${upright(print.x, print.y)}>${lines}</g>`)
   );
 }
 
@@ -1712,6 +1831,9 @@ function drawPart(
       break;
     case "ring":
       body = drawRing(part);
+      break;
+    case "electrolytic":
+      body = drawElectrolytic(part);
       break;
   }
   const label =

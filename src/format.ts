@@ -177,8 +177,28 @@ export interface RingPart {
   readonly dataOut: Hole;
 }
 
+/**
+ * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0043). Its value is in
+ * microfarads, `470` for 470 µF, and printed on its can. Its + leg is the longer one, and its − leg is
+ * under the pale stripe down its side: it goes in one way round only.
+ */
+export interface ElectrolyticPart {
+  readonly kind: "electrolytic";
+  readonly microfarads: number;
+  readonly plus: Hole;
+  readonly minus: Hole;
+}
+
 /** Anything plugged into the breadboard. */
-export type Part = Wire | Resistor | LedPart | ButtonPart | BuzzerPart | RgbLedPart | RingPart;
+export type Part =
+  | Wire
+  | Resistor
+  | LedPart
+  | ButtonPart
+  | BuzzerPart
+  | RgbLedPart
+  | RingPart
+  | ElectrolyticPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the

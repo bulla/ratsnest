@@ -17,8 +17,13 @@ const sourcesIn = (folder: string) =>
     .filter((name) => name.endsWith(".ts"))
     .map((name) => ({ name, source: readFileSync(join(folder, name), "utf8") }));
 const examples = sourcesIn(EXAMPLES);
-/** ratsnest's examples as they were in format 1, before ADR 0036, kept for the migration's test. */
+/**
+ * ratsnest's examples as they were in format 1, before ADR 0036, kept for the migration's test. An
+ * example written since, in format 2, has none: it never was in format 1.
+ */
 const formatOne = sourcesIn(join(EXAMPLES, "format-1"));
+/** The examples written since, in format 2, which have no copy in format 1. */
+const BORN_IN_FORMAT_2 = ["fading-light.ts"];
 
 const NEXT = FORMAT + 1;
 type Data = Record<string, unknown>;
@@ -105,8 +110,10 @@ describe("the migrations' runner (ADR 0015)", () => {
 });
 
 describe("format 1 to 2: a `setup`, one `test`, and a credit for a circuit that had none (ADR 0036, ADR 0037)", () => {
-  it("has ratsnest's examples in format 1 to be tested on, one for each example", () => {
-    expect(formatOne.map(({ name }) => name)).toEqual(examples.map(({ name }) => name));
+  it("has ratsnest's examples in format 1 to be tested on, one for each example that was", () => {
+    expect(formatOne.map(({ name }) => name)).toEqual(
+      examples.map(({ name }) => name).filter((name) => !BORN_IN_FORMAT_2.includes(name)),
+    );
     for (const { source } of formatOne) expect(source).toContain("  format: 1,\n");
   });
 

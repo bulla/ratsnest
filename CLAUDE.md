@@ -23,7 +23,9 @@ language held to ADR 0011's rules (M6). It builds into one executable per platfo
 `ratsnest init` makes circuits projects (M7), every release's version is computed and checked, and
 the first release, 0.1.1, is published (M9), and `ratsnest update` moves a project and its executable
 to a newer ratsnest (M10), and the `circuit` skill publishes a project's pages as Artifacts (M8). A
-circuit can do without a Pico, on a supply, and every circuit is in format 2, since 0.2.0 (M12).
+circuit can do without a Pico, on a supply, and every circuit is in format 2, since 0.2.0 (M12). New
+parts come one at a time, each with the circuit that teaches it, in the roadmap's Backlog: the
+electrolytic capacitor, keeping a light lit on a supply, is the first (M13).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -218,10 +220,11 @@ there.
 │       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
-├── examples/            scratchpi's seven circuits, ported, and `battery-button.ts`, the first on a
-│                        supply (ADR 0032): ratsnest's own, checked like anyone's, and in
-│                        `format-1/` the files the migration to format 2 is tested on, left out of
-│                        the type check (ADR 0014, ADR 0015, ADR 0036)
+├── examples/            scratchpi's seven circuits, ported, `battery-button.ts`, the first on a
+│                        supply (ADR 0032), and `fading-light.ts`, the first with a capacitor
+│                        (ADR 0043): ratsnest's own, checked like anyone's, and in `format-1/` the
+│                        files the migration to format 2 is tested on, one for each example older
+│                        than format 2, left out of the type check (ADR 0014, ADR 0015, ADR 0036)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
@@ -451,7 +454,21 @@ does not pay for it again.
   macOS's WebKit once hung in continuous integration, on the CLI test that draws a PNG then a WebP,
   while the same pictures passed in their own file and the compiled check: the job ran until the
   test's timeout said nothing of where. Every browser step is now wrapped in `within`, which gives
-  it 15 seconds and fails naming the step, so the next hang says which.
+  it 15 seconds and fails naming the step, and the next hangs said which: "load the drawing", now
+  and then, on macOS's WebKit and on Linux's Chrome alike, on `develop` as on pull requests, and
+  never on a machine of ours. `navigate` resolves on the page's `load` event alone, and a view
+  sometimes never has one, while the next view in the same browser draws at once, as the jobs'
+  times showed: one 15 s wait, then every other picture. So `pictureOf` begins a stuck picture again
+  on a fresh view, `TRIES` times in all, through `tried` (ADR 0048); the tests' timeouts leave room
+  for it.
+- **The check on values in a circuit's words knows its units by name.** `VALUE` in `src/fields.ts`
+  is a list of units, and it knew no capacitance until the first capacitor's example wrote `470 µF`
+  in its description and passed. A part whose value the engine writes brings its unit to that list,
+  in every language, with a test in `src/fields.test.ts`.
+- **A standing part stands over the rows above its legs**, on the drawing, as a light's lens does,
+  and wires are drawn over everything. So a hole a reader needs to see, a wire's end above all, goes
+  below a standing part, never above it: the fading light's capacitor has its − leg wired from row j,
+  under its legs in row i.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

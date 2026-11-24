@@ -282,6 +282,16 @@ export type Part =
       readonly power: Hole;
       readonly ground: Hole;
       readonly dataOut: Hole;
+    }
+  /**
+   * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0043): its value in
+   * microfarads, its + leg the longer, and its − leg under the stripe down its can.
+   */
+  | {
+      readonly kind: "electrolytic";
+      readonly microfarads: number;
+      readonly plus: Hole;
+      readonly minus: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -339,6 +349,7 @@ export function legsOf(part: Part): readonly Hole[] {
       return part.columns.flatMap((column) => rows.map((row) => buttonHole(part, row, column)));
     }
     case "buzzer":
+    case "electrolytic":
       return [part.plus, part.minus];
     case "rgbLed":
       return [part.power, part.dataOut, part.ground, part.dataIn];

@@ -1,6 +1,6 @@
 import type { ButtonColour, Supply } from "../circuit";
 import type { WireRole } from "../drawing/breadboard";
-import { type Band, formatOhms } from "../drawing/breadboard-svg";
+import { type Band, formatMicrofarads, formatOhms } from "../drawing/breadboard-svg";
 import { plural } from "../language";
 import type { Orientation } from "../orientation";
 
@@ -64,6 +64,8 @@ export interface PageWords {
 
   /** A value in ohms, as the language writes a decimal: `4.7 kΩ`, `4,7 kΩ`. */
   readonly ohms: (value: number) => string;
+  /** A value in microfarads, as the language writes it: `470 µF`, `0,47 µF`, `470 мкФ`. */
+  readonly microfarads: (value: number) => string;
   /** A resistor's colour, band by band. */
   readonly band: (band: Band) => string;
   /** A jumper's colour, by what it carries, agreeing with how many there are. */
@@ -101,6 +103,8 @@ export interface PageWords {
     ground: Place,
     dataOut: Place,
   ) => string;
+  /** An electrolytic capacitor (ADR 0043), its value written already: its + leg, then its − leg. */
+  readonly electrolytic: (microfarads: string, plus: Place, minus: Place) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
@@ -127,6 +131,8 @@ export interface PageWords {
   /** A button, and the colour of the cap to fit on it (scratchpi's ADR 0174). */
   readonly listButton: (name: string, cap: ButtonColour) => string;
   readonly listBuzzer: (name: string) => string;
+  /** Electrolytic capacitors of one value, written already, and how many (ADR 0043). */
+  readonly listElectrolytic: (microfarads: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
   readonly listLongWire: (colour: string, count: number) => string;
   readonly listCable: string;
@@ -138,6 +144,8 @@ export interface PageWords {
   /** Which way round the ring goes, and what turning it round would do (scratchpi's ADR 0238). */
   readonly ringPolarity: (dataPin: string) => string;
   readonly anyResistor: (low: string, high: string) => string;
+  /** Which way round an electrolytic capacitor goes, and what turning it round would do. */
+  readonly electrolyticPolarity: string;
   readonly rowsLettered: string;
   readonly unplug: string;
 
@@ -256,6 +264,7 @@ export const ENGLISH_PAGE: PageWords = {
   list: englishList,
 
   ohms: formatOhms,
+  microfarads: formatMicrofarads,
   band: (band) => (band === "gold" ? "gold" : (ENGLISH_BANDS[Number(band)] ?? band)),
   wire: (role) => ENGLISH_WIRES[role],
 
@@ -273,6 +282,8 @@ export const ENGLISH_PAGE: PageWords = {
     `The ${name}, its legs in ${englishList(legs)}${second ? " on the second breadboard" : ""}: +5 V, then data out, the longest, then ground, then data in.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `The ${name}, standing up: data in ${englishIn(dataIn)}, 5 V ${englishIn(power)}, ground ${englishIn(ground)} and data out ${englishIn(dataOut)}.`,
+  electrolytic: (microfarads, plus, minus) =>
+    `A ${microfarads} capacitor: its + leg ${englishIn(plus)}, and its − leg, under the stripe, ${englishIn(minus)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
@@ -304,6 +315,8 @@ export const ENGLISH_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}: a 6 mm tactile switch with four legs, and a ${ENGLISH_CAPS[cap]} cap.`,
   listBuzzer: (name) => `Passive ${name}, with its + leg marked.`,
+  listElectrolytic: (microfarads, count) =>
+    `${microfarads} electrolytic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, rated 16 V or more.`,
   listWire: (colour, count) =>
     `${capitalised(colour)} ${plural("en", count, ENGLISH_JUMPERS)}, short.`,
   listLongWire: (colour, count) =>
@@ -318,6 +331,8 @@ export const ENGLISH_PAGE: PageWords = {
     `The ring's back names its four pins: data in, 5 V, ground and data out. Check them against the steps before it goes in: turned round, it would put 5 V on ${dataPin}.`,
   anyResistor: (low, high) =>
     `Any resistor from ${low} to ${high} works for a light. A bigger one makes it dimmer.`,
+  electrolyticPolarity:
+    "An electrolytic capacitor goes in one way round: its − leg is the shorter one, under the pale stripe down its side, and goes towards −. Put in backwards, it can be damaged.",
   rowsLettered:
     "Some breadboards letter their rows the other way up. If yours does, follow the picture rather than the letters.",
   unplug: "Unplug the USB cable while you change the wiring.",
@@ -467,6 +482,7 @@ export const FRENCH_PAGE: PageWords = {
   list: frenchList,
 
   ohms: (value) => formatOhms(value).replace(".", ","),
+  microfarads: (value) => formatMicrofarads(value).replace(".", ","),
   band: (band) => (band === "gold" ? "or" : (FRENCH_BANDS[Number(band)] ?? band)),
   wire: (role, count) => {
     const [one, more] = FRENCH_WIRES[role];
@@ -487,6 +503,8 @@ export const FRENCH_PAGE: PageWords = {
     `${the("led", name)}, ses pattes en ${frenchList(legs)}${second ? " de la seconde plaque" : ""}${NNBSP}: le +5 V, puis la sortie des données, la plus longue, puis la masse, puis l’entrée des données.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `${the("led", name)}, debout${NNBSP}: l’entrée des données ${frenchIn(dataIn)}, le 5 V ${frenchIn(power)}, la masse ${frenchIn(ground)} et la sortie des données ${frenchIn(dataOut)}.`,
+  electrolytic: (microfarads, plus, minus) =>
+    `Un condensateur de ${microfarads}${NNBSP}: sa patte + ${frenchIn(plus)}, et sa patte −, du côté de la bande, ${frenchIn(minus)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
@@ -522,6 +540,8 @@ export const FRENCH_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}${NNBSP}: un interrupteur tactile de 6 mm à quatre pattes, avec un capuchon ${FRENCH_CAPS[cap]}.`,
   listBuzzer: (name) => `${capitalised(name)} passif, avec sa patte + marquée.`,
+  listElectrolytic: (microfarads, count) =>
+    `${plural("fr", count, { one: "Condensateur électrolytique", many: "Condensateurs électrolytiques", other: "Condensateurs électrolytiques" })} de ${microfarads}, de 16 V ou plus.`,
   listWire: (colour, count) => {
     const more = `Fils de connexion ${colour}, courts.`;
     return plural("fr", count, {
@@ -548,6 +568,7 @@ export const FRENCH_PAGE: PageWords = {
     `Le dos de l’anneau nomme ses quatre broches${NNBSP}: entrée des données, 5 V, masse et sortie des données. Vérifiez-les d’après les étapes avant de le planter${NNBSP}: à l’envers, il mettrait 5 V sur ${dataPin}.`,
   anyResistor: (low, high) =>
     `N’importe quelle résistance de ${low} à ${high} convient pour une LED. Plus elle est grande, plus la LED éclaire faiblement.`,
+  electrolyticPolarity: `Un condensateur électrolytique se plante dans un seul sens${NNBSP}: sa patte − est la plus courte, du côté de la bande pâle sur son flanc, et va vers le −. Monté à l’envers, il peut être abîmé.`,
   rowsLettered:
     "Sur certaines plaques d’essai, les lettres des rangées vont dans l’autre sens. Si c’est le cas de la vôtre, suivez le dessin plutôt que les lettres.",
   unplug: "Débranchez le câble USB pendant que vous changez le câblage.",
@@ -658,6 +679,10 @@ const russianList = (items: readonly string[]): string =>
     ? items.join("")
     : `${items.slice(0, -1).join(", ")} и ${items[items.length - 1]}`;
 
+/** A value in microfarads as Russian writes it: a decimal comma, and *мкФ*. */
+const russianMicrofarads = (value: number): string =>
+  formatMicrofarads(value).replace(".", ",").replace("µF", "мкФ");
+
 /** A value in ohms as Russian writes it: a decimal comma, and *Ом*. */
 const russianOhms = (value: number): string =>
   formatOhms(value).replace(".", ",").replace("kΩ", "кОм").replace("Ω", "Ом");
@@ -687,6 +712,7 @@ export const RUSSIAN_PAGE: PageWords = {
   list: russianList,
 
   ohms: russianOhms,
+  microfarads: russianMicrofarads,
   band: (band) => (band === "gold" ? "золотой" : (RUSSIAN_BANDS[Number(band)] ?? band)),
   wire: (role) => RUSSIAN_WIRES[role],
 
@@ -705,6 +731,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `${name}: ножки в ${russianList(legs)}${second ? " на второй плате" : ""}: +5 В, затем выход данных, самая длинная, затем земля, затем вход данных.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `${name}, стоя: вход данных ${russianIn(dataIn)}, 5 В ${russianIn(power)}, земля ${russianIn(ground)} и выход данных ${russianIn(dataOut)}.`,
+  electrolytic: (microfarads, plus, minus) =>
+    `Конденсатор ${microfarads}: ножка + ${russianIn(plus)}, ножка −, со стороны полосы, ${russianIn(minus)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
@@ -738,6 +766,8 @@ export const RUSSIAN_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}: тактовая кнопка 6 мм с четырьмя ножками и ${RUSSIAN_CAPS[cap].alone} колпачок.`,
   listBuzzer: (name) => `${capitalised(name)}: пассивного типа, ножка + отмечена.`,
+  listElectrolytic: (microfarads) =>
+    `Электролитический конденсатор ${microfarads}, на 16 В или больше.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
   listCable:
@@ -751,6 +781,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `На обороте кольца подписаны его четыре вывода: вход данных, 5 В, земля и выход данных. Сверьте их с шагами до установки: перевёрнутое, оно подало бы 5 В на ${dataPin}.`,
   anyResistor: (low, high) =>
     `Для светодиода подойдёт любой резистор от ${low} до ${high}. Чем больше сопротивление, тем тусклее свет.`,
+  electrolyticPolarity:
+    "Электролитический конденсатор ставится только одной стороной: ножка − короче, она под светлой полосой на корпусе и идёт к −. Вставленный наоборот, он может испортиться.",
   rowsLettered:
     "На некоторых макетных платах ряды подписаны в обратном порядке. Если на вашей так, следуйте рисунку, а не буквам.",
   unplug: "Отключайте кабель USB, пока меняете схему.",

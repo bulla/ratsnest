@@ -15,7 +15,7 @@ import {
   stripOf,
   supplyLeadsOf,
 } from "./drawing/breadboard";
-import { formatOhms } from "./drawing/breadboard-svg";
+import { formatMicrofarads, formatOhms } from "./drawing/breadboard-svg";
 import { HEADER_PINS, type HeaderPin, headerPinOfGpio } from "./drawing/geometry";
 
 /**
@@ -45,6 +45,11 @@ export const LIGHT_OHMS_RANGE = [220, 1000] as const;
  * the pin low on an RP2350 whose inputs leak, which erratum E9 puts at 8.2 kΩ (scratchpi's ADR 0159).
  */
 export const PULL_DOWN_OHMS_RANGE = [1000, 8200] as const;
+/**
+ * How long a capacitor keeps a light lit, at the least: its capacitance times the light's resistor,
+ * in seconds (ADR 0043). Shorter, and the light goes out too fast to be seen fading.
+ */
+export const FADE_SECONDS = 0.2;
 
 /** Union–find over strip names, pin names and the one shared ground. */
 class Nets {
@@ -135,6 +140,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${circuit.leds.find((led) => led.id === part.led)?.name ?? `RGB LED "${part.led}"`}`;
     case "ring":
       return `the ${circuit.leds.find((led) => led.id === part.led)?.name ?? `ring "${part.led}"`}`;
+    case "electrolytic":
+      return `the ${formatMicrofarads(part.microfarads)} capacitor with its + leg in ${part.plus}`;
   }
 }
 
@@ -167,6 +174,10 @@ function shapeProblems(part: Part, name: string): string[] {
       return sameRow(part.plus, part.minus, 3)
         ? []
         : [`${name} needs its legs in one row, three holes apart`];
+    case "electrolytic":
+      return sameRow(part.plus, part.minus, 1)
+        ? []
+        : [`${name} needs its legs in one row, one hole apart`];
     case "rgbLed":
     case "ring": {
       // Side by side, in the guide's order, whichever way round it faces (scratchpi's ADR 0222, 0238).
@@ -268,6 +279,15 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   if (problems.length > 0) return problems;
   problems.push(...placedProblems(circuit, parts));
   if (supply) return [...problems, ...supplyWiringProblems(circuit, parts, supply)];
+
+  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0043).
+  for (const part of parts) {
+    if (part.kind === "electrolytic") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0043)`,
+      );
+    }
+  }
 
   const nets = wireUp(parts, () => false);
   const net = (hole: Hole) => nets.find(stripOf(hole));
@@ -588,6 +608,52 @@ function supplyWiringProblems(
   for (const resistor of resistors) {
     if (!accounted.has(resistor)) {
       problems.push(`${describe(resistor, circuit)} is not a light's resistor`);
+    }
+  }
+
+  // Every capacitor keeps a light lit (ADR 0043): its − leg on −, its + leg between a button and a
+  // light's resistor, which a button charges and the light empties, slowly enough to be seen.
+  for (const capacitor of parts) {
+    if (capacitor.kind !== "electrolytic") continue;
+    const name = describe(capacitor, circuit);
+    const plusLeg = open.find(stripOf(capacitor.plus));
+    const minusLeg = open.find(stripOf(capacitor.minus));
+    const [plus, minus] = [plusOf(open), minusOf(open)];
+    if (plusLeg === minus || minusLeg === plus) {
+      problems.push(
+        `${name} is in backwards: its − leg, under the stripe, goes towards −, and its + leg towards +`,
+      );
+      continue;
+    }
+    if (minusLeg !== minus) {
+      problems.push(`${name} has its − leg, under the stripe, off −: it goes straight to −`);
+      continue;
+    }
+    if (plusLeg === plus) {
+      problems.push(
+        `${name} is across the supply, where it keeps no light lit: its + leg goes between a button and a light's resistor`,
+      );
+      continue;
+    }
+    // What a held button charges it from, and the light it then empties into, through its resistor.
+    const charged = all.find(stripOf(capacitor.plus)) === plusOf(all);
+    const kept = lights.flatMap((light) => {
+      const anode = open.find(stripOf(light.anode));
+      const cathode = open.find(stripOf(light.cathode));
+      return cathode === minus ? between(open, plusLeg, anode) : [];
+    });
+    if (!charged || kept.length !== 1) {
+      problems.push(
+        `${name} keeps no light lit: its + leg goes between a button and a light's resistor, and its − leg to −`,
+      );
+      continue;
+    }
+    const resistor = kept[0] as Extract<Part, { kind: "resistor" }>;
+    const seconds = resistor.ohms * capacitor.microfarads * 1e-6;
+    if (seconds < FADE_SECONDS) {
+      problems.push(
+        `${name} empties through the ${formatOhms(resistor.ohms)} resistor in about ${Math.round(seconds * 100) / 100} s, too fast to see its light fade: with that resistor it needs ${formatMicrofarads(Math.ceil(FADE_SECONDS / (resistor.ohms * 1e-6)))} or more`,
+      );
     }
   }
 

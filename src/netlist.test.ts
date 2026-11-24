@@ -483,3 +483,85 @@ describe("a circuit with a supply (ADR 0033)", () => {
     );
   });
 });
+
+describe("an electrolytic capacitor keeping a light lit (ADR 0043)", () => {
+  const { circuit, layout } = FIXTURES["light-kept-lit-by-a-capacitor"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const capacitor = (next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "electrolytic", next);
+  const NAME = "the 1000 µF capacitor with its + leg in i15";
+
+  it("takes one between a button and a light's resistor, its − leg on −", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds one in backwards", () => {
+    const turned = problems(
+      capacitor({ kind: "electrolytic", microfarads: 1000, plus: "i14", minus: "i15" }),
+    );
+    expect(turned).toContain(
+      "the 1000 µF capacitor with its + leg in i14 is in backwards: its − leg, under the stripe, goes towards −, and its + leg towards +",
+    );
+  });
+
+  it("finds its legs anywhere but side by side in one row", () => {
+    expect(
+      problems(capacitor({ kind: "electrolytic", microfarads: 1000, plus: "i15", minus: "h14" })),
+    ).toContain(`${NAME} needs its legs in one row, one hole apart`);
+  });
+
+  it("finds its − leg off −", () => {
+    const off = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "j14", {
+        kind: "wire",
+        from: "j14",
+        to: "j17",
+        role: "signal",
+      }),
+    );
+    expect(off).toContain(`${NAME} has its − leg, under the stripe, off −: it goes straight to −`);
+  });
+
+  it("finds one across the supply, before any button", () => {
+    const across = problems(
+      capacitor({ kind: "electrolytic", microfarads: 1000, plus: "i13", minus: "i14" }),
+    );
+    expect(across).toContain(
+      "the 1000 µF capacitor with its + leg in i13 is across the supply, where it keeps no light lit: its + leg goes between a button and a light's resistor",
+    );
+  });
+
+  it("finds one that keeps no light lit, across the light itself", () => {
+    const after = problems((parts) => [
+      ...capacitor({ kind: "electrolytic", microfarads: 1000, plus: "i20", minus: "i19" })(parts),
+      { kind: "wire", from: "j19", to: "bottom-19", role: "ground" },
+    ]);
+    expect(after).toContain(
+      "the 1000 µF capacitor with its + leg in i20 keeps no light lit: its + leg goes between a button and a light's resistor, and its − leg to −",
+    );
+  });
+
+  it("finds one that empties too fast to see its light fade", () => {
+    const small = problems(
+      capacitor({ kind: "electrolytic", microfarads: 100, plus: "i15", minus: "i14" }),
+    );
+    expect(small).toContain(
+      "the 100 µF capacitor with its + leg in i15 empties through the 470 Ω resistor in about 0.05 s, too fast to see its light fade: with that resistor it needs 426 µF or more",
+    );
+  });
+
+  it("finds one on a Pico, where it has no use yet", () => {
+    const { circuit: pico, layout: picoLayout } = FIXTURES["two-lights"];
+    const found = wiringProblems(
+      pico,
+      edited(picoLayout, (parts) => [
+        ...parts,
+        { kind: "electrolytic", microfarads: 470, plus: "g28", minus: "g29" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 470 µF capacitor with its + leg in g28 has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0043)",
+    );
+  });
+});

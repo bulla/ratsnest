@@ -11,7 +11,8 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * The engine's own circuits, for its tests to build on and break on purpose. Seven are copies of
  * scratchpi's circuits and layouts (ADR 0001), renamed by what they hold, so that no test in `src/`
  * names a circuit that ships (ADR 0007): the ones that ship are `examples/`, from M3. The eighth has
- * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches.
+ * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches, and the
+ * ninth a capacitor that keeps a light lit once its button is let go (ADR 0043).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -22,6 +23,7 @@ export const FIXTURE_IDS = [
   "rgb-led-and-d-pad",
   "ring-and-button",
   "two-lights-on-a-supply",
+  "light-kept-lit-by-a-capacitor",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -578,6 +580,45 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
       ],
       test: "The red LED lights once the supply is connected. Hold BTN1 down and the yellow one lights too.",
+    },
+  },
+  "light-kept-lit-by-a-capacitor": {
+    circuit: {
+      name: "A light kept lit",
+      description:
+        "A red light that BTN1 lights, and a capacitor that keeps it lit, dimming, once BTN1 is let go, on two AA batteries.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 3, rails: "bottom" },
+      leds: [{ id: "red", name: "red LED", colour: "red" }],
+      buttons: [{ id: "button", name: "BTN1", colour: "red" }],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "BTN1 between + and the capacitor",
+          parts: [
+            { kind: "wire", from: "j13", to: "bottom+13", role: "power" },
+            { kind: "button", button: "button", columns: [13, 15] },
+          ],
+        },
+        {
+          title: "The capacitor",
+          parts: [
+            { kind: "electrolytic", microfarads: 1000, plus: "i15", minus: "i14" },
+            { kind: "wire", from: "j14", to: "bottom-14", role: "ground" },
+          ],
+        },
+        {
+          title: "The red LED and its resistor",
+          parts: [
+            { kind: "resistor", ohms: 470, from: "j15", to: "j20" },
+            { kind: "led", led: "red", anode: "h20", cathode: "h21" },
+            { kind: "wire", from: "j21", to: "bottom-21", role: "ground" },
+          ],
+        },
+      ],
+      test: "Hold BTN1 down and the red LED lights. Let go and it dims for a second or so before it goes out.",
     },
   },
 };
