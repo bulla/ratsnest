@@ -62,9 +62,9 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 
 ## Open points
 
-- **The slide potentiometer's legs** (ADR 0053): taken from the drawing in The Pi Hut's day 7, two
-  at one end two holes apart and one 17 rows along, since no slide potentiometer was measured. The owner, who has
-  the calendar's, checks that its legs fall there, and says if they do not.
+- **The slide potentiometer's legs** (ADR 0053): taken from the drawing in a tutorial the owner
+  chose, two at one end two holes apart and one 17 rows along, since no slide potentiometer was
+  measured. The owner, who has one, checks that its legs fall there, and says if they do not.
 
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,

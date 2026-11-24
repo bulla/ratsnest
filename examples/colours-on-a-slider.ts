@@ -1,6 +1,6 @@
-// The first example with a slide potentiometer (ADR 0038, ADR 0053), after day 7 of The Pi Hut's Let
-// it Glow Maker Advent Calendar: the Pico reads the potentiometer on an analogue pin, and lights two
-// RGB LEDs from the reading. It is too long for one breadboard, so it lies across two.
+// The first example with a slide potentiometer (ADR 0038, ADR 0053): the Pico reads the
+// potentiometer on an analogue pin, and lights two RGB LEDs from the reading. It is too long for
+// one breadboard, so it lies across two.
 import type { Circuit } from "ratsnest";
 
 export default {
@@ -8,8 +8,8 @@ export default {
   setup: { kind: "pico" },
   name: { en: "Colours on a slider", fr: "Des couleurs au curseur" },
   description: {
-    en: "A slide potentiometer that the Pico reads on GP28, one of its analogue pins, and two addressable RGB LEDs that change colour as the knob slides. It is too long for one breadboard, so it lies across two, the second snapped onto the first. The circuit follows day 7 of The Pi Hut's Let it Glow Maker Advent Calendar.",
-    fr: "Un potentiomètre à glissière que le Pico lit sur GP28, une de ses broches analogiques, et deux LED RVB adressables qui changent de couleur quand on fait glisser le bouton. Le potentiomètre est trop long pour une seule plaque, il est donc couché à cheval sur deux, la seconde emboîtée sur la première. Le circuit suit le jour 7 du calendrier de l’Avent Let it Glow Maker de The Pi Hut.",
+    en: "A slide potentiometer that the Pico reads on GP28, one of its analogue pins, and two addressable RGB LEDs that change colour as the knob slides. It is too long for one breadboard, so it lies across two, the second snapped onto the first.",
+    fr: "Un potentiomètre à glissière que le Pico lit sur GP28, une de ses broches analogiques, et deux LED RVB adressables qui changent de couleur quand on fait glisser le bouton. Le potentiomètre est trop long pour une seule plaque, il est donc couché à cheval sur deux, la seconde emboîtée sur la première.",
   },
   credit: {
     en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
