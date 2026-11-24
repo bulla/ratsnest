@@ -7,8 +7,8 @@ import {
   CERAMIC_TOKENS,
   DIODE_TOKENS,
   ELECTROLYTIC_TOKENS,
+  SLIDE_POTENTIOMETER_TOKENS,
   SLIDE_SWITCH_TOKENS,
-  SLIDER_TOKENS,
   SUPPLY_TOKENS,
   TRANSISTOR_TOKENS,
 } from "../drawing/breadboard-svg";
@@ -245,9 +245,13 @@ describe.each(SCOPES)("the %s scale", (scope) => {
   });
 
   it("sets a slide potentiometer's knob apart from its body at 3:1, and prints its value legibly on it (ADR 0053)", () => {
-    const body = colour(SLIDER_TOKENS.body, scope);
-    expect(contrastRatio(colour(SLIDER_TOKENS.knob, scope), body)).toBeGreaterThanOrEqual(3);
-    expect(contrastRatio(colour(SLIDER_TOKENS.ink, scope), body)).toBeGreaterThanOrEqual(4.5);
+    const body = colour(SLIDE_POTENTIOMETER_TOKENS.body, scope);
+    expect(
+      contrastRatio(colour(SLIDE_POTENTIOMETER_TOKENS.knob, scope), body),
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      contrastRatio(colour(SLIDE_POTENTIOMETER_TOKENS.ink, scope), body),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it("sets a slide switch's slide apart from its shell at 3:1, since where it sits says which way it is set (ADR 0052)", () => {

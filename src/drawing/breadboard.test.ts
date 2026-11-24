@@ -5,7 +5,7 @@ import {
   BREADBOARD_HEIGHT_MM,
   CHANNEL_Y_MM,
   coveredBy,
-  coveredBySlider,
+  coveredBySlidePotentiometer,
   holeCentre,
   holeOfPin,
   isOnSecondBoard,
@@ -658,25 +658,33 @@ describe("a slide switch, standing on its three legs (ADR 0052)", () => {
 });
 
 describe("a slide potentiometer, lying across both breadboards (ADR 0053)", () => {
-  const parts = FIXTURES["slider-read-by-an-analogue-pin"].layout.steps.flatMap((step) => [
-    ...step.parts,
-  ]);
-  const slider = parts.find((part) => part.kind === "slider") as Extract<Part, { kind: "slider" }>;
+  const parts = FIXTURES["slide-potentiometer-read-by-an-analogue-pin"].layout.steps.flatMap(
+    (step) => [...step.parts],
+  );
+  const potentiometer = parts.find((part) => part.kind === "slidePotentiometer") as Extract<
+    Part,
+    { kind: "slidePotentiometer" }
+  >;
   const drawn = (orientation: 0 | 90 | 180 | 270) =>
     drawBreadboard({
       orientation,
-      parts: [{ part: slider, group: "step-1" }],
+      parts: [{ part: potentiometer, group: "step-1" }],
       tags: [],
       ledColour: () => "red",
       buttonColour: () => "red",
-      title: "A slider",
-      description: "A slider.",
+      title: "A slide potentiometer",
+      description: "A slide potentiometer.",
     });
 
   it("draws both breadboards, and its body, slot and knob between its legs", () => {
     expect(usesSecondBoard(parts)).toBe(true);
     const svg = drawn(0);
-    for (const token of ["slider", "slider-slot", "slider-knob", "slider-ink"]) {
+    for (const token of [
+      "slide-potentiometer",
+      "slide-potentiometer-slot",
+      "slide-potentiometer-knob",
+      "slide-potentiometer-ink",
+    ]) {
       expect(svg).toContain(`var(--color-${token})`);
     }
   });
@@ -690,7 +698,7 @@ describe("a slide potentiometer, lying across both breadboards (ADR 0053)", () =
   });
 
   it("covers the holes between its legs, across its three columns, and no others", () => {
-    const covered = coveredBySlider(slider);
+    const covered = coveredBySlidePotentiometer(potentiometer);
     expect(covered).toContain("2:g10");
     expect(covered).toContain("top+10");
     expect(covered).toContain("2:bottom-9");

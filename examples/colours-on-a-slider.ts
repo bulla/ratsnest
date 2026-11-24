@@ -1,6 +1,6 @@
 // The first example with a slide potentiometer (ADR 0038, ADR 0053), after day 7 of The Pi Hut's Let
-// it Glow Maker Advent Calendar: the Pico reads the slider on an analogue pin, and lights two RGB
-// LEDs from the reading. The slider is too long for one breadboard, so it lies across two.
+// it Glow Maker Advent Calendar: the Pico reads the potentiometer on an analogue pin, and lights two
+// RGB LEDs from the reading. It is too long for one breadboard, so it lies across two.
 import type { Circuit } from "ratsnest";
 
 export default {
@@ -8,8 +8,8 @@ export default {
   setup: { kind: "pico" },
   name: { en: "Colours on a slider", fr: "Des couleurs au curseur" },
   description: {
-    en: "A slide potentiometer that the Pico reads on GP28, one of its analogue pins, and two addressable RGB LEDs that change colour as the knob slides. The slider is too long for one breadboard, so it lies across two, the second snapped onto the first. The circuit follows day 7 of The Pi Hut's Let it Glow Maker Advent Calendar.",
-    fr: "Un potentiomètre à glissière que le Pico lit sur GP28, une de ses broches analogiques, et deux LED RVB adressables qui changent de couleur quand on fait glisser le bouton. Le curseur est trop long pour une seule plaque, il est donc couché à cheval sur deux, la seconde emboîtée sur la première. Le circuit suit le jour 7 du calendrier de l’Avent Let it Glow Maker de The Pi Hut.",
+    en: "A slide potentiometer that the Pico reads on GP28, one of its analogue pins, and two addressable RGB LEDs that change colour as the knob slides. It is too long for one breadboard, so it lies across two, the second snapped onto the first. The circuit follows day 7 of The Pi Hut's Let it Glow Maker Advent Calendar.",
+    fr: "Un potentiomètre à glissière que le Pico lit sur GP28, une de ses broches analogiques, et deux LED RVB adressables qui changent de couleur quand on fait glisser le bouton. Le potentiomètre est trop long pour une seule plaque, il est donc couché à cheval sur deux, la seconde emboîtée sur la première. Le circuit suit le jour 7 du calendrier de l’Avent Let it Glow Maker de The Pi Hut.",
   },
   credit: {
     en: "The Pico 2 W is drawn from its datasheet, adapting the Raspberry Pi Pico 2 W pinout, © Raspberry Pi Ltd, under CC BY-SA 4.0 (creativecommons.org/licenses/by-sa/4.0). This drawing is shared under the same licence. Set in Nunito, under the SIL Open Font License 1.1.",
@@ -92,7 +92,9 @@ export default {
         en: "Its two legs at one end go straight into the strips of 3V3(OUT) and GP28, the wiper in GP28's. Push the cap onto its knob first.",
         fr: "Ses deux pattes d’un même bout vont tout droit dans les bandes du 3V3(OUT) et de GP28, le curseur dans celle de GP28. Enfoncez d’abord le capuchon sur son bouton.",
       },
-      parts: [{ kind: "slider", ohms: 10000, wiper: "a8", end: "a6", otherEnd: "2:e6" }],
+      parts: [
+        { kind: "slidePotentiometer", ohms: 10000, wiper: "a8", end: "a6", otherEnd: "2:e6" },
+      ],
     },
     {
       title: {
@@ -110,12 +112,12 @@ export default {
 from neopixel import NeoPixel
 from time import sleep
 
-slider = ADC(Pin(28))
+potentiometer = ADC(Pin(28))
 first = NeoPixel(Pin(22), 1)
 second = NeoPixel(Pin(17), 1)
 
 while True:
-    reading = slider.read_u16()
+    reading = potentiometer.read_u16()
     print(reading)
     level = reading >> 8
     first[0] = (level, 0, 255 - level)
@@ -127,12 +129,12 @@ while True:
 from neopixel import NeoPixel
 from time import sleep
 
-curseur = ADC(Pin(28))
+potentiometre = ADC(Pin(28))
 premiere = NeoPixel(Pin(22), 1)
 seconde = NeoPixel(Pin(17), 1)
 
 while True:
-    lecture = curseur.read_u16()
+    lecture = potentiometre.read_u16()
     print(lecture)
     niveau = lecture >> 8
     premiere[0] = (niveau, 0, 255 - niveau)
@@ -142,7 +144,7 @@ while True:
     sleep(0.1)`,
   },
   test: {
-    en: "The script prints the slider's reading ten times a second, from near 0 at one end of its travel to near 65535 at the other. As you slide the knob, the first RGB LED goes from blue to red and the second from red to green.",
-    fr: "Le script affiche la lecture du curseur dix fois par seconde, de presque 0 à un bout de sa course à presque 65535 à l’autre. Quand vous faites glisser le bouton, la première LED RVB passe du bleu au rouge, et la seconde du rouge au vert.",
+    en: "The script prints the potentiometer's reading ten times a second, from near 0 at one end of its travel to near 65535 at the other. As you slide the knob, the first RGB LED goes from blue to red and the second from red to green.",
+    fr: "Le script affiche la lecture du potentiomètre dix fois par seconde, de presque 0 à un bout de sa course à presque 65535 à l’autre. Quand vous faites glisser le bouton, la première LED RVB passe du bleu au rouge, et la seconde du rouge au vert.",
   },
 } satisfies Circuit;

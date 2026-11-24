@@ -369,7 +369,8 @@ of GP28 and 3V3(OUT), and the script colours two RGB LEDs from its reading (ADR 
 - [x] The design, worked out alone at the owner's asking (ADR 0053): no analogue pin kind, the wiper's
       pin read from the wiring; the legs as the tutorial's drawing places them; the tutorial credited
       in the description
-- [x] The format: `{ kind: "slider", ohms, wiper, end, otherEnd }`, read and checked field by field,
+- [x] The format: `{ kind: "slidePotentiometer", ohms, wiper, end, otherEnd }`, read and checked field
+      by field,
       and refused in a circuit with a supply
 - [x] The wiring check's rule: its shape across both boards; nothing under its body; its wiper on
       neither 3V3(OUT) nor ground; its ends on 3V3(OUT) and ground; its wiper straight on GP26, GP27 or
@@ -710,4 +711,7 @@ of GP28 and 3V3(OUT), and the script colours two RGB LEDs from its reading (ADR 
   the strips of 3V3(OUT) and GP28, two columns apart on the Pico's own row, and its other end landed
   on the second breadboard, a jumper from ground away. The tutorial went into the example's
   description, since the examples' credit is the skill's, which a test holds. The Russian note first
-  had a dash Nunito's files lack, and the page test said so.
+  had a dash Nunito's files lack, and the page test said so. Its kind was `slider` until the owner
+  read it on the pull request: beside `slideSwitch` it could mean either part, so it became
+  `slidePotentiometer`, and the example's French, which had called the whole part its `curseur`, the
+  word its page uses for the wiper, calls it the potentiometer.
