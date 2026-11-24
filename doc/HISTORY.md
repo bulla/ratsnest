@@ -510,3 +510,11 @@ on its flat face and each leg's letter above it.
   its middle point, so the transistor moved a column left and its light's resistor grew a hole. The
   light runs from 3V3: VBUS's 5 V, which shows best what a transistor is for, would have changed the
   - rail's legend and the wire colours' rule, and waits for a circuit that needs it.
+- 2026-11-24: Between milestones, ADR 0048, on the electrolytic capacitor's pull request, whose
+  macOS test job failed twice on "load the drawing", as Linux's had on `develop` just after the
+  pictures were merged. No machine at hand made a view miss its `load`, in more than a hundred
+  pictures, and no log could be read without signing in, so the jobs' times told it: each failure
+  cost one 15 s wait, and the pictures after it were drawn by the same browser. A stuck picture is
+  now begun again on a fresh view, three times in all, which a view made to hang by hand showed
+  drawing at the second. ADR 0048 took the number after the stack's last, since 0044 to 0047 were
+  decided first and are already on the pull requests above this one.
