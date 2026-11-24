@@ -22,8 +22,8 @@ executable makes circuits projects, the owner's first among them (M7), and the `
 publishes their pages as Artifacts (M8). M6 waits on the owner, below. Circuits without a Pico,
 powered by a supply on the rails (ADR 0032 to ADR 0034), are M12, released in 0.2.0 with format 2:
 every circuit's `setup`, one `test` and a credit of its own (ADR 0035 to ADR 0037). New parts,
-capacitors, transistors and diodes, each with the circuit that teaches it, are planned in the
-Backlog (ADR 0038 to ADR 0041). The electrolytic capacitor is M13 (ADR 0043), the NPN and PNP
+capacitors, transistors, diodes, two switches and a slide potentiometer, each with the circuit that
+teaches it, are planned in the Backlog (ADR 0038 to ADR 0041). The electrolytic capacitor is M13 (ADR 0043), the NPN and PNP
 transistors M14 and M15 (ADR 0044, ADR 0045), and the owner's capacitor tester and flasher M16
 (ADR 0046, ADR 0047).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
@@ -110,6 +110,29 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
      through a resistor while the Pico counts how long it takes, and the script prints it. Drawn
      standing, a small disc; its rule is a resistor and a capacitor on a pair of pins. Left to its
      own record: what the disc prints, `104` as the real one does or `100 nF`.
+  3. **The slide switch: one light or the other.** On a supply, an SPDT slide switch's middle leg on
+     +, and each outer leg to a light and its resistor, so that one light or the other is lit, and
+     stays lit when let go, which a button cannot do. Drawn from above, a small black body with its
+     slide and three legs in a row; its rule is a part that joins its middle leg to one outer leg or
+     the other, each outer leg on a light's way. Left to its own record: a model whose legs fit the
+     breadboard's 2.54 mm pitch, and which way its slide is drawn.
+  4. **The slide potentiometer: a slider the Pico reads**, the circuit of The Pi Hut's Let it Glow
+     Maker Advent Calendar, day 7, which the owner chose. On a Pico, a 10 kΩ slide potentiometer,
+     45 mm long, lies across both breadboards, its two back legs on the second and its front leg on
+     the first: one end on 3V3(OUT), its wiper on GP28, an analogue pin, and its other end on
+     ground. The two addressable RGB LEDs of its day 6, which ratsnest already draws, stay on the
+     second board, and the script lights them from the slider's reading. Drawn lying, a long metal
+     body with its slot and its knob; its rule is a divider from 3V3(OUT) to ground, its wiper
+     straight on one of GP26 to GP28 and on nothing else, which catches the wiper and an end swapped,
+     a mistake that tutorial's own readers made. Left to its own record: how a circuit names an
+     analogue pin, a part with legs on both boards, the slider's real legs and their spacing, and how
+     its page credits the tutorial, whose words and code it does not copy.
+  5. **The DIP switch: four switches make a number.** On a Pico, a four-way DIP switch across the
+     channel, each switch on a pin of its own, and the script prints the number they make, 0 to 15.
+     Drawn as a small body across the channel, its four slides numbered; its rule is four inputs,
+     each held by a pull-down as a button is, or by the Pico's own pull-up, which would be a rule of
+     its own: the Pico's own pull-downs cannot be relied on, on an RP2350 (erratum E9). Left to its
+     own record: pull-downs or pull-ups, and four ways or eight.
 
 - **Standard steps the engine knows by name**, if writing out common steps in every circuit file
   starts to hurt (ADR 0007)
@@ -130,9 +153,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 - **ratsnest's own site**: its examples and its documentation, on GitHub Pages once the repository is
   public, built by GitHub Actions. Which variants it serves and whether it has an index that links
   them, which ADR 0004 would have to allow, is a record of its own.
-- **More parts, each when a circuit needs it** (ADR 0038): potentiometers, SPDT switches, slide and
-  DIP switches, relays, light-dependent resistors, MOSFETs, Zener and Schottky diodes, and film
-  capacitors
+- **More parts, each when a circuit needs it** (ADR 0038): rotary potentiometers, toggle switches,
+  relays, light-dependent resistors, MOSFETs, Zener and Schottky diodes, and film capacitors
 - **A full-size breadboard**, probably drawn standing up, and **other boards**: the rest of the Pico
   family first (ADR 0002, ADR 0003)
 - **Solid 2**, when something on a page has to change after it is made, such as a page that picks the

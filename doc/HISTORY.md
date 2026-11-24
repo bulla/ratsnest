@@ -563,3 +563,12 @@ leader that rises over the parts in its way (ADR 0047).
   now begun again on a fresh view, three times in all, which a view made to hang by hand showed
   drawing at the second. ADR 0048 took the number after the stack's last, since 0044 to 0047 were
   decided first and are already on the pull requests above this one.
+- 2026-11-24: More new parts, at the owner's asking: a slide switch, a slide potentiometer and a DIP
+  switch leave the roadmap's Later for the Backlog, after the ceramic capacitor, each with the
+  circuit that teaches it. The slider's circuit is the owner's choice, The Pi Hut's Let it Glow
+  Maker Advent Calendar, day 7, read from an extract of the page the owner saved: a 45 mm slider
+  across both breadboards, its wiper on GP28, beside the two RGB LEDs of its day 6. Asked which
+  circuit should teach a potentiometer, the owner named the same one, so a rotary potentiometer
+  stays in Later, with a toggle switch. The slide switch goes first, as the easiest start, and the
+  DIP switch last, since its four inputs need four pull-downs or a rule for the Pico's own
+  pull-ups.
