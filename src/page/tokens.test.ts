@@ -6,6 +6,7 @@ import {
   BREADBOARD_TOKENS,
   CERAMIC_TOKENS,
   DIODE_TOKENS,
+  DIP_SWITCH_TOKENS,
   ELECTROLYTIC_TOKENS,
   SLIDE_SWITCH_TOKENS,
   SLIDER_TOKENS,
@@ -241,6 +242,14 @@ describe.each(SCOPES)("the %s scale", (scope) => {
   it("prints a ceramic capacitor's code legibly on its disc (ADR 0051)", () => {
     expect(
       contrastRatio(colour(CERAMIC_TOKENS.ink, scope), colour(CERAMIC_TOKENS.body, scope)),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("sets a DIP switch's slides apart from their windows at 3:1, and prints its ON and numbers legibly (ADR 0054)", () => {
+    const slide = colour(DIP_SWITCH_TOKENS.slide, scope);
+    expect(contrastRatio(slide, colour(DIP_SWITCH_TOKENS.window, scope))).toBeGreaterThanOrEqual(3);
+    expect(
+      contrastRatio(colour(DIP_SWITCH_TOKENS.ink, scope), colour(DIP_SWITCH_TOKENS.body, scope)),
     ).toBeGreaterThanOrEqual(4.5);
   });
 

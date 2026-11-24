@@ -114,7 +114,7 @@ A circuit with a supply:
 - **may have electrolytic capacitors, each keeping a light lit, two NPN transistors that flash
   two lights, diodes on lights' ways, and slide switches lighting one light or another** (below).
 
-## Capacitors, transistors, diodes, switches and sliders (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0053)
+## Capacitors, transistors, diodes, switches and sliders (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0054)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -220,6 +220,21 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   legs, across their three columns, so put nothing there. Its script reads it with
   `ADC(Pin(28)).read_u16()`, from 0 to 65535. A step's words may name its wiper's pin. On a supply it
   has no use yet, and is refused. If the circuit follows a tutorial, say so in its description.
+
+- **A DIP switch**, on a Pico, is read switch by switch (ADR 0054):
+
+  ```ts
+  { kind: "dipSwitch", switches: 5, column: 13, board: 2 },
+  ```
+
+  It has 2 to 8 switches side by side across the channel, their legs in rows e and f, switch 1 in
+  `column` and the rest to its right, its ON side towards row a; `board: 2` puts it on the second
+  breadboard. Each switch goes from ground, on one leg, to a pin of its own, on the other, with
+  nothing else on that pin and never 3V3(OUT): the script pulls each pin up, `Pin(22, Pin.IN,
+  Pin.PULL_UP)`, and a switch on reads 0. A tutorial that wires the switches to 3V3 and its pins to the
+  Pico's own pull-downs is refused, since the Pico 2 W's pull-downs cannot be relied on: wire them to
+  ground instead, and say so in the description. On the second breadboard, the Pico's row c pins are
+  right below it, as `five-switches.ts` uses them. On a supply it has no use yet, and is refused.
 
 A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
 each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So

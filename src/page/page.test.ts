@@ -832,3 +832,40 @@ describe("a page with a slide potentiometer (ADR 0053)", () => {
     }
   });
 });
+
+describe("a page with a DIP switch (ADR 0054)", () => {
+  const { circuit, layout } = FIXTURES["switches-read-by-pull-ups"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says which way round it goes, and where its first and last switches' legs are", () => {
+    expect(inLanguage("en")).toContain(
+      "A 2-way DIP switch across the channel, its ON side towards row a: switch 1 in e22 and f22, and switch 2 in e23 and f23.",
+    );
+  });
+
+  it("lists it by how many switches it has", () => {
+    expect(inLanguage("en")).toContain(
+      "12-way DIP switch, with its legs in two rows 7.62 mm apart, to go across the channel.",
+    );
+  });
+
+  it("notes that its switches go to ground, read through the Pico's own pull-ups", () => {
+    expect(page("switches-read-by-pull-ups")).toContain(PAGE_WORDS.en.dipPullUp);
+  });
+
+  it("picks the switch out in its test step, since the reader turns its switches", () => {
+    expect(page("switches-read-by-pull-ups")).toContain(
+      'data-g="step-2 test" data-kind="dipSwitch"',
+    );
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain("l’interrupteur 1 en e22 et f22");
+    expect(inLanguage("ru")).toContain("DIP-переключатель на 2 позиции");
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});

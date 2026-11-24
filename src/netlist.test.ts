@@ -1224,3 +1224,52 @@ describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
     );
   });
 });
+
+describe("a DIP switch, each switch from ground to a pin the Pico pulls up (ADR 0054)", () => {
+  const { circuit, layout } = FIXTURES["switches-read-by-pull-ups"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const wire = (from: string, next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "wire" && p.from === from, next);
+  const dip = "the 2-way DIP switch in columns 22 to 23";
+
+  it("takes one whose switches each go from ground to a pin of their own", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds a switch on 3V3(OUT), as a tutorial with pull-downs would wire it", () => {
+    expect(problems(wire("a22", { kind: "wire", from: "a22", to: "a6", role: "power" }))).toContain(
+      `switch 1 of ${dip} has a leg on 3V3(OUT): each switch goes from ground to a pin of its own, which the script pulls up inside the Pico, since its pull-downs cannot be relied on (erratum E9)`,
+    );
+  });
+
+  it("finds two switches on one pin", () => {
+    expect(
+      problems(wire("b23", { kind: "wire", from: "b23", to: "b21", role: "signal" })),
+    ).toContain(`switch 2 of ${dip} shares GP16 with switch 1: each has a pin of its own`);
+  });
+
+  it("finds a switch with neither leg on ground", () => {
+    const found = problems(wire("j23", null));
+    expect(found).toContain(
+      `switch 2 of ${dip} has neither leg on ground: one goes straight to ground, and the other to a pin of its own`,
+    );
+  });
+
+  it("finds something else on a switch's pin", () => {
+    expect(
+      problems((parts) => [...parts, { kind: "resistor", ohms: 4700, from: "b21", to: "top-21" }]),
+    ).toContain(`switch 1 of ${dip} has something else on GP16: only the switch goes there`);
+  });
+
+  it("finds one on a supply, where it has no use yet", () => {
+    const { circuit: supplied, layout: suppliedLayout } = FIXTURES["two-lights-on-a-supply"];
+    const found = wiringProblems(
+      supplied,
+      edited(suppliedLayout, (parts) => [...parts, { kind: "dipSwitch", switches: 2, column: 27 }]),
+    );
+    expect(found).toContain(
+      "the 2-way DIP switch in columns 27 to 28 has no use ratsnest knows on a supply: a DIP switch is read by a Pico's pins (ADR 0054)",
+    );
+  });
+});

@@ -6,6 +6,7 @@ import {
   buttonHole,
   coveredBy,
   coveredBySlider,
+  dipLegsOf,
   type Hole,
   holeAt,
   holeCentre,
@@ -241,6 +242,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the slide switch with its middle leg in ${part.middle}`;
     case "slider":
       return `the ${formatOhms(part.ohms)} slide potentiometer with its wiper in ${part.wiper}`;
+    case "dipSwitch":
+      return `the ${part.switches}-way DIP switch in columns ${part.column} to ${part.column + part.switches - 1}${part.board === 2 ? " of the second breadboard" : ""}`;
   }
 }
 
@@ -781,6 +784,53 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
+  // A DIP switch, each of its switches read by a pin of its own (ADR 0054): one leg straight on
+  // ground and the other straight on a GPIO, which the script pulls up inside the Pico, since its
+  // pull-downs cannot be relied on (erratum E9).
+  for (const dip of parts) {
+    if (dip.kind !== "dipSwitch") continue;
+    const read = new Map<string, number>();
+    dipLegsOf(dip).forEach(([top, bottom], index) => {
+      const name = `switch ${index + 1} of ${describe(dip, circuit)}`;
+      const ends = [net(top), net(bottom)];
+      if (ends.includes(power)) {
+        problems.push(
+          `${name} has a leg on ${POWER_LABEL}: each switch goes from ground to a pin of its own, which the script pulls up inside the Pico, since its pull-downs cannot be relied on (erratum E9)`,
+        );
+        return;
+      }
+      const [first, second] = ends as [string, string];
+      const other = first === ground ? second : second === ground ? first : undefined;
+      if (other === undefined || other === ground) {
+        problems.push(
+          other === ground
+            ? `${name} has both legs on ground: one goes to ground, and the other to a pin of its own`
+            : `${name} has neither leg on ground: one goes straight to ground, and the other to a pin of its own`,
+        );
+        return;
+      }
+      const pins = pinsIn(other).filter((pin) => pin.kind === "gpio");
+      const [pin] = pins;
+      if (!pin || pins.length !== 1) {
+        problems.push(
+          `${name} has its other leg on ${pins.length === 0 ? "no pin" : pins.map((p) => p.label).join(" and ")}: it goes straight to one pin of its own`,
+        );
+        return;
+      }
+      const before = read.get(pin.label);
+      if (before !== undefined) {
+        problems.push(
+          `${name} shares ${pin.label} with switch ${before}: each has a pin of its own`,
+        );
+        return;
+      }
+      read.set(pin.label, index + 1);
+      if ((terminals.get(other) ?? 0) !== 2) {
+        problems.push(`${name} has something else on ${pin.label}: only the switch goes there`);
+      }
+    });
+  }
+
   for (const transistor of transistors) {
     if (!switching.has(transistor)) {
       problems.push(
@@ -944,7 +994,7 @@ function supplyWiringProblems(
   }
 
   // A ceramic capacitor's one use is on a Pico, which times it (ADR 0051), and a slide
-  // potentiometer's too, which reads it (ADR 0053).
+  // potentiometer's and a DIP switch's too, which it reads (ADR 0053, ADR 0054).
   for (const part of parts) {
     if (part.kind === "ceramic") {
       problems.push(
@@ -954,6 +1004,11 @@ function supplyWiringProblems(
     if (part.kind === "slider") {
       problems.push(
         `${describe(part, circuit)} has no use ratsnest knows on a supply: a slide potentiometer is read by a Pico's analogue pin (ADR 0053)`,
+      );
+    }
+    if (part.kind === "dipSwitch") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a supply: a DIP switch is read by a Pico's pins (ADR 0054)`,
       );
     }
   }

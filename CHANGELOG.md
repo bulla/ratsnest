@@ -82,6 +82,14 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   and its value from 1 kΩ to 100 kΩ. The page draws it lying, a dark metal body with its slot, the cap
   on its knob and its value printed on it, says where its wiper and each end go, lists it, and notes
   which leg is the wiper. On a supply it is refused.
+- A DIP switch, `{ kind: "dipSwitch", switches, column, board }`, 2 to 8 switches across the channel,
+  in a circuit on a Pico: each switch goes from ground to a pin of its own, which the script pulls up
+  inside the Pico, since the Pico 2 W's pull-downs cannot be relied on. `rnest check` holds each
+  switch with one leg on ground and the other straight on a GPIO of its own, with nothing else on it,
+  and refuses a leg on 3V3(OUT) saying why. The page draws it from above, a blue body with a white
+  slide in each switch's window, ON along its top edge and the switches' numbers along its bottom,
+  says which way round it goes and where its first and last switches' legs are, lists it, and notes
+  how its switches are read. On a supply it is refused.
 
 ## [0.2.0] - 2026-11-23
 

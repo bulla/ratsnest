@@ -701,3 +701,47 @@ describe("a slide potentiometer, lying across both breadboards (ADR 0053)", () =
     expect(covered).not.toContain("b12");
   });
 });
+
+describe("a DIP switch across the channel (ADR 0054)", () => {
+  const parts = FIXTURES["switches-read-by-pull-ups"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const dip = parts.find((part) => part.kind === "dipSwitch") as Part;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: dip, group: "step-1" }],
+      tags: [],
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A DIP switch",
+      description: "A DIP switch.",
+    });
+
+  it("has its legs in rows e and f, switch by switch from its first column", () => {
+    expect(legsOf(dip)).toEqual(["e22", "f22", "e23", "f23"]);
+    expect(legsOf({ kind: "dipSwitch", switches: 2, column: 5, board: 2 })).toEqual([
+      "2:e5",
+      "2:f5",
+      "2:e6",
+      "2:f6",
+    ]);
+  });
+
+  it("prints ON and each switch's number, upright at every quarter turn", () => {
+    for (const word of ["ON", "1", "2"]) expect(drawn(0)).toContain(`>${word}</text>`);
+    for (const turn of [90, 180, 270] as const) {
+      for (const word of ["ON", "1", "2"]) expect(drawn(turn)).toContain(`>${word}</text></g>`);
+    }
+  });
+
+  it("draws each slide off, at the end of its window away from ON", () => {
+    const slides = [
+      ...drawn(0).matchAll(
+        /<rect x="[\d.-]+" y="([\d.-]+)" width="[\d.]+" height="[\d.]+" rx="0.15" fill="var\(--color-dip-switch-slide\)"/g,
+      ),
+    ];
+    expect(slides).toHaveLength(2);
+    for (const slide of slides) expect(Number(slide[1])).toBeGreaterThan(CHANNEL_Y_MM);
+  });
+});

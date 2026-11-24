@@ -607,3 +607,24 @@ describe("a circuit's setup (ADR 0037)", () => {
     );
   });
 });
+
+describe("a DIP switch's fields (ADR 0054)", () => {
+  const dip = (part: Record<string, unknown>) =>
+    changed(
+      (data) => ((step(data, 1).parts as Record<string, unknown>[])[0] = part),
+      "switches-read-by-pull-ups",
+    );
+
+  it("takes 2 to 8 switches, from a column every switch has one from, on either breadboard", () => {
+    expect(said(dip({ kind: "dipSwitch", switches: 2, column: 22 }))).toEqual([]);
+    expect(said(dip({ kind: "dipSwitch", switches: 9, column: 22 }))).toContain(
+      "steps[1].parts[0].switches is not a whole number from 2 to 8",
+    );
+    expect(said(dip({ kind: "dipSwitch", switches: 5, column: 27 }))).toContain(
+      "steps[1].parts[0].column is not a column from which every switch has one, from 1 to 30",
+    );
+    expect(said(dip({ kind: "dipSwitch", switches: 2, column: 22, board: 3 }))).toContain(
+      "steps[1].parts[0].board is not 2, the second breadboard, or left out for the first",
+    );
+  });
+});
