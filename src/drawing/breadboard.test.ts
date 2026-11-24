@@ -471,3 +471,91 @@ describe("a light's leader, lifted over the cases and cans in its way (ADR 0047)
     expect(leaderOf(blue, lights, parts)?.run).toEqual(leaderOf(blue, lights, parts)?.dot);
   });
 });
+
+describe("a diode, lying as a resistor does (ADR 0040, ADR 0049)", () => {
+  const parts = FIXTURES["lights-kept-apart-by-diodes"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const diodes = parts.filter((part) => part.kind === "diode");
+  const drawn = (part: Part, orientation: 0 | 90 = 0) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part, group: "step-1" }],
+      tags: [],
+      supply: { rails: "bottom", label: "4.5 V", group: "supply" },
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A diode",
+      description: "A diode.",
+    });
+
+  it("is drawn in its model's case, orange glass for a 1N4148 and black for a 1N4007", () => {
+    const [rectifier, signal] = diodes;
+    if (!rectifier || !signal) throw new Error("No diodes");
+    expect(drawn(signal)).toContain("var(--color-diode-glass-band)");
+    expect(drawn(signal)).not.toContain("var(--color-diode-black)");
+    expect(drawn(rectifier)).toContain("var(--color-diode-black-band)");
+    expect(drawn(rectifier)).not.toContain("var(--color-diode-glass)");
+  });
+
+  it("has its band at its cathode's end, whichever way it lies", () => {
+    for (const diode of diodes) {
+      // Drawn along +x from its anode to its cathode, the band is on the +x side of its middle.
+      const band =
+        /<rect x="([\d.-]+)" y="[\d.-]+" width="[\d.]+" height="[\d.]+" fill="var\(--color-diode-(?:glass|black)-band\)"/.exec(
+          drawn(diode),
+        );
+      expect(Number(band?.[1])).toBeGreaterThan(0);
+      const turn = /<g transform="translate\(([\d.]+) [\d.]+\) rotate\(([\d.-]+)\)">/.exec(
+        drawn(diode),
+      );
+      const along =
+        diode.kind === "diode" ? holeCentre(diode.cathode).x - holeCentre(diode.anode).x : 0;
+      expect(Math.cos((Number(turn?.[2]) * Math.PI) / 180) * along).toBeGreaterThan(0);
+    }
+  });
+
+  it("prints its model on a tag, upright at every quarter turn, as a resistor's value is", () => {
+    for (const diode of diodes) {
+      if (diode.kind !== "diode") continue;
+      expect(drawn(diode)).toContain(`>${diode.model}</text>`);
+      expect(drawn(diode, 90)).toContain(`>${diode.model}</text></g>`);
+    }
+    // Asked as the drawing asks, with no Pico on a circuit with a supply: every tag has a place.
+    for (const turn of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems(parts, turn, formatOhms, false)).toEqual([]);
+    }
+  });
+});
+
+describe("a light's leader, lifted over the lights and buttons in its way (ADR 0050)", () => {
+  const parts = FIXTURES["lights-kept-apart-by-diodes"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const labelled = parts.filter((part) => part.kind === "led" || part.kind === "button");
+  const led = (id: string) => parts.find((part) => part.kind === "led" && part.led === id) as Part;
+  const button = (id: string) =>
+    parts.find((part) => part.kind === "button" && part.button === id) as Part;
+  const lane = (part: Part) => leaderOf(part, labelled, parts)?.run.y;
+
+  it("rises from the top of its lens, over the lights and buttons between it and its label", () => {
+    for (const id of ["red", "orange"]) {
+      const leader = leaderOf(led(id), labelled, parts);
+      expect(leader?.dot.x).toBe(leader?.run.x);
+      expect(leader?.dot.y).toBeGreaterThan(leader?.run.y ?? Number.POSITIVE_INFINITY);
+    }
+  });
+
+  it("gives each one a lane of its own, above a blocked button's, the light further from the end higher", () => {
+    const [red, orange, left] = [lane(led("red")), lane(led("orange")), lane(button("left"))];
+    expect(left).toBe((rowY("d") + rowY("e")) / 2);
+    expect(orange).toBe((rowY("c") + rowY("d")) / 2);
+    expect(red).toBe((rowY("b") + rowY("c")) / 2);
+  });
+
+  it("runs straight where nothing stands in its way, as it always has", () => {
+    const blue = leaderOf(led("blue"), labelled, parts);
+    expect(blue?.run).toEqual(blue?.dot);
+    expect(leaderOf(button("right"), labelled, parts)?.run.y).toBe(CHANNEL_Y_MM);
+  });
+});

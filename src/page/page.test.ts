@@ -663,3 +663,38 @@ describe("a page in Russian (ADR 0010, ADR 0011)", () => {
     expect([...lacking]).toEqual([]);
   });
 });
+
+describe("a page with diodes (ADR 0049)", () => {
+  const { circuit, layout } = FIXTURES["lights-kept-apart-by-diodes"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says where each diode's anode goes, and its cathode, at its band", () => {
+    expect(inLanguage("en")).toContain(
+      "A 1N4007 diode: its anode in i14, and its cathode, at the band, in i18.",
+    );
+    expect(inLanguage("en")).toContain(
+      "A 1N4148 diode: its anode in j23, and its cathode, at the band, in j18.",
+    );
+  });
+
+  it("lists each model by what it is sold as, and its case", () => {
+    expect(inLanguage("en")).toContain("11N4007 rectifier diode, in a black case.");
+    expect(inLanguage("en")).toContain("11N4148 signal diode, in an orange glass case.");
+  });
+
+  it("notes which way round a diode goes, and that any model it knows does on a light's way", () => {
+    const html = page("lights-kept-apart-by-diodes");
+    expect(html).toContain(PAGE_WORDS.en.diodePolarity);
+    expect(html).toContain("The 1N4148, 1N4001 and 1N4007 all do on a light's way");
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain("Diode de redressement 1N4007, en boîtier noir.");
+    expect(inLanguage("ru")).toContain("Импульсный диод 1N4148 в оранжевом стеклянном корпусе.");
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});

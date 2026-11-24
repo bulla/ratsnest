@@ -1,3 +1,4 @@
+import type { DiodeName } from "../diodes";
 import type { TransistorName } from "../transistors";
 import { PIN_EDGE_INSET_MM, PIN_PITCH_MM, PIN_TOP_INSET_MM, PINS_PER_SIDE } from "./geometry";
 
@@ -304,6 +305,16 @@ export type Part =
       readonly emitter: Hole;
       readonly base: Hole;
       readonly collector: Hole;
+    }
+  /**
+   * A diode, lying flat as a resistor does (ADR 0049): its model one ratsnest knows, and its cathode
+   * the end its band is at.
+   */
+  | {
+      readonly kind: "diode";
+      readonly model: DiodeName;
+      readonly anode: Hole;
+      readonly cathode: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -355,6 +366,7 @@ export function legsOf(part: Part): readonly Hole[] {
     case "resistor":
       return [part.from, part.to];
     case "led":
+    case "diode":
       return [part.anode, part.cathode];
     case "button": {
       const rows = rowsOf(part);

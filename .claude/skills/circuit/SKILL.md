@@ -111,10 +111,10 @@ A circuit with a supply:
 - **wires every light from + through one resistor of 220 Ω to 1 kΩ to −**, each button on a light's
   way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
   On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
-- **may have electrolytic capacitors, each keeping a light lit, and two NPN transistors that flash
-  two lights** (below).
+- **may have electrolytic capacitors, each keeping a light lit, two NPN transistors that flash
+  two lights, and diodes on lights' ways** (below).
 
-## Capacitors, transistors and diodes (ADR 0038 to ADR 0041, ADR 0043)
+## Capacitors, transistors and diodes (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049, ADR 0050)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -155,6 +155,26 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   base resistor and that capacitor hold the transistor off for about 0.69 times the two, 0.1 s to
   5 s. A circuit that tests a capacitor places that one in a step of its own and says so in the
   step's title. Standing everything in row f leaves the rows below for the wiring.
+- **A diode**, on a supply, keeps a light's current one way (ADR 0049):
+
+  ```ts
+  { kind: "diode", model: "1N4148", anode: "h13", cathode: "h18" },
+  ```
+
+  Its model is one ratsnest knows: `1N4148`, a signal diode in orange glass, or `1N4001` or
+  `1N4007`, rectifiers in black; any of them does here. It lies as a resistor does, its legs three
+  holes apart or more, and goes on a light's way with its band, its cathode, towards −: between +
+  and the light's resistor, between the resistor and the light, or between the light and −. Two
+  buttons whose currents meet through a diode each keep apart what the other lights, as
+  `two-buttons-three-lights.ts` shows. Each diode takes about 0.7 V: on the 3 V supply a light with a
+  diode is refused, and on 3.7 V a blue, white, green, aqua, pink or purple one is. Its model goes on
+  a tag beside it, as a resistor's value does, so leave it a row free on one side. On a Pico it has
+  no use yet, and is refused.
+
+A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
+each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So
+put the lights that stand in row f or g further from the board's far end than every button, and keep
+the top half above them free; a light in row h or i may stand past the buttons, under their leaders.
 
 ## Its credit (ADR 0035)
 

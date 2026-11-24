@@ -801,3 +801,120 @@ describe("two transistors flashing two lights, on a supply (ADR 0046)", () => {
     );
   });
 });
+
+describe("a diode on a light's way (ADR 0049)", () => {
+  const { circuit, layout } = FIXTURES["lights-kept-apart-by-diodes"];
+  const problems = (edit: (parts: Part[]) => Part[], on: ShownCircuit = circuit) =>
+    wiringProblems(on, edited(layout, edit));
+  const diode = (anode: string, next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "diode" && p.anode === anode, next);
+
+  it("takes two that keep each button from the other's own light", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds one in backwards, its band towards its button", () => {
+    const turned = problems(
+      diode("i14", { kind: "diode", model: "1N4007", anode: "i18", cathode: "i14" }),
+    );
+    expect(turned).toEqual([
+      "the 1N4007 with its anode in i18 is in backwards: its band, at its cathode, goes towards −, the way its light's current runs",
+    ]);
+  });
+
+  it("finds its legs too close together for its body", () => {
+    expect(
+      problems(diode("i14", { kind: "diode", model: "1N4007", anode: "i14", cathode: "i16" })),
+    ).toContain(
+      "the 1N4007 with its anode in i14 needs its legs three holes apart or more, for its body to lie between them",
+    );
+  });
+
+  it("finds one beside a light's resistor, which it takes the light's current round", () => {
+    const beside = problems((parts) => [
+      ...parts,
+      { kind: "diode", model: "1N4148", anode: "g14", cathode: "g8" },
+    ]);
+    expect(beside).toContain("the red LED has no resistor between + and −");
+    expect(beside).toContain(
+      "the 1N4148 with its anode in g14 is on no light's way: it goes between + and a light's resistor, or between a light and −, its band towards −",
+    );
+  });
+
+  it("finds one from + straight to −, a short", () => {
+    expect(
+      problems((parts) => [
+        ...parts,
+        { kind: "diode", model: "1N4148", anode: "g16", cathode: "g7" },
+      ]),
+    ).toEqual([
+      "the 1N4148 with its anode in g16 lets the supply's current straight from + to −, with nothing to hold it back: a short",
+    ]);
+  });
+
+  it("finds too little of the 3 V supply left for a light once a diode has taken its own", () => {
+    const three: ShownCircuit = { ...circuit, supply: { volts: 3, rails: "bottom" } };
+    expect(problems((parts) => parts, three)).toEqual([
+      "the orange LED has a diode on its way, each taking about 0.7 V, which leaves too little of the 3 V supply to light it: take `volts: 3.7`",
+    ]);
+  });
+
+  it("finds one on a Pico, where it has no use yet", () => {
+    const { circuit: pico, layout: picoLayout } = FIXTURES["two-lights"];
+    const found = wiringProblems(
+      pico,
+      edited(picoLayout, (parts) => [
+        ...parts,
+        { kind: "diode", model: "1N4148", anode: "g28", cathode: "g24" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 1N4148 with its anode in g28 has no use ratsnest knows on a Pico: a diode keeps a light's current one way on a supply (ADR 0049)",
+    );
+  });
+
+  describe("anywhere on a light's way", () => {
+    const { circuit: two, layout: twoLayout } = FIXTURES["two-lights-on-a-supply"];
+    const supplied: ShownCircuit = { ...two, supply: { volts: 4.5, rails: "top" } };
+    const red = (next: Part[]) => (parts: Part[]) => [
+      ...parts.filter(
+        (p) => !(p.kind === "led" && p.led === "red") && !(p.kind === "wire" && p.from === "a10"),
+      ),
+      ...next,
+    ];
+
+    it("takes one between a light's resistor and its long leg", () => {
+      const between = wiringProblems(
+        supplied,
+        edited(
+          twoLayout,
+          red([
+            { kind: "diode", model: "1N4148", anode: "d9", cathode: "d12" },
+            { kind: "led", led: "red", anode: "c12", cathode: "c13" },
+            { kind: "wire", from: "a13", to: "top-13", role: "ground" },
+          ]),
+        ),
+      );
+      expect(between).toEqual([]);
+    });
+
+    it("takes one between a light's short leg and −, and finds it in backwards there", () => {
+      const below = (anode: string, cathode: string) =>
+        wiringProblems(
+          supplied,
+          edited(
+            twoLayout,
+            red([
+              { kind: "led", led: "red", anode: "c9", cathode: "c10" },
+              { kind: "diode", model: "1N4148", anode, cathode },
+              { kind: "wire", from: "a13", to: "top-13", role: "ground" },
+            ]),
+          ),
+        );
+      expect(below("d10", "d13")).toEqual([]);
+      expect(below("d13", "d10")).toContain(
+        "the 1N4148 with its anode in d13 is in backwards: its band, at its cathode, goes towards −, the way its light's current runs",
+      );
+    });
+  });
+});

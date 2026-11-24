@@ -6,6 +6,7 @@ import {
   SUPPLY_VOLTS,
   THREE_VOLT_COLOURS,
 } from "./circuit";
+import { DIODE_NAMES } from "./diodes";
 import { parseHole } from "./drawing/breadboard";
 import { fileOf } from "./fonts";
 import type { Circuit, Language, Setup, SupplyCircuit, Text } from "./format";
@@ -228,10 +229,11 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ring: ["kind", "led", "dataIn", "power", "ground", "dataOut"],
   electrolytic: ["kind", "microfarads", "plus", "minus"],
   transistor: ["kind", "model", "emitter", "base", "collector"],
+  diode: ["kind", "model", "anode", "cathode"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
-const SUPPLY_PARTS = ["wire", "resistor", "led", "button", "electrolytic", "transistor"];
+const SUPPLY_PARTS = ["wire", "resistor", "led", "button", "electrolytic", "transistor", "diode"];
 
 function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean): void {
   const kind = part.kind;
@@ -334,6 +336,11 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
     case "transistor":
       fields.oneOf("model", TRANSISTOR_NAMES);
       for (const leg of ["emitter", "base", "collector"]) fields.hole(leg);
+      return;
+    case "diode":
+      fields.oneOf("model", DIODE_NAMES);
+      fields.hole("anode");
+      fields.hole("cathode");
       return;
     case "rgbLed":
     case "ring":

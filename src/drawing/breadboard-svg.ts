@@ -1,4 +1,5 @@
 import type { ButtonColour, LedColour } from "../circuit";
+import { DIODES } from "../diodes";
 import { widthOf } from "../fonts";
 import { isStanding, type Orientation, turned } from "../orientation";
 import { PIE_WEDGES, wedgePath } from "../rgb";
@@ -141,11 +142,23 @@ export const ELECTROLYTIC_TOKENS = {
 /** The colours of a transistor's TO-92 case, and of what is printed on its flat face (ADR 0044). */
 export const TRANSISTOR_TOKENS = { body: "transistor", ink: "transistor-ink" } as const;
 
+/**
+ * The colours of a diode's case and of the band at its cathode (ADR 0049): orange glass with a black
+ * band, as a signal diode's is, and black with a grey band, as a rectifier's is.
+ */
+export const DIODE_TOKENS = {
+  glass: "diode-glass",
+  glassBand: "diode-glass-band",
+  black: "diode-black",
+  blackBand: "diode-black-band",
+} as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
   ...Object.values(ELECTROLYTIC_TOKENS),
   ...Object.values(TRANSISTOR_TOKENS),
+  ...Object.values(DIODE_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -832,16 +845,30 @@ function segmentTouches(
 }
 
 /**
- * Where a resistor's value tag goes, given everything else on the board (scratchpi's ADR 0154). Towards the
- * channel for a resistor lying along a row, and to its right for one that is not, as every
- * layout before Four buttons had it — unless something is there, in which case the first of a
- * few other places that is clear: the other side, or the other end. Four buttons is the first
- * layout crowded enough to need them.
+ * A part that lies flat between two holes and has a tag beside it: a resistor, its value on the tag,
+ * or a diode, its model (ADR 0040, ADR 0049).
  */
-export function clearTagOf(
-  part: Extract<Part, { kind: "resistor" }>,
-  others: readonly Part[],
-): Point | undefined {
+export type Lying = Extract<Part, { kind: "resistor" }> | Extract<Part, { kind: "diode" }>;
+
+/** A lying part's two ends: a resistor's either way, and a diode's anode, then its cathode. */
+const endsOf = (part: Lying): readonly [Hole, Hole] =>
+  part.kind === "resistor" ? [part.from, part.to] : [part.anode, part.cathode];
+
+/** What a lying part's tag says: a resistor's value in the page's language, or a diode's model. */
+const tagLabelOf = (part: Lying): string =>
+  part.kind === "resistor" ? sayOhms(part.ohms) : part.model;
+
+/** How far either side of its line a lying part's body reaches: a diode's black case is the thickest. */
+const LYING_REACH_MM = 1.2;
+
+/**
+ * Where a resistor's value tag goes, or a diode's model tag, given everything else on the board
+ * (scratchpi's ADR 0154). Towards the channel for a part lying along a row, and to its right for one
+ * that is not, as every layout before Four buttons had it — unless something is there, in which case
+ * the first of a few other places that is clear: the other side, or the other end. Four buttons is
+ * the first layout crowded enough to need them.
+ */
+export function clearTagOf(part: Lying, others: readonly Part[]): Point | undefined {
   return placeTag(part, others)?.at;
 }
 
@@ -849,18 +876,16 @@ export function clearTagOf(
  * Where a value tag goes and on how many lines: the first place that is clear, nearest first, and on a
  * standing board on one line if that is clear there, or else on two.
  */
-function placeTag(
-  part: Extract<Part, { kind: "resistor" }>,
-  others: readonly Part[],
-): { at: Point; lines: number } | undefined {
-  const a = holeCentre(part.from);
-  const b = holeCentre(part.to);
+function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: number } | undefined {
+  const [from, to] = endsOf(part);
+  const a = holeCentre(from);
+  const b = holeCentre(to);
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
   const along = (t: number) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
   // The tag's footprint on the board's own drawing: upright on a standing board, it is as wide
   // there as it is tall on the page. At 0° the distances are the ones it has always had.
-  const label = sayOhms(part.ohms);
+  const label = tagLabelOf(part);
   const standing = isStanding(turn);
   // On a flat board, the places a tag on one line has always had, then the same for two lines, as
   // far out as their depth needs: a value written wider, as Russian writes it, may need them.
@@ -911,13 +936,13 @@ function placeTag(
     };
     const inside = (p: Point, reach: number) => segmentTouches(p, p, reach, box);
     if (standing) {
-      const second = isOnSecondBoard(part.from) || isOnSecondBoard(part.to);
+      const second = isOnSecondBoard(from) || isOnSecondBoard(to);
       const plastic = { top: second ? SECOND_BOARD_Y_MM : 0, bottom: BREADBOARD_HEIGHT_MM };
       if (box.x < 0 || box.x + box.w > BREADBOARD_WIDTH_MM) return false;
       if (box.y < plastic.top || box.y + box.h > plastic.bottom) return false;
     }
     // Its own body, the rails, and the column numbers, which a tag has never sat over.
-    if (segmentTouches(a, b, 1.15, box)) return false;
+    if (segmentTouches(a, b, part.kind === "diode" ? LYING_REACH_MM : 1.15, box)) return false;
     for (const rail of RAILS) {
       if (box.y < railY(rail) + 0.9 && box.y + box.h > railY(rail) - 0.9) return false;
     }
@@ -943,6 +968,10 @@ function placeTag(
       if (other === part) continue;
       if (other.kind === "resistor") {
         if (segmentTouches(holeCentre(other.from), holeCentre(other.to), 1.15, box)) return false;
+      }
+      if (other.kind === "diode") {
+        const [anode, cathode] = [holeCentre(other.anode), holeCentre(other.cathode)];
+        if (segmentTouches(anode, cathode, LYING_REACH_MM, box)) return false;
       }
       if (other.kind === "wire") {
         // An arch's shadow is part of it too, a little down and to the right of it.
@@ -997,14 +1026,15 @@ function placeTag(
 }
 
 /** The same, falling back to where a tag has always gone if nowhere is clear. */
-export function tagOf(part: Extract<Part, { kind: "resistor" }>, others: readonly Part[]): Point {
+export function tagOf(part: Lying, others: readonly Part[]): Point {
   return clearTagOf(part, others) ?? defaultTagOf(part);
 }
 
 /** Towards the channel along a row, and to the right otherwise: before `clearTagOf` looked. */
-function defaultTagOf(part: Extract<Part, { kind: "resistor" }>): Point {
-  const a = holeCentre(part.from);
-  const b = holeCentre(part.to);
+function defaultTagOf(part: Lying): Point {
+  const [from, to] = endsOf(part);
+  const a = holeCentre(from);
+  const b = holeCentre(to);
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
   return horizontal
@@ -1101,6 +1131,74 @@ function twoLineTag(tag: Point, label: string): string {
   return (
     rect(tag.x - w / 2, tag.y - h / 2, w, h, `rx="1.15" ${TAG_FRAME}`) +
     lines.map((line, i) => text(tag.x, first + i * STANDING_LINE_MM, line, TAG_INK)).join("")
+  );
+}
+
+/**
+ * A diode, lying flat between its holes as a resistor does (ADR 0040, ADR 0049): a small orange glass
+ * case with a black band, or a larger black one with a grey band, as its model's is, the band at its
+ * cathode. Its lead shows through the glass. Its model is on a tag beside it, placed as a resistor's
+ * value is: lying, its case is too thin to hold an upright word at a quarter turn.
+ */
+export const DIODE_MM = {
+  glass: { length: 4.4, height: 1.9 },
+  black: { length: 5.4, height: 2.4 },
+  band: 0.8,
+} as const;
+
+function drawDiode(part: Extract<Part, { kind: "diode" }>, tag: Point, lines = 1): string {
+  const a = holeCentre(part.anode);
+  const k = holeCentre(part.cathode);
+  const mid = { x: (a.x + k.x) / 2, y: (a.y + k.y) / 2 };
+  const length = Math.hypot(k.x - a.x, k.y - a.y);
+  const angle = (Math.atan2(k.y - a.y, k.x - a.x) * 180) / Math.PI;
+  const glass = DIODES[part.model].case === "glass";
+  const shape = glass ? DIODE_MM.glass : DIODE_MM.black;
+  const body = Math.min(shape.length, length - 1.2);
+  const half = body / 2;
+  const height = shape.height;
+  const [fill, band] = glass
+    ? [DIODE_TOKENS.glass, DIODE_TOKENS.glassBand]
+    : [DIODE_TOKENS.black, DIODE_TOKENS.blackBand];
+  // Drawn along +x from its anode to its cathode, around its middle, then turned to lie between them.
+  const local =
+    line(
+      -length / 2,
+      0,
+      length / 2,
+      0,
+      `stroke="${token("lead")}" stroke-width="0.5" stroke-linecap="round"`,
+    ) +
+    rect(
+      -half,
+      -height / 2,
+      body,
+      height,
+      `rx="${glass ? height / 2 : 0.45}" fill="${token(fill)}"${glass ? ` fill-opacity="0.88"` : ""} stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`,
+    ) +
+    rect(
+      half - (glass ? 0.55 : 0.45) - DIODE_MM.band,
+      -height / 2 + 0.06,
+      DIODE_MM.band,
+      height - 0.12,
+      `fill="${token(band)}"`,
+    ) +
+    line(
+      -half + 0.7,
+      -height / 2 + 0.5,
+      half - DIODE_MM.band - 0.8,
+      -height / 2 + 0.5,
+      `stroke="${token("shine")}" stroke-opacity="${glass ? 0.55 : 0.2}" stroke-width="0.3" stroke-linecap="round"`,
+    );
+  return (
+    `<g transform="translate(${n(mid.x)} ${n(mid.y)}) rotate(${n(angle)})">${local}</g>` +
+    legEnd(a.x, a.y) +
+    legEnd(k.x, k.y) +
+    (turn === 0 ? "" : `<g${upright(tag.x, tag.y)}>`) +
+    (lines === 1
+      ? oneLineTag(tag, part.model, tagWidthOf(part.model))
+      : twoLineTag(tag, part.model)) +
+    (turn === 0 ? "" : "</g>")
   );
 }
 
@@ -1629,7 +1727,7 @@ export function leaderOf(
   if (!edges) return undefined;
   const anchor = { x: end === "far" ? edges.right : edges.left, y: edges.y };
   if (part.kind === "led") {
-    const lifted = liftedOverStanding(part, anchor, end, standing);
+    const lifted = liftedOverStanding(part, anchor, end, standing, labelled);
     if (lifted) return lifted;
   }
   if (part.kind === "button") {
@@ -1664,37 +1762,78 @@ export function leaderOf(
 }
 
 /**
- * A light's leader lifted over the transistors' cases and the capacitors' cans in its way to its
- * label's end of the board (ADR 0047): from the top of its lens, up to the first lane between rows
- * above every one of them. A leader run straight would pass behind them, and read as running into
- * them. Only those standing parts count, so that no layout without them changes.
+ * The box a standing part takes on the board's own drawing, which a light's leader rises over rather
+ * than run behind (ADR 0047, ADR 0050): a transistor's case, a capacitor's can, a light's lens down to
+ * its legs' holes, and a button's body with its legs.
+ */
+function standingBoxOf(part: Part): Box | undefined {
+  switch (part.kind) {
+    case "transistor":
+      return to92BoxOf(part);
+    case "electrolytic":
+      return canBoxOf(part);
+    case "led": {
+      const a = holeCentre(part.anode);
+      const mid = (a.x + holeCentre(part.cathode).x) / 2;
+      const top = a.y - LENS_RISE_MM - LENS_RADIUS_MM;
+      const half = LENS_RADIUS_MM + 0.4;
+      return { x: mid - half, y: top, w: 2 * half, h: a.y - top };
+    }
+    case "button": {
+      const { x, y } = buttonCentre(part);
+      const legs = legsOf(part).map((hole) => holeCentre(hole).y);
+      const top = Math.min(y - BUTTON_BODY_MM / 2, ...legs) - 0.52;
+      const bottom = Math.max(y + BUTTON_BODY_MM / 2, ...legs) + 0.52;
+      return { x: x - BUTTON_BODY_MM / 2, y: top, w: BUTTON_BODY_MM, h: bottom - top };
+    }
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * A light's leader lifted over the standing parts in its way to its label's end of the board
+ * (ADR 0047, ADR 0050): from the top of its lens, up to the first lane between rows above every one of
+ * them that nothing standing crosses and no other leader runs along. A leader run straight would pass
+ * behind them, and read as running into them. The lights nearer the end choose first, so that a
+ * light further from it rises higher, and its leader crosses none of theirs.
  */
 function liftedOverStanding(
   part: Extract<Part, { kind: "led" }>,
   anchor: Point,
   end: LabelEnd,
   standing: readonly Part[],
+  labelled: readonly Part[],
 ): Leader | undefined {
   const [from, to] = end === "far" ? [anchor.x, BREADBOARD_WIDTH_MM] : [0, anchor.x];
-  const blocking = standing.flatMap((other) => {
-    const box =
-      other.kind === "transistor"
-        ? to92BoxOf(other)
-        : other.kind === "electrolytic"
-          ? canBoxOf(other)
-          : undefined;
-    return box && box.x < to && box.x + box.w > from && box.y < anchor.y && box.y + box.h > anchor.y
-      ? [box]
-      : [];
+  const boxes = standing.flatMap((other) => {
+    const box = other === part ? undefined : standingBoxOf(other);
+    return box && box.x < to && box.x + box.w > from ? [box] : [];
   });
+  const across = (y: number) => boxes.filter((box) => box.y < y && box.y + box.h > y);
+  const blocking = across(anchor.y);
   if (blocking.length === 0) return undefined;
   const a = holeCentre(part.anode);
   const mid = (a.x + holeCentre(part.cathode).x) / 2;
   const top = a.y - LENS_RISE_MM - LENS_RADIUS_MM;
   const highest = Math.min(top, ...blocking.map((box) => box.y));
-  const lanes = BETWEEN_ROWS.filter((y) => y < highest - 0.5);
-  if (lanes.length === 0) return undefined;
-  return { dot: { x: mid, y: top }, run: { x: mid, y: Math.max(...lanes) }, end };
+  // The lanes other leaders run along to the same end: every part's but a light's further from it,
+  // which keeps clear of this one's in turn.
+  const nearer = (other: Part) => {
+    const edges = anchorOf(other);
+    return edges !== undefined && (end === "far" ? edges.right > anchor.x : edges.left < anchor.x);
+  };
+  const taken = labelled.flatMap((other) =>
+    other !== part && labelEndOf(other) === end && (other.kind !== "led" || nearer(other))
+      ? [leaderOf(other, labelled, standing)?.run.y ?? Number.NaN]
+      : [],
+  );
+  const floor = isOnSecondBoard(part.anode) ? SECOND_BOARD_Y_MM : 0;
+  const lane = BETWEEN_ROWS.filter((y) => y > floor && y < highest - 0.5)
+    .sort((p, q) => q - p)
+    .find((y) => across(y).length === 0 && !taken.some((t) => Math.abs(t - y) < 0.01));
+  if (lane === undefined) return undefined;
+  return { dot: { x: mid, y: top }, run: { x: mid, y: lane }, end };
 }
 
 /**
@@ -1972,6 +2111,9 @@ function drawPart(
     case "transistor":
       body = drawTransistor(part);
       break;
+    case "diode":
+      body = drawDiode(part, tagOf(part, others), placeTag(part, others)?.lines ?? 1);
+      break;
   }
   const label =
     drawn.label && leader && place
@@ -2136,9 +2278,11 @@ interface Box {
 const overlap = (a: Box, b: Box): boolean =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
-/** A resistor as a person finds it on the page: its value and its two holes. */
-const resistorName = (part: Extract<Part, { kind: "resistor" }>): string =>
-  `the ${formatOhms(part.ohms)} resistor from ${printedName(part.from)} to ${printedName(part.to)}`;
+/** A lying part as a person finds it on the page: a resistor's value or a diode's model, and its holes. */
+const lyingName = (part: Lying): string =>
+  part.kind === "resistor"
+    ? `the ${formatOhms(part.ohms)} resistor from ${printedName(part.from)} to ${printedName(part.to)}`
+    : `the ${part.model} diode from ${printedName(part.anode)} to ${printedName(part.cathode)}`;
 
 /**
  * Every word the engine places that crowds something at a quarter turn (ADR 0003, ADR 0007): a value
@@ -2157,18 +2301,21 @@ export function crowdingProblems(
   pico = onPico;
   try {
     const problems: string[] = [];
-    const resistors = parts.flatMap((part) => (part.kind === "resistor" ? [part] : []));
+    const lying = parts.flatMap((part) =>
+      part.kind === "resistor" || part.kind === "diode" ? [part] : [],
+    );
     const tags: { name: string; box: Box }[] = [];
-    for (const resistor of resistors) {
-      const placed = placeTag(resistor, parts);
+    for (const part of lying) {
+      const what = part.kind === "resistor" ? "value tag" : "model tag";
+      const placed = placeTag(part, parts);
       if (!placed) {
-        problems.push(`${resistorName(resistor)} has nowhere clear for its value tag`);
+        problems.push(`${lyingName(part)} has nowhere clear for its ${what}`);
         continue;
       }
       const clear = placed.at;
-      const { w, h } = tagFootprintOf(sayOhms(resistor.ohms), placed.lines);
+      const { w, h } = tagFootprintOf(tagLabelOf(part), placed.lines);
       tags.push({
-        name: `${resistorName(resistor)}'s value tag`,
+        name: `${lyingName(part)}'s ${what}`,
         box: { x: clear.x - w / 2, y: clear.y - h / 2, w, h },
       });
     }

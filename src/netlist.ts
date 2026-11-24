@@ -1,10 +1,12 @@
-import type { Layout, Supply } from "./circuit";
-import { isRing, type ShownCircuit } from "./circuit";
+import type { Layout, LedColour, Supply } from "./circuit";
+import { isRing, type ShownCircuit, SUPPLY_VOLTS, THREE_VOLT_COLOURS } from "./circuit";
+import { DIODE_VOLTS } from "./diodes";
 import {
   buttonHole,
   coveredBy,
   type Hole,
   holeAt,
+  holeCentre,
   holeOfPin,
   isUnderPico,
   legsOf,
@@ -16,7 +18,7 @@ import {
   supplyLeadsOf,
 } from "./drawing/breadboard";
 import { formatMicrofarads, formatOhms } from "./drawing/breadboard-svg";
-import { HEADER_PINS, type HeaderPin, headerPinOfGpio } from "./drawing/geometry";
+import { HEADER_PINS, type HeaderPin, headerPinOfGpio, PIN_PITCH_MM } from "./drawing/geometry";
 import { TRANSISTORS } from "./transistors";
 
 /**
@@ -69,6 +71,14 @@ export const FLASHER_BASE_OHMS_RANGE = [10000, 100000] as const;
  * have stopped.
  */
 export const FLASH_SECONDS_RANGE = [0.1, 5] as const;
+/**
+ * What a light's resistor needs left of a supply's voltage, at the least, once the light and the diodes
+ * on its way have taken theirs (ADR 0049): below it, a light glows too dimly to be sure of.
+ */
+export const HEADROOM_VOLTS = 0.5;
+/** What a light takes itself, about: 3 V for a blue, white, green, aqua, pink or purple one (ADR 0033). */
+const lightVolts = (colour: LedColour): number =>
+  (THREE_VOLT_COLOURS as readonly string[]).includes(colour) ? 3 : 2;
 
 /** Union–find over strip names, pin names and the one shared ground. */
 class Nets {
@@ -93,6 +103,32 @@ class Nets {
 const pinNode = (pin: HeaderPin) => `pin ${pin.number}`;
 
 type ButtonPart = Extract<Part, { kind: "button" }>;
+type Diode = Extract<Part, { kind: "diode" }>;
+type Light = Extract<Part, { kind: "led" }>;
+type ResistorPart = Extract<Part, { kind: "resistor" }>;
+
+/**
+ * How many diodes, each the right way round, each net is reached through from + and from −
+ * (ADR 0049): 0 for the rail itself, and nothing for a net it does not reach. A diode lets current
+ * through from its anode to its cathode alone, and the way with the fewest is the one the current
+ * takes, each diode on it taking about 0.7 V.
+ */
+interface Reach {
+  readonly fed: ReadonlyMap<string, number>;
+  readonly drained: ReadonlyMap<string, number>;
+}
+
+/**
+ * A light's way from + to −: up from its long leg to a net + reaches, and down from its short leg to
+ * one − reaches, through resistors and diodes the right way round, with nothing else on a net between
+ * (ADR 0033, ADR 0049). `top` and `bottom` are where it meets what + and − reach.
+ */
+interface Way {
+  readonly resistors: readonly ResistorPart[];
+  readonly diodes: readonly Diode[];
+  readonly top: string;
+  readonly bottom: string;
+}
 
 /**
  * The nets a layout makes, with the buttons `pressed` says are held. On a Pico, its pins join the
@@ -163,6 +199,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${formatMicrofarads(part.microfarads)} capacitor with its + leg in ${part.plus}`;
     case "transistor":
       return `the ${part.model} with its emitter in ${part.emitter}`;
+    case "diode":
+      return `the ${part.model} with its anode in ${part.anode}`;
   }
 }
 
@@ -216,6 +254,16 @@ function shapeProblems(part: Part, name: string): string[] {
         : [
             `${name} needs its legs side by side in one row: ${TRANSISTORS[part.model].legs.join(", ")}, left to right, its flat face towards row j`,
           ];
+    }
+    case "diode": {
+      // Lying as a resistor does, long enough for its body and its band (ADR 0049).
+      const [a, k] = [holeCentre(part.anode), holeCentre(part.cathode)];
+      if (stripOf(part.anode) === stripOf(part.cathode)) {
+        return [`${name} has both ends in one strip, so it does nothing`];
+      }
+      return Math.hypot(k.x - a.x, k.y - a.y) < 3 * PIN_PITCH_MM - 0.01
+        ? [`${name} needs its legs three holes apart or more, for its body to lie between them`]
+        : [];
     }
     case "rgbLed":
     case "ring": {
@@ -319,11 +367,17 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   problems.push(...placedProblems(circuit, parts));
   if (supply) return [...problems, ...supplyWiringProblems(circuit, parts, supply)];
 
-  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0043).
+  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0043), and a diode's
+  // keeping a light's current one way, on a supply (ADR 0049).
   for (const part of parts) {
     if (part.kind === "electrolytic") {
       problems.push(
         `${describe(part, circuit)} has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0043)`,
+      );
+    }
+    if (part.kind === "diode") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a Pico: a diode keeps a light's current one way on a supply (ADR 0049)`,
       );
     }
   }
@@ -665,6 +719,102 @@ function supplyWiringProblems(
     return [...problems, "the supply's + and − are joined while every button is held: a short"];
   }
 
+  const diodes = parts.filter((part): part is Diode => part.kind === "diode");
+  /** What + and − reach through the diodes, as `through` has them: as placed, or one turned round. */
+  const reachOf = (nets: Nets, through: readonly Diode[] = diodes): Reach => {
+    const spread = (start: string, forward: boolean) => {
+      const levels = new Map([[start, 0]]);
+      for (let frontier = [start]; frontier.length > 0; ) {
+        const next: string[] = [];
+        for (const node of frontier) {
+          for (const diode of through) {
+            const [from, to] = forward
+              ? [diode.anode, diode.cathode]
+              : [diode.cathode, diode.anode];
+            const target = nets.find(stripOf(to));
+            if (nets.find(stripOf(from)) !== node || levels.has(target)) continue;
+            levels.set(target, (levels.get(node) ?? 0) + 1);
+            next.push(target);
+          }
+        }
+        frontier = next;
+      }
+      return levels;
+    };
+    return { fed: spread(plusOf(nets), true), drained: spread(minusOf(nets), false) };
+  };
+  /** The legs in each net, with the diodes as `through` has them, a button's sides left out. */
+  const legsAt = (nets: Nets, through: readonly Diode[]) => {
+    const at = new Map<string, { part: Part; hole: Hole }[]>();
+    for (const placed of parts) {
+      if (placed.kind === "wire" || placed.kind === "button") continue;
+      const part = placed.kind === "diode" ? (through[diodes.indexOf(placed)] ?? placed) : placed;
+      for (const hole of legsOf(part)) {
+        const node = nets.find(stripOf(hole));
+        at.set(node, [...(at.get(node) ?? []), { part, hole }]);
+      }
+    }
+    return at;
+  };
+  /** A light's way in `nets`, or nothing if a walk from either leg meets anything but its own. */
+  const wayOf = (
+    light: Light,
+    nets: Nets,
+    reach: Reach,
+    through: readonly Diode[] = diodes,
+  ): Way | undefined => {
+    const at = legsAt(nets, through);
+    const walk = (start: string, up: boolean) => {
+      const resistors: ResistorPart[] = [];
+      const passed: Diode[] = [];
+      let node = start;
+      let from: Part = light;
+      while (!(up ? reach.fed : reach.drained).has(node)) {
+        const here = (at.get(node) ?? []).filter((leg) => leg.part !== from);
+        const [leg] = here;
+        if (here.length !== 1 || !leg || resistors.length + passed.length > parts.length) return;
+        const { part, hole } = leg;
+        if (part.kind === "resistor") {
+          resistors.push(part);
+          node = nets.find(stripOf(hole === part.from ? part.to : part.from));
+        } else if (part.kind === "diode" && hole === (up ? part.cathode : part.anode)) {
+          passed.push(part);
+          node = nets.find(stripOf(up ? part.anode : part.cathode));
+        } else return;
+        from = part;
+      }
+      return { resistors, diodes: passed, end: node };
+    };
+    const up = walk(nets.find(stripOf(light.anode)), true);
+    const down = walk(nets.find(stripOf(light.cathode)), false);
+    if (!up || !down) return undefined;
+    return {
+      resistors: [...up.resistors, ...down.resistors],
+      diodes: [...up.diodes, ...down.diodes],
+      top: up.end,
+      bottom: down.end,
+    };
+  };
+
+  // A diode the right way round from + to −, alone or with others, is a short too (ADR 0049).
+  for (const [nets, when] of [
+    [open, ""],
+    [all, " while every button is held"],
+  ] as const) {
+    const reach = reachOf(nets);
+    const across = diodes.find(
+      (diode) =>
+        reach.fed.has(nets.find(stripOf(diode.anode))) &&
+        reach.drained.has(nets.find(stripOf(diode.cathode))),
+    );
+    if (across) {
+      return [
+        ...problems,
+        `${describe(across, circuit)} lets the supply's current straight from + to −${when}, with nothing to hold it back: a short`,
+      ];
+    }
+  }
+
   /** How many legs, and leads, each net of `nets` has, a button's sides left out. */
   const legsIn = (nets: Nets) => {
     const counts = new Map<string, number>();
@@ -686,21 +836,16 @@ function supplyWiringProblems(
     });
 
   /** Whether a light has a way from + through a resistor to −, in the nets given. */
-  const lit = (light: Extract<Part, { kind: "led" }>, nets: Nets) => {
-    const [plus, minus] = [plusOf(nets), minusOf(nets)];
-    const anode = nets.find(stripOf(light.anode));
-    const cathode = nets.find(stripOf(light.cathode));
-    return (
-      (cathode === minus && between(nets, plus, anode).length > 0) ||
-      (anode === plus && between(nets, cathode, minus).length > 0)
-    );
-  };
+  const lit = (light: Light, nets: Nets) =>
+    (wayOf(light, nets, reachOf(nets))?.resistors.length ?? 0) > 0;
 
   // Every light, with every button held: the right way round, between + and −, through exactly one
   // resistor of its own, of a value that lights it safely.
   const accounted = new Set<Part>();
   const legs = legsIn(all);
-  const [plus, minus] = [plusOf(all), minusOf(all)];
+  const plus = plusOf(all);
+  const reach = reachOf(all);
+  const ways = new Map<Light, Way>();
   // A light on a transistor's collector is that transistor's, as on a Pico (ADR 0044, ADR 0046).
   const transistors = parts.filter(
     (part): part is Extract<Part, { kind: "transistor" }> => part.kind === "transistor",
@@ -745,31 +890,90 @@ function supplyWiringProblems(
       }
       continue;
     }
-    if (anode === minus || cathode === plus) {
+    // What + and − reach through diodes counts as + and − (ADR 0049).
+    if (reach.drained.has(anode) || reach.fed.has(cathode)) {
       problems.push(`${name} is in backwards: its long leg must be towards +`);
       continue;
     }
-    if (anode === plus && cathode === minus) {
+    if (reach.fed.has(anode) && reach.drained.has(cathode)) {
       problems.push(`${name} has no resistor between + and −`);
       continue;
     }
-    const [middle, series] =
-      cathode === minus
-        ? [anode, between(all, plus, anode)]
-        : anode === plus
-          ? [cathode, between(all, cathode, minus)]
-          : [undefined, []];
-    if (!middle || series.length !== 1 || legs.get(middle) !== 2) {
+    const way = wayOf(light, all, reach);
+    const [resistor] = way?.resistors ?? [];
+    if (!way || !resistor || way.resistors.length !== 1) {
       problems.push(`${name} is not wired from + through one resistor to −`);
       continue;
     }
-    const resistor = series[0] as Extract<Part, { kind: "resistor" }>;
+    ways.set(light, way);
     accounted.add(resistor);
     if (resistor.ohms < LIGHT_OHMS_RANGE[0] || resistor.ohms > LIGHT_OHMS_RANGE[1]) {
       problems.push(
         `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
       );
     }
+  }
+
+  // Every diode on a light's way, the right way round (ADR 0049): in the way itself, or taking the
+  // current from + to where a light's way starts, or from where one ends to −, its band towards −.
+  const carries = (diode: Diode, through: readonly Diode[]): boolean => {
+    const reached = reachOf(all, through);
+    const lit = lights.flatMap((light) => {
+      const way = wayOf(light, all, reached, through);
+      return way?.resistors.length === 1 ? [way] : [];
+    });
+    if (lit.some((way) => way.diodes.includes(diode))) return true;
+    const node = (hole: Hole) => all.find(stripOf(hole));
+    const tops = new Set(lit.map((way) => way.top));
+    const bottoms = new Set(lit.map((way) => way.bottom));
+    // A step further from + than its anode, into a light's way or a diode that takes it on.
+    const feeds = (each: Diode): boolean => {
+      const anode = reached.fed.get(node(each.anode));
+      return (
+        anode !== undefined &&
+        reached.fed.get(node(each.cathode)) === anode + 1 &&
+        (tops.has(node(each.cathode)) ||
+          through.some((next) => node(next.anode) === node(each.cathode) && feeds(next)))
+      );
+    };
+    const drains = (each: Diode): boolean => {
+      const cathode = reached.drained.get(node(each.cathode));
+      return (
+        cathode !== undefined &&
+        reached.drained.get(node(each.anode)) === cathode + 1 &&
+        (bottoms.has(node(each.anode)) ||
+          through.some((next) => node(next.cathode) === node(each.anode) && drains(next)))
+      );
+    };
+    return feeds(diode) || drains(diode);
+  };
+  for (const diode of diodes) {
+    if (carries(diode, diodes)) continue;
+    const turned = { ...diode, anode: diode.cathode, cathode: diode.anode };
+    const name = describe(diode, circuit);
+    problems.push(
+      carries(
+        turned,
+        diodes.map((each) => (each === diode ? turned : each)),
+      )
+        ? `${name} is in backwards: its band, at its cathode, goes towards −, the way its light's current runs`
+        : `${name} is on no light's way: it goes between + and a light's resistor, or between a light and −, its band towards −`,
+    );
+  }
+
+  // Enough of the supply left for each light once the diodes on its way have taken theirs (ADR 0049).
+  for (const [light, way] of ways) {
+    const count =
+      way.diodes.length + (reach.fed.get(way.top) ?? 0) + (reach.drained.get(way.bottom) ?? 0);
+    if (count === 0) continue;
+    const colour = circuit.leds.find((led) => led.id === light.led)?.colour;
+    const left = (volts: number) =>
+      volts - lightVolts(colour === "rgb" || !colour ? "red" : colour) - count * DIODE_VOLTS;
+    if (left(supply.volts) >= HEADROOM_VOLTS) continue;
+    const enough = SUPPLY_VOLTS.find((volts) => left(volts) >= HEADROOM_VOLTS);
+    problems.push(
+      `${describe(light, circuit)} has ${count === 1 ? "a diode" : `${count} diodes`} on its way, each taking about ${DIODE_VOLTS} V, which leaves too little of the ${supply.volts} V supply to light it: ${enough ? `take \`volts: ${enough}\`` : "take fewer diodes"}`,
+    );
   }
   // Two NPN transistors, crosswise, make a flasher (ADR 0046): each one's emitter on −, its light on
   // its collector, its base fed from + through a resistor, and a capacitor from the other one's

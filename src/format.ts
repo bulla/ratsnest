@@ -208,6 +208,24 @@ export interface TransistorPart {
   readonly collector: Hole;
 }
 
+/**
+ * A diode ratsnest knows, by its model (ADR 0039, ADR 0049): `1N4148`, a small signal diode in an
+ * orange glass case, or `1N4001` or `1N4007`, rectifiers in a black case. Any of them does on a
+ * light's way.
+ */
+export type DiodeModel = "1N4148" | "1N4001" | "1N4007";
+
+/**
+ * A diode, lying flat as a resistor does, its legs three holes apart or more (ADR 0049). It lets
+ * current through one way only, from its anode to its cathode, the end its band is at.
+ */
+export interface DiodePart {
+  readonly kind: "diode";
+  readonly model: DiodeModel;
+  readonly anode: Hole;
+  readonly cathode: Hole;
+}
+
 /** Anything plugged into the breadboard. */
 export type Part =
   | Wire
@@ -218,7 +236,8 @@ export type Part =
   | RgbLedPart
   | RingPart
   | ElectrolyticPart
-  | TransistorPart;
+  | TransistorPart
+  | DiodePart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the

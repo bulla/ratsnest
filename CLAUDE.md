@@ -27,7 +27,8 @@ circuit can do without a Pico, on a supply, and every circuit is in format 2, si
 parts come one at a time, each with the circuit that teaches it, in the roadmap's Backlog: the
 electrolytic capacitor, keeping a light lit on a supply, is the first (M13), and the NPN and PNP
 transistors, a pin switching a light through either, the second and third (M14, M15), with the owner's
-capacitor tester and flasher after them (M16).
+capacitor tester and flasher after them (M16), and the diode, two buttons sharing a light, the fourth
+(M17).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -90,7 +91,7 @@ extend one base: every circuit's setup, name, description, credit, steps and `te
 **A new part comes with a circuit that needs it, and the wiring check learns that one use**
 (ADR 0038), so that every page still shows a circuit that works. A part bought by its model is one
 of a closed list the engine holds, with its pinout, its print and its parts list's line, 2N3904 and
-2N3906 first (ADR 0039); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
+2N3906 first, then the 1N4148, 1N4001 and 1N4007 diodes (ADR 0039, ADR 0049); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
 part apart is printed on its body, upright at every turn and the same in every language, `NPN` and
 `470 µF`, and on a tag only where it cannot fit (ADR 0040). A new part is placed in its step as a
 resistor is, its legs named by role, with no name or callout of its own (ADR 0041). The parts to
@@ -225,8 +226,9 @@ there.
 ├── examples/            scratchpi's seven circuits, ported, `battery-button.ts`, the first on a
 │                        supply (ADR 0032), `fading-light.ts`, the first with a capacitor
 │                        (ADR 0043), `transistor-switch.ts` and `high-side-switch.ts`, with an NPN
-│                        and a PNP transistor (ADR 0044, ADR 0045), and `capacitor-tester.ts`, the
-│                        owner's flasher (ADR 0046): ratsnest's own, checked like anyone's, and in
+│                        and a PNP transistor (ADR 0044, ADR 0045), `capacitor-tester.ts`, the
+│                        owner's flasher (ADR 0046), and `two-buttons-three-lights.ts`, with two
+│                        diodes (ADR 0049): ratsnest's own, checked like anyone's, and in
 │                        `format-1/` the files the migration to format 2 is tested on, one for each
 │                        example older than format 2, left out of the type check (ADR 0014,
 │                        ADR 0015, ADR 0036)
@@ -258,6 +260,8 @@ there.
 │   ├── language.ts      The languages a page is written in
 │   ├── pins.ts, rgb.ts  The GPIO a Pico 2 W breaks out, and an RGB LED's colours
 │   ├── transistors.ts   The transistors ratsnest knows, by model: each one's type and legs (ADR 0039)
+│   ├── diodes.ts        The diodes ratsnest knows, by model: each one's case, and what it is sold as
+│   │                    (ADR 0039, ADR 0049)
 │   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, and one
 │   │                    on a supply, and the `circuit` skill's default credits, read from the skill
 │   ├── drawing/         The Pico, the breadboard and a supply's cell, drawn: CC BY-SA 4.0, unlike
@@ -472,6 +476,15 @@ does not pay for it again.
   is a list of units, and it knew no capacitance until the first capacitor's example wrote `470 µF`
   in its description and passed. A part whose value the engine writes brings its unit to that list,
   in every language, with a test in `src/fields.test.ts`.
+- **Every label on the first board runs to its far end, at a lane its part's row fixes**, so three
+  lights and two buttons could not all run clear on one board: a light in row f or g and a button
+  across the channel each block the other's lane. A light's leader now rises over the lights,
+  buttons, transistors and capacitors in its way, each to a lane of its own (ADR 0050), but a
+  button's still runs straight, through a light if one is further along at its height. The diode's
+  example was found by a search over layouts, scored by `wiringProblems`, `crowdingProblems` at four
+  turns and the leaders' lanes, since by hand every move to clear one tag crowded another. The tag
+  placer keeps off holes, parts lying flat and cases, but not a light's lens, which the search had to
+  check itself: look at a new layout at every turn before calling it done.
 - **A standing part stands over the rows above its legs**, on the drawing, as a light's lens does,
   and wires are drawn over everything. So a hole a reader needs to see, a wire's end above all, goes
   below a standing part, never above it: the fading light's capacitor has its − leg wired from row j,

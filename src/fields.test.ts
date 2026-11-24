@@ -179,6 +179,25 @@ describe("a file's fields (ADR 0016)", () => {
     ]);
   });
 
+  it("name a diode by a model ratsnest knows, in a circuit with a supply (ADR 0039, ADR 0049)", () => {
+    const diode = (model: string) => {
+      const data = structuredClone(
+        supplyFileOf(FIXTURES["lights-kept-apart-by-diodes"]),
+      ) as unknown as Record<string, unknown>;
+      (step(data, 4).parts as Record<string, unknown>[])[0] = {
+        kind: "diode",
+        model,
+        anode: "i14",
+        cathode: "i18",
+      };
+      return data;
+    };
+    for (const model of ["1N4148", "1N4001", "1N4007"]) expect(said(diode(model))).toEqual([]);
+    expect(said(diode("1N5819"))).toEqual([
+      "steps[4].parts[0].model is not one of `1N4148`, `1N4001` or `1N4007`",
+    ]);
+  });
+
   it("put every leg in a hole a half-size breadboard prints", () => {
     expect(said(changed((data) => (part(data, 0, 0).from = "k19")))[0]).toStartWith(
       "steps[0].parts[0].from is not a hole on a half-size breadboard",

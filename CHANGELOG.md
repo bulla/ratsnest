@@ -48,6 +48,16 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   the top of its lens, rather than running behind them.
 - `rnest check` refuses a capacitance, such as `470 µF`, written in a circuit's own words, as it
   refuses a resistance: the engine writes every value.
+- A diode, `{ kind: "diode", model: "1N4148", anode, cathode }`, the 1N4148, 1N4001 or 1N4007, in a
+  circuit with a supply: it keeps a light's current one way, so that two buttons can share a light
+  without lighting each other's. `rnest check` holds it on a light's way, its band towards −, refuses
+  one in backwards, one on no light's way and one from + straight to −, and refuses a light whose
+  diodes, at about 0.7 V each, leave too little of the supply for its resistor. The page draws it
+  lying, orange glass with a black band or black with a grey one, its model on a tag beside it, says
+  where its anode and cathode go, lists it, and notes which way round it goes. On a Pico it is
+  refused, with no use there yet.
+- A light's callout leader rises over the lights and buttons in its way too, each lifted leader to a
+  lane of its own, the light further from its label higher. No page made before changes.
 
 ## [0.2.0] - 2026-11-23
 

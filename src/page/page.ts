@@ -1,4 +1,5 @@
 import type { ButtonColour, Layout, PlainLed, ShownCircuit } from "../circuit";
+import { DIODE_NAMES, DIODES, type DiodeName } from "../diodes";
 import {
   type Hole,
   holeAt,
@@ -213,6 +214,8 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         at(part.base),
         at(part.collector),
       );
+    case "diode":
+      return words.diode(part.model, at(part.anode), at(part.cathode));
   }
 }
 
@@ -358,6 +361,10 @@ function partsListHtml(
     const count = parts.filter((p) => p.kind === "transistor" && p.model === model).length;
     items.push([count, words.listTransistor(model, TRANSISTORS[model].type, count)]);
   }
+  for (const model of diodeModelsOf(parts)) {
+    const count = parts.filter((p) => p.kind === "diode" && p.model === model).length;
+    items.push([count, words.listDiode(model, DIODES[model].use, count)]);
+  }
   for (const arch of [false, true]) {
     for (const role of ["ground", "power", "signal"] as const) {
       const count = parts.filter(
@@ -387,6 +394,11 @@ const transistorModelsOf = (parts: readonly Part[]): TransistorName[] => [
   ...new Set(parts.flatMap((p) => (p.kind === "transistor" ? [p.model] : []))),
 ];
 
+/** The models of the diodes a circuit has, each once, in the order the steps place them. */
+const diodeModelsOf = (parts: readonly Part[]): DiodeName[] => [
+  ...new Set(parts.flatMap((p) => (p.kind === "diode" ? [p.model] : []))),
+];
+
 function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWords): string {
   const notes: string[] = [];
   const models = transistorModelsOf(parts);
@@ -414,6 +426,8 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     if (part.kind === "ring") notes.push(words.ringPolarity(dataPinOf(circuit, part.led)));
   }
   if (parts.some((p) => p.kind === "electrolytic")) notes.push(words.electrolyticPolarity);
+  if (diodeModelsOf(parts).length > 0)
+    notes.push(words.diodePolarity, words.diodeAlike(DIODE_NAMES));
   notes.push(words.rowsLettered, circuit.supply ? words.supplyUnplug : words.unplug);
   return notes.map((note) => `<li>${escaped(note)}</li>`).join("");
 }

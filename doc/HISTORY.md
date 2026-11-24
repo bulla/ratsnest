@@ -289,6 +289,32 @@ leader that rises over the parts in its way (ADR 0047).
 - [x] `examples/capacitor-tester.ts`, in English and French, and a test circuit with a variant for
       every rule it is refused by
 
+### M17: the diode
+
+M17 is done: two buttons on three AA batteries each light a light of their own and a yellow one they
+share, and two 1N4148s keep each button from lighting the other's light (ADR 0049). The wiring check
+learnt a light's way as a chain of diodes, one resistor and the light, from a strip + reaches through
+diodes to one − reaches. Laying the example out needed a light's leader lifted over the lights and
+buttons in its way, each to a lane of its own (ADR 0050).
+
+- [x] The design, worked out alone at the owner's asking (ADR 0049, ADR 0050)
+- [x] The models ratsnest knows, in `src/diodes.ts`: the 1N4148, in glass, and the 1N4001 and
+      1N4007, in black (ADR 0039)
+- [x] The format: `{ kind: "diode", model, anode, cathode }`, read and checked field by field, and
+      allowed in a circuit with a supply
+- [x] The wiring check's rule: no diode from + straight to −; every diode on a light's way, its band
+      towards −, else in backwards or on no light's way; 0.5 V at least left for a light's resistor
+      once its light and its diodes have taken theirs; and on a Pico, refused
+- [x] The drawing: lying, orange glass with a black band or black with a grey one, the band at the
+      cathode, its model on a tag placed as a resistor's value is, its colours in `tokens.css` and
+      each band held to 3:1 on its case
+- [x] A light's leader lifted over the lights and buttons in its way, each to a lane of its own, and
+      no page made before changed
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
+      and the notes on which way round a diode goes and on the models that do
+- [x] `examples/two-buttons-three-lights.ts`, in English and French, and a test circuit with a
+      variant for every rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -577,3 +603,17 @@ leader that rises over the parts in its way (ADR 0047).
   5.7 s, on the pull request that planned the new switches, which changed only the roadmap, and
   passed when run again. Each takes a second and a half on a fast machine, and every part since M13
   has added test circuits to them.
+- 2026-11-24: M17, the diode, worked out alone (ADR 0049, ADR 0050). Its rule came first, and the
+  wiring check's one shape of a light's way, a resistor from + to the light, became a chain that + and
+  − reach through diodes; every circuit before it checks as it did. Laying the example out took the
+  longest. Its five labels all run to the board's far end, and a light's lane is fixed by its row, so a
+  light in row f or g and a button across the channel cannot both run clear past each other. A search
+  of the layouts the check passes found none with every leader clear, short of lights in the top half
+  wired across the channel. So a light's leader now rises over lights and buttons too, as ADR 0047
+  had it rise over transistors and capacitors, each lifted leader to a lane of its own. Every
+  example's drawing, at every quarter turn, in both themes and every language, was set beside the
+  same from `develop`, and none changed but for the tokens it carries. A second search then found a
+  layout with every tag clear at every turn, and kept off a light's lens, which the tag placer does
+  not know of. The diode was drawn once, in the two cases its models have, rather than mocked up in
+  several colourings, and Fritzing's was not set beside it, since this session could not fetch
+  Fritzing's parts.
