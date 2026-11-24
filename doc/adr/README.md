@@ -114,3 +114,4 @@ Each new record adds a row here.
 | [0041](0041-place-a-new-part-in-its-step-as-a-resistor-is-with-no-name-of-its-own.md)                            | Place a new part in its step as a resistor is, with no name of its own                             |
 | [0042](0042-offer-the-drawing-as-a-png-or-a-webp-drawn-by-buns-webview-from-its-svg.md)                          | Offer the drawing as a PNG or a WebP, drawn by Bun's WebView from its SVG                          |
 | [0043](0043-keep-a-light-lit-with-an-electrolytic-capacitor-on-a-supply.md)                                      | Keep a light lit with an electrolytic capacitor, on a supply                                       |
+| [0048](0048-begin-a-stuck-picture-again-on-a-fresh-view-three-times-in-all.md)                                   | Begin a stuck picture again on a fresh view, three times in all                                    |
