@@ -4,15 +4,29 @@ import { FIXTURES } from "../__fixtures__/circuits";
 import type { Theme } from "../theme";
 import { PAGE_FILES } from "./files";
 import { drawingFile } from "./page";
-import { NoPicture, PICTURE_PX_PER_MM, type Picture, pictureOf, sized, within } from "./picture";
+import {
+  NoPicture,
+  PICTURE_PX_PER_MM,
+  type Picture,
+  pictureOf,
+  STEP_MS,
+  Stuck,
+  sized,
+  TRIES,
+  tried,
+  within,
+} from "./picture";
 
 /**
  * The drawing as a PNG or a WebP (ADR 0042): the SVG drawn by a browser, so these tests need one
  * where they run, a Chrome, Chromium, Edge or Brave, or on macOS its own WebKit.
  */
 
-/** A browser starts in about a second, and draws each picture in about another. */
-const SLOW = 30_000;
+/**
+ * A browser starts in about a second, and draws each picture in about another, but a test leaves
+ * time for a picture stuck once and begun again.
+ */
+const SLOW = 2 * STEP_MS + 30_000;
 
 const { circuit, layout } = FIXTURES["two-lights"];
 const svgOf = (theme: Theme) =>
@@ -195,10 +209,44 @@ describe("the drawing as a picture, a PNG or a WebP (ADR 0042)", () => {
 
   it("gives up a step the browser does not finish, and says which, rather than wait for ever", async () => {
     const stuck = () => within("take the picture", new Promise<never>(() => {}), 20);
+    await expect(stuck()).rejects.toBeInstanceOf(Stuck);
     await expect(stuck()).rejects.toBeInstanceOf(NoPicture);
     await expect(stuck()).rejects.toThrow(
       "a PNG or a WebP is drawn by a browser, which did not take the picture within 0.02 s",
     );
     expect(await within("load the drawing", Promise.resolve(7), 20)).toBe(7);
+  });
+
+  it("begins a stuck picture again, a few times, and nothing else", async () => {
+    expect(TRIES).toBe(3);
+    let calls = 0;
+    const stuckOnce = () => {
+      calls += 1;
+      return calls === 1
+        ? within("load the drawing", new Promise<never>(() => {}), 20)
+        : Promise.resolve(calls);
+    };
+    expect(await tried(stuckOnce)).toBe(2);
+
+    calls = 0;
+    const alwaysStuck = () => {
+      calls += 1;
+      return within("load the drawing", new Promise<never>(() => {}), 20);
+    };
+    const given = tried(alwaysStuck);
+    await expect(given).rejects.toBeInstanceOf(NoPicture);
+    await expect(given).rejects.not.toBeInstanceOf(Stuck);
+    await expect(given).rejects.toThrow(
+      "a PNG or a WebP is drawn by a browser, which did not load the drawing within 0.02 s, in 3 tries",
+    );
+    expect(calls).toBe(TRIES);
+
+    calls = 0;
+    const noBrowser = () => {
+      calls += 1;
+      return Promise.reject(new NoPicture("none could be started"));
+    };
+    await expect(tried(noBrowser)).rejects.toThrow("none could be started");
+    expect(calls).toBe(1);
   });
 });

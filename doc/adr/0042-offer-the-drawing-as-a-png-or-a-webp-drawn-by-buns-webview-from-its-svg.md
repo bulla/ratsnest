@@ -1,6 +1,6 @@
 # ADR 0042: Offer the drawing as a PNG or a WebP, drawn by Bun's WebView from its SVG
 
-**Status:** Accepted · 2026-11-23 · Amends ADR-0005 (a PNG or a WebP is the same file only from the same browser), ADR-0016 (on Linux and Windows, a PNG or a WebP needs a browser installed), ADR-0023 (a drawing is also written as `.png` or `.webp`) and ADR-0031 (the drawing alone is also a PNG or a WebP)
+**Status:** Accepted · 2026-11-23 · Amends ADR-0005 (a PNG or a WebP is the same file only from the same browser), ADR-0016 (on Linux and Windows, a PNG or a WebP needs a browser installed), ADR-0023 (a drawing is also written as `.png` or `.webp`) and ADR-0031 (the drawing alone is also a PNG or a WebP) · Amended by ADR-0048 (a stuck step gives up its view, and the picture is begun again, three times in all)
 
 ## Context
 

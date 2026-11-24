@@ -530,3 +530,11 @@ read by the model's type, and the drawing, printed `PNP`, is the NPN's.
   model's type rather than a second copy. The PNP's emitter is held to 3V3(OUT) alone, since on VBUS
   a 3.3 V pin never turns it off. Its example's notes first wrote `3.3 V` and `5 V`, which the check
   on values refused, as it should.
+- 2026-11-24: Between milestones, ADR 0048, on the electrolytic capacitor's pull request, whose
+  macOS test job failed twice on "load the drawing", as Linux's had on `develop` just after the
+  pictures were merged. No machine at hand made a view miss its `load`, in more than a hundred
+  pictures, and no log could be read without signing in, so the jobs' times told it: each failure
+  cost one 15 s wait, and the pictures after it were drawn by the same browser. A stuck picture is
+  now begun again on a fresh view, three times in all, which a view made to hang by hand showed
+  drawing at the second. ADR 0048 took the number after the stack's last, since 0044 to 0047 were
+  decided first and are already on the pull requests above this one.

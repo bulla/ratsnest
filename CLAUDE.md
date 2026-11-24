@@ -458,7 +458,13 @@ does not pay for it again.
   macOS's WebKit once hung in continuous integration, on the CLI test that draws a PNG then a WebP,
   while the same pictures passed in their own file and the compiled check: the job ran until the
   test's timeout said nothing of where. Every browser step is now wrapped in `within`, which gives
-  it 15 seconds and fails naming the step, so the next hang says which.
+  it 15 seconds and fails naming the step, and the next hangs said which: "load the drawing", now
+  and then, on macOS's WebKit and on Linux's Chrome alike, on `develop` as on pull requests, and
+  never on a machine of ours. `navigate` resolves on the page's `load` event alone, and a view
+  sometimes never has one, while the next view in the same browser draws at once, as the jobs'
+  times showed: one 15 s wait, then every other picture. So `pictureOf` begins a stuck picture again
+  on a fresh view, `TRIES` times in all, through `tried` (ADR 0048); the tests' timeouts leave room
+  for it.
 - **The check on values in a circuit's words knows its units by name.** `VALUE` in `src/fields.ts`
   is a list of units, and it knew no capacitance until the first capacitor's example wrote `470 µF`
   in its description and passed. A part whose value the engine writes brings its unit to that list,
