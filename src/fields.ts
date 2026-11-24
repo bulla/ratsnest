@@ -8,7 +8,13 @@ import {
   THREE_VOLT_COLOURS,
 } from "./circuit";
 import { DIODE_NAMES } from "./diodes";
-import { legsOf, type Part as Placed, parseHole, pinOfStrip } from "./drawing/breadboard";
+import {
+  DIP_SWITCHES,
+  legsOf,
+  type Part as Placed,
+  parseHole,
+  pinOfStrip,
+} from "./drawing/breadboard";
 import { HEADER_PINS } from "./drawing/geometry";
 import { fileOf } from "./fonts";
 import type { Circuit, Language, Setup, SupplyCircuit, Text } from "./format";
@@ -235,6 +241,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ceramic: ["kind", "nanofarads", "from", "to"],
   slideSwitch: ["kind", "left", "middle", "right"],
   slidePotentiometer: ["kind", "ohms", "wiper", "end", "otherEnd"],
+  dipSwitch: ["kind", "switches", "column", "board"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
@@ -383,6 +390,34 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
         fields.problem("ohms", "is not a value in ohms above 0");
       }
       for (const leg of ["wiper", "end", "otherEnd"]) fields.hole(leg);
+      return;
+    }
+    case "dipSwitch": {
+      const [fewest, most] = DIP_SWITCHES;
+      const switches = fields.required("switches", "how many switches");
+      if (
+        switches !== undefined &&
+        (typeof switches !== "number" ||
+          !Number.isInteger(switches) ||
+          switches < fewest ||
+          switches > most)
+      ) {
+        fields.problem("switches", `is not a whole number from ${fewest} to ${most}`);
+      }
+      const column = fields.required("column", "its first column");
+      const count = typeof switches === "number" ? switches : 1;
+      if (
+        column !== undefined &&
+        (typeof column !== "number" ||
+          !Number.isInteger(column) ||
+          column < 1 ||
+          column + count - 1 > 30)
+      ) {
+        fields.problem("column", "is not a column from which every switch has one, from 1 to 30");
+      }
+      if (Object.hasOwn(part, "board") && part.board !== 2) {
+        fields.problem("board", "is not 2, the second breadboard, or left out for the first");
+      }
       return;
     }
     case "rgbLed":

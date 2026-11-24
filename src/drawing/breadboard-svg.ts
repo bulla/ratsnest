@@ -12,6 +12,7 @@ import {
   CHANNEL_Y_MM,
   COLUMNS,
   columnX,
+  dipLegsOf,
   type Hole,
   holeAt,
   holeCentre,
@@ -177,6 +178,17 @@ export const SLIDE_POTENTIOMETER_TOKENS = {
   ink: "slide-potentiometer-ink",
 } as const;
 
+/**
+ * The colours of a DIP switch's body, the windows its slides are in, the slides, and what is printed
+ * on it, its ON side and its switches' numbers (ADR 0054).
+ */
+export const DIP_SWITCH_TOKENS = {
+  body: "dip-switch",
+  window: "dip-switch-window",
+  slide: "dip-switch-slide",
+  ink: "dip-switch-ink",
+} as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
@@ -186,6 +198,7 @@ export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(CERAMIC_TOKENS),
   ...Object.values(SLIDE_SWITCH_TOKENS),
   ...Object.values(SLIDE_POTENTIOMETER_TOKENS),
+  ...Object.values(DIP_SWITCH_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -1025,6 +1038,7 @@ function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: num
       if (other.kind === "slideSwitch" && overlap(box, slideBoxOf(other))) return false;
       if (other.kind === "slidePotentiometer" && overlap(box, slidePotentiometerBoxOf(other)))
         return false;
+      if (other.kind === "dipSwitch" && overlap(box, dipBoxOf(other))) return false;
       for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
     }
     return true;
@@ -1794,6 +1808,80 @@ function drawSlidePotentiometer(part: Extract<Part, { kind: "slidePotentiometer"
 }
 
 /**
+ * A DIP switch across the channel, seen from above (ADR 0040, ADR 0054): a blue body between its two
+ * rows of legs, whose ends show past its edges, a window over each switch with its white slide in it,
+ * drawn off, away from the ON printed along its top edge, and each switch's number along its bottom
+ * edge, every word upright at every quarter turn and the same in every language.
+ */
+export const DIP_MM = { side: 1.35, inset: 0.6, window: { w: 1.45, h: 3.3 }, print: 0.95 } as const;
+
+/** The box a DIP switch's body lies over, between its two rows of legs. */
+export function dipBoxOf(part: Extract<Part, { kind: "dipSwitch" }>): Box {
+  const legs = dipLegsOf(part);
+  const first = holeCentre(legs[0]?.[0] ?? "e1");
+  const last = holeCentre(legs[legs.length - 1]?.[1] ?? "f1");
+  return {
+    x: first.x - DIP_MM.side,
+    y: first.y + DIP_MM.inset,
+    w: last.x - first.x + 2 * DIP_MM.side,
+    h: last.y - first.y - 2 * DIP_MM.inset,
+  };
+}
+
+function drawDipSwitch(part: Extract<Part, { kind: "dipSwitch" }>): string {
+  const box = dipBoxOf(part);
+  const middle = box.y + box.h / 2;
+  const lead = `stroke="${token("lead")}" stroke-width="0.55"`;
+  const ink = `font-size="${DIP_MM.print}" font-weight="900" fill="${token(DIP_SWITCH_TOKENS.ink)}"`;
+  const { w, h } = DIP_MM.window;
+  const switches = dipLegsOf(part).map(([top, bottom], index) => {
+    const [t, b] = [holeCentre(top), holeCentre(bottom)];
+    return {
+      legs:
+        line(t.x, t.y, t.x, box.y, lead) +
+        legEnd(t.x, t.y) +
+        line(b.x, b.y, b.x, box.y + box.h, lead) +
+        legEnd(b.x, b.y),
+      face:
+        rect(
+          t.x - w / 2,
+          middle - h / 2,
+          w,
+          h,
+          `rx="0.2" fill="${token(DIP_SWITCH_TOKENS.window)}"`,
+        ) +
+        // Off: its slide at the end away from ON.
+        rect(
+          t.x - w / 2 + 0.2,
+          middle + 0.1,
+          w - 0.4,
+          h / 2 - 0.3,
+          `rx="0.15" fill="${token(DIP_SWITCH_TOKENS.slide)}"`,
+        ) +
+        word(t.x, box.y + box.h - 0.72, String(index + 1), ink),
+    };
+  });
+  return (
+    switches.map((each) => each.legs).join("") +
+    rect(
+      box.x,
+      box.y,
+      box.w,
+      box.h,
+      `rx="0.4" fill="${token(DIP_SWITCH_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`,
+    ) +
+    switches.map((each) => each.face).join("") +
+    // ON above the gap between switches 1 and 2, where it clears their windows at every turn.
+    word(
+      box.x + DIP_MM.side + PIN_PITCH_MM / 2,
+      box.y + 0.78,
+      "ON",
+      ink.replace(`font-size="${DIP_MM.print}"`, 'font-size="0.85"'),
+    )
+  );
+}
+
+/**
  * A 10 mm addressable RGB LED (scratchpi's ADR 0222), standing up: four leads, data out's kinked as the
  * longest, a frosted lens over them, and its pie of red, green and blue showing through
  * (scratchpi's ADR 0224). Its glow is white, all three at once, when the step that tests it is picked.
@@ -2398,6 +2486,9 @@ function drawPart(
       break;
     case "slidePotentiometer":
       body = drawSlidePotentiometer(part);
+      break;
+    case "dipSwitch":
+      body = drawDipSwitch(part);
       break;
   }
   const label =

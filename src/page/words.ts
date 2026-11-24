@@ -129,6 +129,16 @@ export interface PageWords {
    * its other end, on the other breadboard.
    */
   readonly slidePotentiometer: (ohms: string, wiper: Place, end: Place, otherEnd: Place) => string;
+  /**
+   * A DIP switch (ADR 0054): how many switches, the holes of switch 1's two legs and of the last's,
+   * and whether they are on the second breadboard, which is said once rather than for each hole.
+   */
+  readonly dipSwitch: (
+    switches: number,
+    first: readonly string[],
+    last: readonly string[],
+    second: boolean,
+  ) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
@@ -165,6 +175,8 @@ export interface PageWords {
   readonly listSlideSwitch: (count: number) => string;
   /** Slide potentiometers of one value, written already, and how many (ADR 0053). */
   readonly listSlidePotentiometer: (ohms: string, count: number) => string;
+  /** DIP switches of one size, and how many (ADR 0054). */
+  readonly listDipSwitch: (switches: number, count: number) => string;
   /** Ceramic capacitors of one value, written already, the code they print, and how many (ADR 0051). */
   readonly listCeramic: (nanofarads: string, code: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
@@ -199,6 +211,8 @@ export interface PageWords {
   readonly slideSwitchNote: string;
   /** Which leg of a slide potentiometer is its wiper, the analogue pins it can go to, and why (ADR 0053). */
   readonly slidePotentiometerWiper: (pins: readonly string[]) => string;
+  /** That each switch goes from ground to a pin the Pico pulls up, and why not to 3V3 (ADR 0054). */
+  readonly dipPullUp: string;
   /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
   readonly diodeAlike: (models: readonly string[]) => string;
   /** That a ceramic capacitor goes either way round, and how its code says its value (ADR 0051). */
@@ -360,6 +374,8 @@ export const ENGLISH_PAGE: PageWords = {
     `A slide switch, either way round: its middle leg ${englishIn(middle)}, one outer leg ${englishIn(left)} and the other ${englishIn(right)}.`,
   slidePotentiometer: (ohms, wiper, end, otherEnd) =>
     `A ${ohms} slide potentiometer, lying across both breadboards: its wiper ${englishIn(wiper)}, the end beside it ${englishIn(end)}, and its other end ${englishIn(otherEnd)}.`,
+  dipSwitch: (switches, first, last, second) =>
+    `A ${switches}-way DIP switch across the channel, its ON side towards row <span class="hole">a</span>: switch 1 in ${englishList(first)}, and switch ${switches} in ${englishList(last)}${second ? ", on the second breadboard" : ""}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
@@ -405,6 +421,8 @@ export const ENGLISH_PAGE: PageWords = {
     }),
   listSlidePotentiometer: (ohms, count) =>
     `${ohms} slide ${plural("en", count, { one: "potentiometer", other: "potentiometers" })}, 45 mm long, with two legs at one end and one at the other, and a cap for the knob.`,
+  listDipSwitch: (switches, count) =>
+    `${switches}-way DIP ${plural("en", count, { one: "switch", other: "switches" })}, with its legs in two rows 7.62 mm apart, to go across the channel.`,
   listCeramic: (nanofarads, code, count) =>
     `${nanofarads} ceramic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, marked ${code}.`,
   listWire: (colour, count) =>
@@ -434,6 +452,8 @@ export const ENGLISH_PAGE: PageWords = {
     "A slide switch joins its middle leg to one outer leg or the other, whichever way its slide is pushed, and stays so when let go, where a push button joins its legs only while it is held.",
   slidePotentiometerWiper: (pins) =>
     `Of a slide potentiometer's two legs at one end, its wiper is the one with no leg in line with it at the other end. It goes to an analogue pin, ${englishList(pins).replace(" and ", " or ")}, and the two ends to 3V3(OUT) and ground, either way round. Wired to 3V3(OUT) instead, the wiper would join it to ground at one end of its travel.`,
+  dipPullUp:
+    "Each switch of a DIP switch joins its two legs while it is on. One leg goes to ground and the other to a pin of its own, which the script pulls up inside the Pico, so it reads 1 while its switch is off and 0 while it is on. Wired to 3V3(OUT) instead, each pin would need a pull-down, and the Pico 2 W's own cannot be relied on to hold it low.",
   diodeAlike: (models) =>
     `The ${englishList(models)} all do on a light's way: a light takes far less current than any of them can carry.`,
   ceramicCode: (code, nanofarads) =>
@@ -630,6 +650,8 @@ export const FRENCH_PAGE: PageWords = {
     `Un interrupteur à glissière, dans un sens ou dans l’autre${NNBSP}: sa patte du milieu ${frenchIn(middle)}, une patte extérieure ${frenchIn(left)} et l’autre ${frenchIn(right)}.`,
   slidePotentiometer: (ohms, wiper, end, otherEnd) =>
     `Un potentiomètre à glissière de ${ohms}, couché à cheval sur les deux plaques${NNBSP}: son curseur ${frenchIn(wiper)}, l’extrémité à côté ${frenchIn(end)}, et son autre extrémité ${frenchIn(otherEnd)}.`,
+  dipSwitch: (switches, first, last, second) =>
+    `Un interrupteur DIP à ${switches} voies à cheval sur la rainure centrale, son côté ON vers la rangée <span class="hole">a</span>${NNBSP}: l’interrupteur 1 en ${frenchList(first)}, et l’interrupteur ${switches} en ${frenchList(last)}${second ? ", sur la seconde plaque" : ""}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
@@ -680,6 +702,8 @@ export const FRENCH_PAGE: PageWords = {
     }),
   listSlidePotentiometer: (ohms, count) =>
     `${plural("fr", count, { one: "Potentiomètre à glissière", many: "Potentiomètres à glissière", other: "Potentiomètres à glissière" })} de ${ohms}, de 45 mm de long, à deux pattes à un bout et une à l’autre, avec un capuchon pour le bouton.`,
+  listDipSwitch: (switches, count) =>
+    `${plural("fr", count, { one: "Interrupteur", many: "Interrupteurs", other: "Interrupteurs" })} DIP à ${switches} voies, ses pattes sur deux rangées espacées de 7,62 mm, pour se mettre à cheval sur la rainure centrale.`,
   listCeramic: (nanofarads, code, count) =>
     `${plural("fr", count, { one: "Condensateur céramique", many: "Condensateurs céramiques", other: "Condensateurs céramiques" })} de ${nanofarads}, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
   listWire: (colour, count) => {
@@ -719,6 +743,8 @@ export const FRENCH_PAGE: PageWords = {
     "Un interrupteur à glissière relie sa patte du milieu à l’une ou l’autre de ses pattes extérieures, selon le côté où l’on pousse sa glissière, et reste ainsi une fois lâché, là où un bouton poussoir ne relie ses pattes que tant qu’on le maintient enfoncé.",
   slidePotentiometerWiper: (pins) =>
     `Des deux pattes d’un même bout d’un potentiomètre à glissière, le curseur est celle qui n’a aucune patte dans son alignement à l’autre bout. Il va sur une broche analogique, ${frenchList(pins).replace(" et ", " ou ")}, et les deux extrémités sur le 3V3(OUT) et la masse, dans un sens ou dans l’autre. Relié au 3V3(OUT), le curseur le relierait à la masse à un bout de sa course.`,
+  dipPullUp:
+    "Chaque interrupteur d’un interrupteur DIP relie ses deux pattes tant qu’il est en marche. Une patte va à la masse et l’autre à une broche à elle, que le script tire vers le haut à l’intérieur du Pico, si bien qu’elle lit 1 tant que son interrupteur est à l’arrêt et 0 tant qu’il est en marche. Relié au 3V3(OUT), chaque broche aurait besoin d’une résistance de tirage vers le bas, et celles du Pico 2 W ne suffisent pas à la maintenir au niveau bas.",
   diodeAlike: (models) =>
     `Les diodes ${frenchList(models)} conviennent toutes sur le chemin d’une LED${NNBSP}: une LED consomme bien moins de courant que chacune d’elles n’en supporte.`,
   ceramicCode: (code, nanofarads) =>
@@ -830,6 +856,10 @@ const russianIn = (place: Place): string =>
   (place.kind === "rail" ? `в ${russianRail(place, true)}` : `в ${place.html}`) +
   russianBoard(place);
 
+/** A DIP switch's positions, as *на* takes them: *на 2 позиции*, *на 5 позиций* (ADR 0054). */
+const russianPositions = (count: number): string =>
+  plural("ru", count, { one: "позицию", few: "позиции", many: "позиций", other: "позиции" });
+
 const russianList = (items: readonly string[]): string =>
   items.length <= 1
     ? items.join("")
@@ -905,6 +935,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `Керамический конденсатор ${nanofarads} с маркировкой ${code}, любой стороной: одна ножка ${russianIn(from)}, другая ${russianIn(to)}.`,
   slideSwitch: (middle, left, right) =>
     `Ползунковый переключатель, любой стороной: средняя ножка ${russianIn(middle)}, одна крайняя ножка ${russianIn(left)}, другая ${russianIn(right)}.`,
+  dipSwitch: (switches, first, last, second) =>
+    `DIP-переключатель на ${switches} ${russianPositions(switches)} поперёк центральной канавки, стороной ON к ряду <span class="hole">a</span>: переключатель 1 в ${russianList(first)}, переключатель ${switches} в ${russianList(last)}${second ? ", на второй плате" : ""}.`,
   slidePotentiometer: (ohms, wiper, end, otherEnd) =>
     `Ползунковый потенциометр ${ohms}, поперёк обеих плат: движок ${russianIn(wiper)}, вывод рядом с ним ${russianIn(end)}, другой вывод ${russianIn(otherEnd)}.`,
 
@@ -951,6 +983,8 @@ export const RUSSIAN_PAGE: PageWords = {
     "Ползунковый переключатель SPDT: три ножки с шагом 2,54 мм, как отверстия макетной платы.",
   listSlidePotentiometer: (ohms) =>
     `Ползунковый потенциометр ${ohms}, длиной 45 мм: два вывода с одного конца и один с другого, с колпачком для ручки.`,
+  listDipSwitch: (switches) =>
+    `DIP-переключатель на ${switches} ${russianPositions(switches)}: ножки в два ряда на расстоянии 7,62 мм, чтобы встать поперёк центральной канавки.`,
   listCeramic: (nanofarads, code) => `Керамический конденсатор ${nanofarads}, маркировка ${code}.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
@@ -978,6 +1012,8 @@ export const RUSSIAN_PAGE: PageWords = {
     "Ползунковый переключатель соединяет среднюю ножку с одной или другой крайней, смотря куда сдвинут ползунок, и остаётся так, когда его отпускают, а кнопка соединяет свои ножки, только пока её держат.",
   slidePotentiometerWiper: (pins) =>
     `Из двух выводов на одном конце ползункового потенциометра движком служит тот, напротив которого на другом конце вывода нет. Он идёт на аналоговый вывод ${russianList(pins).replace(" и ", " или ")}, а крайние выводы идут на 3V3(OUT) и землю, в любом порядке. Подключённый к 3V3(OUT), движок замкнул бы его на землю в одном конце хода.`,
+  dipPullUp:
+    "Каждый переключатель DIP-переключателя соединяет свои две ножки, пока он включён. Одна ножка идёт на землю, другая на свой вывод, который скрипт подтягивает вверх внутри Pico, так что вывод читает 1, пока переключатель выключен, и 0, пока он включён. Если подключить переключатели к 3V3(OUT), каждому выводу понадобится подтяжка вниз, а на встроенную подтяжку Pico 2 W нельзя положиться.",
   diodeAlike: (models) =>
     `На пути светодиода подойдёт любой из диодов ${russianList(models)}: светодиоду нужно гораздо меньше тока, чем выдерживает каждый из них.`,
   ceramicCode: (code, nanofarads) =>

@@ -264,6 +264,19 @@ export interface SlidePotentiometerPart {
   readonly otherEnd: Hole;
 }
 
+/**
+ * A DIP switch across the channel, its legs in rows e and f (ADR 0054): `switches` of them, from 2
+ * to 8, side by side, switch 1 in `column` and the rest to its right, its ON side towards row a.
+ * Each switch joins its two legs while it is on.
+ */
+export interface DipSwitchPart {
+  readonly kind: "dipSwitch";
+  readonly switches: number;
+  readonly column: number;
+  /** `2` puts it on the second breadboard, snapped onto the first one's top edge. */
+  readonly board?: 2;
+}
+
 /** Anything plugged into the breadboard. */
 export type Part =
   | Wire
@@ -278,7 +291,8 @@ export type Part =
   | DiodePart
   | CeramicPart
   | SlideSwitchPart
-  | SlidePotentiometerPart;
+  | SlidePotentiometerPart
+  | DipSwitchPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the

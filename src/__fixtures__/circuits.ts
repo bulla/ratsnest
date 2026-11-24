@@ -18,9 +18,10 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * turn, on a supply (ADR 0046), the thirteenth two buttons that each light a light of their own and
  * one they share, two diodes keeping each from the other's light (ADR 0049), the fourteenth a
  * ceramic capacitor that one pin charges through a resistor while another reads it (ADR 0051), the
- * fifteenth a slide switch that lights one light or the other, on a supply (ADR 0052), and the
+ * fifteenth a slide switch that lights one light or the other, on a supply (ADR 0052), the
  * sixteenth a slide potentiometer that the Pico reads on an analogue pin, across two breadboards
- * (ADR 0053).
+ * (ADR 0053), and the seventeenth a DIP switch whose switches go from ground to pins the Pico pulls
+ * up (ADR 0054).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -39,6 +40,7 @@ export const FIXTURE_IDS = [
   "capacitor-timed-by-two-pins",
   "lights-chosen-by-a-slide-switch",
   "slide-potentiometer-read-by-an-analogue-pin",
+  "switches-read-by-pull-ups",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -964,6 +966,46 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       script:
         "from machine import ADC, Pin\nfrom time import sleep\n\npotentiometer = ADC(Pin(26))\n\nwhile True:\n    print(potentiometer.read_u16())\n    sleep(0.2)",
       test: "The script prints the potentiometer's reading, which follows the knob from one end of its travel to the other.",
+    },
+  },
+  "switches-read-by-pull-ups": {
+    circuit: {
+      name: "Two switches on GP16 and GP17",
+      description:
+        "A DIP switch of two switches, each from ground to a pin the Pico pulls up, GP16 and GP17.",
+      credit: CREDIT,
+      leds: [],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Ground on the bottom − rail",
+          parts: [{ kind: "wire", from: "j19", to: "bottom-19", role: "ground" }],
+        },
+        {
+          title: "The DIP switch, across the channel",
+          parts: [{ kind: "dipSwitch", switches: 2, column: 22 }],
+        },
+        {
+          title: "Each switch's bottom leg to ground",
+          parts: [
+            { kind: "wire", from: "j22", to: "bottom-22", role: "ground" },
+            { kind: "wire", from: "j23", to: "bottom-23", role: "ground" },
+          ],
+        },
+        {
+          title: "Each switch's top leg to its pin",
+          parts: [
+            { kind: "wire", from: "a22", to: "a21", role: "signal" },
+            { kind: "wire", from: "b23", to: "b20", role: "signal" },
+          ],
+        },
+      ],
+      script:
+        "from machine import Pin\nfrom time import sleep\n\nfirst = Pin(16, Pin.IN, Pin.PULL_UP)\nsecond = Pin(17, Pin.IN, Pin.PULL_UP)\n\nwhile True:\n    print(first.value() == 0, second.value() == 0)\n    sleep(0.5)",
+      test: "The script prints whether each switch is on, twice a second.",
     },
   },
 };

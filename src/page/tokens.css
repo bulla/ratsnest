@@ -130,6 +130,13 @@
   --color-slide-potentiometer-slot: #121315;
   --color-slide-potentiometer-knob: #c9cbc6;
   --color-slide-potentiometer-ink: #e9eae6;
+  /* A DIP switch (ADR 0054): its blue body, the dark windows its white slides sit in, which says
+     whether each is on, so a slide clears 3:1 on its window, and its ON and numbers printed on the
+     body, which are read, so they clear 4.5:1. */
+  --color-dip-switch: #2b5aa6;
+  --color-dip-switch-window: #16181c;
+  --color-dip-switch-slide: #f1f1ec;
+  --color-dip-switch-ink: #ffffff;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

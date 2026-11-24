@@ -2,6 +2,7 @@ import { ceramicCode } from "../ceramics";
 import type { ButtonColour, Layout, PlainLed, ShownCircuit } from "../circuit";
 import { DIODE_NAMES, DIODES, type DiodeName } from "../diodes";
 import {
+  dipLegsOf,
   type Hole,
   holeAt,
   holeOfPin,
@@ -239,6 +240,17 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         at(part.end),
         at(part.otherEnd),
       );
+    case "dipSwitch": {
+      const legs = dipLegsOf(part).map((pair) =>
+        pair.map((leg) => holeHtml(leg, words, names.pico)),
+      );
+      return words.dipSwitch(
+        part.switches,
+        legs[0] ?? [],
+        legs[legs.length - 1] ?? [],
+        part.board === 2,
+      );
+    }
   }
 }
 
@@ -268,14 +280,15 @@ const isComponent = (part: Part) =>
 
 /**
  * The parts the test step picks out: the components a reader watches and presses, a ceramic
- * capacitor, which is what its circuit's script times (ADR 0051), and a slide switch and a slide
- * potentiometer, which the reader slides (ADR 0052, ADR 0053).
+ * capacitor, which is what its circuit's script times (ADR 0051), and a slide switch, a slide
+ * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054).
  */
 const isTested = (part: Part) =>
   isComponent(part) ||
   part.kind === "ceramic" ||
   part.kind === "slideSwitch" ||
-  part.kind === "slidePotentiometer";
+  part.kind === "slidePotentiometer" ||
+  part.kind === "dipSwitch";
 
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
@@ -393,6 +406,13 @@ function partsListHtml(
     const count = parts.filter((p) => p.kind === "slidePotentiometer" && p.ohms === value).length;
     items.push([count, words.listSlidePotentiometer(words.ohms(value), count)]);
   }
+  const dips = [
+    ...new Set(parts.flatMap((p) => (p.kind === "dipSwitch" ? [p.switches] : []))),
+  ].sort((a, b) => a - b);
+  for (const switches of dips) {
+    const count = parts.filter((p) => p.kind === "dipSwitch" && p.switches === switches).length;
+    items.push([count, words.listDipSwitch(switches, count)]);
+  }
   const microfarads = [
     ...new Set(parts.flatMap((p) => (p.kind === "electrolytic" ? [p.microfarads] : []))),
   ].sort((a, b) => a - b);
@@ -486,6 +506,7 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
   if (parts.some((p) => p.kind === "slidePotentiometer")) {
     notes.push(words.slidePotentiometerWiper(ANALOGUE_GPIOS.map((gpio) => `GP${gpio}`)));
   }
+  if (parts.some((p) => p.kind === "dipSwitch")) notes.push(words.dipPullUp);
   const [ceramic] = nanofaradsOf(parts);
   if (ceramic !== undefined) {
     const [low, high] = CHARGE_OHMS_RANGE;

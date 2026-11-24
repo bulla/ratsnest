@@ -382,6 +382,28 @@ script colours two RGB LEDs from its reading (ADR 0053).
 - [x] `examples/colours-on-a-slider.ts`, in English and French, and a test circuit with a variant for
       every rule it is refused by
 
+### M21: the DIP switch
+
+M21 is done: from a tutorial the owner chose, a five-way DIP switch on a second breadboard, each
+switch from ground to a pin of its own, GP22 to GP18, which the script pulls up inside the Pico and
+reads, printing which switches are on (ADR 0054). The tutorial's switches go to 3V3 and its pins
+rest on the Pico's own pull-downs, which erratum E9 makes unreliable on the Pico 2 W.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0054): the switches to ground and the
+      Pico's own pull-ups, placed by a column as a button is
+- [x] The format: `{ kind: "dipSwitch", switches, column, board }`, 2 to 8 switches, read and checked
+      field by field, and refused in a circuit with a supply
+- [x] The wiring check's rule, switch by switch: no leg on 3V3(OUT), saying why; one leg on ground;
+      the other straight on a GPIO of its own, with nothing else on it; the check for shorts never
+      closing one; and on a supply, refused
+- [x] The drawing: a blue body seen from above, a white slide drawn off in each switch's window, ON and
+      the numbers upright at every quarter turn, its colours in `tokens.css`, the slides held to 3:1
+      and the print to 4.5:1
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line and
+      the note on how its switches are read, and the test step picking it out
+- [x] `examples/five-switches.ts`, in English and French, and a test circuit with a variant for every
+      rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -715,3 +737,14 @@ script colours two RGB LEDs from its reading (ADR 0053).
   the pull request: beside `slideSwitch` it could mean either part, so it became
   `slidePotentiometer`, and the example's French, which had called the whole part its `curseur`, the
   word its page uses for the wiper, calls it the potentiometer.
+- 2026-11-24: M21, the DIP switch, worked out alone (ADR 0054), stacked on M20, the last of the
+  parts planned in #52. Five pull-downs, as a button has, were the roadmap's first thought, but five
+  resistors a pitch apart leave no room for five value tags, so each switch went to ground and the
+  script pulls its pin up instead, which E9 does not touch. The tutorial's own wiring, to 3V3, is
+  refused with that reason. The first layout put the DIP switch on the first breadboard past the
+  Pico, and no five wires from it reached the Pico's pins without running along each other; on the
+  second breadboard, the Pico's top row is right below it. Its first drawing printed ON beside
+  switch 1, which turned a quarter ran into the switch's window, and ON now sits over the gap
+  between switches 1 and 2. The example credited the tutorial in its description until the owner
+  asked for it to come out: ratsnest names no shop or product, and the description says instead why
+  the switches go to ground, though ADR 0054, left as it was, says the tutorial is credited.

@@ -347,6 +347,18 @@ export type Part =
       readonly wiper: Hole;
       readonly end: Hole;
       readonly otherEnd: Hole;
+    }
+  /**
+   * A DIP switch across the channel, its legs in rows e and f (ADR 0054): `switches` of them side by
+   * side, switch 1 in `column` and the rest to its right, its ON side towards row a. Each switch
+   * joins its leg in row e to its leg in row f while it is on.
+   */
+  | {
+      readonly kind: "dipSwitch";
+      readonly switches: number;
+      readonly column: number;
+      /** `2` puts it on the second breadboard, as a button can be (ADR 0028). */
+      readonly board?: 2;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -416,9 +428,29 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.left, part.middle, part.right];
     case "slidePotentiometer":
       return [part.wiper, part.end, part.otherEnd];
+    case "dipSwitch":
+      return dipLegsOf(part).flat();
     case "ring":
       return [part.dataIn, part.power, part.ground, part.dataOut];
   }
+}
+
+/** The fewest and the most switches a DIP switch can have side by side (ADR 0054). */
+export const DIP_SWITCHES = [2, 8] as const;
+
+/**
+ * A DIP switch's legs, switch by switch from switch 1: each switch's leg in row e, above the
+ * channel, and its leg in row f, below it, on the board it is on.
+ */
+export function dipLegsOf(part: {
+  readonly switches: number;
+  readonly column: number;
+  readonly board?: 2;
+}): [Hole, Hole][] {
+  return Array.from({ length: part.switches }, (_, k) => [
+    buttonHole(part, "e", part.column + k),
+    buttonHole(part, "f", part.column + k),
+  ]);
 }
 
 /**

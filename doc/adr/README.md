@@ -124,3 +124,4 @@ Each new record adds a row here.
 | [0051](0051-let-two-pins-time-a-ceramic-capacitor-through-a-resistor.md)                                         | Let two pins time a ceramic capacitor through a resistor                                           |
 | [0052](0052-let-a-slide-switch-light-one-light-or-the-other-on-a-supply.md)                                      | Let a slide switch light one light or the other, on a supply                                       |
 | [0053](0053-let-the-pico-read-a-slide-potentiometer-lying-across-both-breadboards.md)                            | Let the Pico read a slide potentiometer, lying across both breadboards                             |
+| [0054](0054-let-the-pico-read-a-dip-switchs-switches-each-from-ground-through-its-own-pull-up.md)                | Let the Pico read a DIP switch's switches, each from ground through its own pull-up                |
