@@ -159,6 +159,23 @@ describe("a file's fields (ADR 0016)", () => {
     );
   });
 
+  it("name a transistor by a model ratsnest knows (ADR 0039, ADR 0044)", () => {
+    const transistor = (model: string) =>
+      changed(
+        (data) =>
+          ((step(data, 1).parts as Record<string, unknown>[])[0] = {
+            kind: "transistor",
+            model,
+            emitter: "e24",
+            base: "e25",
+            collector: "e26",
+          }),
+        "light-on-a-transistor",
+      );
+    expect(said(transistor("2N3904"))).toEqual([]);
+    expect(said(transistor("BC547"))).toEqual(["steps[1].parts[0].model is not one of `2N3904`"]);
+  });
+
   it("put every leg in a hole a half-size breadboard prints", () => {
     expect(said(changed((data) => (part(data, 0, 0).from = "k19")))[0]).toStartWith(
       "steps[0].parts[0].from is not a hole on a half-size breadboard",
@@ -432,6 +449,18 @@ describe("a circuit with a supply (ADR 0032)", () => {
       }),
     );
     expect(said(ring)[0]).toStartWith("steps[0].parts[4].kind is `ring`, which needs a Pico");
+    const transistor = supplied((data) =>
+      (step(data, 0).parts as unknown[]).push({
+        kind: "transistor",
+        model: "2N3904",
+        emitter: "j25",
+        base: "j26",
+        collector: "j27",
+      }),
+    );
+    expect(said(transistor)[0]).toStartWith(
+      "steps[0].parts[4].kind is `transistor`, which needs a Pico",
+    );
   });
 
   it("says what a working circuit does in `test`", () => {

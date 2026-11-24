@@ -2,7 +2,12 @@ import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BUTTON_COLOURS, LED_COLOURS } from "../circuit";
-import { BREADBOARD_TOKENS, ELECTROLYTIC_TOKENS, SUPPLY_TOKENS } from "../drawing/breadboard-svg";
+import {
+  BREADBOARD_TOKENS,
+  ELECTROLYTIC_TOKENS,
+  SUPPLY_TOKENS,
+  TRANSISTOR_TOKENS,
+} from "../drawing/breadboard-svg";
 import { CHIP_STYLES } from "../drawing/chips";
 import { contrastRatio } from "./contrast";
 
@@ -211,6 +216,12 @@ describe.each(SCOPES)("the %s scale", (scope) => {
         colour(ELECTROLYTIC_TOKENS.stripeInk, scope),
         colour(ELECTROLYTIC_TOKENS.stripe, scope),
       ),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("prints a transistor's type, model and legs legibly on its case (ADR 0044)", () => {
+    expect(
+      contrastRatio(colour(TRANSISTOR_TOKENS.ink, scope), colour(TRANSISTOR_TOKENS.body, scope)),
     ).toBeGreaterThanOrEqual(4.5);
   });
 

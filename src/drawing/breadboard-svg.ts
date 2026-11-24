@@ -2,6 +2,7 @@ import type { ButtonColour, LedColour } from "../circuit";
 import { widthOf } from "../fonts";
 import { isStanding, type Orientation, turned } from "../orientation";
 import { PIE_WEDGES, wedgePath } from "../rgb";
+import { TRANSISTORS, type TransistorLeg } from "../transistors";
 import {
   BREADBOARD_HEIGHT_MM,
   BREADBOARD_WIDTH_MM,
@@ -137,10 +138,14 @@ export const ELECTROLYTIC_TOKENS = {
   stripeInk: "capacitor-stripe-ink",
 } as const;
 
+/** The colours of a transistor's TO-92 case, and of what is printed on its flat face (ADR 0044). */
+export const TRANSISTOR_TOKENS = { body: "transistor", ink: "transistor-ink" } as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
   ...Object.values(ELECTROLYTIC_TOKENS),
+  ...Object.values(TRANSISTOR_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -959,6 +964,7 @@ function placeTag(
         if (inside(centre, BUTTON_BODY_MM / 2 + 0.4)) return false;
       }
       if (other.kind === "electrolytic" && overlap(box, canBoxOf(other))) return false;
+      if (other.kind === "transistor" && overlap(box, to92BoxOf(other))) return false;
       for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
     }
     return true;
@@ -1329,6 +1335,92 @@ function drawElectrolytic(part: Extract<Part, { kind: "electrolytic" }>): string
       )
       .join("") +
     (turn === 0 ? lines : `<g${upright(print.x, print.y)}>${lines}</g>`)
+  );
+}
+
+/**
+ * A transistor in its TO-92 case, standing on its three legs with its flat face towards the viewer,
+ * as a datasheet draws it (ADR 0040, ADR 0044): a black case, larger than life so that what is printed
+ * on it reads, its type large, `NPN`, its model small beneath, and the letter of each leg above it,
+ * every word upright at every quarter turn and the same in every language. Its legs leave the case
+ * 1.27 mm apart, as a TO-92's do, and bend out to the holes, a pitch apart.
+ */
+export const TO92_MM = { width: 6.6, height: 5, lift: 2 } as const;
+
+/** The box a transistor's case stands over on the board's own drawing. */
+export function to92BoxOf(part: Extract<Part, { kind: "transistor" }>): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  const b = holeCentre(part.base);
+  return {
+    x: b.x - TO92_MM.width / 2,
+    y: b.y - TO92_MM.lift - TO92_MM.height,
+    w: TO92_MM.width,
+    h: TO92_MM.height,
+  };
+}
+
+const TO92_LEG_LETTER: Record<TransistorLeg, string> = {
+  emitter: "E",
+  base: "B",
+  collector: "C",
+};
+
+function drawTransistor(part: Extract<Part, { kind: "transistor" }>): string {
+  const model = TRANSISTORS[part.model];
+  const mid = holeCentre(part.base).x;
+  const y = holeCentre(part.base).y;
+  const half = TO92_MM.width / 2;
+  const bottom = y - TO92_MM.lift;
+  const top = bottom - TO92_MM.height;
+  const lead = `fill="none" stroke="${token("lead")}" stroke-width="0.45" stroke-linejoin="round"`;
+  const legs = model.legs.map((leg) => {
+    const hole = holeCentre(part[leg]);
+    const out = mid + (hole.x - mid) / 2;
+    return {
+      leg,
+      out,
+      path: `<path d="M${n(hole.x)} ${n(y)}V${n(y - 0.6)}L${n(out)} ${n(y - 1.4)}V${n(bottom)}" ${lead}/>`,
+      end: legEnd(hole.x, y),
+    };
+  });
+  const ink = `fill="${token(TRANSISTOR_TOKENS.ink)}"`;
+  const centre = { x: mid, y: top + 1.825 };
+  const print =
+    text(centre.x, top + 1.35, model.type, `font-size="1.5" font-weight="900" ${ink}`) +
+    text(centre.x, top + 2.6, part.model, `font-size="0.9" font-weight="800" ${ink}`);
+  return (
+    legs.map((leg) => leg.path + leg.end).join("") +
+    `<path d="M${n(mid - half)} ${n(bottom)}V${n(top + 0.9)}Q${n(mid - half)} ${n(top)} ${n(mid - half + 0.9)} ${n(top)}H${n(mid + half - 0.9)}Q${n(mid + half)} ${n(top)} ${n(mid + half)} ${n(top + 0.9)}V${n(bottom)}Z" fill="${token(TRANSISTOR_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"/>` +
+    // The rounded back shows past the flat face at either side, and catches the light.
+    rect(
+      mid - half + 0.35,
+      top + 0.7,
+      0.45,
+      TO92_MM.height - 1,
+      `rx="0.2" fill="${token("shine")}" fill-opacity="0.14"`,
+    ) +
+    rect(
+      mid + half - 0.8,
+      top + 0.7,
+      0.45,
+      TO92_MM.height - 1,
+      `rx="0.2" fill="${token("shine")}" fill-opacity="0.08"`,
+    ) +
+    (turn === 0 ? print : `<g${upright(centre.x, centre.y)}>${print}</g>`) +
+    legs
+      .map((leg) =>
+        word(
+          leg.out,
+          bottom - 0.75,
+          TO92_LEG_LETTER[leg.leg],
+          `font-size="0.85" font-weight="800" ${ink}`,
+        ),
+      )
+      .join("")
   );
 }
 
@@ -1834,6 +1926,9 @@ function drawPart(
       break;
     case "electrolytic":
       body = drawElectrolytic(part);
+      break;
+    case "transistor":
+      body = drawTransistor(part);
       break;
   }
   const label =

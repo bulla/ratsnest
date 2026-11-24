@@ -31,8 +31,8 @@ const pages = mkdtempSync(join(tmpdir(), "ratsnest-examples-"));
 afterAll(() => rmSync(pages, { recursive: true, force: true }));
 
 describe("the examples", () => {
-  it("are scratchpi's seven circuits, and two with a supply in the Pico's place (ADR 0032, ADR 0043)", () => {
-    expect(EXAMPLES).toHaveLength(9);
+  it("are scratchpi's seven circuits, two with a supply in the Pico's place, and one with a transistor (ADR 0032, ADR 0043, ADR 0044)", () => {
+    expect(EXAMPLES).toHaveLength(10);
     expect(EXAMPLES.filter((name) => isSupplied(circuitOf(name)))).toEqual([
       "battery-button.ts",
       "fading-light.ts",
@@ -45,7 +45,7 @@ describe("the examples", () => {
       out: (line) => said.push(line),
       err: (line) => said.push(line),
     });
-    expect(said).toEqual(["9 circuits checked: all well."]);
+    expect(said).toEqual(["10 circuits checked: all well."]);
     expect(status).toBe(0);
   });
 

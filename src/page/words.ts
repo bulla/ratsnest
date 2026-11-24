@@ -3,6 +3,7 @@ import type { WireRole } from "../drawing/breadboard";
 import { type Band, formatMicrofarads, formatOhms } from "../drawing/breadboard-svg";
 import { plural } from "../language";
 import type { Orientation } from "../orientation";
+import type { TransistorLeg, TransistorType } from "../transistors";
 
 /**
  * Everything a page says of its own, in each language the engine writes (ADR 0010): the sentences it
@@ -105,6 +106,14 @@ export interface PageWords {
   ) => string;
   /** An electrolytic capacitor (ADR 0043), its value written already: its + leg, then its − leg. */
   readonly electrolytic: (microfarads: string, plus: Place, minus: Place) => string;
+  /** A transistor (ADR 0044), by its model and type, and where each of its legs goes. */
+  readonly transistor: (
+    model: string,
+    type: TransistorType,
+    emitter: Place,
+    base: Place,
+    collector: Place,
+  ) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
@@ -133,6 +142,8 @@ export interface PageWords {
   readonly listBuzzer: (name: string) => string;
   /** Electrolytic capacitors of one value, written already, and how many (ADR 0043). */
   readonly listElectrolytic: (microfarads: string, count: number) => string;
+  /** Transistors of one model, and how many (ADR 0044). */
+  readonly listTransistor: (model: string, type: TransistorType, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
   readonly listLongWire: (colour: string, count: number) => string;
   readonly listCable: string;
@@ -146,6 +157,12 @@ export interface PageWords {
   readonly anyResistor: (low: string, high: string) => string;
   /** Which way round an electrolytic capacitor goes, and what turning it round would do. */
   readonly electrolyticPolarity: string;
+  /** Which way round a light goes on a Pico whose lights a transistor may switch (ADR 0044). */
+  readonly switchedLedPolarity: string;
+  /** A transistor model's legs, left to right, and that another model's can differ (ADR 0039). */
+  readonly transistorPinout: (model: string, legs: readonly TransistorLeg[]) => string;
+  /** What a transistor's base resistor can be. */
+  readonly baseResistor: (low: string, high: string) => string;
   readonly rowsLettered: string;
   readonly unplug: string;
 
@@ -223,6 +240,12 @@ const ENGLISH_SUPPLIES: Record<Supply["volts"], string> = {
 
 const ENGLISH_JUMPERS = { one: "jumper wire", other: "jumper wires" } as const;
 
+const ENGLISH_LEGS: Record<TransistorLeg, string> = {
+  emitter: "emitter",
+  base: "base",
+  collector: "collector",
+};
+
 const capitalised = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** `the top − rail`, or the hole as the page marked it up, and which board it is on. */
@@ -284,6 +307,8 @@ export const ENGLISH_PAGE: PageWords = {
     `The ${name}, standing up: data in ${englishIn(dataIn)}, 5 V ${englishIn(power)}, ground ${englishIn(ground)} and data out ${englishIn(dataOut)}.`,
   electrolytic: (microfarads, plus, minus) =>
     `A ${microfarads} capacitor: its + leg ${englishIn(plus)}, and its − leg, under the stripe, ${englishIn(minus)}.`,
+  transistor: (model, type, emitter, base, collector) =>
+    `A ${model} ${type} transistor, its flat face towards row <span class="hole">j</span>: its emitter ${englishIn(emitter)}, its base ${englishIn(base)} and its collector ${englishIn(collector)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
@@ -317,6 +342,8 @@ export const ENGLISH_PAGE: PageWords = {
   listBuzzer: (name) => `Passive ${name}, with its + leg marked.`,
   listElectrolytic: (microfarads, count) =>
     `${microfarads} electrolytic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, rated 16 V or more.`,
+  listTransistor: (model, type, count) =>
+    `${model} ${type} ${plural("en", count, { one: "transistor", other: "transistors" })}, in a TO-92 case.`,
   listWire: (colour, count) =>
     `${capitalised(colour)} ${plural("en", count, ENGLISH_JUMPERS)}, short.`,
   listLongWire: (colour, count) =>
@@ -333,6 +360,11 @@ export const ENGLISH_PAGE: PageWords = {
     `Any resistor from ${low} to ${high} works for a light. A bigger one makes it dimmer.`,
   electrolyticPolarity:
     "An electrolytic capacitor goes in one way round: its − leg is the shorter one, under the pale stripe down its side, and goes towards −. Put in backwards, it can be damaged.",
+  switchedLedPolarity:
+    "An LED's long leg is + and goes towards the pin, or towards 3V3 where a transistor switches it. One put in backwards stays dark, but it is not damaged: turn it round.",
+  transistorPinout: (model, legs) =>
+    `With its flat face towards you and its legs down, a ${model}'s legs are its ${englishList(legs.map((leg) => ENGLISH_LEGS[leg]))}, left to right. Other transistors that look the same, such as a BC547, have them in another order: take the model the parts list names.`,
+  baseResistor: (low, high) => `Any resistor from ${low} to ${high} works for a transistor's base.`,
   rowsLettered:
     "Some breadboards letter their rows the other way up. If yours does, follow the picture rather than the letters.",
   unplug: "Unplug the USB cable while you change the wiring.",
@@ -418,6 +450,13 @@ const frenchFrom = (place: Place): string =>
 /** `à a26`, and `au rail`: *à le* is always *au*. */
 const frenchTo = (place: Place): string =>
   (place.kind === "rail" ? `au ${frenchRail(place)}` : `à ${place.html}`) + frenchBoard(place);
+
+/** A transistor's legs, with the article each takes. */
+const FRENCH_LEGS: Record<TransistorLeg, string> = {
+  emitter: "l’émetteur",
+  base: "la base",
+  collector: "le collecteur",
+};
 
 /** A cap's colour, agreeing with *bouton* and *capuchon*, which are both masculine. */
 const FRENCH_CAPS: Record<ButtonColour, string> = {
@@ -505,6 +544,8 @@ export const FRENCH_PAGE: PageWords = {
     `${the("led", name)}, debout${NNBSP}: l’entrée des données ${frenchIn(dataIn)}, le 5 V ${frenchIn(power)}, la masse ${frenchIn(ground)} et la sortie des données ${frenchIn(dataOut)}.`,
   electrolytic: (microfarads, plus, minus) =>
     `Un condensateur de ${microfarads}${NNBSP}: sa patte + ${frenchIn(plus)}, et sa patte −, du côté de la bande, ${frenchIn(minus)}.`,
+  transistor: (model, type, emitter, base, collector) =>
+    `Un transistor ${type} ${model}, sa face plate vers la rangée <span class="hole">j</span>${NNBSP}: son émetteur ${frenchIn(emitter)}, sa base ${frenchIn(base)} et son collecteur ${frenchIn(collector)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
@@ -542,6 +583,8 @@ export const FRENCH_PAGE: PageWords = {
   listBuzzer: (name) => `${capitalised(name)} passif, avec sa patte + marquée.`,
   listElectrolytic: (microfarads, count) =>
     `${plural("fr", count, { one: "Condensateur électrolytique", many: "Condensateurs électrolytiques", other: "Condensateurs électrolytiques" })} de ${microfarads}, de 16 V ou plus.`,
+  listTransistor: (model, type, count) =>
+    `${plural("fr", count, { one: "Transistor", many: "Transistors", other: "Transistors" })} ${type} ${model}, en boîtier TO-92.`,
   listWire: (colour, count) => {
     const more = `Fils de connexion ${colour}, courts.`;
     return plural("fr", count, {
@@ -569,6 +612,11 @@ export const FRENCH_PAGE: PageWords = {
   anyResistor: (low, high) =>
     `N’importe quelle résistance de ${low} à ${high} convient pour une LED. Plus elle est grande, plus la LED éclaire faiblement.`,
   electrolyticPolarity: `Un condensateur électrolytique se plante dans un seul sens${NNBSP}: sa patte − est la plus courte, du côté de la bande pâle sur son flanc, et va vers le −. Monté à l’envers, il peut être abîmé.`,
+  switchedLedPolarity: `La grande patte d’une LED est le + et va du côté de la broche, ou du 3V3 quand un transistor la commande. Une LED mise à l’envers reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
+  transistorPinout: (model, legs) =>
+    `Face plate vers vous et pattes en bas, les pattes d’un ${model} sont ${frenchList(legs.map((leg) => FRENCH_LEGS[leg]))}, de gauche à droite. D’autres transistors qui lui ressemblent, comme le BC547, les ont dans un autre ordre${NNBSP}: prenez le modèle que nomme la liste des composants.`,
+  baseResistor: (low, high) =>
+    `N’importe quelle résistance de ${low} à ${high} convient pour la base d’un transistor.`,
   rowsLettered:
     "Sur certaines plaques d’essai, les lettres des rangées vont dans l’autre sens. Si c’est le cas de la vôtre, suivez le dessin plutôt que les lettres.",
   unplug: "Débranchez le câble USB pendant que vous changez le câblage.",
@@ -679,6 +727,13 @@ const russianList = (items: readonly string[]): string =>
     ? items.join("")
     : `${items.slice(0, -1).join(", ")} и ${items[items.length - 1]}`;
 
+/** A transistor's legs. */
+const RUSSIAN_LEGS: Record<TransistorLeg, string> = {
+  emitter: "эмиттер",
+  base: "база",
+  collector: "коллектор",
+};
+
 /** A value in microfarads as Russian writes it: a decimal comma, and *мкФ*. */
 const russianMicrofarads = (value: number): string =>
   formatMicrofarads(value).replace(".", ",").replace("µF", "мкФ");
@@ -733,6 +788,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `${name}, стоя: вход данных ${russianIn(dataIn)}, 5 В ${russianIn(power)}, земля ${russianIn(ground)} и выход данных ${russianIn(dataOut)}.`,
   electrolytic: (microfarads, plus, minus) =>
     `Конденсатор ${microfarads}: ножка + ${russianIn(plus)}, ножка −, со стороны полосы, ${russianIn(minus)}.`,
+  transistor: (model, type, emitter, base, collector) =>
+    `Транзистор ${type} ${model}, плоской стороной к ряду <span class="hole">j</span>: эмиттер ${russianIn(emitter)}, база ${russianIn(base)}, коллектор ${russianIn(collector)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
@@ -768,6 +825,7 @@ export const RUSSIAN_PAGE: PageWords = {
   listBuzzer: (name) => `${capitalised(name)}: пассивного типа, ножка + отмечена.`,
   listElectrolytic: (microfarads) =>
     `Электролитический конденсатор ${microfarads}, на 16 В или больше.`,
+  listTransistor: (model, type) => `Транзистор ${type} ${model} в корпусе TO-92.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
   listCable:
@@ -783,6 +841,11 @@ export const RUSSIAN_PAGE: PageWords = {
     `Для светодиода подойдёт любой резистор от ${low} до ${high}. Чем больше сопротивление, тем тусклее свет.`,
   electrolyticPolarity:
     "Электролитический конденсатор ставится только одной стороной: ножка − короче, она под светлой полосой на корпусе и идёт к −. Вставленный наоборот, он может испортиться.",
+  switchedLedPolarity:
+    "Длинная ножка светодиода: это +, она идёт к выводу, а если светодиод переключает транзистор, к 3V3. Светодиод, вставленный наоборот, не горит, но и не портится: переверните его.",
+  transistorPinout: (model, legs) =>
+    `Если смотреть на плоскую сторону, ножками вниз, у ${model} слева направо: ${russianList(legs.map((leg) => RUSSIAN_LEGS[leg]))}. У похожих на него транзисторов, например BC547, порядок другой: берите модель, названную в списке деталей.`,
+  baseResistor: (low, high) => `Для базы транзистора подойдёт любой резистор от ${low} до ${high}.`,
   rowsLettered:
     "На некоторых макетных платах ряды подписаны в обратном порядке. Если на вашей так, следуйте рисунку, а не буквам.",
   unplug: "Отключайте кабель USB, пока меняете схему.",

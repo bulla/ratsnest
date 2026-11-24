@@ -189,6 +189,24 @@ export interface ElectrolyticPart {
   readonly minus: Hole;
 }
 
+/**
+ * A transistor ratsnest knows, by its model (ADR 0039): `2N3904`, an NPN transistor whose legs are
+ * emitter, base and collector, left to right, with its flat face towards you.
+ */
+export type TransistorModel = "2N3904";
+
+/**
+ * A transistor in a TO-92 case, standing up, its three legs side by side in one row (ADR 0044): the
+ * emitter, the base and the collector, left to right, so that its flat face is towards row j.
+ */
+export interface TransistorPart {
+  readonly kind: "transistor";
+  readonly model: TransistorModel;
+  readonly emitter: Hole;
+  readonly base: Hole;
+  readonly collector: Hole;
+}
+
 /** Anything plugged into the breadboard. */
 export type Part =
   | Wire
@@ -198,7 +216,8 @@ export type Part =
   | BuzzerPart
   | RgbLedPart
   | RingPart
-  | ElectrolyticPart;
+  | ElectrolyticPart
+  | TransistorPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the

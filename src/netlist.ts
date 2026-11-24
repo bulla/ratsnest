@@ -17,6 +17,7 @@ import {
 } from "./drawing/breadboard";
 import { formatMicrofarads, formatOhms } from "./drawing/breadboard-svg";
 import { HEADER_PINS, type HeaderPin, headerPinOfGpio } from "./drawing/geometry";
+import { TRANSISTORS } from "./transistors";
 
 /**
  * What a layout actually wires up, compared with what its circuit says it is (scratchpi's ADR 0082).
@@ -50,6 +51,12 @@ export const PULL_DOWN_OHMS_RANGE = [1000, 8200] as const;
  * in seconds (ADR 0043). Shorter, and the light goes out too fast to be seen fading.
  */
 export const FADE_SECONDS = 0.2;
+/**
+ * What a transistor's base resistor can be, from a 3.3 V pin (ADR 0044): enough current into the base
+ * to switch a light's, and no more than a pin gives easily. 1 kΩ lets 2.6 mA in, and 10 kΩ 0.26 mA,
+ * which a 2N3904 turns into all of a light's 15 mA.
+ */
+export const BASE_OHMS_RANGE = [1000, 10000] as const;
 
 /** Union–find over strip names, pin names and the one shared ground. */
 class Nets {
@@ -142,6 +149,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${circuit.leds.find((led) => led.id === part.led)?.name ?? `ring "${part.led}"`}`;
     case "electrolytic":
       return `the ${formatMicrofarads(part.microfarads)} capacitor with its + leg in ${part.plus}`;
+    case "transistor":
+      return `the ${part.model} with its emitter in ${part.emitter}`;
   }
 }
 
@@ -178,6 +187,24 @@ function shapeProblems(part: Part, name: string): string[] {
       return sameRow(part.plus, part.minus, 1)
         ? []
         : [`${name} needs its legs in one row, one hole apart`];
+    case "transistor": {
+      // Its legs in its model's order, left to right, so that its flat face is towards row j.
+      const [first, second, third] = TRANSISTORS[part.model].legs.map((leg) => part[leg]) as [
+        Hole,
+        Hole,
+        Hole,
+      ];
+      const along =
+        sameRow(first, second, 1) &&
+        sameRow(second, third, 1) &&
+        holeAt(second).column === holeAt(first).column + 1 &&
+        holeAt(third).column === holeAt(second).column + 1;
+      return along
+        ? []
+        : [
+            `${name} needs its legs side by side in one row: ${TRANSISTORS[part.model].legs.join(", ")}, left to right, its flat face towards row j`,
+          ];
+    }
     case "rgbLed":
     case "ring": {
       // Side by side, in the guide's order, whichever way round it faces (scratchpi's ADR 0222, 0238).
@@ -324,7 +351,12 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   const inRange = (r: { ohms: number }, [low, high]: readonly [number, number]) =>
     r.ohms >= low && r.ohms <= high;
 
-  // A light: pin, one resistor, the LED the right way round, ground.
+  // A light: pin, one resistor, the LED the right way round, ground; or a transistor's, switched by
+  // its pin through the transistor's base (ADR 0044).
+  const transistors = parts.filter(
+    (part): part is Extract<Part, { kind: "transistor" }> => part.kind === "transistor",
+  );
+  const switching = new Set<Part>();
   for (const led of circuit.leds) {
     const part = parts.find((p) => p.kind === "led" && p.led === led.id);
     if (part?.kind !== "led" || led.pin?.kind !== "gpio") continue;
@@ -334,6 +366,63 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     const anode = net(part.anode);
     const cathode = net(part.cathode);
     const where = `GP${led.pin.gpio}`;
+
+    // A light on a transistor's collector, straight or through its resistor, is that transistor's.
+    const reaches = (leg: string, collector: string) =>
+      leg === collector || between(leg, collector).length === 1;
+    const transistor = transistors.find(
+      (t) => reaches(cathode, net(t.collector)) || reaches(anode, net(t.collector)),
+    );
+    if (transistor) {
+      switching.add(transistor);
+      const tName = describe(transistor, circuit);
+      const collector = net(transistor.collector);
+      if (reaches(anode, collector) && !reaches(cathode, collector)) {
+        problems.push(
+          `${name} is in backwards: its long leg must be towards ${POWER_LABEL}, and its short leg towards the ${transistor.model}'s collector`,
+        );
+        continue;
+      }
+      if (net(transistor.emitter) !== ground) problems.push(`${tName} has its emitter off ground`);
+      const base = net(transistor.base);
+      const bases = between(pin, base);
+      if (base === pin) {
+        problems.push(
+          `${tName} has its base straight on ${where}: a resistor of ${BASE_OHMS_RANGE.map(formatOhms).join(" to ")} goes between them`,
+        );
+      } else if (bases.length !== 1) {
+        problems.push(`${tName} has its base off ${where}: one resistor goes between them`);
+      } else {
+        const resistor = bases[0] as Extract<Part, { kind: "resistor" }>;
+        accounted.add(resistor);
+        if (!inRange(resistor, BASE_OHMS_RANGE)) {
+          problems.push(
+            `${tName}'s base resistor is ${formatOhms(resistor.ohms)}, outside ${BASE_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+          );
+        }
+      }
+      // From 3V3 through one resistor to the collector, the resistor on either side of the light.
+      const [middle, series] =
+        cathode === collector
+          ? [anode, between(power, anode)]
+          : anode === power
+            ? [cathode, between(cathode, collector)]
+            : [undefined, []];
+      if (!middle || series.length !== 1 || terminals.get(middle) !== 2) {
+        problems.push(
+          `${name} is not wired from ${POWER_LABEL} through one resistor to the ${transistor.model}'s collector`,
+        );
+        continue;
+      }
+      const resistor = series[0] as Extract<Part, { kind: "resistor" }>;
+      accounted.add(resistor);
+      if (!inRange(resistor, LIGHT_OHMS_RANGE)) {
+        problems.push(
+          `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+        );
+      }
+      continue;
+    }
 
     if (anode === ground || cathode === pin) {
       problems.push(`${name} is in backwards: its long leg must be towards ${where}`);
@@ -426,9 +515,19 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
+  for (const transistor of transistors) {
+    if (!switching.has(transistor)) {
+      problems.push(
+        `${describe(transistor, circuit)} switches no light: its emitter goes on ground, its base through a resistor from a light's pin, and its collector under the light`,
+      );
+    }
+  }
+
   for (const resistor of resistors) {
     if (!accounted.has(resistor)) {
-      problems.push(`${describe(resistor, circuit)} is not a light's resistor or a pull-down`);
+      problems.push(
+        `${describe(resistor, circuit)} is not a light's resistor, a pull-down or a transistor's base resistor`,
+      );
     }
   }
 
