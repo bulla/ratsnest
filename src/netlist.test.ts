@@ -918,3 +918,109 @@ describe("a diode on a light's way (ADR 0049)", () => {
     });
   });
 });
+
+describe("a ceramic capacitor timed by two pins (ADR 0051)", () => {
+  const { circuit, layout } = FIXTURES["capacitor-timed-by-two-pins"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const NAME = "the 47 nF capacitor with its legs in f26 and f27";
+  const swap = (matches: (part: Part) => boolean, next: Part | null) => (parts: Part[]) =>
+    replace(parts, matches, next);
+  const resistor = (p: Part) => p.kind === "resistor";
+  const reader = (p: Part) => p.kind === "wire" && p.from === "j18";
+
+  it("takes one with a leg on ground, the other on a pin, and a resistor to it from a second pin", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its legs anywhere but side by side in one row", () => {
+    expect(
+      problems(
+        swap((p) => p.kind === "ceramic", {
+          kind: "ceramic",
+          nanofarads: 47,
+          from: "f26",
+          to: "f28",
+        }),
+      ),
+    ).toContain(
+      "the 47 nF capacitor with its legs in f26 and f28 needs its legs in one row, one hole apart",
+    );
+  });
+
+  it("finds neither leg on ground", () => {
+    const off = problems(
+      swap((p) => p.kind === "wire" && p.from === "j27", {
+        kind: "wire",
+        from: "j27",
+        to: "j29",
+        role: "signal",
+      }),
+    );
+    expect(off).toContain(`${NAME} has neither leg on ground: one goes straight to ground`);
+  });
+
+  it("finds its other leg on no pin, or on both", () => {
+    expect(problems(swap(reader, null))).toContain(
+      `${NAME} has its other leg on no pin: a pin goes straight to it, to read it`,
+    );
+    const both = problems(swap(resistor, { kind: "wire", from: "i20", to: "i26", role: "signal" }));
+    expect(both).toContain(
+      `${NAME} has its other leg on GP13 and GP14: one pin reads it, and another charges it through a resistor`,
+    );
+  });
+
+  it("finds it charged by no pin", () => {
+    expect(
+      problems(swap(resistor, { kind: "resistor", ohms: 6800, from: "i23", to: "i26" })),
+    ).toContain(
+      `${NAME} is charged by no pin: one resistor goes to its other leg from a second pin`,
+    );
+  });
+
+  it("finds something else on its other leg", () => {
+    expect(
+      problems((parts) => [
+        ...parts,
+        { kind: "resistor", ohms: 1000, from: "h26", to: "bottom-28" },
+      ]),
+    ).toContain(
+      `${NAME} has something else on its other leg: only its resistor and the pin that reads it go there`,
+    );
+  });
+
+  it("finds a resistor too weak to empty it past an input that leaks (erratum E9)", () => {
+    expect(
+      problems(swap(resistor, { kind: "resistor", ohms: 10000, from: "i20", to: "i26" })),
+    ).toContain(`${NAME}'s resistor is 10 kΩ, outside 1 kΩ to 8.2 kΩ`);
+  });
+
+  it("finds one that charges too fast for the script to time", () => {
+    expect(
+      problems(
+        swap((p) => p.kind === "ceramic", {
+          kind: "ceramic",
+          nanofarads: 4.7,
+          from: "f26",
+          to: "f27",
+        }),
+      ),
+    ).toContain(
+      "the 4.7 nF capacitor with its legs in f26 and f27 charges through the 6.8 kΩ resistor in about 32 µs, too fast for the script to time: with that resistor it needs 15 nF or more",
+    );
+  });
+
+  it("finds one on a supply, where it has no use yet", () => {
+    const { circuit: supplied, layout: suppliedLayout } = FIXTURES["two-lights-on-a-supply"];
+    const found = wiringProblems(
+      supplied,
+      edited(suppliedLayout, (parts) => [
+        ...parts,
+        { kind: "ceramic", nanofarads: 100, from: "h28", to: "h29" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 100 nF capacitor with its legs in h28 and h29 has no use ratsnest knows on a supply: a ceramic capacitor is timed by a Pico's pins (ADR 0051)",
+    );
+  });
+});

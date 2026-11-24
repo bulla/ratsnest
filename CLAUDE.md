@@ -27,8 +27,8 @@ circuit can do without a Pico, on a supply, and every circuit is in format 2, si
 parts come one at a time, each with the circuit that teaches it, in the roadmap's Backlog: the
 electrolytic capacitor, keeping a light lit on a supply, is the first (M13), and the NPN and PNP
 transistors, a pin switching a light through either, the second and third (M14, M15), with the owner's
-capacitor tester and flasher after them (M16), and the diode, two buttons sharing a light, the fourth
-(M17).
+capacitor tester and flasher after them (M16), the diode, two buttons sharing a light, the fourth
+(M17), and the ceramic capacitor, two pins timing it, the fifth (M18).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -227,8 +227,9 @@ there.
 │                        supply (ADR 0032), `fading-light.ts`, the first with a capacitor
 │                        (ADR 0043), `transistor-switch.ts` and `high-side-switch.ts`, with an NPN
 │                        and a PNP transistor (ADR 0044, ADR 0045), `capacitor-tester.ts`, the
-│                        owner's flasher (ADR 0046), and `two-buttons-three-lights.ts`, with two
-│                        diodes (ADR 0049): ratsnest's own, checked like anyone's, and in
+│                        owner's flasher (ADR 0046), `two-buttons-three-lights.ts`, with two diodes
+│                        (ADR 0049), and `capacitor-timer.ts`, with a ceramic capacitor (ADR 0051):
+│                        ratsnest's own, checked like anyone's, and in
 │                        `format-1/` the files the migration to format 2 is tested on, one for each
 │                        example older than format 2, left out of the type check (ADR 0014,
 │                        ADR 0015, ADR 0036)
@@ -262,6 +263,7 @@ there.
 │   ├── transistors.ts   The transistors ratsnest knows, by model: each one's type and legs (ADR 0039)
 │   ├── diodes.ts        The diodes ratsnest knows, by model: each one's case, and what it is sold as
 │   │                    (ADR 0039, ADR 0049)
+│   ├── ceramics.ts      A ceramic capacitor's value, and the code a real disc prints (ADR 0051)
 │   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, and one
 │   │                    on a supply, and the `circuit` skill's default credits, read from the skill
 │   ├── drawing/         The Pico, the breadboard and a supply's cell, drawn: CC BY-SA 4.0, unlike

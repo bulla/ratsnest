@@ -15,8 +15,9 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * ninth a capacitor that keeps a light lit once its button is let go (ADR 0043), the tenth a light
  * that a pin switches through an NPN transistor (ADR 0044), the eleventh one it switches through a
  * PNP transistor, on the high side (ADR 0045), the twelfth two lights that two transistors flash in
- * turn, on a supply (ADR 0046), and the thirteenth two buttons that each light a light of their own and
- * one they share, two diodes keeping each from the other's light (ADR 0049).
+ * turn, on a supply (ADR 0046), the thirteenth two buttons that each light a light of their own and
+ * one they share, two diodes keeping each from the other's light (ADR 0049), and the fourteenth a
+ * ceramic capacitor that one pin charges through a resistor while another reads it (ADR 0051).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -32,6 +33,7 @@ export const FIXTURE_IDS = [
   "light-under-a-pnp-transistor",
   "two-lights-flashing",
   "lights-kept-apart-by-diodes",
+  "capacitor-timed-by-two-pins",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -847,6 +849,42 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
       ],
       test: "Hold BTN1 down and the red LED and the orange one light; hold BTN2 down and the blue one and the orange one do.",
+    },
+  },
+  "capacitor-timed-by-two-pins": {
+    circuit: {
+      name: "A capacitor and two pins",
+      description:
+        "A ceramic capacitor that GP14 charges through a resistor while GP13 reads it, and the Pico counts how long that takes.",
+      credit: CREDIT,
+      leds: [],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Ground on the bottom − rail",
+          parts: [{ kind: "wire", from: "j14", to: "bottom-14", role: "ground" }],
+        },
+        {
+          title: "The capacitor, one leg on ground",
+          parts: [
+            { kind: "ceramic", nanofarads: 47, from: "f26", to: "f27" },
+            { kind: "wire", from: "j27", to: "bottom-27", role: "ground" },
+          ],
+        },
+        {
+          title: "Its resistor from GP14, and GP13 to read it",
+          parts: [
+            { kind: "resistor", ohms: 6800, from: "i20", to: "i26" },
+            { kind: "wire", from: "j18", to: "j26", role: "signal" },
+          ],
+        },
+      ],
+      script:
+        "from machine import Pin\nfrom time import sleep, ticks_diff, ticks_us\n\ncharge = Pin(14, Pin.OUT, value=0)\nsense = Pin(13, Pin.IN)\nsleep(0.1)\nstart = ticks_us()\ncharge.on()\nwhile not sense.value():\n    pass\nprint(ticks_diff(ticks_us(), start))",
+      test: "The script prints how long the capacitor took to charge, in microseconds.",
     },
   },
 };

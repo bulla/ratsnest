@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { FIXTURE_IDS, FIXTURES } from "../__fixtures__/circuits";
+import { widthOf } from "../fonts";
 import {
   BREADBOARD_HEIGHT_MM,
   CHANNEL_Y_MM,
@@ -25,6 +26,7 @@ import {
   type Breadboard,
   clearTagOf,
   crowdingProblems,
+  DISC_MM,
   drawBreadboard,
   formatOhms,
   labelEndOf,
@@ -329,8 +331,9 @@ describe("a resistor's value tag", () => {
       // With no Pico on the board (ADR 0032), a tag may stand where the Pico would be: asked here,
       // outside a drawing, the Pico is assumed.
       if (FIXTURES[id].circuit.supply) continue;
-      // A transistor's case stands where a tag always went, and a tag keeps off it (ADR 0044).
-      if (parts.some((part) => part.kind === "transistor")) continue;
+      // A transistor's case, or a ceramic capacitor's disc, stands where a tag always went, and a tag
+      // keeps off it (ADR 0044, ADR 0051).
+      if (parts.some((part) => part.kind === "transistor" || part.kind === "ceramic")) continue;
       for (const part of parts) {
         if (part.kind !== "resistor") continue;
         if ([part.from, part.to].some((hole) => /^(?:2:)?(?:top|bottom)/.test(hole))) continue;
@@ -557,5 +560,57 @@ describe("a light's leader, lifted over the lights and buttons in its way (ADR 0
     const blue = leaderOf(led("blue"), labelled, parts);
     expect(blue?.run).toEqual(blue?.dot);
     expect(leaderOf(button("right"), labelled, parts)?.run.y).toBe(CHANNEL_Y_MM);
+  });
+});
+
+describe("a ceramic capacitor, standing as a disc (ADR 0040, ADR 0051)", () => {
+  const parts = FIXTURES["capacitor-timed-by-two-pins"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const disc = parts.find((part) => part.kind === "ceramic") as Part;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: disc, group: "step-1" }],
+      tags: [],
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A capacitor",
+      description: "A capacitor.",
+    });
+
+  it("prints its value, its number over its unit as a can's, the same in every language, upright at every quarter turn", () => {
+    expect(drawn(0)).toContain(">47</text>");
+    expect(drawn(0)).toContain(">nF</text>");
+    expect(drawn(0)).not.toContain(">473<");
+    for (const turn of [90, 180, 270] as const) {
+      expect(drawn(turn)).toContain(`rotate(${-turn} `);
+      expect(drawn(turn)).toContain(">nF</text></g>");
+    }
+  });
+
+  it("prints a long number smaller, to cross the disc", () => {
+    const sizeOf = (nanofarads: number): number => {
+      const svg = drawBreadboard({
+        orientation: 0,
+        parts: [{ part: { ...disc, nanofarads } as Part, group: "step-1" }],
+        tags: [],
+        ledColour: () => "red",
+        buttonColour: () => "red",
+        title: "A capacitor",
+        description: "A capacitor.",
+      });
+      return Number(svg.match(new RegExp(`font-size="([\\d.]+)"[^>]*>${nanofarads}<`))?.[1]);
+    };
+    expect(sizeOf(100)).toBe(1.55);
+    expect(sizeOf(0.022)).toBeLessThan(1.55);
+    expect(widthOf("0.022", sizeOf(0.022), 900)).toBeLessThanOrEqual(DISC_MM.number + 0.001);
+  });
+
+  it("stands over the rows above its legs, which a value tag keeps off", () => {
+    expect(drawn(0)).toContain("var(--color-ceramic)");
+    for (const turn of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems(parts, turn)).toEqual([]);
+    }
   });
 });

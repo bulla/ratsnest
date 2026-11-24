@@ -315,6 +315,16 @@ export type Part =
       readonly model: DiodeName;
       readonly anode: Hole;
       readonly cathode: Hole;
+    }
+  /**
+   * A ceramic capacitor, a disc standing on its legs, one hole apart in one row (ADR 0051): its value
+   * in nanofarads, printed on it. It goes in either way round.
+   */
+  | {
+      readonly kind: "ceramic";
+      readonly nanofarads: number;
+      readonly from: Hole;
+      readonly to: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -364,6 +374,7 @@ export function legsOf(part: Part): readonly Hole[] {
   switch (part.kind) {
     case "wire":
     case "resistor":
+    case "ceramic":
       return [part.from, part.to];
     case "led":
     case "diode":

@@ -114,6 +114,10 @@
   --color-diode-glass-band: #1d1d1b;
   --color-diode-black: #26272b;
   --color-diode-black-band: #c4c6c8;
+  /* A ceramic capacitor's mustard disc (ADR 0051), and the value printed on it, which is read, so it
+     clears 4.5:1. */
+  --color-ceramic: #d9a23a;
+  --color-ceramic-ink: #3b2a12;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

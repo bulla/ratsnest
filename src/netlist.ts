@@ -1,3 +1,4 @@
+import { formatNanofarads } from "./ceramics";
 import type { Layout, LedColour, Supply } from "./circuit";
 import { isRing, type ShownCircuit, SUPPLY_VOLTS, THREE_VOLT_COLOURS } from "./circuit";
 import { DIODE_VOLTS } from "./diodes";
@@ -71,6 +72,17 @@ export const FLASHER_BASE_OHMS_RANGE = [10000, 100000] as const;
  * have stopped.
  */
 export const FLASH_SECONDS_RANGE = [0.1, 5] as const;
+/**
+ * What a ceramic capacitor's charging resistor can be (ADR 0051): little current from its pin, and
+ * strong enough to empty the capacitor past an RP2350 input that leaks while it is between low and
+ * high, which erratum E9 puts at 8.2 kΩ, as for a pull-down.
+ */
+export const CHARGE_OHMS_RANGE = [1000, 8200] as const;
+/**
+ * How long a capacitor takes to charge through its resistor, at the least: the two's time constant,
+ * in seconds (ADR 0051). Shorter, and the script's loop cannot time it.
+ */
+export const TIMING_SECONDS = 0.0001;
 /**
  * What a light's resistor needs left of a supply's voltage, at the least, once the light and the diodes
  * on its way have taken theirs (ADR 0049): below it, a light glows too dimly to be sure of.
@@ -201,6 +213,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${part.model} with its emitter in ${part.emitter}`;
     case "diode":
       return `the ${part.model} with its anode in ${part.anode}`;
+    case "ceramic":
+      return `the ${formatNanofarads(part.nanofarads)} capacitor with its legs in ${part.from} and ${part.to}`;
   }
 }
 
@@ -235,6 +249,10 @@ function shapeProblems(part: Part, name: string): string[] {
         : [`${name} needs its legs in one row, three holes apart`];
     case "electrolytic":
       return sameRow(part.plus, part.minus, 1)
+        ? []
+        : [`${name} needs its legs in one row, one hole apart`];
+    case "ceramic":
+      return sameRow(part.from, part.to, 1)
         ? []
         : [`${name} needs its legs in one row, one hole apart`];
     case "transistor": {
@@ -594,6 +612,58 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
+  // A ceramic capacitor, timed by a pair of pins (ADR 0051): one leg straight on ground, the other on
+  // the pin that reads it, and one resistor to it from a second pin, which charges it.
+  for (const capacitor of parts) {
+    if (capacitor.kind !== "ceramic") continue;
+    const name = describe(capacitor, circuit);
+    const [first, second] = [net(capacitor.from), net(capacitor.to)];
+    const node = first === ground ? second : second === ground ? first : undefined;
+    if (node === undefined || node === ground) {
+      problems.push(`${name} has neither leg on ground: one goes straight to ground`);
+      continue;
+    }
+    const readers = pinsIn(node).filter((pin) => pin.kind === "gpio");
+    if (readers.length !== 1) {
+      problems.push(
+        readers.length === 0
+          ? `${name} has its other leg on no pin: a pin goes straight to it, to read it`
+          : `${name} has its other leg on ${readers.map((pin) => pin.label).join(" and ")}: one pin reads it, and another charges it through a resistor`,
+      );
+      continue;
+    }
+    const chargers = resistors.filter((r) => {
+      const ends = [net(r.from), net(r.to)];
+      const far = ends[0] === node ? ends[1] : ends[1] === node ? ends[0] : undefined;
+      return far !== undefined && far !== node && pinsIn(far).some((pin) => pin.kind === "gpio");
+    });
+    const [resistor] = chargers;
+    if (!resistor || chargers.length !== 1) {
+      problems.push(
+        `${name} is charged by no pin: one resistor goes to its other leg from a second pin`,
+      );
+      continue;
+    }
+    accounted.add(resistor);
+    if ((terminals.get(node) ?? 0) !== 3) {
+      problems.push(
+        `${name} has something else on its other leg: only its resistor and the pin that reads it go there`,
+      );
+    }
+    if (!inRange(resistor, CHARGE_OHMS_RANGE)) {
+      problems.push(
+        `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${CHARGE_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+      );
+      continue;
+    }
+    const seconds = resistor.ohms * capacitor.nanofarads * 1e-9;
+    if (seconds < TIMING_SECONDS) {
+      problems.push(
+        `${name} charges through the ${formatOhms(resistor.ohms)} resistor in about ${Math.round(seconds * 1e6)} µs, too fast for the script to time: with that resistor it needs ${formatNanofarads(Math.ceil(TIMING_SECONDS / (resistor.ohms * 1e-9)))} or more`,
+      );
+    }
+  }
+
   for (const transistor of transistors) {
     if (!switching.has(transistor)) {
       problems.push(
@@ -607,7 +677,7 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   for (const resistor of resistors) {
     if (!accounted.has(resistor)) {
       problems.push(
-        `${describe(resistor, circuit)} is not a light's resistor, a pull-down or a transistor's base resistor`,
+        `${describe(resistor, circuit)} is not a light's resistor, a pull-down, a transistor's base resistor or a capacitor's charging resistor`,
       );
     }
   }
@@ -717,6 +787,15 @@ function supplyWiringProblems(
   }
   if (plusOf(all) === minusOf(all)) {
     return [...problems, "the supply's + and − are joined while every button is held: a short"];
+  }
+
+  // A ceramic capacitor's one use is on a Pico, which times it (ADR 0051).
+  for (const part of parts) {
+    if (part.kind === "ceramic") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a supply: a ceramic capacitor is timed by a Pico's pins (ADR 0051)`,
+      );
+    }
   }
 
   const diodes = parts.filter((part): part is Diode => part.kind === "diode");

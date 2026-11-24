@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { FIXTURE_IDS, FIXTURES, type Fixture, type FixtureId } from "../__fixtures__/circuits";
 import { TRILINGUAL } from "../__fixtures__/trilingual";
 import type { Layout, ShownCircuit } from "../circuit";
+import { legsOf, pinOfStrip } from "../drawing/breadboard";
+import { HEADER_PINS } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, fileOf } from "../fonts";
 import { shownIn } from "../shown";
 import { PAGE_WORDS, type PageFiles, wiringPage } from "./page";
@@ -31,6 +33,17 @@ const gpiosOf = (circuit: ShownCircuit): number[] => [
   ...circuit.buttons.flatMap((button) => (button.pin ? [button.pin.gpio] : [])),
   ...circuit.buzzers.map((buzzer) => buzzer.pin.gpio),
 ];
+
+/** Every GPIO a layout wires a part to, a ceramic capacitor's pins among them (ADR 0051). */
+const wiredOf = (layout: Layout): number[] =>
+  layout.steps.flatMap((step) =>
+    step.parts.flatMap((part) =>
+      legsOf(part).flatMap((hole) => {
+        const pin = pinOfStrip(hole);
+        return HEADER_PINS.find((header) => header.number === pin)?.gpio ?? [];
+      }),
+    ),
+  );
 
 /** A part's name in the French test circuits, which are the fixtures written in French. */
 const FRENCH_NAMES: Readonly<Record<string, string>> = {
@@ -134,7 +147,7 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
   });
 
   it("mentions no GPIO the circuit does not use", () => {
-    const used = gpiosOf(circuit);
+    const used = [...gpiosOf(circuit), ...wiredOf(layout)];
     for (const step of layout.steps) {
       for (const [, gpio] of `${step.title} ${step.note ?? ""}`.matchAll(/GP(\d+)/g)) {
         expect(used).toContain(Number(gpio));
@@ -692,6 +705,43 @@ describe("a page with diodes (ADR 0049)", () => {
   it("says it in French and Russian, every character in Nunito's files", () => {
     expect(inLanguage("fr")).toContain("Diode de redressement 1N4007, en boîtier noir.");
     expect(inLanguage("ru")).toContain("Импульсный диод 1N4148 в оранжевом стеклянном корпусе.");
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});
+
+describe("a page with a ceramic capacitor (ADR 0051)", () => {
+  const { circuit, layout } = FIXTURES["capacitor-timed-by-two-pins"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says where its legs go, either way round, and the code it is marked with", () => {
+    expect(inLanguage("en")).toContain(
+      "A 47 nF ceramic capacitor, marked 473, either way round: one leg in f26 and the other in f27.",
+    );
+  });
+
+  it("lists it by its value and its code", () => {
+    expect(inLanguage("en")).toContain("147 nF ceramic capacitor, marked 473.");
+  });
+
+  it("notes how its code says its value, and what its resistor can be", () => {
+    const html = page("capacitor-timed-by-two-pins");
+    expect(html).toContain(PAGE_WORDS.en.ceramicCode("473", "47 nF"));
+    expect(html).toContain(PAGE_WORDS.en.chargeResistor("1 kΩ", "8.2 kΩ"));
+  });
+
+  it("picks the capacitor out in its test step, since its script times it", () => {
+    expect(page("capacitor-timed-by-two-pins")).toContain(
+      'data-g="step-2 test" data-kind="ceramic"',
+    );
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain("Condensateur céramique de 47 nF, marqué 473.");
+    expect(inLanguage("ru")).toContain("Керамический конденсатор 47 нФ, маркировка 473.");
     for (const language of ["fr", "ru"] as const) {
       const html = wiringPage(circuit, layout, FILES, { language });
       expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);

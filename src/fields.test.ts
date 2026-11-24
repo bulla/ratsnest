@@ -198,6 +198,38 @@ describe("a file's fields (ADR 0016)", () => {
     ]);
   });
 
+  it("give a ceramic capacitor a value its code can print, on a Pico (ADR 0051)", () => {
+    const ceramic = (nanofarads: unknown) =>
+      changed(
+        (data) =>
+          ((step(data, 1).parts as Record<string, unknown>[])[0] = {
+            kind: "ceramic",
+            nanofarads,
+            from: "f26",
+            to: "f27",
+          }),
+        "capacitor-timed-by-two-pins",
+      );
+    for (const value of [47, 100, 4.7, 0.022]) expect(said(ceramic(value))).toEqual([]);
+    for (const value of [0.0047, 123, "100"]) {
+      expect(said(ceramic(value))).toEqual([
+        "steps[1].parts[0].nanofarads is not a value in nanofarads a ceramic capacitor's code can print: two figures at most, and 0.01 or more, such as `100` or `4.7`",
+      ]);
+    }
+  });
+
+  it("let a step's words name a pin the layout wires a part to, though no component is on it (ADR 0051)", () => {
+    const named = (gpio: number) =>
+      changed(
+        (data) => (step(data, 2).title = { en: `Its resistor from GP${gpio}` }),
+        "capacitor-timed-by-two-pins",
+      );
+    expect(said(named(14))).toEqual([]);
+    expect(said(named(16))).toEqual([
+      "steps[2].title.en names GP16, which no part of the circuit is on",
+    ]);
+  });
+
   it("put every leg in a hole a half-size breadboard prints", () => {
     expect(said(changed((data) => (part(data, 0, 0).from = "k19")))[0]).toStartWith(
       "steps[0].parts[0].from is not a hole on a half-size breadboard",
@@ -448,6 +480,18 @@ describe("a circuit with a supply (ADR 0032)", () => {
     expect(said(pinned)).toEqual([
       "leds[0].pin is a pin, which a light in a circuit with a supply has none of: the supply powers it, so leave it out (ADR 0032)",
     ]);
+  });
+
+  it("has no ceramic capacitor, which a Pico times (ADR 0051)", () => {
+    const ceramic = supplied((data) =>
+      (step(data, 0).parts as unknown[]).push({
+        kind: "ceramic",
+        nanofarads: 100,
+        from: "j25",
+        to: "j26",
+      }),
+    );
+    expect(said(ceramic)[0]).toStartWith("steps[0].parts[4].kind is `ceramic`, which needs a Pico");
   });
 
   it("has no buzzer, RGB LED or script, which need a Pico", () => {
