@@ -1024,3 +1024,88 @@ describe("a ceramic capacitor timed by two pins (ADR 0051)", () => {
     );
   });
 });
+
+describe("a slide switch lighting one light or the other (ADR 0052)", () => {
+  const { circuit, layout } = FIXTURES["lights-chosen-by-a-slide-switch"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const slide = (next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "slideSwitch", next);
+
+  it("takes one with its middle leg on +, and a light on each outer leg's way", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its legs not side by side, its middle leg between the other two", () => {
+    expect(
+      problems(slide({ kind: "slideSwitch", left: "f19", middle: "f21", right: "f20" })),
+    ).toContain(
+      "the slide switch with its middle leg in f21 needs its three legs side by side in one row: left, middle and right, left to right",
+    );
+  });
+
+  it("finds an outer leg that lights no light of its own", () => {
+    // Both lights on its left leg, and its right leg on + too: slid right, it lights nothing.
+    const found = problems((parts) => [
+      ...replace(parts, (p) => p.kind === "resistor" && p.from === "h21", {
+        kind: "resistor",
+        ohms: 220,
+        from: "h19",
+        to: "h26",
+      }),
+      { kind: "wire", from: "j21", to: "bottom+21", role: "power" },
+    ]);
+    expect(found).toEqual([
+      "the slide switch with its middle leg in f20 lights no light of its own when slid towards f21: each outer leg goes on a light's way, so that it lights one light or the other",
+    ]);
+  });
+
+  it("finds a short across the supply one way it can be slid", () => {
+    expect(
+      problems((parts) => [
+        ...parts,
+        { kind: "wire", from: "j21", to: "bottom-21", role: "ground" },
+      ]),
+    ).toEqual([
+      "the supply's + and − are joined while the slide switch with its middle leg in f20 is slid towards f21: a short across it",
+    ]);
+  });
+
+  it("takes one resistor on its middle leg, shared by the light each way lights", () => {
+    const shared = problems((parts) => [
+      ...parts.filter((p) => p.kind !== "resistor" && !(p.kind === "wire" && p.from === "j20")),
+      { kind: "wire", from: "j17", to: "bottom+17", role: "power" },
+      { kind: "resistor", ohms: 220, from: "h17", to: "h20" },
+      { kind: "wire", from: "i19", to: "i14", role: "signal" },
+      { kind: "wire", from: "h21", to: "h26", role: "signal" },
+    ]);
+    expect(shared).toEqual([]);
+  });
+
+  it("finds a light in backwards on either outer leg's way", () => {
+    expect(
+      problems((parts) =>
+        replace(parts, (p) => p.kind === "led" && p.led === "yellow", {
+          kind: "led",
+          led: "yellow",
+          anode: "g13",
+          cathode: "g14",
+        }),
+      ),
+    ).toContain("the yellow LED is in backwards: its long leg must be towards +");
+  });
+
+  it("finds one on a Pico, where it has no use yet", () => {
+    const { circuit: pico, layout: picoLayout } = FIXTURES["two-lights"];
+    const found = wiringProblems(
+      pico,
+      edited(picoLayout, (parts) => [
+        ...parts,
+        { kind: "slideSwitch", left: "g26", middle: "g27", right: "g28" },
+      ]),
+    );
+    expect(found).toContain(
+      "the slide switch with its middle leg in g27 has no use ratsnest knows on a Pico: a slide switch lights one light or the other on a supply (ADR 0052)",
+    );
+  });
+});

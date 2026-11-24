@@ -325,6 +325,16 @@ export type Part =
       readonly nanofarads: number;
       readonly from: Hole;
       readonly to: Hole;
+    }
+  /**
+   * An SPDT slide switch, standing on its three legs side by side in one row (ADR 0052): its middle
+   * leg is joined to its left one or its right one, whichever way its slide is pushed.
+   */
+  | {
+      readonly kind: "slideSwitch";
+      readonly left: Hole;
+      readonly middle: Hole;
+      readonly right: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -390,6 +400,8 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.power, part.dataOut, part.ground, part.dataIn];
     case "transistor":
       return [part.emitter, part.base, part.collector];
+    case "slideSwitch":
+      return [part.left, part.middle, part.right];
     case "ring":
       return [part.dataIn, part.power, part.ground, part.dataOut];
   }

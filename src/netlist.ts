@@ -118,6 +118,8 @@ type ButtonPart = Extract<Part, { kind: "button" }>;
 type Diode = Extract<Part, { kind: "diode" }>;
 type Light = Extract<Part, { kind: "led" }>;
 type ResistorPart = Extract<Part, { kind: "resistor" }>;
+type SlideSwitch = Extract<Part, { kind: "slideSwitch" }>;
+type Transistor = Extract<Part, { kind: "transistor" }>;
 
 /**
  * How many diodes, each the right way round, each net is reached through from + and from −
@@ -143,10 +145,17 @@ interface Way {
 }
 
 /**
- * The nets a layout makes, with the buttons `pressed` says are held. On a Pico, its pins join the
- * strips they are in and its grounds each other; a circuit with a supply has no Pico (ADR 0032).
+ * The nets a layout makes, with the buttons `pressed` says are held, and each slide switch's middle
+ * leg joined to the outer leg `slid` says it is slid towards, or to neither (ADR 0052). On a Pico, its
+ * pins join the strips they are in and its grounds each other; a circuit with a supply has no Pico
+ * (ADR 0032).
  */
-function wireUp(parts: readonly Part[], pressed: (part: ButtonPart) => boolean, pico = true): Nets {
+function wireUp(
+  parts: readonly Part[],
+  pressed: (part: ButtonPart) => boolean,
+  pico = true,
+  slid: (part: SlideSwitch) => Hole | undefined = () => undefined,
+): Nets {
   const nets = new Nets();
   if (pico) {
     for (const pin of HEADER_PINS) {
@@ -163,6 +172,10 @@ function wireUp(parts: readonly Part[], pressed: (part: ButtonPart) => boolean, 
       nets.join(hole(first, left), hole(second, left));
       nets.join(hole(first, right), hole(second, right));
       if (pressed(part)) nets.join(hole(first, left), hole(first, right));
+    }
+    if (part.kind === "slideSwitch") {
+      const towards = slid(part);
+      if (towards !== undefined) nets.join(stripOf(part.middle), stripOf(towards));
     }
   }
   return nets;
@@ -215,6 +228,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${part.model} with its anode in ${part.anode}`;
     case "ceramic":
       return `the ${formatNanofarads(part.nanofarads)} capacitor with its legs in ${part.from} and ${part.to}`;
+    case "slideSwitch":
+      return `the slide switch with its middle leg in ${part.middle}`;
   }
 }
 
@@ -271,6 +286,19 @@ function shapeProblems(part: Part, name: string): string[] {
         ? []
         : [
             `${name} needs its legs side by side in one row: ${TRANSISTORS[part.model].legs.join(", ")}, left to right, its flat face towards row j`,
+          ];
+    }
+    case "slideSwitch": {
+      // Side by side, left to right, its middle leg between the other two (ADR 0052).
+      const along =
+        sameRow(part.left, part.middle, 1) &&
+        sameRow(part.middle, part.right, 1) &&
+        holeAt(part.middle).column === holeAt(part.left).column + 1 &&
+        holeAt(part.right).column === holeAt(part.middle).column + 1;
+      return along
+        ? []
+        : [
+            `${name} needs its three legs side by side in one row: left, middle and right, left to right`,
           ];
     }
     case "diode": {
@@ -385,8 +413,9 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   problems.push(...placedProblems(circuit, parts));
   if (supply) return [...problems, ...supplyWiringProblems(circuit, parts, supply)];
 
-  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0043), and a diode's
-  // keeping a light's current one way, on a supply (ADR 0049).
+  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0043), a diode's
+  // keeping a light's current one way, on a supply (ADR 0049), and a slide switch's lighting one
+  // light or the other, on a supply too (ADR 0052).
   for (const part of parts) {
     if (part.kind === "electrolytic") {
       problems.push(
@@ -396,6 +425,11 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     if (part.kind === "diode") {
       problems.push(
         `${describe(part, circuit)} has no use ratsnest knows on a Pico: a diode keeps a light's current one way on a supply (ADR 0049)`,
+      );
+    }
+    if (part.kind === "slideSwitch") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a Pico: a slide switch lights one light or the other on a supply (ADR 0052)`,
       );
     }
   }
@@ -772,21 +806,58 @@ function supplyWiringProblems(
     (part): part is Extract<Part, { kind: "led" }> => part.kind === "led",
   );
 
-  /** The nets with every button held but those `released` names. */
-  const held = (released: ReadonlySet<Part> = new Set()) =>
-    wireUp(parts, (part) => !released.has(part), false);
+  const slides = parts.filter((part): part is SlideSwitch => part.kind === "slideSwitch");
+  /**
+   * Every way the slide switches can be set, each slid towards its left leg or its right one
+   * (ADR 0052): one way, setting nothing, where there is none.
+   */
+  const settings = slides.reduce<ReadonlyMap<SlideSwitch, Hole>[]>(
+    (sofar, slide) =>
+      sofar.flatMap((setting) =>
+        [slide.left, slide.right].map((leg) => new Map([...setting, [slide, leg]])),
+      ),
+    [new Map()],
+  );
+  /** How a problem says which way the switches are set: nothing, where there is none. */
+  const setAs = (setting: ReadonlyMap<SlideSwitch, Hole>) =>
+    [...setting].map(([slide, leg]) => `${describe(slide, circuit)} is slid towards ${leg}`);
+  /** The nets with every button held but those `released` names, the switches set as `setting` is. */
+  const held = (
+    released: ReadonlySet<Part> = new Set(),
+    setting: ReadonlyMap<SlideSwitch, Hole> = new Map(),
+  ) =>
+    wireUp(
+      parts,
+      (part) => !released.has(part),
+      false,
+      (slide) => setting.get(slide),
+    );
+  /** Nothing held, and every slide switch joined to neither of its outer legs. */
   const open = wireUp(parts, () => false, false);
-  const all = held();
+  /** Every button held, at each way the switches can be set: what lights each light. */
+  const states = settings.map((setting) => held(new Set(), setting));
   const plusOf = (nets: Nets) => nets.find(stripOf(leads.plus));
   const minusOf = (nets: Nets) => nets.find(stripOf(leads.minus));
 
   // A short first: + joined to −, with nothing held, or with every button held, which joins the
-  // most any of them can.
-  if (plusOf(open) === minusOf(open)) {
-    return [...problems, "the supply's + and − are joined: a short across it"];
-  }
-  if (plusOf(all) === minusOf(all)) {
-    return [...problems, "the supply's + and − are joined while every button is held: a short"];
+  // most any of them can, at every way the switches can be set.
+  for (const setting of settings) {
+    const set = setAs(setting);
+    const unheld = wireUp(
+      parts,
+      () => false,
+      false,
+      (slide) => setting.get(slide),
+    );
+    if (plusOf(unheld) === minusOf(unheld)) {
+      const when = set.length > 0 ? ` while ${set.join(" and ")}` : "";
+      return [...problems, `the supply's + and − are joined${when}: a short across it`];
+    }
+    const all = held(new Set(), setting);
+    if (plusOf(all) === minusOf(all)) {
+      const when = ["every button is held", ...set].join(" and ");
+      return [...problems, `the supply's + and − are joined while ${when}: a short`];
+    }
   }
 
   // A ceramic capacitor's one use is on a Pico, which times it (ADR 0051).
@@ -822,11 +893,20 @@ function supplyWiringProblems(
     };
     return { fed: spread(plusOf(nets), true), drained: spread(minusOf(nets), false) };
   };
-  /** The legs in each net, with the diodes as `through` has them, a button's sides left out. */
+  /**
+   * Whether a part only joins strips, as the nets have it: a wire, a button and a slide switch, whose
+   * legs are left out of the legs a light's way passes.
+   */
+  const joins = (part: Part) =>
+    part.kind === "wire" || part.kind === "button" || part.kind === "slideSwitch";
+  /**
+   * The legs in each net, with the diodes as `through` has them, a button's sides and a slide switch's
+   * legs left out.
+   */
   const legsAt = (nets: Nets, through: readonly Diode[]) => {
     const at = new Map<string, { part: Part; hole: Hole }[]>();
     for (const placed of parts) {
-      if (placed.kind === "wire" || placed.kind === "button") continue;
+      if (joins(placed)) continue;
       const part = placed.kind === "diode" ? (through[diodes.indexOf(placed)] ?? placed) : placed;
       for (const hole of legsOf(part)) {
         const node = nets.find(stripOf(hole));
@@ -875,11 +955,21 @@ function supplyWiringProblems(
     };
   };
 
-  // A diode the right way round from + to −, alone or with others, is a short too (ADR 0049).
-  for (const [nets, when] of [
-    [open, ""],
-    [all, " while every button is held"],
-  ] as const) {
+  // A diode the right way round from + to −, alone or with others, is a short too (ADR 0049), at
+  // every way the switches can be set.
+  for (const [nets, when] of settings.flatMap((setting) => {
+    const set = setAs(setting);
+    const unheld = wireUp(
+      parts,
+      () => false,
+      false,
+      (slide) => setting.get(slide),
+    );
+    return [
+      [unheld, set.length > 0 ? ` while ${set.join(" and ")}` : ""],
+      [held(new Set(), setting), ` while ${["every button is held", ...set].join(" and ")}`],
+    ] as const;
+  })) {
     const reach = reachOf(nets);
     const across = diodes.find(
       (diode) =>
@@ -894,14 +984,17 @@ function supplyWiringProblems(
     }
   }
 
-  /** How many legs, and leads, each net of `nets` has, a button's sides left out. */
+  /**
+   * How many legs, and leads, each net of `nets` has, a button's sides and a slide switch's legs left
+   * out.
+   */
   const legsIn = (nets: Nets) => {
     const counts = new Map<string, number>();
     const count = (node: string) => counts.set(node, (counts.get(node) ?? 0) + 1);
     count(nets.find(stripOf(leads.plus)));
     count(nets.find(stripOf(leads.minus)));
     for (const part of parts) {
-      if (part.kind === "wire" || part.kind === "button") continue;
+      if (joins(part)) continue;
       for (const hole of legsOf(part)) count(nets.find(stripOf(hole)));
     }
     return counts;
@@ -918,22 +1011,36 @@ function supplyWiringProblems(
   const lit = (light: Light, nets: Nets) =>
     (wayOf(light, nets, reachOf(nets))?.resistors.length ?? 0) > 0;
 
-  // Every light, with every button held: the right way round, between + and −, through exactly one
-  // resistor of its own, of a value that lights it safely.
-  const accounted = new Set<Part>();
-  const legs = legsIn(all);
-  const plus = plusOf(all);
-  const reach = reachOf(all);
-  const ways = new Map<Light, Way>();
+  /** What a light comes to in one state of the board, every button held. */
+  interface Verdict {
+    readonly problems: readonly string[];
+    /** Its resistor, once it is wired from + through it to −, of a value in range or not. */
+    readonly resistor?: ResistorPart;
+    /** The transistor it is on the collector of, if any. */
+    readonly transistor?: Transistor;
+    /** Its way from + to −, once it is wired so, and what + and − reach. */
+    readonly way?: Way;
+    readonly reach: Reach;
+  }
   // A light on a transistor's collector is that transistor's, as on a Pico (ADR 0044, ADR 0046).
-  const transistors = parts.filter(
-    (part): part is Extract<Part, { kind: "transistor" }> => part.kind === "transistor",
-  );
-  const switching = new Set<Part>();
-  const reaches = (leg: string, collector: string) =>
-    leg === collector || between(all, leg, collector).length === 1;
-  for (const light of lights) {
+  const transistors = parts.filter((part): part is Transistor => part.kind === "transistor");
+  const outOfRange = (light: Light, resistor: ResistorPart): string[] =>
+    resistor.ohms < LIGHT_OHMS_RANGE[0] || resistor.ohms > LIGHT_OHMS_RANGE[1]
+      ? [
+          `${describe(light, circuit)}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+        ]
+      : [];
+  /**
+   * A light, in nets with every button held: the right way round, between + and −, through exactly
+   * one resistor of its own, of a value that lights it safely.
+   */
+  const judge = (light: Light, all: Nets): Verdict => {
     const name = describe(light, circuit);
+    const legs = legsIn(all);
+    const plus = plusOf(all);
+    const reach = reachOf(all);
+    const reaches = (leg: string, collector: string) =>
+      leg === collector || between(all, leg, collector).length === 1;
     const anode = all.find(stripOf(light.anode));
     const cathode = all.find(stripOf(light.cathode));
     const transistor = transistors.find((t) => {
@@ -941,14 +1048,16 @@ function supplyWiringProblems(
       return reaches(cathode, collector) || reaches(anode, collector);
     });
     if (transistor) {
-      switching.add(transistor);
       const collector = all.find(stripOf(transistor.collector));
       const collectorName = `the ${transistor.model}'s collector`;
       if (reaches(anode, collector) && !reaches(cathode, collector)) {
-        problems.push(
-          `${name} is in backwards: its long leg must be towards +, and its short leg towards ${collectorName}`,
-        );
-        continue;
+        return {
+          problems: [
+            `${name} is in backwards: its long leg must be towards +, and its short leg towards ${collectorName}`,
+          ],
+          transistor,
+          reach,
+        };
       }
       const [middle, series] =
         cathode === collector
@@ -956,46 +1065,52 @@ function supplyWiringProblems(
           : anode === plus
             ? [cathode, between(all, cathode, collector)]
             : [undefined, []];
-      if (!middle || series.length !== 1 || legs.get(middle) !== 2) {
-        problems.push(`${name} is not wired from + through one resistor to ${collectorName}`);
-        continue;
+      const [resistor] = series;
+      if (!middle || !resistor || series.length !== 1 || legs.get(middle) !== 2) {
+        return {
+          problems: [`${name} is not wired from + through one resistor to ${collectorName}`],
+          transistor,
+          reach,
+        };
       }
-      const resistor = series[0] as Extract<Part, { kind: "resistor" }>;
-      accounted.add(resistor);
-      if (resistor.ohms < LIGHT_OHMS_RANGE[0] || resistor.ohms > LIGHT_OHMS_RANGE[1]) {
-        problems.push(
-          `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
-        );
-      }
-      continue;
+      return { problems: outOfRange(light, resistor), resistor, transistor, reach };
     }
     // What + and − reach through diodes counts as + and − (ADR 0049).
     if (reach.drained.has(anode) || reach.fed.has(cathode)) {
-      problems.push(`${name} is in backwards: its long leg must be towards +`);
-      continue;
+      return { problems: [`${name} is in backwards: its long leg must be towards +`], reach };
     }
     if (reach.fed.has(anode) && reach.drained.has(cathode)) {
-      problems.push(`${name} has no resistor between + and −`);
-      continue;
+      return { problems: [`${name} has no resistor between + and −`], reach };
     }
     const way = wayOf(light, all, reach);
     const [resistor] = way?.resistors ?? [];
     if (!way || !resistor || way.resistors.length !== 1) {
-      problems.push(`${name} is not wired from + through one resistor to −`);
-      continue;
+      return { problems: [`${name} is not wired from + through one resistor to −`], reach };
     }
-    ways.set(light, way);
-    accounted.add(resistor);
-    if (resistor.ohms < LIGHT_OHMS_RANGE[0] || resistor.ohms > LIGHT_OHMS_RANGE[1]) {
-      problems.push(
-        `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
-      );
+    return { problems: outOfRange(light, resistor), resistor, way, reach };
+  };
+
+  // Every light, judged with every button held and the switches set the first way that wires it from
+  // + to − (ADR 0052): with no slide switch, the one way there is. The resistor it takes at every way
+  // that does is its own.
+  const accounted = new Set<Part>();
+  const switching = new Set<Part>();
+  const ways = new Map<Light, Verdict>();
+  for (const light of lights) {
+    const verdicts = states.map((all) => judge(light, all));
+    const chosen = verdicts.find((verdict) => verdict.resistor) ?? (verdicts[0] as Verdict);
+    problems.push(...chosen.problems);
+    for (const verdict of verdicts) {
+      if (verdict.transistor) switching.add(verdict.transistor);
+      if (verdict.resistor) accounted.add(verdict.resistor);
     }
+    if (chosen.way) ways.set(light, chosen);
   }
 
   // Every diode on a light's way, the right way round (ADR 0049): in the way itself, or taking the
-  // current from + to where a light's way starts, or from where one ends to −, its band towards −.
-  const carries = (diode: Diode, through: readonly Diode[]): boolean => {
+  // current from + to where a light's way starts, or from where one ends to −, its band towards −, at
+  // some way the switches can be set.
+  const carries = (diode: Diode, through: readonly Diode[], all: Nets): boolean => {
     const reached = reachOf(all, through);
     const lit = lights.flatMap((light) => {
       const way = wayOf(light, all, reached, through);
@@ -1027,21 +1142,20 @@ function supplyWiringProblems(
     return feeds(diode) || drains(diode);
   };
   for (const diode of diodes) {
-    if (carries(diode, diodes)) continue;
+    if (states.some((all) => carries(diode, diodes, all))) continue;
     const turned = { ...diode, anode: diode.cathode, cathode: diode.anode };
     const name = describe(diode, circuit);
+    const others = diodes.map((each) => (each === diode ? turned : each));
     problems.push(
-      carries(
-        turned,
-        diodes.map((each) => (each === diode ? turned : each)),
-      )
+      states.some((all) => carries(turned, others, all))
         ? `${name} is in backwards: its band, at its cathode, goes towards −, the way its light's current runs`
         : `${name} is on no light's way: it goes between + and a light's resistor, or between a light and −, its band towards −`,
     );
   }
 
   // Enough of the supply left for each light once the diodes on its way have taken theirs (ADR 0049).
-  for (const [light, way] of ways) {
+  for (const [light, { way, reach }] of ways) {
+    if (!way) continue;
     const count =
       way.diodes.length + (reach.fed.get(way.top) ?? 0) + (reach.drained.get(way.bottom) ?? 0);
     if (count === 0) continue;
@@ -1161,7 +1275,7 @@ function supplyWiringProblems(
       continue;
     }
     // What a held button charges it from, and the light it then empties into, through its resistor.
-    const charged = all.find(stripOf(capacitor.plus)) === plusOf(all);
+    const charged = states.some((all) => all.find(stripOf(capacitor.plus)) === plusOf(all));
     const kept = lights.flatMap((light) => {
       const anode = open.find(stripOf(light.anode));
       const cathode = open.find(stripOf(light.cathode));
@@ -1182,14 +1296,39 @@ function supplyWiringProblems(
     }
   }
 
-  // Every button switches a light: let go of it alone, and a light lit while all are held goes out.
+  // Every button switches a light: let go of it alone, and a light lit while all are held goes out,
+  // at some way the switches can be set.
   if (problems.length === 0) {
     for (const button of buttons) {
-      const without = held(new Set([button]));
-      if (!lights.some((light) => lit(light, all) && !lit(light, without))) {
+      const switches = settings.some((setting) => {
+        const all = held(new Set(), setting);
+        const without = held(new Set([button]), setting);
+        return lights.some((light) => lit(light, all) && !lit(light, without));
+      });
+      if (!switches) {
         problems.push(
           `${describe(button, circuit)} switches no light: it goes on a light's way, between + and the light or between the light and −`,
         );
+      }
+    }
+    // And every slide switch lights one light or the other (ADR 0052): slid towards either outer leg,
+    // with every button held, it lights a light that slid the other way it does not.
+    for (const slide of slides) {
+      for (const [leg, other] of [
+        [slide.left, slide.right],
+        [slide.right, slide.left],
+      ] as const) {
+        const ownLight = settings.some((setting) => {
+          if (setting.get(slide) !== leg) return false;
+          const there = held(new Set(), setting);
+          const back = held(new Set(), new Map([...setting, [slide, other]]));
+          return lights.some((light) => lit(light, there) && !lit(light, back));
+        });
+        if (!ownLight) {
+          problems.push(
+            `${describe(slide, circuit)} lights no light of its own when slid towards ${leg}: each outer leg goes on a light's way, so that it lights one light or the other`,
+          );
+        }
       }
     }
   }
@@ -1210,11 +1349,9 @@ function supplyWiringProblems(
 
   // Nothing left with a leg in a net of its own, with nothing held.
   const terminals = legsIn(open);
-  for (const part of buttons) {
-    for (const hole of sidesOf(part)) {
-      const node = open.find(stripOf(hole));
-      terminals.set(node, (terminals.get(node) ?? 0) + 1);
-    }
+  for (const hole of [...buttons.flatMap(sidesOf), ...slides.flatMap(legsOf)]) {
+    const node = open.find(stripOf(hole));
+    terminals.set(node, (terminals.get(node) ?? 0) + 1);
   }
   for (const part of parts) {
     if (part.kind === "wire") continue;

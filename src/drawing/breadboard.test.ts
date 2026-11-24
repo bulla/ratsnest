@@ -614,3 +614,44 @@ describe("a ceramic capacitor, standing as a disc (ADR 0040, ADR 0051)", () => {
     }
   });
 });
+
+describe("a slide switch, standing on its three legs (ADR 0052)", () => {
+  const parts = FIXTURES["lights-chosen-by-a-slide-switch"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const slide = parts.find((part) => part.kind === "slideSwitch") as Extract<
+    Part,
+    { kind: "slideSwitch" }
+  >;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: slide, group: "step-1" }],
+      tags: [],
+      supply: { rails: "bottom", label: "3 V", group: "supply" },
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A slide switch",
+      description: "A slide switch.",
+    });
+
+  it("draws its shell, its base and its slide, the slide towards its left leg", () => {
+    const svg = drawn(0);
+    for (const token of ["slide-switch", "slide-switch-base", "slide-switch-slide"]) {
+      expect(svg).toContain(`var(--color-${token})`);
+    }
+    const at =
+      /<rect x="([\d.-]+)" y="[\d.-]+" width="([\d.]+)" height="[\d.]+" rx="0.35" fill="var\(--color-slide-switch-slide\)"/.exec(
+        svg,
+      );
+    const middle = Number(at?.[1]) + Number(at?.[2]) / 2;
+    expect(middle).toBeLessThan(holeCentre(slide.middle).x);
+    expect(middle).toBeGreaterThan(holeCentre(slide.left).x - 1);
+  });
+
+  it("stands over the rows above its legs, which a value tag keeps off at every quarter turn", () => {
+    for (const turn of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems(parts, turn, formatOhms, false)).toEqual([]);
+    }
+  });
+});

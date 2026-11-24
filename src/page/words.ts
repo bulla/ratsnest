@@ -122,6 +122,8 @@ export interface PageWords {
   readonly diode: (model: string, anode: Place, cathode: Place) => string;
   /** A ceramic capacitor (ADR 0051), its value written already, the code it prints, and its legs. */
   readonly ceramic: (nanofarads: string, code: string, from: Place, to: Place) => string;
+  /** A slide switch (ADR 0052): its middle leg, then its outer ones, left and right. */
+  readonly slideSwitch: (middle: Place, left: Place, right: Place) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
@@ -154,6 +156,8 @@ export interface PageWords {
   readonly listTransistor: (model: string, type: TransistorType, count: number) => string;
   /** Diodes of one model, what they are sold as, and how many (ADR 0049). */
   readonly listDiode: (model: string, use: DiodeUse, count: number) => string;
+  /** Slide switches, and how many (ADR 0052). */
+  readonly listSlideSwitch: (count: number) => string;
   /** Ceramic capacitors of one value, written already, the code they print, and how many (ADR 0051). */
   readonly listCeramic: (nanofarads: string, code: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
@@ -184,6 +188,8 @@ export interface PageWords {
   readonly baseResistor: (low: string, high: string) => string;
   /** Which way round a diode goes, and what turning it round would do (ADR 0049). */
   readonly diodePolarity: string;
+  /** What a slide switch joins, and that it stays so when let go, as a button does not (ADR 0052). */
+  readonly slideSwitchNote: string;
   /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
   readonly diodeAlike: (models: readonly string[]) => string;
   /** That a ceramic capacitor goes either way round, and how its code says its value (ADR 0051). */
@@ -341,6 +347,8 @@ export const ENGLISH_PAGE: PageWords = {
     `A ${model} diode: its anode ${englishIn(anode)}, and its cathode, at the band, ${englishIn(cathode)}.`,
   ceramic: (nanofarads, code, from, to) =>
     `A ${nanofarads} ceramic capacitor, marked ${code}, either way round: one leg ${englishIn(from)} and the other ${englishIn(to)}.`,
+  slideSwitch: (middle, left, right) =>
+    `A slide switch, either way round: its middle leg ${englishIn(middle)}, one outer leg ${englishIn(left)} and the other ${englishIn(right)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
@@ -378,6 +386,12 @@ export const ENGLISH_PAGE: PageWords = {
     `${model} ${type} ${plural("en", count, { one: "transistor", other: "transistors" })}, in a TO-92 case.`,
   listDiode: (model, use, count) =>
     `${model} ${use} ${plural("en", count, { one: "diode", other: "diodes" })}, in ${use === "signal" ? "an orange glass case" : "a black case"}.`,
+  listSlideSwitch: (count) =>
+    plural("en", count, {
+      one: "SPDT slide switch, its three legs 2.54 mm apart, as a breadboard's holes are.",
+      other:
+        "SPDT slide switches, each with three legs 2.54 mm apart, as a breadboard's holes are.",
+    }),
   listCeramic: (nanofarads, code, count) =>
     `${nanofarads} ceramic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, marked ${code}.`,
   listWire: (colour, count) =>
@@ -403,6 +417,8 @@ export const ENGLISH_PAGE: PageWords = {
   baseResistor: (low, high) => `Any resistor from ${low} to ${high} works for a transistor's base.`,
   diodePolarity:
     "A diode lets current through one way only: from its anode to its cathode, the end with the band, which goes towards −. One put in backwards lets none through, and its light stays dark, but it is not damaged: turn it round.",
+  slideSwitchNote:
+    "A slide switch joins its middle leg to one outer leg or the other, whichever way its slide is pushed, and stays so when let go, where a push button joins its legs only while it is held.",
   diodeAlike: (models) =>
     `The ${englishList(models)} all do on a light's way: a light takes far less current than any of them can carry.`,
   ceramicCode: (code, nanofarads) =>
@@ -595,6 +611,8 @@ export const FRENCH_PAGE: PageWords = {
     `Une diode ${model}${NNBSP}: son anode ${frenchIn(anode)}, et sa cathode, du côté de la bande, ${frenchIn(cathode)}.`,
   ceramic: (nanofarads, code, from, to) =>
     `Un condensateur céramique de ${nanofarads}, marqué ${code}, dans un sens ou dans l’autre${NNBSP}: une patte ${frenchIn(from)} et l’autre ${frenchIn(to)}.`,
+  slideSwitch: (middle, left, right) =>
+    `Un interrupteur à glissière, dans un sens ou dans l’autre${NNBSP}: sa patte du milieu ${frenchIn(middle)}, une patte extérieure ${frenchIn(left)} et l’autre ${frenchIn(right)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
@@ -636,6 +654,13 @@ export const FRENCH_PAGE: PageWords = {
     `${plural("fr", count, { one: "Transistor", many: "Transistors", other: "Transistors" })} ${type} ${model}, en boîtier TO-92.`,
   listDiode: (model, use, count) =>
     `${plural("fr", count, { one: "Diode", many: "Diodes", other: "Diodes" })} ${use === "signal" ? "de signal" : "de redressement"} ${model}, en boîtier ${use === "signal" ? "de verre orange" : "noir"}.`,
+  listSlideSwitch: (count) =>
+    plural("fr", count, {
+      one: "Interrupteur à glissière inverseur (SPDT), ses trois pattes espacées de 2,54 mm, comme les trous d’une plaque d’essai.",
+      many: "Interrupteurs à glissière inverseurs (SPDT), chacun à trois pattes espacées de 2,54 mm, comme les trous d’une plaque d’essai.",
+      other:
+        "Interrupteurs à glissière inverseurs (SPDT), chacun à trois pattes espacées de 2,54 mm, comme les trous d’une plaque d’essai.",
+    }),
   listCeramic: (nanofarads, code, count) =>
     `${plural("fr", count, { one: "Condensateur céramique", many: "Condensateurs céramiques", other: "Condensateurs céramiques" })} de ${nanofarads}, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
   listWire: (colour, count) => {
@@ -671,6 +696,8 @@ export const FRENCH_PAGE: PageWords = {
   baseResistor: (low, high) =>
     `N’importe quelle résistance de ${low} à ${high} convient pour la base d’un transistor.`,
   diodePolarity: `Une diode ne laisse passer le courant que dans un sens${NNBSP}: de son anode à sa cathode, le bout marqué d’une bande, qui va vers le −. Une diode mise à l’envers ne laisse rien passer, et sa LED reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
+  slideSwitchNote:
+    "Un interrupteur à glissière relie sa patte du milieu à l’une ou l’autre de ses pattes extérieures, selon le côté où l’on pousse sa glissière, et reste ainsi une fois lâché, là où un bouton poussoir ne relie ses pattes que tant qu’on le maintient enfoncé.",
   diodeAlike: (models) =>
     `Les diodes ${frenchList(models)} conviennent toutes sur le chemin d’une LED${NNBSP}: une LED consomme bien moins de courant que chacune d’elles n’en supporte.`,
   ceramicCode: (code, nanofarads) =>
@@ -855,6 +882,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `Диод ${model}: анод ${russianIn(anode)}, катод, со стороны полосы, ${russianIn(cathode)}.`,
   ceramic: (nanofarads, code, from, to) =>
     `Керамический конденсатор ${nanofarads} с маркировкой ${code}, любой стороной: одна ножка ${russianIn(from)}, другая ${russianIn(to)}.`,
+  slideSwitch: (middle, left, right) =>
+    `Ползунковый переключатель, любой стороной: средняя ножка ${russianIn(middle)}, одна крайняя ножка ${russianIn(left)}, другая ${russianIn(right)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
@@ -895,6 +924,8 @@ export const RUSSIAN_PAGE: PageWords = {
     use === "signal"
       ? `Импульсный диод ${model} в оранжевом стеклянном корпусе.`
       : `Выпрямительный диод ${model} в чёрном корпусе.`,
+  listSlideSwitch: () =>
+    "Ползунковый переключатель SPDT: три ножки с шагом 2,54 мм, как отверстия макетной платы.",
   listCeramic: (nanofarads, code) => `Керамический конденсатор ${nanofarads}, маркировка ${code}.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
@@ -918,6 +949,8 @@ export const RUSSIAN_PAGE: PageWords = {
   baseResistor: (low, high) => `Для базы транзистора подойдёт любой резистор от ${low} до ${high}.`,
   diodePolarity:
     "Диод пропускает ток только в одну сторону: от анода к катоду, концу с полосой, который смотрит к −. Диод, вставленный наоборот, ничего не пропускает, и его светодиод не горит, но диод не портится: переверните его.",
+  slideSwitchNote:
+    "Ползунковый переключатель соединяет среднюю ножку с одной или другой крайней, смотря куда сдвинут ползунок, и остаётся так, когда его отпускают, а кнопка соединяет свои ножки, только пока её держат.",
   diodeAlike: (models) =>
     `На пути светодиода подойдёт любой из диодов ${russianList(models)}: светодиоду нужно гораздо меньше тока, чем выдерживает каждый из них.`,
   ceramicCode: (code, nanofarads) =>

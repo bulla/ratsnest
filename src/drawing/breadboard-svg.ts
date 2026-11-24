@@ -157,6 +157,13 @@ export const DIODE_TOKENS = {
 /** The colours of a ceramic capacitor's disc, and of the value printed on it (ADR 0051). */
 export const CERAMIC_TOKENS = { body: "ceramic", ink: "ceramic-ink" } as const;
 
+/** The colours of a slide switch's metal shell, its black base, and its slide (ADR 0052). */
+export const SLIDE_SWITCH_TOKENS = {
+  shell: "slide-switch",
+  base: "slide-switch-base",
+  slide: "slide-switch-slide",
+} as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
@@ -164,6 +171,7 @@ export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(TRANSISTOR_TOKENS),
   ...Object.values(DIODE_TOKENS),
   ...Object.values(CERAMIC_TOKENS),
+  ...Object.values(SLIDE_SWITCH_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -1000,6 +1008,7 @@ function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: num
       if (other.kind === "electrolytic" && overlap(box, canBoxOf(other))) return false;
       if (other.kind === "transistor" && overlap(box, to92BoxOf(other))) return false;
       if (other.kind === "ceramic" && overlap(box, discBoxOf(other))) return false;
+      if (other.kind === "slideSwitch" && overlap(box, slideBoxOf(other))) return false;
       for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
     }
     return true;
@@ -1590,6 +1599,102 @@ function drawCeramic(part: Extract<Part, { kind: "ceramic" }>): string {
 }
 
 /**
+ * An SPDT slide switch, standing on its three legs and seen from the front (ADR 0052): a metal shell
+ * on a black base, its legs straight down from it to their holes, a pitch apart, and on top its
+ * black slide, which runs along it and is drawn towards its left leg, to which it then joins its
+ * middle one. Nothing is printed on it, so nothing on it needs turning upright.
+ */
+export const SLIDE_MM = {
+  width: 8.6,
+  height: 3.4,
+  lift: 1.2,
+  base: 0.8,
+  slot: 4.8,
+  slide: 2.2,
+  rise: 2,
+} as const;
+
+/** The box a slide switch stands over on the board's own drawing, its slide on top included. */
+export function slideBoxOf(part: Extract<Part, { kind: "slideSwitch" }>): Box {
+  const { x, y } = holeCentre(part.middle);
+  const top = y - SLIDE_MM.lift - SLIDE_MM.height - SLIDE_MM.rise;
+  return {
+    x: x - SLIDE_MM.width / 2,
+    y: top,
+    w: SLIDE_MM.width,
+    h: SLIDE_MM.height + SLIDE_MM.rise,
+  };
+}
+
+function drawSlideSwitch(part: Extract<Part, { kind: "slideSwitch" }>): string {
+  const { x: mid, y } = holeCentre(part.middle);
+  const half = SLIDE_MM.width / 2;
+  const bottom = y - SLIDE_MM.lift;
+  const top = bottom - SLIDE_MM.height;
+  const lead = `stroke="${token("lead")}" stroke-width="0.45"`;
+  const edge = `stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`;
+  const legs = [part.left, part.middle, part.right]
+    .map((hole) => {
+      const leg = holeCentre(hole);
+      return line(leg.x, leg.y, leg.x, bottom, lead) + legEnd(leg.x, leg.y);
+    })
+    .join("");
+  const slot = { left: mid - SLIDE_MM.slot / 2, right: mid + SLIDE_MM.slot / 2 };
+  const slide = { x: slot.left + 0.15, y: top - SLIDE_MM.rise, w: SLIDE_MM.slide };
+  const grooves = [0.55, 1.05, 1.55]
+    .map((dy) =>
+      line(
+        slide.x + 0.4,
+        slide.y + dy,
+        slide.x + slide.w - 0.4,
+        slide.y + dy,
+        `stroke="${token("shine")}" stroke-opacity="0.22" stroke-width="0.18"`,
+      ),
+    )
+    .join("");
+  return (
+    legs +
+    rect(
+      mid - half + 0.25,
+      bottom - SLIDE_MM.base,
+      SLIDE_MM.width - 0.5,
+      SLIDE_MM.base,
+      `rx="0.15" fill="${token(SLIDE_SWITCH_TOKENS.base)}"`,
+    ) +
+    rect(
+      mid - half,
+      top,
+      SLIDE_MM.width,
+      SLIDE_MM.height - SLIDE_MM.base,
+      `rx="0.3" fill="${token(SLIDE_SWITCH_TOKENS.shell)}" ${edge}`,
+    ) +
+    // The shell's top catches the light, and its slot runs along it.
+    rect(
+      mid - half + 0.4,
+      top + 0.35,
+      SLIDE_MM.width - 0.8,
+      0.4,
+      `rx="0.2" fill="${token("shine")}" fill-opacity="0.35"`,
+    ) +
+    rect(
+      slot.left,
+      top - 0.2,
+      SLIDE_MM.slot,
+      0.55,
+      `rx="0.2" fill="${token(SLIDE_SWITCH_TOKENS.base)}"`,
+    ) +
+    rect(
+      slide.x,
+      slide.y,
+      slide.w,
+      SLIDE_MM.rise + 0.2,
+      `rx="0.35" fill="${token(SLIDE_SWITCH_TOKENS.slide)}" ${edge}`,
+    ) +
+    grooves
+  );
+}
+
+/**
  * A 10 mm addressable RGB LED (scratchpi's ADR 0222), standing up: four leads, data out's kinked as the
  * longest, a frosted lens over them, and its pie of red, green and blue showing through
  * (scratchpi's ADR 0224). Its glow is white, all three at once, when the step that tests it is picked.
@@ -1830,8 +1935,9 @@ export function leaderOf(
 
 /**
  * The box a standing part takes on the board's own drawing, which a light's leader rises over rather
- * than run behind (ADR 0047, ADR 0050): a transistor's case, a capacitor's can, a light's lens down to
- * its legs' holes, and a button's body with its legs.
+ * than run behind (ADR 0047, ADR 0050): a transistor's case, a capacitor's can or disc, a slide
+ * switch's shell and its slide (ADR 0052), a light's lens down to its legs' holes, and a button's body
+ * with its legs.
  */
 function standingBoxOf(part: Part): Box | undefined {
   switch (part.kind) {
@@ -1841,6 +1947,8 @@ function standingBoxOf(part: Part): Box | undefined {
       return canBoxOf(part);
     case "ceramic":
       return discBoxOf(part);
+    case "slideSwitch":
+      return slideBoxOf(part);
     case "led": {
       const a = holeCentre(part.anode);
       const mid = (a.x + holeCentre(part.cathode).x) / 2;
@@ -2185,6 +2293,9 @@ function drawPart(
       break;
     case "ceramic":
       body = drawCeramic(part);
+      break;
+    case "slideSwitch":
+      body = drawSlideSwitch(part);
       break;
   }
   const label =

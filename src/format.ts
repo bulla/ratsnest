@@ -238,6 +238,18 @@ export interface CeramicPart {
   readonly to: Hole;
 }
 
+/**
+ * An SPDT slide switch, standing on its three legs side by side in one row, left to right
+ * (ADR 0052). Its slide joins its middle leg to its left leg or to its right one, whichever way it is
+ * pushed, and stays there when let go.
+ */
+export interface SlideSwitchPart {
+  readonly kind: "slideSwitch";
+  readonly left: Hole;
+  readonly middle: Hole;
+  readonly right: Hole;
+}
+
 /** Anything plugged into the breadboard. */
 export type Part =
   | Wire
@@ -250,7 +262,8 @@ export type Part =
   | ElectrolyticPart
   | TransistorPart
   | DiodePart
-  | CeramicPart;
+  | CeramicPart
+  | SlideSwitchPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the
