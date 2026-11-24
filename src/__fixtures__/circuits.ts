@@ -14,8 +14,9 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches, the
  * ninth a capacitor that keeps a light lit once its button is let go (ADR 0043), the tenth a light
  * that a pin switches through an NPN transistor (ADR 0044), the eleventh one it switches through a
- * PNP transistor, on the high side (ADR 0045), and the twelfth two lights that two transistors flash in
- * turn, on a supply (ADR 0046).
+ * PNP transistor, on the high side (ADR 0045), the twelfth two lights that two transistors flash in
+ * turn, on a supply (ADR 0046), and the thirteenth two buttons that each light a light of their own and
+ * one they share, two diodes keeping each from the other's light (ADR 0049).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -30,6 +31,7 @@ export const FIXTURE_IDS = [
   "light-on-a-transistor",
   "light-under-a-pnp-transistor",
   "two-lights-flashing",
+  "lights-kept-apart-by-diodes",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -781,6 +783,70 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
       ],
       test: "The green LED and the blue one flash in turn, the green one dark only for a moment.",
+    },
+  },
+  "lights-kept-apart-by-diodes": {
+    circuit: {
+      name: "Three lights, two diodes",
+      description:
+        "BTN1 lights a red light and an orange one, and BTN2 a blue light and the same orange one, two diodes keeping each button from the other's own light, on three AA batteries.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 4.5, rails: "bottom" },
+      leds: [
+        { id: "red", name: "red LED", colour: "red" },
+        { id: "blue", name: "blue LED", colour: "blue" },
+        { id: "orange", name: "orange LED", colour: "orange" },
+      ],
+      buttons: [
+        { id: "left", name: "BTN1", colour: "blue" },
+        { id: "right", name: "BTN2", colour: "yellow" },
+      ],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "BTN1 and BTN2, from +",
+          parts: [
+            { kind: "wire", from: "j16", to: "bottom+16", role: "power" },
+            { kind: "button", button: "left", columns: [14, 16] },
+            { kind: "wire", from: "j25", to: "bottom+25", role: "power" },
+            { kind: "button", button: "right", columns: [23, 25] },
+          ],
+        },
+        {
+          title: "The red LED, from BTN1",
+          parts: [
+            { kind: "resistor", ohms: 330, from: "h14", to: "h8" },
+            { kind: "led", led: "red", anode: "f8", cathode: "f7" },
+            { kind: "wire", from: "j7", to: "bottom-7", role: "ground" },
+          ],
+        },
+        {
+          title: "The blue LED, from BTN2",
+          parts: [
+            { kind: "resistor", ohms: 220, from: "i23", to: "i28" },
+            { kind: "led", led: "blue", anode: "h28", cathode: "h29" },
+            { kind: "wire", from: "j29", to: "bottom-29", role: "ground" },
+          ],
+        },
+        {
+          title: "The orange LED, its resistor under its short leg",
+          parts: [
+            { kind: "led", led: "orange", anode: "f11", cathode: "f10" },
+            { kind: "resistor", ohms: 470, from: "j10", to: "bottom-10" },
+            { kind: "wire", from: "g18", to: "g11", role: "signal" },
+          ],
+        },
+        {
+          title: "A diode from each button to the orange LED",
+          parts: [
+            { kind: "diode", model: "1N4007", anode: "i14", cathode: "i18" },
+            { kind: "diode", model: "1N4148", anode: "j23", cathode: "j18" },
+          ],
+        },
+      ],
+      test: "Hold BTN1 down and the red LED and the orange one light; hold BTN2 down and the blue one and the orange one do.",
     },
   },
 };

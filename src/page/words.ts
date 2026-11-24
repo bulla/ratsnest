@@ -1,4 +1,5 @@
 import type { ButtonColour, Supply } from "../circuit";
+import type { DiodeUse } from "../diodes";
 import type { WireRole } from "../drawing/breadboard";
 import { type Band, formatMicrofarads, formatOhms } from "../drawing/breadboard-svg";
 import { plural } from "../language";
@@ -114,6 +115,8 @@ export interface PageWords {
     base: Place,
     collector: Place,
   ) => string;
+  /** A diode (ADR 0049), by its model: its anode, then its cathode, the end its band is at. */
+  readonly diode: (model: string, anode: Place, cathode: Place) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
@@ -144,6 +147,8 @@ export interface PageWords {
   readonly listElectrolytic: (microfarads: string, count: number) => string;
   /** Transistors of one model, and how many (ADR 0044). */
   readonly listTransistor: (model: string, type: TransistorType, count: number) => string;
+  /** Diodes of one model, what they are sold as, and how many (ADR 0049). */
+  readonly listDiode: (model: string, use: DiodeUse, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
   readonly listLongWire: (colour: string, count: number) => string;
   readonly listCable: string;
@@ -170,6 +175,10 @@ export interface PageWords {
   ) => string;
   /** What a transistor's base resistor can be. */
   readonly baseResistor: (low: string, high: string) => string;
+  /** Which way round a diode goes, and what turning it round would do (ADR 0049). */
+  readonly diodePolarity: string;
+  /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
+  readonly diodeAlike: (models: readonly string[]) => string;
   readonly rowsLettered: string;
   readonly unplug: string;
 
@@ -316,6 +325,8 @@ export const ENGLISH_PAGE: PageWords = {
     `A ${microfarads} capacitor: its + leg ${englishIn(plus)}, and its − leg, under the stripe, ${englishIn(minus)}.`,
   transistor: (model, type, emitter, base, collector) =>
     `A ${model} ${type} transistor, its flat face towards row <span class="hole">j</span>: its emitter ${englishIn(emitter)}, its base ${englishIn(base)} and its collector ${englishIn(collector)}.`,
+  diode: (model, anode, cathode) =>
+    `A ${model} diode: its anode ${englishIn(anode)}, and its cathode, at the band, ${englishIn(cathode)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
@@ -351,6 +362,8 @@ export const ENGLISH_PAGE: PageWords = {
     `${microfarads} electrolytic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, rated 16 V or more.`,
   listTransistor: (model, type, count) =>
     `${model} ${type} ${plural("en", count, { one: "transistor", other: "transistors" })}, in a TO-92 case.`,
+  listDiode: (model, use, count) =>
+    `${model} ${use} ${plural("en", count, { one: "diode", other: "diodes" })}, in ${use === "signal" ? "an orange glass case" : "a black case"}.`,
   listWire: (colour, count) =>
     `${capitalised(colour)} ${plural("en", count, ENGLISH_JUMPERS)}, short.`,
   listLongWire: (colour, count) =>
@@ -372,6 +385,10 @@ export const ENGLISH_PAGE: PageWords = {
   transistorPinout: (model, legs, unlike) =>
     `With its flat face towards you and its legs down, a ${model}'s legs are its ${englishList(legs.map((leg) => ENGLISH_LEGS[leg]))}, left to right. Others that look the same, such as a ${unlike}, have them in another order: take the model the parts list names.`,
   baseResistor: (low, high) => `Any resistor from ${low} to ${high} works for a transistor's base.`,
+  diodePolarity:
+    "A diode lets current through one way only: from its anode to its cathode, the end with the band, which goes towards −. One put in backwards lets none through, and its light stays dark, but it is not damaged: turn it round.",
+  diodeAlike: (models) =>
+    `The ${englishList(models)} all do on a light's way: a light takes far less current than any of them can carry.`,
   rowsLettered:
     "Some breadboards letter their rows the other way up. If yours does, follow the picture rather than the letters.",
   unplug: "Unplug the USB cable while you change the wiring.",
@@ -553,6 +570,8 @@ export const FRENCH_PAGE: PageWords = {
     `Un condensateur de ${microfarads}${NNBSP}: sa patte + ${frenchIn(plus)}, et sa patte −, du côté de la bande, ${frenchIn(minus)}.`,
   transistor: (model, type, emitter, base, collector) =>
     `Un transistor ${type} ${model}, sa face plate vers la rangée <span class="hole">j</span>${NNBSP}: son émetteur ${frenchIn(emitter)}, sa base ${frenchIn(base)} et son collecteur ${frenchIn(collector)}.`,
+  diode: (model, anode, cathode) =>
+    `Une diode ${model}${NNBSP}: son anode ${frenchIn(anode)}, et sa cathode, du côté de la bande, ${frenchIn(cathode)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
@@ -592,6 +611,8 @@ export const FRENCH_PAGE: PageWords = {
     `${plural("fr", count, { one: "Condensateur électrolytique", many: "Condensateurs électrolytiques", other: "Condensateurs électrolytiques" })} de ${microfarads}, de 16 V ou plus.`,
   listTransistor: (model, type, count) =>
     `${plural("fr", count, { one: "Transistor", many: "Transistors", other: "Transistors" })} ${type} ${model}, en boîtier TO-92.`,
+  listDiode: (model, use, count) =>
+    `${plural("fr", count, { one: "Diode", many: "Diodes", other: "Diodes" })} ${use === "signal" ? "de signal" : "de redressement"} ${model}, en boîtier ${use === "signal" ? "de verre orange" : "noir"}.`,
   listWire: (colour, count) => {
     const more = `Fils de connexion ${colour}, courts.`;
     return plural("fr", count, {
@@ -624,6 +645,9 @@ export const FRENCH_PAGE: PageWords = {
     `Face plate vers vous et pattes en bas, les pattes d’un ${model} sont ${frenchList(legs.map((leg) => FRENCH_LEGS[leg]))}, de gauche à droite. D’autres qui lui ressemblent, comme le ${unlike}, les ont dans un autre ordre${NNBSP}: prenez le modèle que nomme la liste des composants.`,
   baseResistor: (low, high) =>
     `N’importe quelle résistance de ${low} à ${high} convient pour la base d’un transistor.`,
+  diodePolarity: `Une diode ne laisse passer le courant que dans un sens${NNBSP}: de son anode à sa cathode, le bout marqué d’une bande, qui va vers le −. Une diode mise à l’envers ne laisse rien passer, et sa LED reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
+  diodeAlike: (models) =>
+    `Les diodes ${frenchList(models)} conviennent toutes sur le chemin d’une LED${NNBSP}: une LED consomme bien moins de courant que chacune d’elles n’en supporte.`,
   rowsLettered:
     "Sur certaines plaques d’essai, les lettres des rangées vont dans l’autre sens. Si c’est le cas de la vôtre, suivez le dessin plutôt que les lettres.",
   unplug: "Débranchez le câble USB pendant que vous changez le câblage.",
@@ -797,6 +821,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `Конденсатор ${microfarads}: ножка + ${russianIn(plus)}, ножка −, со стороны полосы, ${russianIn(minus)}.`,
   transistor: (model, type, emitter, base, collector) =>
     `Транзистор ${type} ${model}, плоской стороной к ряду <span class="hole">j</span>: эмиттер ${russianIn(emitter)}, база ${russianIn(base)}, коллектор ${russianIn(collector)}.`,
+  diode: (model, anode, cathode) =>
+    `Диод ${model}: анод ${russianIn(anode)}, катод, со стороны полосы, ${russianIn(cathode)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
@@ -833,6 +859,10 @@ export const RUSSIAN_PAGE: PageWords = {
   listElectrolytic: (microfarads) =>
     `Электролитический конденсатор ${microfarads}, на 16 В или больше.`,
   listTransistor: (model, type) => `Транзистор ${type} ${model} в корпусе TO-92.`,
+  listDiode: (model, use) =>
+    use === "signal"
+      ? `Импульсный диод ${model} в оранжевом стеклянном корпусе.`
+      : `Выпрямительный диод ${model} в чёрном корпусе.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
   listCable:
@@ -853,6 +883,10 @@ export const RUSSIAN_PAGE: PageWords = {
   transistorPinout: (model, legs, unlike) =>
     `Если смотреть на плоскую сторону, ножками вниз, у ${model} слева направо: ${russianList(legs.map((leg) => RUSSIAN_LEGS[leg]))}. У похожих на него, например ${unlike}, порядок другой: берите модель, названную в списке деталей.`,
   baseResistor: (low, high) => `Для базы транзистора подойдёт любой резистор от ${low} до ${high}.`,
+  diodePolarity:
+    "Диод пропускает ток только в одну сторону: от анода к катоду, концу с полосой, который смотрит к −. Диод, вставленный наоборот, ничего не пропускает, и его светодиод не горит, но диод не портится: переверните его.",
+  diodeAlike: (models) =>
+    `На пути светодиода подойдёт любой из диодов ${russianList(models)}: светодиоду нужно гораздо меньше тока, чем выдерживает каждый из них.`,
   rowsLettered:
     "На некоторых макетных платах ряды подписаны в обратном порядке. Если на вашей так, следуйте рисунку, а не буквам.",
   unplug: "Отключайте кабель USB, пока меняете схему.",

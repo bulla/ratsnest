@@ -24,8 +24,8 @@ powered by a supply on the rails (ADR 0032 to ADR 0034), are M12, released in 0.
 every circuit's `setup`, one `test` and a credit of its own (ADR 0035 to ADR 0037). New parts,
 capacitors, transistors, diodes, two switches and a slide potentiometer, each with the circuit that
 teaches it, are planned in the Backlog (ADR 0038 to ADR 0041). The electrolytic capacitor is M13 (ADR 0043), the NPN and PNP
-transistors M14 and M15 (ADR 0044, ADR 0045), and the owner's capacitor tester and flasher M16
-(ADR 0046, ADR 0047).
+transistors M14 and M15 (ADR 0044, ADR 0045), the owner's capacitor tester and flasher M16
+(ADR 0046, ADR 0047), and the diode, two buttons sharing a light, M17 (ADR 0049, ADR 0050).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -66,8 +66,9 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
 
-- **The new parts' drawings** (ADR 0043 to ADR 0047): the electrolytic capacitor's, the
-  transistors' and the flasher's lifted leader, mocked up and chosen while the owner had the work go on alone, so the owner signs
+- **The new parts' drawings** (ADR 0043 to ADR 0047, ADR 0049, ADR 0050): the electrolytic
+  capacitor's, the transistors', the flasher's lifted leader, the diode's two cases and the leaders
+  lifted over lights and buttons, mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
   reader.
@@ -94,29 +95,26 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 ## Backlog
 
 - **New parts, each with the circuit that teaches it** (ADR 0038 to ADR 0041), in this order, after
-  the first four, the electrolytic capacitor's fading light, the NPN and PNP transistors' switches,
-  and the capacitor tester and flasher, which are M13 to M16 (ADR 0043 to ADR 0047). Each brings its
+  the first five, the electrolytic capacitor's fading light, the NPN and PNP transistors' switches,
+  the capacitor tester and flasher, and the diode's two buttons and three lights, which are M13 to
+  M17 (ADR 0043 to ADR 0047, ADR 0049, ADR 0050). Each brings its
   part's drawing, its kind in the format and the field checks, one rule in the wiring check, the
   step's sentence and the parts list's line in English, French and Russian, an example and a test
   circuit, and the `circuit` skill's knowledge of it. Each part's drawing is mocked up on the board
   first, in both themes, at all four quarter turns, beside Fritzing's drawing of the same part, and
   the owner picks one; the looks turned down go in the record that settles that part. Each is an
   addition to format 2, and a minor release.
-  1. **The diode: two buttons, three lights.** On a supply, each button lights a light of its own
-     and a shared one, and two diodes keep one button from lighting the other's light. Drawn lying,
-     as a resistor is, with its band at the cathode and its model on a tag (ADR 0040); its rule is a
-     one-way part on a light's way. Left to its own record: which models, several of them.
-  2. **The ceramic capacitor: the Pico times a capacitor.** On a Pico, a 100 nF capacitor charges
+  1. **The ceramic capacitor: the Pico times a capacitor.** On a Pico, a 100 nF capacitor charges
      through a resistor while the Pico counts how long it takes, and the script prints it. Drawn
      standing, a small disc; its rule is a resistor and a capacitor on a pair of pins. Left to its
      own record: what the disc prints, `104` as the real one does or `100 nF`.
-  3. **The slide switch: one light or the other.** On a supply, an SPDT slide switch's middle leg on
+  2. **The slide switch: one light or the other.** On a supply, an SPDT slide switch's middle leg on
      +, and each outer leg to a light and its resistor, so that one light or the other is lit, and
      stays lit when let go, which a button cannot do. Drawn from above, a small black body with its
      slide and three legs in a row; its rule is a part that joins its middle leg to one outer leg or
      the other, each outer leg on a light's way. Left to its own record: a model whose legs fit the
      breadboard's 2.54 mm pitch, and which way its slide is drawn.
-  4. **The slide potentiometer: a slider the Pico reads**, the circuit of The Pi Hut's Let it Glow
+  3. **The slide potentiometer: a slider the Pico reads**, the circuit of The Pi Hut's Let it Glow
      Maker Advent Calendar, day 7, which the owner chose. On a Pico, a 10 kΩ slide potentiometer,
      45 mm long, lies across both breadboards, its two back legs on the second and its front leg on
      the first: one end on 3V3(OUT), its wiper on GP28, an analogue pin, and its other end on
@@ -127,7 +125,7 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
      a mistake that tutorial's own readers made. Left to its own record: how a circuit names an
      analogue pin, a part with legs on both boards, the slider's real legs and their spacing, and how
      its page credits the tutorial, whose words and code it does not copy.
-  5. **The DIP switch: five switches the Pico reads**, the circuit of The Pi Hut's Let it Glow Maker
+  4. **The DIP switch: five switches the Pico reads**, the circuit of The Pi Hut's Let it Glow Maker
      Advent Calendar, day 5, which the owner chose. On a Pico, a five-way DIP switch across the
      channel, every top leg on 3V3(OUT) and each lower leg on a pin of its own, switch 1 on GP6 to
      switch 5 on GP2, and the script prints which switches are on. Drawn as a small body across the
@@ -197,3 +195,4 @@ file's Log.
 | M14       | The NPN transistor: a pin switches a light through a 2N3904                             | 0044                                    |
 | M15       | The PNP transistor: a pin switches a light on the high side, through a 2N3906           | 0045                                    |
 | M16       | The capacitor tester and flasher: two transistors crosswise, on two AA batteries        | 0046, 0047                              |
+| M17       | The diode: two buttons share a light, two diodes keeping each from the other's          | 0049, 0050                              |

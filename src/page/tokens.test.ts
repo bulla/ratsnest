@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { BUTTON_COLOURS, LED_COLOURS } from "../circuit";
 import {
   BREADBOARD_TOKENS,
+  DIODE_TOKENS,
   ELECTROLYTIC_TOKENS,
   SUPPLY_TOKENS,
   TRANSISTOR_TOKENS,
@@ -223,6 +224,15 @@ describe.each(SCOPES)("the %s scale", (scope) => {
     expect(
       contrastRatio(colour(TRANSISTOR_TOKENS.ink, scope), colour(TRANSISTOR_TOKENS.body, scope)),
     ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("sets a diode's band apart from its case at 3:1, since the band says which way round it goes (ADR 0049)", () => {
+    for (const [body, band] of [
+      [DIODE_TOKENS.glass, DIODE_TOKENS.glassBand],
+      [DIODE_TOKENS.black, DIODE_TOKENS.blackBand],
+    ] as const) {
+      expect(contrastRatio(colour(band, scope), colour(body, scope))).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it.each(Object.entries(CHIP_STYLES))(

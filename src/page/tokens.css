@@ -107,6 +107,13 @@
      on its flat face, at 4.5:1 at least. */
   --color-transistor: #2a2b2f;
   --color-transistor-ink: #ffffff;
+  /* A diode's case and the band at its cathode (ADR 0049): a signal diode's orange glass with a black
+     band, and a rectifier's black case with a grey one. The band says which way round it goes, so it
+     clears 3:1 on its case, as a part of a drawing that carries meaning must. */
+  --color-diode-glass: #e8823a;
+  --color-diode-glass-band: #1d1d1b;
+  --color-diode-black: #26272b;
+  --color-diode-black-band: #c4c6c8;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

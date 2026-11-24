@@ -1,6 +1,6 @@
 # ADR 0047: Lift a light's leader over the transistors and capacitors in its way
 
-**Status:** Accepted · 2026-11-23
+**Status:** Accepted · 2026-11-23 · Amended by ADR-0050 (lights and buttons in its way count too, and each lifted leader takes a lane of its own)
 
 ## Context
 

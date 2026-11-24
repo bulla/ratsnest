@@ -28,6 +28,7 @@ const BORN_IN_FORMAT_2 = [
   "fading-light.ts",
   "high-side-switch.ts",
   "transistor-switch.ts",
+  "two-buttons-three-lights.ts",
 ];
 
 const NEXT = FORMAT + 1;
