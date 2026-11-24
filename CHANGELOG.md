@@ -67,6 +67,13 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   code reads and what its resistor can be. On a supply it is refused.
 - A step's words may name a pin the layout wires a part to, not only one a light, a button or a
   buzzer is on.
+- An SPDT slide switch, `{ kind: "slideSwitch", left, middle, right }`, in a circuit with a supply: it
+  lights one light or the other, whichever way it is slid, and stays so when let go. `rnest check`
+  holds its three legs side by side, judges each light at whichever way the switch lights it,
+  refuses an outer leg that lights no light of its own and a short at either way, and takes a
+  resistor shared on its middle leg. The page draws it standing, a metal shell with its black slide
+  on top, says where its middle and outer legs go, lists it with its legs 2.54 mm apart, and notes
+  that it stays as it is slid. On a Pico it is refused, with no use there yet.
 
 ## [0.2.0] - 2026-11-23
 

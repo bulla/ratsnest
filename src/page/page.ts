@@ -229,6 +229,8 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         at(part.from),
         at(part.to),
       );
+    case "slideSwitch":
+      return words.slideSwitch(at(part.middle), at(part.left), at(part.right));
   }
 }
 
@@ -257,10 +259,12 @@ const isComponent = (part: Part) =>
   part.kind === "ring";
 
 /**
- * The parts the test step picks out: the components a reader watches and presses, and a ceramic
- * capacitor, which is what its circuit's script times (ADR 0051).
+ * The parts the test step picks out: the components a reader watches and presses, a ceramic
+ * capacitor, which is what its circuit's script times (ADR 0051), and a slide switch, which the
+ * reader slides (ADR 0052).
  */
-const isTested = (part: Part) => isComponent(part) || part.kind === "ceramic";
+const isTested = (part: Part) =>
+  isComponent(part) || part.kind === "ceramic" || part.kind === "slideSwitch";
 
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
@@ -369,6 +373,8 @@ function partsListHtml(
       items.push([1, words.listBuzzer(escaped(names.buzzer(part.buzzer)))]);
     }
   }
+  const slides = parts.filter((p) => p.kind === "slideSwitch").length;
+  if (slides > 0) items.push([slides, words.listSlideSwitch(slides)]);
   const microfarads = [
     ...new Set(parts.flatMap((p) => (p.kind === "electrolytic" ? [p.microfarads] : []))),
   ].sort((a, b) => a - b);
@@ -458,6 +464,7 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     if (part.kind === "ring") notes.push(words.ringPolarity(dataPinOf(circuit, part.led)));
   }
   if (parts.some((p) => p.kind === "electrolytic")) notes.push(words.electrolyticPolarity);
+  if (parts.some((p) => p.kind === "slideSwitch")) notes.push(words.slideSwitchNote);
   const [ceramic] = nanofaradsOf(parts);
   if (ceramic !== undefined) {
     const [low, high] = CHARGE_OHMS_RANGE;

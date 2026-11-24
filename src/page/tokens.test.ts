@@ -7,6 +7,7 @@ import {
   CERAMIC_TOKENS,
   DIODE_TOKENS,
   ELECTROLYTIC_TOKENS,
+  SLIDE_SWITCH_TOKENS,
   SUPPLY_TOKENS,
   TRANSISTOR_TOKENS,
 } from "../drawing/breadboard-svg";
@@ -240,6 +241,15 @@ describe.each(SCOPES)("the %s scale", (scope) => {
     expect(
       contrastRatio(colour(CERAMIC_TOKENS.ink, scope), colour(CERAMIC_TOKENS.body, scope)),
     ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("sets a slide switch's slide apart from its shell at 3:1, since where it sits says which way it is set (ADR 0052)", () => {
+    expect(
+      contrastRatio(
+        colour(SLIDE_SWITCH_TOKENS.slide, scope),
+        colour(SLIDE_SWITCH_TOKENS.shell, scope),
+      ),
+    ).toBeGreaterThanOrEqual(3);
   });
 
   it.each(Object.entries(CHIP_STYLES))(

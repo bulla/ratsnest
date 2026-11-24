@@ -748,3 +748,44 @@ describe("a page with a ceramic capacitor (ADR 0051)", () => {
     }
   });
 });
+
+describe("a page with a slide switch (ADR 0052)", () => {
+  const { circuit, layout } = FIXTURES["lights-chosen-by-a-slide-switch"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says where its middle leg goes, and its outer ones, either way round", () => {
+    expect(inLanguage("en")).toContain(
+      "A slide switch, either way round: its middle leg in f20, one outer leg in f19 and the other in f21.",
+    );
+  });
+
+  it("lists it with its legs a breadboard's pitch apart", () => {
+    expect(inLanguage("en")).toContain(
+      "1SPDT slide switch, its three legs 2.54 mm apart, as a breadboard's holes are.",
+    );
+  });
+
+  it("notes that it stays as it is slid, as a button does not", () => {
+    expect(page("lights-chosen-by-a-slide-switch")).toContain(PAGE_WORDS.en.slideSwitchNote);
+  });
+
+  it("picks the switch out in its test step, since the reader slides it", () => {
+    expect(page("lights-chosen-by-a-slide-switch")).toContain(
+      'data-g="step-1 test" data-kind="slideSwitch"',
+    );
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain(
+      "sa patte du milieu en f20, une patte extérieure en f19 et l’autre en f21.",
+    );
+    expect(inLanguage("ru")).toContain(
+      "Ползунковый переключатель SPDT: три ножки с шагом 2,54 мм, как отверстия макетной платы.",
+    );
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});

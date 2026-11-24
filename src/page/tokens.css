@@ -118,6 +118,11 @@
      clears 4.5:1. */
   --color-ceramic: #d9a23a;
   --color-ceramic-ink: #3b2a12;
+  /* An SPDT slide switch (ADR 0052): its metal shell, its black base, and the slide on top, whose
+     place along it says which way it is set, so it clears 3:1 on the shell. */
+  --color-slide-switch: #b8bcc1;
+  --color-slide-switch-base: #2a2b2f;
+  --color-slide-switch-slide: #1d1e21;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

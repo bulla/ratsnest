@@ -28,6 +28,7 @@ const BORN_IN_FORMAT_2 = [
   "capacitor-timer.ts",
   "fading-light.ts",
   "high-side-switch.ts",
+  "one-light-or-the-other.ts",
   "transistor-switch.ts",
   "two-buttons-three-lights.ts",
 ];

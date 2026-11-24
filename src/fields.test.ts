@@ -494,6 +494,23 @@ describe("a circuit with a supply (ADR 0032)", () => {
     expect(said(ceramic)[0]).toStartWith("steps[0].parts[4].kind is `ceramic`, which needs a Pico");
   });
 
+  it("places a slide switch by its three legs (ADR 0052)", () => {
+    const slide = (middle: unknown) =>
+      supplied((data) =>
+        (step(data, 0).parts as unknown[]).push({
+          kind: "slideSwitch",
+          left: "j24",
+          middle,
+          right: "j26",
+        }),
+      );
+    const fine = said(slide("j25"));
+    expect(fine.filter((line) => line.includes("parts[4]"))).toEqual([]);
+    expect(said(slide("x25"))).toContain(
+      "steps[0].parts[4].middle is not a hole on a half-size breadboard: holes are named as it prints them, `a21` or `top-19`, and `2:f5` on a second one",
+    );
+  });
+
   it("has no buzzer, RGB LED or script, which need a Pico", () => {
     expect(said(supplied((data) => (data.buzzers = [])))).toEqual([
       "buzzers is not a field of a circuit with a supply: a buzzer needs a Pico to drive it (ADR 0032)",

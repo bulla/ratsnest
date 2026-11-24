@@ -112,9 +112,9 @@ A circuit with a supply:
   way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
   On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
 - **may have electrolytic capacitors, each keeping a light lit, two NPN transistors that flash
-  two lights, and diodes on lights' ways** (below).
+  two lights, diodes on lights' ways, and slide switches lighting one light or another** (below).
 
-## Capacitors, transistors and diodes (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0051)
+## Capacitors, transistors, diodes and switches (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0052)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -187,6 +187,22 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   reads high, as `capacitor-timer.ts` does. A step's words may name those two pins, though no
   component is on them. The disc stands over the two rows above its legs. On a supply it has no use
   yet, and is refused.
+
+- **A slide switch**, on a supply, lights one light or the other, and stays so when let go
+  (ADR 0052):
+
+  ```ts
+  { kind: "slideSwitch", left: "f14", middle: "f15", right: "f16" },
+  ```
+
+  It has no model: any SPDT slide switch with its legs 2.54 mm apart. Its three legs are side by side
+  in one row, left, middle and right, left to right. Slid one way, it joins its middle leg to its left
+  one; the other way, to its right one. Put its middle leg on +, or anywhere on a light's way, and
+  each outer leg on a light's way of its own, so that each way lights a light the other does not, as
+  `one-light-or-the-other.ts` shows; one resistor on its middle leg may serve both lights. The step's
+  words cannot say which way to slide it, since they name no hole: the test says what one way and the
+  other do. The switch stands over the two rows above its legs, so reach them from the rows below. On
+  a Pico it has no use yet, and is refused.
 
 A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
 each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So

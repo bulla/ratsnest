@@ -338,6 +338,28 @@ and the script prints how long it takes to charge (ADR 0051). The disc prints it
 - [x] `examples/capacitor-timer.ts`, in English and French, and a test circuit with a variant for
       every rule it is refused by
 
+### M19: the slide switch
+
+M19 is done: on three AA batteries, an SPDT slide switch's middle leg on +, and a red light on its
+left leg's way and a green one on its right's, so that it lights one or the other and stays so when
+let go (ADR 0052). The wiring check of a circuit with a supply now judges each light at every way
+the switches can be set.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0052): no model, since every SPDT slide
+      switch has its legs in the same order, and the slide drawn towards its left leg
+- [x] The format: `{ kind: "slideSwitch", left, middle, right }`, read and checked field by field, in a
+      circuit with a supply
+- [x] The wiring check's rule: its legs side by side; no short at either way it is slid; each outer
+      leg lighting a light of its own; every light, diode, button and capacitor judged at every way
+      the switches can be set; and on a Pico, refused
+- [x] The drawing: a metal shell on a black base, standing on its three legs, its slide on top
+      towards its left leg, its colours in `tokens.css` and the slide held to 3:1 on the shell; a
+      value tag keeps off it, and a light's leader rises over it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line and
+      the note, and the test step picking the switch out
+- [x] `examples/one-light-or-the-other.ts`, in English and French, and a test circuit with a variant
+      for every rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -649,3 +671,11 @@ and the script prints how long it takes to charge (ADR 0051). The disc prints it
   now knows those the layout wires a part to as well. Its test step picked out nothing, the circuit
   having no component to watch, and picks out the capacitor now. A resistor's value tag first fell on
   GP16's chip, and the resistor grew a hole. No example's drawing changed.
+- 2026-11-24: M19, the slide switch, worked out alone (ADR 0052), stacked on M18. The supply check
+  judged every light with every button held, the most any can join, and the first thought was to
+  have a slide switch join its middle leg to both outer legs the same way. That is a state no switch
+  is ever in: it would refuse a resistor shared on the middle leg, which works, and miss a short that
+  only one way makes. So the check now runs at every way the switches can be set, and each light is
+  judged at the first that wires it, which leaves every circuit without a switch checked as it was.
+  The test circuit's first layout put its lights' wires into rail columns 12 and 28, which a rail does
+  not have, its holes being in groups of five. No example's drawing changed.

@@ -16,8 +16,9 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * that a pin switches through an NPN transistor (ADR 0044), the eleventh one it switches through a
  * PNP transistor, on the high side (ADR 0045), the twelfth two lights that two transistors flash in
  * turn, on a supply (ADR 0046), the thirteenth two buttons that each light a light of their own and
- * one they share, two diodes keeping each from the other's light (ADR 0049), and the fourteenth a
- * ceramic capacitor that one pin charges through a resistor while another reads it (ADR 0051).
+ * one they share, two diodes keeping each from the other's light (ADR 0049), the fourteenth a
+ * ceramic capacitor that one pin charges through a resistor while another reads it (ADR 0051), and the
+ * fifteenth a slide switch that lights one light or the other, on a supply (ADR 0052).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -34,6 +35,7 @@ export const FIXTURE_IDS = [
   "two-lights-flashing",
   "lights-kept-apart-by-diodes",
   "capacitor-timed-by-two-pins",
+  "lights-chosen-by-a-slide-switch",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -885,6 +887,49 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       script:
         "from machine import Pin\nfrom time import sleep, ticks_diff, ticks_us\n\ncharge = Pin(14, Pin.OUT, value=0)\nsense = Pin(13, Pin.IN)\nsleep(0.1)\nstart = ticks_us()\ncharge.on()\nwhile not sense.value():\n    pass\nprint(ticks_diff(ticks_us(), start))",
       test: "The script prints how long the capacitor took to charge, in microseconds.",
+    },
+  },
+  "lights-chosen-by-a-slide-switch": {
+    circuit: {
+      name: "A light each way",
+      description:
+        "A slide switch lights a yellow light one way and a red one the other, on two AA batteries.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 3, rails: "bottom" },
+      leds: [
+        { id: "yellow", name: "yellow LED", colour: "yellow" },
+        { id: "red", name: "red LED", colour: "red" },
+      ],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "The slide switch, its middle leg on +",
+          parts: [
+            { kind: "slideSwitch", left: "f19", middle: "f20", right: "f21" },
+            { kind: "wire", from: "j20", to: "bottom+20", role: "power" },
+          ],
+        },
+        {
+          title: "The yellow LED, from its left leg",
+          parts: [
+            { kind: "resistor", ohms: 220, from: "i19", to: "i14" },
+            { kind: "led", led: "yellow", anode: "g14", cathode: "g13" },
+            { kind: "wire", from: "j13", to: "bottom-13", role: "ground" },
+          ],
+        },
+        {
+          title: "The red LED, from its right leg",
+          parts: [
+            { kind: "resistor", ohms: 220, from: "h21", to: "h26" },
+            { kind: "led", led: "red", anode: "f26", cathode: "f27" },
+            { kind: "wire", from: "j27", to: "bottom-27", role: "ground" },
+          ],
+        },
+      ],
+      test: "Slide the switch one way and the yellow LED lights; slide it the other way and the red one does instead.",
     },
   },
 };

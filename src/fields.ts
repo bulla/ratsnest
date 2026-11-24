@@ -233,10 +233,20 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   transistor: ["kind", "model", "emitter", "base", "collector"],
   diode: ["kind", "model", "anode", "cathode"],
   ceramic: ["kind", "nanofarads", "from", "to"],
+  slideSwitch: ["kind", "left", "middle", "right"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
-const SUPPLY_PARTS = ["wire", "resistor", "led", "button", "electrolytic", "transistor", "diode"];
+const SUPPLY_PARTS = [
+  "wire",
+  "resistor",
+  "led",
+  "button",
+  "electrolytic",
+  "transistor",
+  "diode",
+  "slideSwitch",
+];
 
 function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean): void {
   const kind = part.kind;
@@ -360,6 +370,9 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
       fields.hole("to");
       return;
     }
+    case "slideSwitch":
+      for (const leg of ["left", "middle", "right"]) fields.hole(leg);
+      return;
     case "rgbLed":
     case "ring":
       reference("led", ids.rgbLeds, "RGB lights");
