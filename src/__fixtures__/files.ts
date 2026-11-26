@@ -14,7 +14,8 @@ const stepsOf = ({ layout }: Fixture): PicoCircuit["steps"] =>
   layout.steps.map((step) => ({
     title: en(step.title),
     ...(step.note ? { note: en(step.note) } : {}),
-    parts: step.parts,
+    // A part outside the board carries its own name, in each language (ADR 0057).
+    parts: step.parts.map((part) => (part.kind === "pir" ? named(part) : part)),
   })) as PicoCircuit["steps"];
 
 /** A test circuit on a Pico in the circuit format, every text in English. */

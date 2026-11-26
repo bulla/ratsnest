@@ -31,8 +31,11 @@ export type Place =
       readonly second?: boolean;
     };
 
-/** A light, a button or a buzzer: what an article agrees with in a language that has gender. */
-export type PartKind = "led" | "button" | "buzzer";
+/**
+ * A light, a button, a buzzer or a sensor: what an article agrees with in a language that has
+ * gender.
+ */
+export type PartKind = "led" | "button" | "buzzer" | "sensor";
 
 /** Where a button sits on the breadboard (`placementOf`, scratchpi's ADR 0154). */
 export type ButtonPlacement = "across" | "above" | "below";
@@ -133,7 +136,7 @@ export interface PageWords {
    * A PIR motion sensor beside the board (ADR 0055, ADR 0056): where the jumper on each of its pins
    * goes, by the name its board prints beside the pin, and the jumper's colour.
    */
-  readonly pir: (power: Place, output: Place, ground: Place) => string;
+  readonly pir: (name: string, power: Place, output: Place, ground: Place) => string;
   /**
    * A DIP switch (ADR 0054): how many switches, the holes of switch 1's two legs and of the last's,
    * and whether they are on the second breadboard, which is said once rather than for each hole.
@@ -150,6 +153,8 @@ export interface PageWords {
   readonly buttonLabel: (where: ButtonPlacement) => string;
   readonly buzzerLabel: (plus: string) => string;
   readonly rgbLedLabel: (dataIn: string) => string;
+  /** A motion sensor's label: the hole its OUT jumper goes in (ADR 0057). */
+  readonly pirLabel: (output: string) => string;
 
   /** The first step and the last, which every circuit has. */
   readonly picoTitle: string;
@@ -183,7 +188,7 @@ export interface PageWords {
   /** DIP switches of one size, and how many (ADR 0054). */
   readonly listDipSwitch: (switches: number, count: number) => string;
   /** Motion sensors, and how many (ADR 0055). */
-  readonly listPir: (count: number) => string;
+  readonly listPir: (name: string) => string;
   /** The female-to-male jumpers that join motion sensors to the board, three for each. */
   readonly listPirJumpers: (count: number) => string;
   /** Ceramic capacitors of one value, written already, the code they print, and how many (ADR 0051). */
@@ -387,13 +392,14 @@ export const ENGLISH_PAGE: PageWords = {
     `A ${ohms} slide potentiometer, lying across both breadboards: its wiper ${englishIn(wiper)}, the end beside it ${englishIn(end)}, and its other end ${englishIn(otherEnd)}.`,
   dipSwitch: (switches, first, last, second) =>
     `A ${switches}-way DIP switch across the channel, its ON side towards row <span class="hole">a</span>: switch 1 in ${englishList(first)}, and switch ${switches} in ${englishList(last)}${second ? ", on the second breadboard" : ""}.`,
-  pir: (power, output, ground) =>
-    `A PIR motion sensor, beside the board, dome up: a red jumper from its VCC pin ${englishTo(power)}, a yellow one from its OUT pin ${englishTo(output)} and a black one from its GND pin ${englishTo(ground)}.`,
+  pir: (name, power, output, ground) =>
+    `The ${name}, beside the board, dome up: a red jumper from its VCC pin ${englishTo(power)}, a yellow one from its OUT pin ${englishTo(output)} and a black one from its GND pin ${englishTo(ground)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
   buzzerLabel: (plus) => `+ leg in ${plus}`,
   rgbLedLabel: (dataIn) => `data in at ${dataIn}`,
+  pirLabel: (output) => `OUT to ${output}`,
 
   picoTitle: "Put the Pico across the middle",
   picoBody: (pinOne, lands, orientation) =>
@@ -436,12 +442,8 @@ export const ENGLISH_PAGE: PageWords = {
     `${ohms} slide ${plural("en", count, { one: "potentiometer", other: "potentiometers" })}, 45 mm long, with two legs at one end and one at the other, and a cap for the knob.`,
   listDipSwitch: (switches, count) =>
     `${switches}-way DIP ${plural("en", count, { one: "switch", other: "switches" })}, with its legs in two rows 7.62 mm apart, to go across the channel.`,
-  listPir: (count) =>
-    plural("en", count, {
-      one: "PIR motion sensor: a module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.",
-      other:
-        "PIR motion sensors: modules with three pins, VCC, OUT and GND, that run on 5 V. Each one's OUT gives 3.3 V while it sees movement.",
-    }),
+  listPir: (name) =>
+    `${capitalised(name)}: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.`,
   listPirJumpers: () =>
     "Female-to-male jumpers, about 20 cm: a red, a yellow and a black one for each motion sensor, to go on its pins.",
   listCeramic: (nanofarads, code, count) =>
@@ -607,7 +609,8 @@ const frenchList = (items: readonly string[]): string =>
 
 /**
  * The definite article a part's name takes at the start of a sentence: *La* for a light,
- * *Le* for a button or a buzzer, and *L’* before a vowel or a mute *h*, whatever the gender.
+ * *Le* for a button, a buzzer or a sensor, *détecteur* or *capteur*, and *L’* before a vowel or a
+ * mute *h*, whatever the gender.
  */
 function the(kind: PartKind, name: string): string {
   if (/^[aeiouyhàâéèêëîïôöùûü]/i.test(name)) return `L’${name}`;
@@ -675,13 +678,14 @@ export const FRENCH_PAGE: PageWords = {
     `Un potentiomètre à glissière de ${ohms}, couché à cheval sur les deux plaques${NNBSP}: son curseur ${frenchIn(wiper)}, l’extrémité à côté ${frenchIn(end)}, et son autre extrémité ${frenchIn(otherEnd)}.`,
   dipSwitch: (switches, first, last, second) =>
     `Un interrupteur DIP à ${switches} voies à cheval sur la rainure centrale, son côté ON vers la rangée <span class="hole">a</span>${NNBSP}: l’interrupteur 1 en ${frenchList(first)}, et l’interrupteur ${switches} en ${frenchList(last)}${second ? ", sur la seconde plaque" : ""}.`,
-  pir: (power, output, ground) =>
-    `Un détecteur de mouvement PIR, à côté de la plaque, dôme en haut${NNBSP}: un fil rouge de sa broche VCC ${frenchTo(power)}, un fil jaune de sa broche OUT ${frenchTo(output)} et un fil noir de sa broche GND ${frenchTo(ground)}.`,
+  pir: (name, power, output, ground) =>
+    `${the("sensor", name)}, à côté de la plaque, dôme en haut${NNBSP}: un fil rouge de sa broche VCC ${frenchTo(power)}, un fil jaune de sa broche OUT ${frenchTo(output)} et un fil noir de sa broche GND ${frenchTo(ground)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
   buzzerLabel: (plus) => `patte + en ${plus}`,
   rgbLedLabel: (dataIn) => `entrée en ${dataIn}`,
+  pirLabel: (output) => `OUT en ${output}`,
 
   picoTitle: "Placez le Pico à cheval sur la rainure centrale",
   picoBody: (pinOne, lands, orientation) =>
@@ -729,14 +733,8 @@ export const FRENCH_PAGE: PageWords = {
     `${plural("fr", count, { one: "Potentiomètre à glissière", many: "Potentiomètres à glissière", other: "Potentiomètres à glissière" })} de ${ohms}, de 45 mm de long, à deux pattes à un bout et une à l’autre, avec un capuchon pour le bouton.`,
   listDipSwitch: (switches, count) =>
     `${plural("fr", count, { one: "Interrupteur", many: "Interrupteurs", other: "Interrupteurs" })} DIP à ${switches} voies, ses pattes sur deux rangées espacées de 7,62 mm, pour se mettre à cheval sur la rainure centrale.`,
-  listPir: (count) => {
-    const more = `Détecteurs de mouvement PIR${NNBSP}: des modules à trois broches, VCC, OUT et GND, alimentés en 5 V. La broche OUT de chacun donne 3,3 V tant qu’il voit du mouvement.`;
-    return plural("fr", count, {
-      one: `Détecteur de mouvement PIR${NNBSP}: un module à trois broches, VCC, OUT et GND, alimenté en 5 V. Sa broche OUT donne 3,3 V tant qu’il voit du mouvement.`,
-      many: more,
-      other: more,
-    });
-  },
+  listPir: (name) =>
+    `${capitalised(name)}${NNBSP}: un module PIR à trois broches, VCC, OUT et GND, alimenté en 5 V. Sa broche OUT donne 3,3 V tant qu’il voit du mouvement.`,
   listPirJumpers: () =>
     `Fils de connexion femelle-mâle, d’environ 20 cm${NNBSP}: un rouge, un jaune et un noir pour chaque détecteur de mouvement, à brancher sur ses broches.`,
   listCeramic: (nanofarads, code, count) =>
@@ -975,13 +973,14 @@ export const RUSSIAN_PAGE: PageWords = {
     `DIP-переключатель на ${switches} ${russianPositions(switches)} поперёк центральной канавки, стороной ON к ряду <span class="hole">a</span>: переключатель 1 в ${russianList(first)}, переключатель ${switches} в ${russianList(last)}${second ? ", на второй плате" : ""}.`,
   slidePotentiometer: (ohms, wiper, end, otherEnd) =>
     `Ползунковый потенциометр ${ohms}, поперёк обеих плат: движок ${russianIn(wiper)}, вывод рядом с ним ${russianIn(end)}, другой вывод ${russianIn(otherEnd)}.`,
-  pir: (power, output, ground) =>
-    `Датчик движения PIR рядом с платой, куполом вверх: красная перемычка от вывода VCC ${russianIn(power)}, жёлтая от вывода OUT ${russianIn(output)} и чёрная от вывода GND ${russianIn(ground)}.`,
+  pir: (name, power, output, ground) =>
+    `${name}, рядом с платой, куполом вверх: красная перемычка от вывода VCC ${russianIn(power)}, жёлтая от вывода OUT ${russianIn(output)} и чёрная от вывода GND ${russianIn(ground)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
   buzzerLabel: (plus) => `ножка + в ${plus}`,
   rgbLedLabel: (dataIn) => `вход данных в ${dataIn}`,
+  pirLabel: (output) => `OUT в ${output}`,
 
   picoTitle: "Установите Pico поперёк середины",
   picoBody: (pinOne, lands, orientation) =>
@@ -1023,8 +1022,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `Ползунковый потенциометр ${ohms}, длиной 45 мм: два вывода с одного конца и один с другого, с колпачком для ручки.`,
   listDipSwitch: (switches) =>
     `DIP-переключатель на ${switches} ${russianPositions(switches)}: ножки в два ряда на расстоянии 7,62 мм, чтобы встать поперёк центральной канавки.`,
-  listPir: () =>
-    "Датчик движения PIR: модуль с тремя выводами, VCC, OUT и GND, питание 5 В. Пока он видит движение, на OUT 3,3 В.",
+  listPir: (name) =>
+    `${capitalised(name)}: модуль PIR с тремя выводами, VCC, OUT и GND, питание 5 В. Пока он видит движение, на OUT 3,3 В.`,
   listPirJumpers: () =>
     "Перемычка мама-папа, около 20 см: красная, жёлтая и чёрная на каждый датчик движения, для его выводов.",
   listCeramic: (nanofarads, code) => `Керамический конденсатор ${nanofarads}, маркировка ${code}.`,

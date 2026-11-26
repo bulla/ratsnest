@@ -1029,7 +1029,9 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         {
           title: "Motion sensor on GP22",
           note: "It takes its power from VBUS, the USB's own, rather than 3V3, and holds its pin high while it sees movement.",
-          parts: [{ kind: "pir", power: "a2", output: "a13", ground: "a14" }],
+          parts: [
+            { kind: "pir", name: "motion sensor", power: "a2", output: "a13", ground: "a14" },
+          ],
         },
         {
           title: "Red LED on GP15",

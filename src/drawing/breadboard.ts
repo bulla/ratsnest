@@ -367,6 +367,8 @@ export type Part =
    */
   | {
       readonly kind: "pir";
+      /** What the page calls it, in its language: every part outside the board is named (ADR 0057). */
+      readonly name: string;
       readonly power: Hole;
       readonly output: Hole;
       readonly ground: Hole;

@@ -286,6 +286,11 @@ export interface DipSwitchPart {
  */
 export interface PirPart {
   readonly kind: "pir";
+  /**
+   * What the page calls it, `motion sensor`, as every part outside the board has a name of its own
+   * (ADR 0057): its label past the board's end, its step's sentence and its parts list's line.
+   */
+  readonly name: Text;
   /** Where the jumper on its VCC pin goes: VBUS, for its 5 V. */
   readonly power: Hole;
   /** Where the jumper on its OUT pin goes: the pin that reads it. */

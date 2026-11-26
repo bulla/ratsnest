@@ -37,7 +37,15 @@ export default {
         en: "Push a female-to-male jumper onto each of its pins. It takes its power from VBUS, the USB's own, rather than 3V3, and holds its pin high while it sees movement. Turn its time dial fully anticlockwise, for the shortest time, and its sensitivity dial to the middle.",
         fr: "Enfoncez un fil femelle-mâle sur chacune de ses broches. Il prend son alimentation sur VBUS, celle de l’USB, plutôt que sur le 3V3, et met sa broche au niveau haut tant qu’il voit du mouvement. Tournez son réglage de durée à fond dans le sens inverse des aiguilles d’une montre, pour la durée la plus courte, et son réglage de sensibilité à mi-course.",
       },
-      parts: [{ kind: "pir", power: "a2", output: "a13", ground: "a14" }],
+      parts: [
+        {
+          kind: "pir",
+          name: { en: "motion sensor", fr: "détecteur de mouvement" },
+          power: "a2",
+          output: "a13",
+          ground: "a14",
+        },
+      ],
     },
     {
       title: { en: "Red LED on GP15", fr: "LED rouge sur GP15" },

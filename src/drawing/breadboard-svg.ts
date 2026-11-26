@@ -2459,6 +2459,11 @@ function anchorOf(part: Part): { left: number; right: number; y: number } | unde
         y: nearestBetweenRows(centre),
       };
     }
+    case "pir": {
+      // Its own board, past the breadboard's edge, where nothing else is (ADR 0056).
+      const { box } = pirLayoutOf(part);
+      return { left: box.x - 0.2, right: box.x + box.w + 0.2, y: box.y + box.h / 2 };
+    }
     case "ring": {
       // The header's ends: the ring itself hangs below the board, past the margin.
       const xs = legsOf(part).map((leg) => holeCentre(leg).x);

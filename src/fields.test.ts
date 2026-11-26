@@ -654,8 +654,16 @@ describe("a motion sensor (ADR 0055)", () => {
       "steps[1].parts[0] has no `ground`, a hole",
     ]);
     expect(said(sensing((data) => (part(data, 1, 0).vcc = "a2")))).toEqual([
-      "steps[1].parts[0].vcc is not a field of a pir: it has `kind`, `power`, `output` or `ground`",
+      "steps[1].parts[0].vcc is not a field of a pir: it has `kind`, `name`, `power`, `output` or `ground`",
     ]);
+  });
+
+  it("has a name of its own, in each of the circuit's languages, as every part outside the board does (ADR 0057)", () => {
+    expect(said(sensing((data) => delete part(data, 1, 0).name))).toEqual([
+      "steps[1].parts[0] has no `name`, a text",
+    ]);
+    const french = said(sensing((data) => (part(data, 1, 0).name = { fr: "détecteur" })));
+    expect(french.join("\n")).toContain("steps[1].parts[0].name");
   });
 
   it("lets a step's words name the pin its OUT is wired to, which no component names", () => {

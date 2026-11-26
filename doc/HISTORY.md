@@ -762,3 +762,12 @@ rest on the Pico's own pull-downs, which erratum E9 makes unreliable on the Pico
   2.54 mm header at a size a phone can read, so the header is drawn wider than life, as ADR 0040
   allows. The example first took GP28 and the ground beside it, which the Pico prints AGND, and moved
   to GP22 and pin 28's GND so that its page names a plain GND.
+- 2026-11-26: The motion sensor, settled by the owner on its pull request. Everything that goes
+  outside the breadboard, as an extra component or board, has a name: relay boards, LED matrices,
+  solar panels and LCD screens after the sensor. Asked where a circuit writes it, the owner chose the
+  part itself over a `modules` list or a list for each kind (ADR 0057, which amends ADR 0041); the
+  sensor gained its label past the board's end again, its pin still read from the wiring. The owner
+  also turned down its header drawn wider than life: nothing outside the board is stretched to fit
+  its print. Its pins are 2.54 mm apart again, their names at 1 mm, as small as the Pico's own
+  smallest print, on a strip that makes the drawn board about 2 mm taller than the real one, which
+  the owner chose over leaving the names off.

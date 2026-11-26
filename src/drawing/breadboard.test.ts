@@ -760,9 +760,16 @@ describe("a DIP switch across the channel (ADR 0054)", () => {
 
 describe("a motion sensor beside the board, on its jumpers (ADR 0056)", () => {
   type Pir = Extract<Part, { kind: "pir" }>;
-  const top: Pir = { kind: "pir", power: "a2", output: "a13", ground: "a14" };
+  const top: Pir = {
+    kind: "pir",
+    name: "motion sensor",
+    power: "a2",
+    output: "a13",
+    ground: "a14",
+  };
   const bottom: Pir = {
     kind: "pir",
+    name: "motion sensor",
     power: "j10",
     output: "bottom-13",
     ground: "i14",
@@ -828,7 +835,13 @@ describe("a motion sensor beside the board, on its jumpers (ADR 0056)", () => {
   it("keeps a value tag off its jumpers", () => {
     // A resistor whose tag would first go below it, across the sensor's OUT jumper coming down to d25.
     const resistor: Part = { kind: "resistor", ohms: 330, from: "b22", to: "b30" };
-    const sensor: Pir = { kind: "pir", power: "a2", output: "d25", ground: "a3" };
+    const sensor: Pir = {
+      kind: "pir",
+      name: "motion sensor",
+      power: "a2",
+      output: "d25",
+      ground: "a3",
+    };
     const alone = clearTagOf(resistor, [resistor]);
     const beside = clearTagOf(resistor, [resistor, sensor]);
     if (!alone || !beside) throw new Error("no clear place for the tag");
@@ -842,13 +855,26 @@ describe("a motion sensor beside the board, on its jumpers (ADR 0056)", () => {
   });
 
   it("is refused lying on another past the same edge, at every quarter turn", () => {
-    const other: Pir = { kind: "pir", power: "a5", output: "a16", ground: "a19" };
+    const other: Pir = {
+      kind: "pir",
+      name: "motion sensor",
+      power: "a5",
+      output: "a16",
+      ground: "a19",
+    };
     for (const orientation of [0, 90, 180, 270] as const) {
       expect(crowdingProblems([top, other], orientation)).toEqual([
         "the motion sensor with its OUT in a13 is on the motion sensor with its OUT in a16",
       ]);
     }
     expect(crowdingProblems([top, bottom], 0)).toEqual([]);
+  });
+
+  it("has its callout leave its own board, past the breadboard's edge, being named (ADR 0057)", () => {
+    const leader = leaderOf(top, [top], [top]);
+    const { box } = pirLayoutOf(top);
+    expect(leader?.dot).toEqual({ x: box.x + box.w + 0.2, y: box.y + box.h / 2 });
+    expect(leader?.end).toBe("far");
   });
 
   it("has its pins 2.54 mm apart, as they are, and each one's name clear of the next", () => {
@@ -862,10 +888,5 @@ describe("a motion sensor beside the board, on its jumpers (ADR 0056)", () => {
     }
     // Upright on a standing board, the widest name fits across the strip it is printed on.
     expect(Math.max(...gaps)).toBeLessThan(PIR_MM.strip - 0.3);
-  });
-
-  it("has no callout of its own, being placed as a resistor is (ADR 0041)", () => {
-    expect(leaderOf(top, [], [top])).toBeUndefined();
-    expect(drawBreadboard(drawing([top]))).not.toContain("callout");
   });
 });

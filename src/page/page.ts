@@ -252,7 +252,7 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
       );
     }
     case "pir":
-      return words.pir(at(part.power), at(part.output), at(part.ground));
+      return words.pir(escaped(part.name), at(part.power), at(part.output), at(part.ground));
   }
 }
 
@@ -268,6 +268,8 @@ function labelOf(part: Part, names: Names, words: PageWords): DrawnPart["label"]
     case "rgbLed":
     case "ring":
       return { title: names.led(part.led), detail: words.rgbLedLabel(printedName(part.dataIn)) };
+    case "pir":
+      return { title: part.name, detail: words.pirLabel(printedName(part.output)) };
     default:
       return undefined;
   }
@@ -278,21 +280,22 @@ const isComponent = (part: Part) =>
   part.kind === "button" ||
   part.kind === "buzzer" ||
   part.kind === "rgbLed" ||
-  part.kind === "ring";
+  part.kind === "ring" ||
+  part.kind === "pir";
 
 /**
  * The parts the test step picks out: the components a reader watches and presses, a ceramic
  * capacitor, which is what its circuit's script times (ADR 0051), a slide switch, a slide
- * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054), and a motion
- * sensor, which the reader moves in front of (ADR 0055).
+ * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054). A motion sensor,
+ * which the reader moves in front of, is a component, named as every part outside the board is
+ * (ADR 0057).
  */
 const isTested = (part: Part) =>
   isComponent(part) ||
   part.kind === "ceramic" ||
   part.kind === "slideSwitch" ||
   part.kind === "slidePotentiometer" ||
-  part.kind === "dipSwitch" ||
-  part.kind === "pir";
+  part.kind === "dipSwitch";
 
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
@@ -417,11 +420,12 @@ function partsListHtml(
     const count = parts.filter((p) => p.kind === "dipSwitch" && p.switches === switches).length;
     items.push([count, words.listDipSwitch(switches, count)]);
   }
-  // A motion sensor, and the three jumpers each one takes to the board (ADR 0055).
-  const sensors = parts.filter((p) => p.kind === "pir").length;
-  if (sensors > 0) {
-    items.push([sensors, words.listPir(sensors)]);
-    items.push([3 * sensors, words.listPirJumpers(3 * sensors)]);
+  // Each motion sensor by its name (ADR 0057), and the three jumpers each one takes to the board
+  // (ADR 0055).
+  const sensors = parts.flatMap((p) => (p.kind === "pir" ? [p] : []));
+  for (const sensor of sensors) items.push([1, words.listPir(escaped(sensor.name))]);
+  if (sensors.length > 0) {
+    items.push([3 * sensors.length, words.listPirJumpers(3 * sensors.length)]);
   }
   const microfarads = [
     ...new Set(parts.flatMap((p) => (p.kind === "electrolytic" ? [p.microfarads] : []))),

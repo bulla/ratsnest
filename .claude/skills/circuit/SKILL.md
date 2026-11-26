@@ -238,10 +238,18 @@ circuit's own words, as a resistor's is not: point at it by the step that places
 - **A PIR motion sensor**, on a Pico, is read on a pin of its own (ADR 0055):
 
   ```ts
-  { kind: "pir", power: "a2", output: "a13", ground: "a14" },
+  {
+    kind: "pir",
+    name: { en: "motion sensor", fr: "détecteur de mouvement" },
+    power: "a2",
+    output: "a13",
+    ground: "a14",
+  },
   ```
 
-  It lies beside the board, and its three female-to-male jumpers go in these holes: `power`, from
+  Every part outside the breadboard has a `name`, in each of the circuit's languages, written on the
+  part (ADR 0057): its label, its step's sentence and its parts list's line call it by it. It lies
+  beside the board, and its three female-to-male jumpers go in these holes: `power`, from
   its VCC pin, on VBUS for its 5 V, `a2` or `b2`, never 3V3; `output`, from its OUT pin, straight on
   one GPIO with nothing else on it, and no resistor; `ground`, from its GND pin, on ground, better a
   pin the Pico prints `GND` than pin 33, `AGND`. All three go on one side of the channel, rows a to e

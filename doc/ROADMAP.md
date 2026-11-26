@@ -77,8 +77,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   capacitor's, the transistors', the flasher's lifted leader, the diode's two cases, the leaders
   lifted over lights and buttons, the ceramic capacitor's disc, the slide switch's shell, its slide
   drawn towards its left leg, the slide potentiometer's body, its value printed on it, and the DIP
-  switch's blue body, its slides drawn off, and the motion sensor beside the board, its header
-  drawn wider than life (ADR 0055, ADR 0056), mocked up and chosen while the owner had the work go on alone, so the owner signs
+  switch's blue body, its slides drawn off, and the motion sensor beside the board, its pins'
+  names printed at 1 mm on a strip that makes it about 2 mm taller than life (ADR 0055 to ADR 0057), mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
   reader.

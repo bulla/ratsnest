@@ -369,33 +369,37 @@ describe("a motion sensor beside the board (ADR 0055, ADR 0056)", () => {
     edited(LAYOUT, (parts) => replace(parts, isPir, { ...pir, ...next }));
 
   it("takes VBUS, ground and a pin of its own, on jumpers into the top half", () => {
-    expect(pir).toEqual({ kind: "pir", power: "a2", output: "a13", ground: "a14" });
+    expect(pir).toEqual({
+      kind: "pir",
+      name: "motion sensor",
+      power: "a2",
+      output: "a13",
+      ground: "a14",
+    });
     expect(wiringProblems(SENSOR, LAYOUT)).toEqual([]);
   });
 
   it("finds it on 3V3, which is too little for it", () => {
     expect(wiringProblems(SENSOR, moved({ power: "a6" }))).toEqual([
-      "the motion sensor with its OUT in a13 has its VCC on 3V3(OUT): it goes on VBUS, the 5 V it runs on",
+      "the motion sensor has its VCC on 3V3(OUT): it goes on VBUS, the 5 V it runs on",
     ]);
   });
 
   it("finds its VCC and OUT swapped, which would put VBUS where its pin should be", () => {
     const problems = wiringProblems(SENSOR, moved({ power: "a13", output: "a2" }));
     expect(problems).toContain(
-      "the motion sensor with its OUT in a2 has its VCC on GP22: it goes on VBUS, the 5 V it runs on",
+      "the motion sensor has its VCC on GP22: it goes on VBUS, the 5 V it runs on",
     );
     expect(problems).toContain(
-      "the motion sensor with its OUT in a2 has its OUT on VBUS: it goes straight to one GPIO",
+      "the motion sensor has its OUT on VBUS: it goes straight to one GPIO",
     );
   });
 
   it("finds its OUT and GND the wrong way round", () => {
     const problems = wiringProblems(SENSOR, moved({ output: "a14", ground: "a13" }));
+    expect(problems).toContain("the motion sensor has its GND on GP22: it goes on ground");
     expect(problems).toContain(
-      "the motion sensor with its OUT in a14 has its GND on GP22: it goes on ground",
-    );
-    expect(problems).toContain(
-      "the motion sensor with its OUT in a14 has its OUT on ground: it goes straight to one GPIO",
+      "the motion sensor has its OUT on ground: it goes straight to one GPIO",
     );
   });
 
@@ -405,14 +409,14 @@ describe("a motion sensor beside the board (ADR 0055, ADR 0056)", () => {
       { kind: "wire", from: "b13", to: "b15", role: "signal" },
     ]);
     expect(wiringProblems(SENSOR, joined)).toContain(
-      "the motion sensor with its OUT in a13 has its OUT on GP21 and GP22: it goes straight to one GPIO",
+      "the motion sensor has its OUT on GP21 and GP22: it goes straight to one GPIO",
     );
     const shared = edited(LAYOUT, (parts) => [
       ...parts,
       { kind: "resistor", ohms: 4700, from: "b13", to: "b9" },
     ]);
     expect(wiringProblems(SENSOR, shared)).toContain(
-      "the motion sensor with its OUT in a13 has something else on its OUT: only its pin, GP22, goes there",
+      "the motion sensor has something else on its OUT: only its pin, GP22, goes there",
     );
   });
 
@@ -426,7 +430,7 @@ describe("a motion sensor beside the board (ADR 0055, ADR 0056)", () => {
 
   it("finds its jumpers on both sides of the channel, with no one edge to lie past", () => {
     expect(wiringProblems(SENSOR, moved({ ground: "i19" }))).toEqual([
-      "the motion sensor with its OUT in a13 has its jumpers on both sides of the channel: it lies past the edge they are on, so they go in rows a to e and the top rails, or in rows f to j and the bottom rails",
+      "the motion sensor has its jumpers on both sides of the channel: it lies past the edge they are on, so they go in rows a to e and the top rails, or in rows f to j and the bottom rails",
     ]);
   });
 
@@ -438,10 +442,10 @@ describe("a motion sensor beside the board (ADR 0055, ADR 0056)", () => {
         edited(LAYOUT, (parts) => [...parts, second]),
       ),
     ).toContain(
-      "the motion sensor with its OUT in a13 would lie over the second breadboard: put its jumpers below the channel, in rows f to j or the bottom rails",
+      "the motion sensor would lie over the second breadboard: put its jumpers below the channel, in rows f to j or the bottom rails",
     );
     expect(wiringProblems(SENSOR, moved({ output: "2:j13" }))).toContain(
-      "the motion sensor with its OUT in 2:j13 has its jumpers in the second breadboard",
+      "the motion sensor has its jumpers in the second breadboard",
     );
   });
 });

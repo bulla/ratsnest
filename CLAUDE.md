@@ -96,9 +96,10 @@ of a closed list the engine holds, with its pinout, its print and its parts list
 2N3906 first, then the 1N4148, 1N4001 and 1N4007 diodes (ADR 0039, ADR 0049); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
 part apart is printed on its body, upright at every turn and the same in every language, `NPN` and
 `470 µF`, and on a tag only where it cannot fit (ADR 0040). A new part is placed in its step as a
-resistor is, its legs named by role, with no name or callout of its own (ADR 0041). A part on
-jumpers, the PIR motion sensor first, lies beside the board, past the edge its holes are on
-(ADR 0056). The parts to come, in order, are in the roadmap's Backlog.
+resistor is, its legs named by role, with no name or callout of its own (ADR 0041). A part outside
+the breadboard, on jumpers, the PIR motion sensor first, lies beside it, past the edge its holes are
+on, its pins at their own spacing (ADR 0056), and has a name of its own, written on the part
+(ADR 0057). The parts to come, in order, are in the roadmap's Backlog.
 
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the

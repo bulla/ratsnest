@@ -248,7 +248,7 @@ function describe(part: Part, circuit: ShownCircuit): string {
     case "dipSwitch":
       return `the ${part.switches}-way DIP switch in columns ${part.column} to ${part.column + part.switches - 1}${part.board === 2 ? " of the second breadboard" : ""}`;
     case "pir":
-      return `the motion sensor with its OUT in ${part.output}`;
+      return `the ${part.name}`;
   }
 }
 

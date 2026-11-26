@@ -51,6 +51,7 @@ const FRENCH_NAMES: Readonly<Record<string, string>> = {
   "green LED": "LED verte",
   "RGB LED": "LED RVB",
   "LED ring": "anneau de LED",
+  "motion sensor": "détecteur de mouvement",
 };
 
 /**
@@ -78,7 +79,7 @@ function inFrench({ circuit, layout }: Fixture): { circuit: ShownCircuit; layout
       ...layout,
       steps: layout.steps.map((step, index) => ({
         title: `Étape ${index + 2}`,
-        parts: step.parts,
+        parts: step.parts.map((part) => (part.kind === "pir" ? named(part) : part)),
       })),
       test: "Le script fait marcher chaque composant à son tour.",
     },
@@ -398,14 +399,14 @@ describe("a motion sensor's page, the sensor beside the board (ADR 0055, ADR 005
 
   it("says where each of its three jumpers goes, from the pin of its name", () => {
     expect(steps(page(ID))).toContain(
-      'A PIR motion sensor, beside the board, dome up: a red jumper from its VCC pin to <span class="hole">a2</span> (VBUS, pin 40), a yellow one from its OUT pin to <span class="hole">a13</span> (GP22, pin 29) and a black one from its GND pin to <span class="hole">a14</span> (GND, pin 28).',
+      'The motion sensor, beside the board, dome up: a red jumper from its VCC pin to <span class="hole">a2</span> (VBUS, pin 40), a yellow one from its OUT pin to <span class="hole">a13</span> (GP22, pin 29) and a black one from its GND pin to <span class="hole">a14</span> (GND, pin 28).',
     );
   });
 
   it("lists the sensor and its three jumpers, and says to plug them on by name", () => {
     const html = page(ID);
     expect(html).toContain(
-      '<span class="count">1</span><span>PIR motion sensor: a module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.</span>',
+      '<span class="count">1</span><span>Motion sensor: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.</span>',
     );
     expect(html).toContain(
       '<span class="count">3</span><span>Female-to-male jumpers, about 20 cm: a red, a yellow and a black one for each motion sensor, to go on its pins.</span>',
@@ -417,17 +418,18 @@ describe("a motion sensor's page, the sensor beside the board (ADR 0055, ADR 005
     }
   });
 
-  it("tags the three pins its jumpers reach, has no callout, and is picked out by the test", () => {
+  it("tags the three pins its jumpers reach, labels it by its name, and is picked out by the test", () => {
     const html = page(ID);
     for (const label of ["VBUS", "GP22", "GND"]) expect(html).toContain(`>${label}</text>`);
-    expect(html).not.toContain('class="callout-title">motion sensor');
+    expect(html).toContain('class="callout-title">motion sensor</text>');
+    expect(html).toContain('class="callout-detail">OUT to a13</text>');
     expect(html).toContain('data-g="step-2 test" data-kind="pir">');
   });
 
   it("says it in French", () => {
     const html = frenchPage(ID);
     expect(words(steps(html))).toContain(
-      "Un détecteur de mouvement PIR, à côté de la plaque, dôme en haut",
+      "Le détecteur de mouvement, à côté de la plaque, dôme en haut",
     );
     expect(words(html)).toContain("Fils de connexion femelle-mâle");
   });
@@ -446,7 +448,9 @@ describe("a motion sensor's page, the sensor beside the board (ADR 0055, ADR 005
         ...layout,
         steps: layout.steps.map((step, index) => ({
           title: `Шаг ${index + 2}`,
-          parts: step.parts,
+          parts: step.parts.map((part) =>
+            part.kind === "pir" ? { ...part, name: "Датчик движения" } : part,
+          ),
         })),
         test: "Скрипт зажигает светодиод.",
       },
@@ -459,7 +463,7 @@ describe("a motion sensor's page, the sensor beside the board (ADR 0055, ADR 005
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ");
     expect(prose).toContain(
-      "Датчик движения PIR рядом с платой, куполом вверх: красная перемычка от вывода VCC в a2 (VBUS, вывод 40)",
+      "Датчик движения, рядом с платой, куполом вверх: красная перемычка от вывода VCC в a2 (VBUS, вывод 40)",
     );
     expect(prose).toContain("Перемычка мама-папа, около 20 см");
     for (const english of ["jumper", "sensor", " the ", " and "]) {
