@@ -1,6 +1,6 @@
 # ADR 0041: Place a new part in its step as a resistor is, with no name of its own
 
-**Status:** Accepted · 2026-11-23
+**Status:** Accepted · 2026-11-23 · Amended by ADR-0043 (a part the script reads on a pin is named, as a button is)
 
 ## Context
 

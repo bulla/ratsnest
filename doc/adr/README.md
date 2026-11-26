@@ -113,3 +113,5 @@ Each new record adds a row here.
 | [0040](0040-print-what-identifies-a-part-on-its-body-upright-and-the-same-in-every-language.md)                  | Print what identifies a part on its body, upright and the same in every language                   |
 | [0041](0041-place-a-new-part-in-its-step-as-a-resistor-is-with-no-name-of-its-own.md)                            | Place a new part in its step as a resistor is, with no name of its own                             |
 | [0042](0042-offer-the-drawing-as-a-png-or-a-webp-drawn-by-buns-webview-from-its-svg.md)                          | Offer the drawing as a PNG or a WebP, drawn by Bun's WebView from its SVG                          |
+| [0043](0043-read-a-pir-motion-sensor-on-a-pin-named-as-a-button-is-and-power-it-from-vbus.md)                    | Read a PIR motion sensor on a pin, named as a button is, and power it from VBUS                    |
+| [0044](0044-draw-a-part-on-jumpers-beside-the-board-past-the-edge-its-holes-are-on.md)                           | Draw a part on jumpers beside the board, past the edge its holes are on                            |
