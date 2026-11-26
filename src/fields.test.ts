@@ -534,6 +534,18 @@ describe("a circuit with a supply (ADR 0032)", () => {
     expect(said(ring)[0]).toStartWith("steps[0].parts[4].kind is `ring`, which needs a Pico");
   });
 
+  it("has no motion sensor, which needs a Pico to read it (ADR 0055)", () => {
+    const pir = supplied((data) =>
+      (step(data, 0).parts as unknown[]).push({
+        kind: "pir",
+        power: "a2",
+        output: "a13",
+        ground: "a14",
+      }),
+    );
+    expect(said(pir)[0]).toStartWith("steps[0].parts[4].kind is `pir`, which needs a Pico");
+  });
+
   it("says what a working circuit does in `test`", () => {
     expect(said(supplied((data) => delete data.test))).toEqual([
       "the circuit has no `test`, a text",
@@ -625,6 +637,31 @@ describe("a DIP switch's fields (ADR 0054)", () => {
     );
     expect(said(dip({ kind: "dipSwitch", switches: 2, column: 22, board: 3 }))).toContain(
       "steps[1].parts[0].board is not 2, the second breadboard, or left out for the first",
+    );
+  });
+});
+
+describe("a motion sensor (ADR 0055)", () => {
+  const sensing = (change: (data: Record<string, unknown>) => void) =>
+    changed(change, "motion-sensor-and-light");
+
+  it("is placed by the three holes its jumpers go in, and nothing else", () => {
+    expect(said(sensing(() => {}))).toEqual([]);
+    expect(said(sensing((data) => (part(data, 1, 0).output = "a31")))).toEqual([
+      "steps[1].parts[0].output is not a hole on a half-size breadboard: holes are named as it prints them, `a21` or `top-19`, and `2:f5` on a second one",
+    ]);
+    expect(said(sensing((data) => delete part(data, 1, 0).ground))).toEqual([
+      "steps[1].parts[0] has no `ground`, a hole",
+    ]);
+    expect(said(sensing((data) => (part(data, 1, 0).vcc = "a2")))).toEqual([
+      "steps[1].parts[0].vcc is not a field of a pir: it has `kind`, `power`, `output` or `ground`",
+    ]);
+  });
+
+  it("lets a step's words name the pin its OUT is wired to, which no component names", () => {
+    expect(said(sensing(() => {}))).toEqual([]);
+    expect(said(sensing((data) => (part(data, 1, 0).output = "a12")))).toContain(
+      "steps[1].title.en names GP22, which no part of the circuit is on",
     );
   });
 });

@@ -359,6 +359,17 @@ export type Part =
       readonly column: number;
       /** `2` puts it on the second breadboard, as a button can be (ADR 0028). */
       readonly board?: 2;
+    }
+  /**
+   * A PIR motion sensor module (ADR 0055), lying beside the board and joined to it by three
+   * female-to-male jumpers on its VCC, OUT and GND pins: these are the holes their other ends go
+   * in, all on one side of the channel, past which it is drawn (ADR 0056).
+   */
+  | {
+      readonly kind: "pir";
+      readonly power: Hole;
+      readonly output: Hole;
+      readonly ground: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -432,7 +443,18 @@ export function legsOf(part: Part): readonly Hole[] {
       return dipLegsOf(part).flat();
     case "ring":
       return [part.dataIn, part.power, part.ground, part.dataOut];
+    case "pir":
+      return [part.power, part.output, part.ground];
   }
+}
+
+/**
+ * The side of the channel a hole is on: rows a to e and the top rails, or rows f to j and the bottom
+ * rails. A part on jumpers lies past that side's edge (ADR 0056).
+ */
+export function sideOf(hole: Hole): "top" | "bottom" {
+  const at = holeAt(hole);
+  return at.kind === "rail" ? (at.rail.startsWith("top") ? "top" : "bottom") : halfOf(at.row);
 }
 
 /** The fewest and the most switches a DIP switch can have side by side (ADR 0054). */

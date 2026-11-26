@@ -20,8 +20,9 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * ceramic capacitor that one pin charges through a resistor while another reads it (ADR 0051), the
  * fifteenth a slide switch that lights one light or the other, on a supply (ADR 0052), the
  * sixteenth a slide potentiometer that the Pico reads on an analogue pin, across two breadboards
- * (ADR 0053), and the seventeenth a DIP switch whose switches go from ground to pins the Pico pulls
- * up (ADR 0054).
+ * (ADR 0053), the seventeenth a DIP switch whose switches go from ground to pins the Pico pulls
+ * up (ADR 0054), and the eighteenth a motion sensor beside the board, on jumpers, that lights a
+ * light (ADR 0055, ADR 0056).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -41,6 +42,7 @@ export const FIXTURE_IDS = [
   "lights-chosen-by-a-slide-switch",
   "slide-potentiometer-read-by-an-analogue-pin",
   "switches-read-by-pull-ups",
+  "motion-sensor-and-light",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -1006,6 +1008,41 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       script:
         "from machine import Pin\nfrom time import sleep\n\nfirst = Pin(16, Pin.IN, Pin.PULL_UP)\nsecond = Pin(17, Pin.IN, Pin.PULL_UP)\n\nwhile True:\n    print(first.value() == 0, second.value() == 0)\n    sleep(0.5)",
       test: "The script prints whether each switch is on, twice a second.",
+    },
+  },
+  "motion-sensor-and-light": {
+    circuit: {
+      name: "A motion sensor and a light",
+      description:
+        "A PIR motion sensor beside the board, read on GP22, and a red light on GP15 that lights for two seconds when the sensor sees movement.",
+      credit: CREDIT,
+      leds: [{ id: "red", name: "red LED", pin: { kind: "gpio", gpio: 15 }, colour: "red" }],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Connect the bottom − rail to ground",
+          parts: [{ kind: "wire", from: "j19", to: "bottom-19", role: "ground" }],
+        },
+        {
+          title: "Motion sensor on GP22",
+          note: "It takes its power from VBUS, the USB's own, rather than 3V3, and holds its pin high while it sees movement.",
+          parts: [{ kind: "pir", power: "a2", output: "a13", ground: "a14" }],
+        },
+        {
+          title: "Red LED on GP15",
+          parts: [
+            { kind: "resistor", ohms: 330, from: "j21", to: "j26" },
+            { kind: "led", led: "red", anode: "i26", cathode: "i27" },
+            { kind: "wire", from: "j27", to: "bottom-27", role: "ground" },
+          ],
+        },
+      ],
+      script:
+        "from machine import Pin\nfrom time import sleep\n\nred_led = Pin(15, Pin.OUT)\nmotion_sensor = Pin(22, Pin.IN)\n\ntry:\n    while True:\n        if motion_sensor.value():\n            red_led.value(1)\n            sleep(2)\n            red_led.value(0)\n            while motion_sensor.value():\n                sleep(0.05)\n        sleep(0.05)\nfinally:\n    red_led.value(0)",
+      test: "Wait a minute for the sensor to settle, then wave a hand over its dome: the red LED lights for two seconds. Press Stop in Thonny to end the script.",
     },
   },
 };

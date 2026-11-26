@@ -30,6 +30,7 @@ const BORN_IN_FORMAT_2 = [
   "fading-light.ts",
   "five-switches.ts",
   "high-side-switch.ts",
+  "motion-light.ts",
   "one-light-or-the-other.ts",
   "transistor-switch.ts",
   "two-buttons-three-lights.ts",

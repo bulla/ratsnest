@@ -3,6 +3,7 @@ import { FIXTURE_IDS, FIXTURES } from "../__fixtures__/circuits";
 import { widthOf } from "../fonts";
 import {
   BREADBOARD_HEIGHT_MM,
+  BREADBOARD_WIDTH_MM,
   CHANNEL_Y_MM,
   coveredBy,
   coveredBySlidePotentiometer,
@@ -32,6 +33,9 @@ import {
   formatOhms,
   labelEndOf,
   leaderOf,
+  PIR_MM,
+  pirJumperPaths,
+  pirLayoutOf,
   resistorBands,
   tagOf,
   wirePath,
@@ -751,5 +755,104 @@ describe("a DIP switch across the channel (ADR 0054)", () => {
     ];
     expect(slides).toHaveLength(2);
     for (const slide of slides) expect(Number(slide[1])).toBeGreaterThan(CHANNEL_Y_MM);
+  });
+});
+
+describe("a motion sensor beside the board, on its jumpers (ADR 0056)", () => {
+  type Pir = Extract<Part, { kind: "pir" }>;
+  const top: Pir = { kind: "pir", power: "a2", output: "a13", ground: "a14" };
+  const bottom: Pir = {
+    kind: "pir",
+    power: "j10",
+    output: "bottom-13",
+    ground: "i14",
+  };
+  const drawing = (parts: Part[]): Breadboard => ({
+    parts: parts.map((part) => ({ part, group: "step-1" })),
+    tags: [],
+    ledColour: () => "red",
+    buttonColour: () => "red",
+    title: "A breadboard",
+    description: "A breadboard.",
+  });
+  const near = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y);
+
+  it("lies past the top edge for holes above the channel, its pins down, VCC, OUT and GND", () => {
+    const layout = pirLayoutOf(top);
+    expect(layout.side).toBe("top");
+    expect(layout.box.y + layout.box.h).toBe(-PIR_MM.gap);
+    expect(layout.edge).toBe(-PIR_MM.gap);
+    expect(layout.pins.map((pin) => pin.label)).toEqual(["VCC", "OUT", "GND"]);
+    // Its middle over its holes', and its header wider than life, so each name has room.
+    const middle = (holeCentre("a2").x + holeCentre("a13").x + holeCentre("a14").x) / 3;
+    expect(layout.box.x + layout.box.w / 2).toBeCloseTo(middle, 6);
+    expect((layout.pins[1]?.x ?? 0) - (layout.pins[0]?.x ?? 0)).toBeCloseTo(PIR_MM.pitch, 6);
+  });
+
+  it("lies past the bottom edge for holes below it, turned round, so its pins read GND first", () => {
+    const layout = pirLayoutOf(bottom);
+    expect(layout.side).toBe("bottom");
+    expect(layout.box.y).toBe(BREADBOARD_HEIGHT_MM + PIR_MM.gap);
+    expect(layout.pins.map((pin) => pin.label)).toEqual(["GND", "OUT", "VCC"]);
+  });
+
+  it("stays within the board's length, clear of the Pico's cable and the labels", () => {
+    const left = pirLayoutOf({ ...top, output: "a3", ground: "a4" }).box;
+    expect(left.x).toBe(0);
+    const right = pirLayoutOf({ ...top, power: "a28", output: "a29", ground: "a30" }).box;
+    expect(right.x + right.w).toBeCloseTo(BREADBOARD_WIDTH_MM, 6);
+  });
+
+  it("runs each jumper from its pin's plug to its hole", () => {
+    const layout = pirLayoutOf(top);
+    const paths = pirJumperPaths(top);
+    expect(paths.map((path) => path.at(-1))).toEqual(
+      ["a2", "a13", "a14"].map((hole) => holeCentre(hole)),
+    );
+    for (const [index, pin] of layout.pins.entries()) {
+      expect(paths[index]?.[0]).toEqual({ x: pin.x, y: layout.edge + PIR_MM.plug.length });
+    }
+  });
+
+  it("is drawn with its pins' names, its jumpers in the colours of what they carry, inside the picture", () => {
+    const svg = drawBreadboard(drawing([top]));
+    for (const name of ["VCC", "OUT", "GND"]) expect(svg).toContain(`>${name}</text>`);
+    for (const role of ["power", "signal", "ground"]) {
+      expect(svg).toContain(`stroke="var(--color-wire-${role})"`);
+    }
+    const [, y] = (/viewBox="([^"]+)"/.exec(svg)?.[1] ?? "").split(" ").map(Number);
+    expect(y).toBeLessThan(pirLayoutOf(top).box.y);
+  });
+
+  it("keeps a value tag off its jumpers", () => {
+    // A resistor whose tag would first go below it, across the sensor's OUT jumper coming down to d25.
+    const resistor: Part = { kind: "resistor", ohms: 330, from: "b22", to: "b30" };
+    const sensor: Pir = { kind: "pir", power: "a2", output: "d25", ground: "a3" };
+    const alone = clearTagOf(resistor, [resistor]);
+    const beside = clearTagOf(resistor, [resistor, sensor]);
+    if (!alone || !beside) throw new Error("no clear place for the tag");
+    const out = pirJumperPaths(sensor)[1] ?? [];
+    const nearest = (at: { x: number; y: number }) =>
+      Math.min(...out.map((point) => near(point, at)));
+    // Half a tag's width, 330 Ω on one line, is more than 3 mm.
+    expect(nearest(alone)).toBeLessThan(3);
+    expect(beside).not.toEqual(alone);
+    expect(nearest(beside)).toBeGreaterThan(3);
+  });
+
+  it("is refused lying on another past the same edge, at every quarter turn", () => {
+    const other: Pir = { kind: "pir", power: "a5", output: "a16", ground: "a19" };
+    for (const orientation of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems([top, other], orientation)).toEqual([
+        "the motion sensor with its OUT in a13 is on the motion sensor with its OUT in a16",
+      ]);
+    }
+    expect(crowdingProblems([top, bottom], 0)).toEqual([]);
+  });
+
+  it("has no callout of its own, being placed as a resistor is (ADR 0041)", () => {
+    expect(leaderOf(top, [], [top])).toBeUndefined();
+    expect(drawBreadboard(drawing([top]))).not.toContain("callout");
   });
 });

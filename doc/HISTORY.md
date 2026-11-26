@@ -748,3 +748,17 @@ rest on the Pico's own pull-downs, which erratum E9 makes unreliable on the Pico
   between switches 1 and 2. The example credited the tutorial in its description until the owner
   asked for it to come out: ratsnest names no shop or product, and the description says instead why
   the switches go to ground, though ADR 0054, left as it was, says the tutorial is credited.
+- 2026-11-26: A PIR motion sensor, which the owner asked for after a tutorial they chose, with an
+  example that lights an LED for two seconds whenever it sees movement. Two records: the sensor is
+  read on a pin of its own and takes its 5 V from VBUS (ADR 0055), and a part on jumpers lies beside
+  the board, past the edge its holes are on (ADR 0056). It was first built named, in a `sensors` list
+  as a button is in `buttons`, amending ADR 0041, on a branch made before the nine parts of M13 to M21
+  reached `develop`. Merging them showed that the three parts the script reads before it, the ceramic
+  capacitor, the slide potentiometer and the DIP switch, are all placed as a resistor is, their pins
+  read from the wiring, and their records had taken the numbers this one used; so the branch took
+  `develop` whole and the sensor was built again their way, the named draft kept among ADR 0055's
+  rejected options. It is bought as what it is rather than by a model, since its jumpers go on by
+  the names its board prints, whatever order its pins are in. Its pins' names did not fit beside a
+  2.54 mm header at a size a phone can read, so the header is drawn wider than life, as ADR 0040
+  allows. The example first took GP28 and the ground beside it, which the Pico prints AGND, and moved
+  to GP22 and pin 28's GND so that its page names a plain GND.

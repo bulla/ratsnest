@@ -96,8 +96,9 @@ of a closed list the engine holds, with its pinout, its print and its parts list
 2N3906 first, then the 1N4148, 1N4001 and 1N4007 diodes (ADR 0039, ADR 0049); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
 part apart is printed on its body, upright at every turn and the same in every language, `NPN` and
 `470 µF`, and on a tag only where it cannot fit (ADR 0040). A new part is placed in its step as a
-resistor is, its legs named by role, with no name or callout of its own (ADR 0041). The parts to
-come, in order, are in the roadmap's Backlog.
+resistor is, its legs named by role, with no name or callout of its own (ADR 0041). A part on
+jumpers, the PIR motion sensor first, lies beside the board, past the edge its holes are on
+(ADR 0056). The parts to come, in order, are in the roadmap's Backlog.
 
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the
@@ -233,7 +234,8 @@ there.
 │                        (ADR 0049), `capacitor-timer.ts`, with a ceramic capacitor (ADR 0051), and
 │                        `one-light-or-the-other.ts`, with a slide switch (ADR 0052),
 │                        `colours-on-a-slider.ts`, with a slide potentiometer (ADR 0053), and
-│                        `five-switches.ts`, with a DIP switch (ADR 0054): ratsnest's own,
+│                        `five-switches.ts`, with a DIP switch (ADR 0054), and `motion-light.ts`,
+│                        with a motion sensor beside the board (ADR 0055): ratsnest's own,
 │                        checked like anyone's, and in
 │                        `format-1/` the files the migration to format 2 is tested on, one for each
 │                        example older than format 2, left out of the type check (ADR 0014,

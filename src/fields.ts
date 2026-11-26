@@ -242,6 +242,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   slideSwitch: ["kind", "left", "middle", "right"],
   slidePotentiometer: ["kind", "ohms", "wiper", "end", "otherEnd"],
   dipSwitch: ["kind", "switches", "column", "board"],
+  pir: ["kind", "power", "output", "ground"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
@@ -380,6 +381,9 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
     }
     case "slideSwitch":
       for (const leg of ["left", "middle", "right"]) fields.hole(leg);
+      return;
+    case "pir":
+      for (const leg of ["power", "output", "ground"]) fields.hole(leg);
       return;
     case "slidePotentiometer": {
       const ohms = fields.required("ohms", "a value in ohms");

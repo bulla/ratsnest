@@ -393,6 +393,84 @@ describe("a ring's page, the ring laid out below the board (scratchpi's ADR 0238
   });
 });
 
+describe("a motion sensor's page, the sensor beside the board (ADR 0055, ADR 0056)", () => {
+  const ID = "motion-sensor-and-light";
+
+  it("says where each of its three jumpers goes, from the pin of its name", () => {
+    expect(steps(page(ID))).toContain(
+      'A PIR motion sensor, beside the board, dome up: a red jumper from its VCC pin to <span class="hole">a2</span> (VBUS, pin 40), a yellow one from its OUT pin to <span class="hole">a13</span> (GP22, pin 29) and a black one from its GND pin to <span class="hole">a14</span> (GND, pin 28).',
+    );
+  });
+
+  it("lists the sensor and its three jumpers, and says to plug them on by name", () => {
+    const html = page(ID);
+    expect(html).toContain(
+      '<span class="count">1</span><span>PIR motion sensor: a module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.</span>',
+    );
+    expect(html).toContain(
+      '<span class="count">3</span><span>Female-to-male jumpers, about 20 cm: a red, a yellow and a black one for each motion sensor, to go on its pins.</span>',
+    );
+    expect(html).toContain("Push each jumper onto the pin of its name");
+    // Only its own page has one.
+    for (const id of FIXTURE_IDS) {
+      if (id !== ID) expect(page(id)).not.toContain("motion sensor");
+    }
+  });
+
+  it("tags the three pins its jumpers reach, has no callout, and is picked out by the test", () => {
+    const html = page(ID);
+    for (const label of ["VBUS", "GP22", "GND"]) expect(html).toContain(`>${label}</text>`);
+    expect(html).not.toContain('class="callout-title">motion sensor');
+    expect(html).toContain('data-g="step-2 test" data-kind="pir">');
+  });
+
+  it("says it in French", () => {
+    const html = frenchPage(ID);
+    expect(words(steps(html))).toContain(
+      "Un détecteur de mouvement PIR, à côté de la plaque, dôme en haut",
+    );
+    expect(words(html)).toContain("Fils de connexion femelle-mâle");
+  });
+
+  it("says it in Russian, held to its typography and to Nunito's letters (ADR 0011)", () => {
+    const { circuit, layout } = FIXTURES[ID];
+    const html = wiringPage(
+      {
+        ...circuit,
+        name: "Датчик движения и светодиод",
+        description: "Испытательная схема.",
+        credit: "Рисунок по технической документации Pico 2 W.",
+        leds: circuit.leds.map((led) => ({ ...led, name: "Красный светодиод" })),
+      },
+      {
+        ...layout,
+        steps: layout.steps.map((step, index) => ({
+          title: `Шаг ${index + 2}`,
+          parts: step.parts,
+        })),
+        test: "Скрипт зажигает светодиод.",
+      },
+      FILES,
+      { language: "ru" },
+    );
+    const prose = html
+      .slice(html.indexOf("<body>"))
+      .replace(/<(script|style|pre)[\s\S]*?<\/\1>/g, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ");
+    expect(prose).toContain(
+      "Датчик движения PIR рядом с платой, куполом вверх: красная перемычка от вывода VCC в a2 (VBUS, вывод 40)",
+    );
+    expect(prose).toContain("Перемычка мама-папа, около 20 см");
+    for (const english of ["jumper", "sensor", " the ", " and "]) {
+      expect(prose).not.toContain(english);
+    }
+    expect(prose).not.toMatch(/\s[:;?!]/);
+    const lacking = new Set([...written(html)].filter((c) => !fileOf(c)));
+    expect([...lacking]).toEqual([]);
+  });
+});
+
 describe("a button's cap on its page (scratchpi's ADR 0174)", () => {
   const WITH_BUTTONS = FIXTURE_IDS.filter((id) => FIXTURES[id].circuit.buttons.length > 0);
 

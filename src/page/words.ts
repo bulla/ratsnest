@@ -130,6 +130,11 @@ export interface PageWords {
    */
   readonly slidePotentiometer: (ohms: string, wiper: Place, end: Place, otherEnd: Place) => string;
   /**
+   * A PIR motion sensor beside the board (ADR 0055, ADR 0056): where the jumper on each of its pins
+   * goes, by the name its board prints beside the pin, and the jumper's colour.
+   */
+  readonly pir: (power: Place, output: Place, ground: Place) => string;
+  /**
    * A DIP switch (ADR 0054): how many switches, the holes of switch 1's two legs and of the last's,
    * and whether they are on the second breadboard, which is said once rather than for each hole.
    */
@@ -177,6 +182,10 @@ export interface PageWords {
   readonly listSlidePotentiometer: (ohms: string, count: number) => string;
   /** DIP switches of one size, and how many (ADR 0054). */
   readonly listDipSwitch: (switches: number, count: number) => string;
+  /** Motion sensors, and how many (ADR 0055). */
+  readonly listPir: (count: number) => string;
+  /** The female-to-male jumpers that join motion sensors to the board, three for each. */
+  readonly listPirJumpers: (count: number) => string;
   /** Ceramic capacitors of one value, written already, the code they print, and how many (ADR 0051). */
   readonly listCeramic: (nanofarads: string, code: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
@@ -213,6 +222,8 @@ export interface PageWords {
   readonly slidePotentiometerWiper: (pins: readonly string[]) => string;
   /** That each switch goes from ground to a pin the Pico pulls up, and why not to 3V3 (ADR 0054). */
   readonly dipPullUp: string;
+  /** That a motion sensor's jumpers go on by its pins' names, and that it settles once powered. */
+  readonly pirPins: string;
   /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
   readonly diodeAlike: (models: readonly string[]) => string;
   /** That a ceramic capacitor goes either way round, and how its code says its value (ADR 0051). */
@@ -376,6 +387,8 @@ export const ENGLISH_PAGE: PageWords = {
     `A ${ohms} slide potentiometer, lying across both breadboards: its wiper ${englishIn(wiper)}, the end beside it ${englishIn(end)}, and its other end ${englishIn(otherEnd)}.`,
   dipSwitch: (switches, first, last, second) =>
     `A ${switches}-way DIP switch across the channel, its ON side towards row <span class="hole">a</span>: switch 1 in ${englishList(first)}, and switch ${switches} in ${englishList(last)}${second ? ", on the second breadboard" : ""}.`,
+  pir: (power, output, ground) =>
+    `A PIR motion sensor, beside the board, dome up: a red jumper from its VCC pin ${englishTo(power)}, a yellow one from its OUT pin ${englishTo(output)} and a black one from its GND pin ${englishTo(ground)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
@@ -423,6 +436,14 @@ export const ENGLISH_PAGE: PageWords = {
     `${ohms} slide ${plural("en", count, { one: "potentiometer", other: "potentiometers" })}, 45 mm long, with two legs at one end and one at the other, and a cap for the knob.`,
   listDipSwitch: (switches, count) =>
     `${switches}-way DIP ${plural("en", count, { one: "switch", other: "switches" })}, with its legs in two rows 7.62 mm apart, to go across the channel.`,
+  listPir: (count) =>
+    plural("en", count, {
+      one: "PIR motion sensor: a module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.",
+      other:
+        "PIR motion sensors: modules with three pins, VCC, OUT and GND, that run on 5 V. Each one's OUT gives 3.3 V while it sees movement.",
+    }),
+  listPirJumpers: () =>
+    "Female-to-male jumpers, about 20 cm: a red, a yellow and a black one for each motion sensor, to go on its pins.",
   listCeramic: (nanofarads, code, count) =>
     `${nanofarads} ceramic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, marked ${code}.`,
   listWire: (colour, count) =>
@@ -452,6 +473,8 @@ export const ENGLISH_PAGE: PageWords = {
     "A slide switch joins its middle leg to one outer leg or the other, whichever way its slide is pushed, and stays so when let go, where a push button joins its legs only while it is held.",
   slidePotentiometerWiper: (pins) =>
     `Of a slide potentiometer's two legs at one end, its wiper is the one with no leg in line with it at the other end. It goes to an analogue pin, ${englishList(pins).replace(" and ", " or ")}, and the two ends to 3V3(OUT) and ground, either way round. Wired to 3V3(OUT) instead, the wiper would join it to ground at one end of its travel.`,
+  pirPins:
+    "A motion sensor's board names its three pins, beside them or under its dome: VCC or +, OUT or SIG, and GND. Push each jumper onto the pin of its name, whatever order they are in: it differs from one sensor to another. Once powered, it takes up to a minute to settle.",
   dipPullUp:
     "Each switch of a DIP switch joins its two legs while it is on. One leg goes to ground and the other to a pin of its own, which the script pulls up inside the Pico, so it reads 1 while its switch is off and 0 while it is on. Wired to 3V3(OUT) instead, each pin would need a pull-down, and the Pico 2 W's own cannot be relied on to hold it low.",
   diodeAlike: (models) =>
@@ -652,6 +675,8 @@ export const FRENCH_PAGE: PageWords = {
     `Un potentiomètre à glissière de ${ohms}, couché à cheval sur les deux plaques${NNBSP}: son curseur ${frenchIn(wiper)}, l’extrémité à côté ${frenchIn(end)}, et son autre extrémité ${frenchIn(otherEnd)}.`,
   dipSwitch: (switches, first, last, second) =>
     `Un interrupteur DIP à ${switches} voies à cheval sur la rainure centrale, son côté ON vers la rangée <span class="hole">a</span>${NNBSP}: l’interrupteur 1 en ${frenchList(first)}, et l’interrupteur ${switches} en ${frenchList(last)}${second ? ", sur la seconde plaque" : ""}.`,
+  pir: (power, output, ground) =>
+    `Un détecteur de mouvement PIR, à côté de la plaque, dôme en haut${NNBSP}: un fil rouge de sa broche VCC ${frenchTo(power)}, un fil jaune de sa broche OUT ${frenchTo(output)} et un fil noir de sa broche GND ${frenchTo(ground)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
@@ -704,6 +729,16 @@ export const FRENCH_PAGE: PageWords = {
     `${plural("fr", count, { one: "Potentiomètre à glissière", many: "Potentiomètres à glissière", other: "Potentiomètres à glissière" })} de ${ohms}, de 45 mm de long, à deux pattes à un bout et une à l’autre, avec un capuchon pour le bouton.`,
   listDipSwitch: (switches, count) =>
     `${plural("fr", count, { one: "Interrupteur", many: "Interrupteurs", other: "Interrupteurs" })} DIP à ${switches} voies, ses pattes sur deux rangées espacées de 7,62 mm, pour se mettre à cheval sur la rainure centrale.`,
+  listPir: (count) => {
+    const more = `Détecteurs de mouvement PIR${NNBSP}: des modules à trois broches, VCC, OUT et GND, alimentés en 5 V. La broche OUT de chacun donne 3,3 V tant qu’il voit du mouvement.`;
+    return plural("fr", count, {
+      one: `Détecteur de mouvement PIR${NNBSP}: un module à trois broches, VCC, OUT et GND, alimenté en 5 V. Sa broche OUT donne 3,3 V tant qu’il voit du mouvement.`,
+      many: more,
+      other: more,
+    });
+  },
+  listPirJumpers: () =>
+    `Fils de connexion femelle-mâle, d’environ 20 cm${NNBSP}: un rouge, un jaune et un noir pour chaque détecteur de mouvement, à brancher sur ses broches.`,
   listCeramic: (nanofarads, code, count) =>
     `${plural("fr", count, { one: "Condensateur céramique", many: "Condensateurs céramiques", other: "Condensateurs céramiques" })} de ${nanofarads}, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
   listWire: (colour, count) => {
@@ -743,6 +778,7 @@ export const FRENCH_PAGE: PageWords = {
     "Un interrupteur à glissière relie sa patte du milieu à l’une ou l’autre de ses pattes extérieures, selon le côté où l’on pousse sa glissière, et reste ainsi une fois lâché, là où un bouton poussoir ne relie ses pattes que tant qu’on le maintient enfoncé.",
   slidePotentiometerWiper: (pins) =>
     `Des deux pattes d’un même bout d’un potentiomètre à glissière, le curseur est celle qui n’a aucune patte dans son alignement à l’autre bout. Il va sur une broche analogique, ${frenchList(pins).replace(" et ", " ou ")}, et les deux extrémités sur le 3V3(OUT) et la masse, dans un sens ou dans l’autre. Relié au 3V3(OUT), le curseur le relierait à la masse à un bout de sa course.`,
+  pirPins: `La carte d’un détecteur de mouvement nomme ses trois broches, à côté d’elles ou sous son dôme${NNBSP}: VCC ou +, OUT ou SIG, et GND. Branchez chaque fil sur la broche de son nom, quel que soit leur ordre${NNBSP}: il change d’un détecteur à l’autre. Une fois alimenté, il lui faut jusqu’à une minute pour se stabiliser.`,
   dipPullUp:
     "Chaque interrupteur d’un interrupteur DIP relie ses deux pattes tant qu’il est en marche. Une patte va à la masse et l’autre à une broche à elle, que le script tire vers le haut à l’intérieur du Pico, si bien qu’elle lit 1 tant que son interrupteur est à l’arrêt et 0 tant qu’il est en marche. Relié au 3V3(OUT), chaque broche aurait besoin d’une résistance de tirage vers le bas, et celles du Pico 2 W ne suffisent pas à la maintenir au niveau bas.",
   diodeAlike: (models) =>
@@ -939,6 +975,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `DIP-переключатель на ${switches} ${russianPositions(switches)} поперёк центральной канавки, стороной ON к ряду <span class="hole">a</span>: переключатель 1 в ${russianList(first)}, переключатель ${switches} в ${russianList(last)}${second ? ", на второй плате" : ""}.`,
   slidePotentiometer: (ohms, wiper, end, otherEnd) =>
     `Ползунковый потенциометр ${ohms}, поперёк обеих плат: движок ${russianIn(wiper)}, вывод рядом с ним ${russianIn(end)}, другой вывод ${russianIn(otherEnd)}.`,
+  pir: (power, output, ground) =>
+    `Датчик движения PIR рядом с платой, куполом вверх: красная перемычка от вывода VCC ${russianIn(power)}, жёлтая от вывода OUT ${russianIn(output)} и чёрная от вывода GND ${russianIn(ground)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
@@ -985,6 +1023,10 @@ export const RUSSIAN_PAGE: PageWords = {
     `Ползунковый потенциометр ${ohms}, длиной 45 мм: два вывода с одного конца и один с другого, с колпачком для ручки.`,
   listDipSwitch: (switches) =>
     `DIP-переключатель на ${switches} ${russianPositions(switches)}: ножки в два ряда на расстоянии 7,62 мм, чтобы встать поперёк центральной канавки.`,
+  listPir: () =>
+    "Датчик движения PIR: модуль с тремя выводами, VCC, OUT и GND, питание 5 В. Пока он видит движение, на OUT 3,3 В.",
+  listPirJumpers: () =>
+    "Перемычка мама-папа, около 20 см: красная, жёлтая и чёрная на каждый датчик движения, для его выводов.",
   listCeramic: (nanofarads, code) => `Керамический конденсатор ${nanofarads}, маркировка ${code}.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
@@ -1012,6 +1054,8 @@ export const RUSSIAN_PAGE: PageWords = {
     "Ползунковый переключатель соединяет среднюю ножку с одной или другой крайней, смотря куда сдвинут ползунок, и остаётся так, когда его отпускают, а кнопка соединяет свои ножки, только пока её держат.",
   slidePotentiometerWiper: (pins) =>
     `Из двух выводов на одном конце ползункового потенциометра движком служит тот, напротив которого на другом конце вывода нет. Он идёт на аналоговый вывод ${russianList(pins).replace(" и ", " или ")}, а крайние выводы идут на 3V3(OUT) и землю, в любом порядке. Подключённый к 3V3(OUT), движок замкнул бы его на землю в одном конце хода.`,
+  pirPins:
+    "На плате датчика движения подписаны три вывода, рядом с ними или под куполом: VCC или +, OUT или SIG, и GND. Надевайте каждую перемычку на вывод с её подписью, в каком бы порядке они ни шли: у разных датчиков он разный. После включения датчику нужно до минуты, чтобы успокоиться.",
   dipPullUp:
     "Каждый переключатель DIP-переключателя соединяет свои две ножки, пока он включён. Одна ножка идёт на землю, другая на свой вывод, который скрипт подтягивает вверх внутри Pico, так что вывод читает 1, пока переключатель выключен, и 0, пока он включён. Если подключить переключатели к 3V3(OUT), каждому выводу понадобится подтяжка вниз, а на встроенную подтяжку Pico 2 W нельзя положиться.",
   diodeAlike: (models) =>
