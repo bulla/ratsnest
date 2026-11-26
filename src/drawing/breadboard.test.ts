@@ -851,6 +851,19 @@ describe("a motion sensor beside the board, on its jumpers (ADR 0056)", () => {
     expect(crowdingProblems([top, bottom], 0)).toEqual([]);
   });
 
+  it("has its pins 2.54 mm apart, as they are, and each one's name clear of the next", () => {
+    expect(PIR_MM.pitch).toBe(2.54);
+    const gaps = ["VCC", "OUT", "GND"].map((name) => widthOf(name, PIR_MM.print, 800));
+    for (const [a, b] of [
+      [gaps[0], gaps[1]],
+      [gaps[1], gaps[2]],
+    ] as const) {
+      expect(PIR_MM.pitch - ((a ?? 0) + (b ?? 0)) / 2).toBeGreaterThan(0.15);
+    }
+    // Upright on a standing board, the widest name fits across the strip it is printed on.
+    expect(Math.max(...gaps)).toBeLessThan(PIR_MM.strip - 0.3);
+  });
+
   it("has no callout of its own, being placed as a resistor is (ADR 0041)", () => {
     expect(leaderOf(top, [], [top])).toBeUndefined();
     expect(drawBreadboard(drawing([top]))).not.toContain("callout");

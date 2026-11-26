@@ -2029,18 +2029,21 @@ function drawRing(part: Extract<Part, { kind: "ring" }>): string {
 
 /**
  * A PIR motion sensor module (ADR 0055), at its size: its board, the square base of its dome, and a
- * strip below it where its pins' names are printed, deep enough for `GND` upright on a standing board.
- * Its header is drawn wider than life, so that each name has room beside its neighbour's (ADR 0056),
- * and the plug of each jumper stands out past its board's edge.
+ * strip below it where its pins' names are printed, deep enough for `GND` upright on a standing board,
+ * which makes the board about 2 mm taller than life (ADR 0056). Its pins are 2.54 mm apart, as they
+ * are, and their names as small as the Pico's own smallest print, so that each fits beside its
+ * neighbour's; the plug of each jumper stands out past its board's edge.
  */
 export const PIR_MM = {
   width: 32.4,
-  height: 28,
+  height: 26.4,
   base: 23,
   dome: 11,
-  strip: 4.4,
-  pitch: 3.6,
-  plug: { width: 2.5, length: 4.5 },
+  strip: 2.8,
+  pitch: PIN_PITCH_MM,
+  /** The size its pins' names are printed at, upright at every quarter turn. */
+  print: 1,
+  plug: { width: 2.4, length: 4.5 },
   /** How far past the breadboard's edge the edge its pins are at lies. */
   gap: 9,
 } as const;
@@ -2206,7 +2209,7 @@ function drawPir(part: PirPart): string {
         pin.x,
         away(PIR_MM.strip / 2),
         pin.label,
-        `font-size="1.3" font-weight="800" fill="${token("board-silk")}"`,
+        `font-size="${PIR_MM.print}" font-weight="800" fill="${token("board-silk")}"`,
       ),
       rect(
         pin.x - PIR_MM.plug.width / 2,
