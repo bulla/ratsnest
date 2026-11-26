@@ -143,6 +143,7 @@ interface Names {
   /** A button's cap colour (scratchpi's ADR 0174). */
   readonly cap: (id: string) => ButtonColour;
   readonly buzzer: (id: string) => string;
+  readonly sensor: (id: string) => string;
 }
 
 function namesOf(circuit: ShownCircuit): Names {
@@ -154,6 +155,7 @@ function namesOf(circuit: ShownCircuit): Names {
     button: (id) => find(circuit.buttons, id),
     cap: (id) => buttonColourOf(circuit, id),
     buzzer: (id) => find(circuit.buzzers, id),
+    sensor: (id) => find(circuit.sensors, id),
   };
 }
 
@@ -202,6 +204,13 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         at(part.ground),
         at(part.dataOut),
       );
+    case "pir":
+      return words.pir(
+        escaped(names.sensor(part.sensor)),
+        at(part.power),
+        at(part.output),
+        at(part.ground),
+      );
   }
 }
 
@@ -217,6 +226,8 @@ function labelOf(part: Part, names: Names, words: PageWords): DrawnPart["label"]
     case "rgbLed":
     case "ring":
       return { title: names.led(part.led), detail: words.rgbLedLabel(printedName(part.dataIn)) };
+    case "pir":
+      return { title: names.sensor(part.sensor), detail: words.pirLabel(printedName(part.output)) };
     default:
       return undefined;
   }
@@ -227,7 +238,8 @@ const isComponent = (part: Part) =>
   part.kind === "button" ||
   part.kind === "buzzer" ||
   part.kind === "rgbLed" ||
-  part.kind === "ring";
+  part.kind === "ring" ||
+  part.kind === "pir";
 
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
@@ -257,6 +269,7 @@ function componentPins(circuit: ShownCircuit): { name: string; gpio: number }[] 
       button.pin ? [{ name: button.name, gpio: button.pin.gpio }] : [],
     ),
     ...circuit.buzzers.map((buzzer) => ({ name: buzzer.name, gpio: buzzer.pin.gpio })),
+    ...circuit.sensors.map((sensor) => ({ name: sensor.name, gpio: sensor.pin.gpio })),
   ];
 }
 
@@ -336,6 +349,13 @@ function partsListHtml(
       items.push([1, words.listBuzzer(escaped(names.buzzer(part.buzzer)))]);
     }
   }
+  // A motion sensor, and the three jumpers that join it to the board (ADR 0043).
+  for (const part of parts) {
+    if (part.kind === "pir") {
+      items.push([1, words.listPir(escaped(names.sensor(part.sensor)))]);
+      items.push([3, words.listPirJumpers]);
+    }
+  }
   for (const arch of [false, true]) {
     for (const role of ["ground", "power", "signal"] as const) {
       const count = parts.filter(
@@ -373,6 +393,7 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     if (part.kind === "rgbLed") notes.push(words.rgbLedPolarity(dataPinOf(circuit, part.led)));
     if (part.kind === "ring") notes.push(words.ringPolarity(dataPinOf(circuit, part.led)));
   }
+  if (parts.some((p) => p.kind === "pir")) notes.push(words.pirPins);
   notes.push(words.rowsLettered, circuit.supply ? words.supplyUnplug : words.unplug);
   return notes.map((note) => `<li>${escaped(note)}</li>`).join("");
 }

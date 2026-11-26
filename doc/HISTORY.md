@@ -435,3 +435,13 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
   then a WebP, which had passed on the commit before, with only comments changed since. The test
   said nothing of where WebKit stopped, and `generate` would have waited for ever too, so every
   browser step now has 15 seconds and fails naming itself.
+- 2026-11-26: A PIR motion sensor, which the owner asked for ahead of the Backlog's parts, after the
+  tutorial they learned it from, with an example that lights an LED for two seconds whenever it sees
+  movement. Two records: the sensor is named, as a button is, since the script reads it on a pin,
+  which amends ADR 0041, and takes its 5 V from VBUS (ADR 0043); and a part on jumpers lies beside
+  the board, past the edge its holes are on (ADR 0044). It is bought as what it is rather than by a
+  model, as ADR 0039 has transistors bought, because its jumpers go on by the names its board prints,
+  whatever order its pins are in. Its pins' names did not fit beside a 2.54 mm header at a size a
+  phone can read, so the header is drawn wider than life, as ADR 0040 allows. The example first took
+  GP28 and the ground beside it, which the Pico prints AGND, and moved to GP22 and pin 28's GND so
+  that its page names a plain GND.

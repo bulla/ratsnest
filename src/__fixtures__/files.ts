@@ -38,6 +38,7 @@ export function fileOf(fixture: Fixture): PicoCircuit {
       return { ...named(button), pin: button.pin };
     }),
     buzzers: circuit.buzzers.map(named),
+    ...(circuit.sensors.length > 0 ? { sensors: circuit.sensors.map(named) } : {}),
     steps: stepsOf(fixture),
     script: en(layout.script),
     test: en(layout.test),

@@ -23,7 +23,8 @@ publishes their pages as Artifacts (M8). M6 waits on the owner, below. Circuits 
 powered by a supply on the rails (ADR 0032 to ADR 0034), are M12, released in 0.2.0 with format 2:
 every circuit's `setup`, one `test` and a credit of its own (ADR 0035 to ADR 0037). New parts,
 capacitors, transistors and diodes, each with the circuit that teaches it, are planned in the
-Backlog (ADR 0038 to ADR 0041).
+Backlog (ADR 0038 to ADR 0041). A PIR motion sensor came first, at the owner's asking: read on a
+pin, named as a button is, and drawn beside the board on its jumpers (ADR 0043, ADR 0044).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -61,8 +62,13 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,
   and ratsnest's Russian credits (ADR 0035), which the `circuit` skill writes into new circuits, in
   `.claude/skills/circuit/SKILL.md`, and the migration to format 2 into old ones, in
-  `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
+  `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036), and the motion sensor's sentence, callout,
+  parts list's lines and note, in the same table (ADR 0043). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
+- **The motion sensor's look** (ADR 0044): drawn after the tutorial the owner learned it from, at its
+  size, past the edge its holes are on, its header wider than life so that `VCC`, `OUT` and `GND`
+  each fit beside their pin. The Backlog asks for each part's drawing to be picked by the owner, in
+  both themes at all four quarter turns; this one comes out of Open points once they have looked.
 
 ## Suggestions
 

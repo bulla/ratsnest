@@ -12,6 +12,15 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Added
 
+- A circuit on a Pico can read a PIR motion sensor: declared in `sensors`, with an `id`, a `name` and
+  the `pin` its OUT goes to, and placed by `{ kind: "pir", sensor, power, output, ground }`, the
+  holes its three female-to-male jumpers go in. `rnest check` holds it to VBUS for its 5 V, ground,
+  and a pin of its own, its jumpers all on one side of the channel, and below it when a second
+  breadboard is used. Its page draws it lying beside the board, past the edge its holes are on, dome
+  up, its pins named and its jumpers red, yellow and black; says where each jumper goes; lists the
+  sensor and its three jumpers; and notes that the jumpers go on by the names printed on the sensor.
+  `examples/motion-light.ts` lights an LED for two seconds whenever it sees movement.
+
 - `rnest generate --format png` and `--format webp` write a circuit's drawing as a picture, for
   places that take no SVG, into `pages/<circuit>.<orientation>.<theme>.<language>.png` or `.webp`:
   the SVG of `--format svg`, its credit and background with it, drawn at 12 px to the millimetre,

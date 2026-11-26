@@ -89,8 +89,10 @@ of a closed list the engine holds, with its pinout, its print and its parts list
 2N3906 first (ADR 0039); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
 part apart is printed on its body, upright at every turn and the same in every language, `NPN` and
 `470 µF`, and on a tag only where it cannot fit (ADR 0040). A new part is placed in its step as a
-resistor is, its legs named by role, with no name or callout of its own (ADR 0041). The parts to
-come, in order, are in the roadmap's Backlog.
+resistor is, its legs named by role, with no name or callout of its own (ADR 0041), unless the
+script reads it on a pin: a PIR motion sensor is declared in `sensors`, as a button is in `buttons`,
+takes its 5 V from VBUS (ADR 0043), and lies beside the board on three jumpers, past the edge its
+holes are on (ADR 0044). The parts to come, in order, are in the roadmap's Backlog.
 
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the
@@ -218,8 +220,9 @@ there.
 │       ├── circuit/     Adds or changes a circuit, and makes and publishes its page (ADR 0007,
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
-├── examples/            scratchpi's seven circuits, ported, and `battery-button.ts`, the first on a
-│                        supply (ADR 0032): ratsnest's own, checked like anyone's, and in
+├── examples/            scratchpi's seven circuits, ported, `battery-button.ts`, the first on a
+│                        supply (ADR 0032), and `motion-light.ts`, the first with a part beside the
+│                        board (ADR 0043): ratsnest's own, checked like anyone's, and in
 │                        `format-1/` the files the migration to format 2 is tested on, left out of
 │                        the type check (ADR 0014, ADR 0015, ADR 0036)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
@@ -249,10 +252,11 @@ there.
 │   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
 │   ├── language.ts      The languages a page is written in
 │   ├── pins.ts, rgb.ts  The GPIO a Pico 2 W breaks out, and an RGB LED's colours
-│   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, and one
-│   │                    on a supply, and the `circuit` skill's default credits, read from the skill
-│   ├── drawing/         The Pico, the breadboard and a supply's cell, drawn: CC BY-SA 4.0, unlike
-│   │                    the rest (ADR 0018)
+│   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, one on a
+│   │                    supply and one with a motion sensor, and the `circuit` skill's default
+│   │                    credits, read from the skill
+│   ├── drawing/         The Pico, the breadboard, a supply's cell and the parts, drawn: CC BY-SA
+│   │                    4.0, unlike the rest (ADR 0018)
 │   └── page/            The page and the drawing alone: their generator, their words, the page's
 │                        stylesheet and its one script, `drawing.css`, which both carry (ADR 0031),
 │                        `tokens.css`, the only file that writes a colour (ADR 0004), and

@@ -33,18 +33,23 @@ export function shownIn(
     buttons: (circuit.buttons ?? []).map(named),
   };
   if (isSupplied(circuit)) {
-    // A circuit with a supply has no Pico, and so no script and no buzzer (ADR 0032).
+    // A circuit with a supply has no Pico, and so no script, no buzzer and no sensor (ADR 0032).
     return {
       circuit: {
         ...shown,
         supply: { volts: circuit.setup.volts, rails: circuit.setup.rails },
         buzzers: [],
+        sensors: [],
       },
       layout: { steps, test: say(circuit.test) },
     };
   }
   return {
-    circuit: { ...shown, buzzers: (circuit.buzzers ?? []).map(named) },
+    circuit: {
+      ...shown,
+      buzzers: (circuit.buzzers ?? []).map(named),
+      sensors: (circuit.sensors ?? []).map(named),
+    },
     layout: { steps, script: say(circuit.script), test: say(circuit.test) },
   };
 }

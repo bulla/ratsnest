@@ -28,8 +28,11 @@ export type Place =
       readonly second?: boolean;
     };
 
-/** A light, a button or a buzzer: what an article agrees with in a language that has gender. */
-export type PartKind = "led" | "button" | "buzzer";
+/**
+ * A light, a button, a buzzer or a sensor: what an article agrees with in a language that has
+ * gender.
+ */
+export type PartKind = "led" | "button" | "buzzer" | "sensor";
 
 /** Where a button sits on the breadboard (`placementOf`, scratchpi's ADR 0154). */
 export type ButtonPlacement = "across" | "above" | "below";
@@ -101,12 +104,18 @@ export interface PageWords {
     ground: Place,
     dataOut: Place,
   ) => string;
+  /**
+   * A motion sensor beside the board (ADR 0043, ADR 0044): where the jumper on each of its pins goes,
+   * by the name its board prints beside the pin, and the jumper's colour.
+   */
+  readonly pir: (name: string, power: Place, output: Place, ground: Place) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
   readonly buttonLabel: (where: ButtonPlacement) => string;
   readonly buzzerLabel: (plus: string) => string;
   readonly rgbLedLabel: (dataIn: string) => string;
+  readonly pirLabel: (output: string) => string;
 
   /** The first step and the last, which every circuit has. */
   readonly picoTitle: string;
@@ -127,6 +136,9 @@ export interface PageWords {
   /** A button, and the colour of the cap to fit on it (scratchpi's ADR 0174). */
   readonly listButton: (name: string, cap: ButtonColour) => string;
   readonly listBuzzer: (name: string) => string;
+  /** A motion sensor, and the three jumpers that join it to the board, a line each (ADR 0043). */
+  readonly listPir: (name: string) => string;
+  readonly listPirJumpers: string;
   readonly listWire: (colour: string, count: number) => string;
   readonly listLongWire: (colour: string, count: number) => string;
   readonly listCable: string;
@@ -137,6 +149,8 @@ export interface PageWords {
   readonly rgbLedPolarity: (dataPin: string) => string;
   /** Which way round the ring goes, and what turning it round would do (scratchpi's ADR 0238). */
   readonly ringPolarity: (dataPin: string) => string;
+  /** That a motion sensor's jumpers go on by its pins' names, and that it settles once powered. */
+  readonly pirPins: string;
   readonly anyResistor: (low: string, high: string) => string;
   readonly rowsLettered: string;
   readonly unplug: string;
@@ -273,11 +287,14 @@ export const ENGLISH_PAGE: PageWords = {
     `The ${name}, its legs in ${englishList(legs)}${second ? " on the second breadboard" : ""}: +5 V, then data out, the longest, then ground, then data in.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `The ${name}, standing up: data in ${englishIn(dataIn)}, 5 V ${englishIn(power)}, ground ${englishIn(ground)} and data out ${englishIn(dataOut)}.`,
+  pir: (name, power, output, ground) =>
+    `The ${name}, beside the board, dome up: a red jumper from its VCC pin ${englishTo(power)}, a yellow one from its OUT pin ${englishTo(output)} and a black one from its GND pin ${englishTo(ground)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
   buzzerLabel: (plus) => `+ leg in ${plus}`,
   rgbLedLabel: (dataIn) => `data in at ${dataIn}`,
+  pirLabel: (output) => `OUT to ${output}`,
 
   picoTitle: "Put the Pico across the middle",
   picoBody: (pinOne, lands, orientation) =>
@@ -304,6 +321,10 @@ export const ENGLISH_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}: a 6 mm tactile switch with four legs, and a ${ENGLISH_CAPS[cap]} cap.`,
   listBuzzer: (name) => `Passive ${name}, with its + leg marked.`,
+  listPir: (name) =>
+    `${capitalised(name)}: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.`,
+  listPirJumpers:
+    "Female-to-male jumpers, one red, one yellow and one black, about 20 cm: they go on the motion sensor's pins.",
   listWire: (colour, count) =>
     `${capitalised(colour)} ${plural("en", count, ENGLISH_JUMPERS)}, short.`,
   listLongWire: (colour, count) =>
@@ -316,6 +337,8 @@ export const ENGLISH_PAGE: PageWords = {
     `The RGB LED's longest leg is data out, and goes in the second hole. Check it before the LED goes in: turned round, it would put 5 V on ${dataPin}.`,
   ringPolarity: (dataPin) =>
     `The ring's back names its four pins: data in, 5 V, ground and data out. Check them against the steps before it goes in: turned round, it would put 5 V on ${dataPin}.`,
+  pirPins:
+    "The motion sensor's board names its three pins, beside them or under its dome: VCC or +, OUT or SIG, and GND. Push each jumper onto the pin of its name, whatever order they are in: it differs from one sensor to another. Once powered, it takes up to a minute to settle.",
   anyResistor: (low, high) =>
     `Any resistor from ${low} to ${high} works for a light. A bigger one makes it dimmer.`,
   rowsLettered:
@@ -435,7 +458,7 @@ const frenchList = (items: readonly string[]): string =>
 
 /**
  * The definite article a part's name takes at the start of a sentence: *La* for a light,
- * *Le* for a button or a buzzer, and *L’* before a vowel or a mute *h*, whatever the gender.
+ * *Le* for a button, a buzzer or a sensor, and *L’* before a vowel or a mute *h*, whatever the gender.
  */
 function the(kind: PartKind, name: string): string {
   if (/^[aeiouyhàâéèêëîïôöùûü]/i.test(name)) return `L’${name}`;
@@ -487,11 +510,14 @@ export const FRENCH_PAGE: PageWords = {
     `${the("led", name)}, ses pattes en ${frenchList(legs)}${second ? " de la seconde plaque" : ""}${NNBSP}: le +5 V, puis la sortie des données, la plus longue, puis la masse, puis l’entrée des données.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `${the("led", name)}, debout${NNBSP}: l’entrée des données ${frenchIn(dataIn)}, le 5 V ${frenchIn(power)}, la masse ${frenchIn(ground)} et la sortie des données ${frenchIn(dataOut)}.`,
+  pir: (name, power, output, ground) =>
+    `${the("sensor", name)}, à côté de la plaque, dôme en haut${NNBSP}: un fil rouge de sa broche VCC ${frenchTo(power)}, un fil jaune de sa broche OUT ${frenchTo(output)} et un fil noir de sa broche GND ${frenchTo(ground)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
   buzzerLabel: (plus) => `patte + en ${plus}`,
   rgbLedLabel: (dataIn) => `entrée en ${dataIn}`,
+  pirLabel: (output) => `OUT en ${output}`,
 
   picoTitle: "Placez le Pico à cheval sur la rainure centrale",
   picoBody: (pinOne, lands, orientation) =>
@@ -522,6 +548,9 @@ export const FRENCH_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}${NNBSP}: un interrupteur tactile de 6 mm à quatre pattes, avec un capuchon ${FRENCH_CAPS[cap]}.`,
   listBuzzer: (name) => `${capitalised(name)} passif, avec sa patte + marquée.`,
+  listPir: (name) =>
+    `${capitalised(name)}${NNBSP}: un module PIR à trois broches, VCC, OUT et GND, alimenté en 5 V. Sa broche OUT donne 3,3 V tant qu’il voit du mouvement.`,
+  listPirJumpers: `Fils de connexion femelle-mâle, un rouge, un jaune et un noir, d’environ 20 cm${NNBSP}: ils se branchent sur les broches du détecteur de mouvement.`,
   listWire: (colour, count) => {
     const more = `Fils de connexion ${colour}, courts.`;
     return plural("fr", count, {
@@ -546,6 +575,7 @@ export const FRENCH_PAGE: PageWords = {
     `La plus longue patte de la LED RVB est la sortie des données, et va dans le deuxième trou. Vérifiez-la avant de planter la LED${NNBSP}: à l’envers, elle mettrait 5 V sur ${dataPin}.`,
   ringPolarity: (dataPin) =>
     `Le dos de l’anneau nomme ses quatre broches${NNBSP}: entrée des données, 5 V, masse et sortie des données. Vérifiez-les d’après les étapes avant de le planter${NNBSP}: à l’envers, il mettrait 5 V sur ${dataPin}.`,
+  pirPins: `La carte du détecteur de mouvement nomme ses trois broches, à côté d’elles ou sous son dôme${NNBSP}: VCC ou +, OUT ou SIG, et GND. Branchez chaque fil sur la broche de son nom, quel que soit leur ordre${NNBSP}: il change d’un détecteur à l’autre. Une fois alimenté, il lui faut jusqu’à une minute pour se stabiliser.`,
   anyResistor: (low, high) =>
     `N’importe quelle résistance de ${low} à ${high} convient pour une LED. Plus elle est grande, plus la LED éclaire faiblement.`,
   rowsLettered:
@@ -705,11 +735,14 @@ export const RUSSIAN_PAGE: PageWords = {
     `${name}: ножки в ${russianList(legs)}${second ? " на второй плате" : ""}: +5 В, затем выход данных, самая длинная, затем земля, затем вход данных.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `${name}, стоя: вход данных ${russianIn(dataIn)}, 5 В ${russianIn(power)}, земля ${russianIn(ground)} и выход данных ${russianIn(dataOut)}.`,
+  pir: (name, power, output, ground) =>
+    `${name}, рядом с платой, куполом вверх: красная перемычка от вывода VCC ${russianIn(power)}, жёлтая от вывода OUT ${russianIn(output)} и чёрная от вывода GND ${russianIn(ground)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
   buzzerLabel: (plus) => `ножка + в ${plus}`,
   rgbLedLabel: (dataIn) => `вход данных в ${dataIn}`,
+  pirLabel: (output) => `OUT в ${output}`,
 
   picoTitle: "Установите Pico поперёк середины",
   picoBody: (pinOne, lands, orientation) =>
@@ -738,6 +771,10 @@ export const RUSSIAN_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}: тактовая кнопка 6 мм с четырьмя ножками и ${RUSSIAN_CAPS[cap].alone} колпачок.`,
   listBuzzer: (name) => `${capitalised(name)}: пассивного типа, ножка + отмечена.`,
+  listPir: (name) =>
+    `${capitalised(name)}: модуль PIR с тремя выводами, VCC, OUT и GND, питание 5 В. Пока он видит движение, на OUT 3,3 В.`,
+  listPirJumpers:
+    "Перемычка мама-папа, около 20 см: красная, жёлтая и чёрная, для выводов датчика движения.",
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
   listCable:
@@ -749,6 +786,8 @@ export const RUSSIAN_PAGE: PageWords = {
     `Самая длинная ножка RGB-светодиода: выход данных, она идёт во второе отверстие. Проверьте её до установки: перевёрнутый, он подал бы 5 В на ${dataPin}.`,
   ringPolarity: (dataPin) =>
     `На обороте кольца подписаны его четыре вывода: вход данных, 5 В, земля и выход данных. Сверьте их с шагами до установки: перевёрнутое, оно подало бы 5 В на ${dataPin}.`,
+  pirPins:
+    "На плате датчика движения подписаны три вывода, рядом с ними или под куполом: VCC или +, OUT или SIG, и GND. Надевайте каждую перемычку на вывод с её подписью, в каком бы порядке они ни шли: у разных датчиков он разный. После включения датчику нужно до минуты, чтобы успокоиться.",
   anyResistor: (low, high) =>
     `Для светодиода подойдёт любой резистор от ${low} до ${high}. Чем больше сопротивление, тем тусклее свет.`,
   rowsLettered:

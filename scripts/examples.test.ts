@@ -31,8 +31,8 @@ const pages = mkdtempSync(join(tmpdir(), "ratsnest-examples-"));
 afterAll(() => rmSync(pages, { recursive: true, force: true }));
 
 describe("the examples", () => {
-  it("are scratchpi's seven circuits, and one with a supply in the Pico's place (ADR 0032)", () => {
-    expect(EXAMPLES).toHaveLength(8);
+  it("are scratchpi's seven circuits, one with a supply in the Pico's place (ADR 0032), and one with a motion sensor (ADR 0043)", () => {
+    expect(EXAMPLES).toHaveLength(9);
     expect(EXAMPLES.filter((name) => isSupplied(circuitOf(name)))).toEqual(["battery-button.ts"]);
   });
 
@@ -42,7 +42,7 @@ describe("the examples", () => {
       out: (line) => said.push(line),
       err: (line) => said.push(line),
     });
-    expect(said).toEqual(["8 circuits checked: all well."]);
+    expect(said).toEqual(["9 circuits checked: all well."]);
     expect(status).toBe(0);
   });
 
@@ -91,6 +91,7 @@ describe("the engine (ADR 0007)", () => {
           ...(circuit.leds ?? []),
           ...(circuit.buttons ?? []),
           ...("buzzers" in circuit ? (circuit.buzzers ?? []) : []),
+          ...("sensors" in circuit ? (circuit.sensors ?? []) : []),
         ].flatMap((part) => Object.values(part.name)),
       );
       return [

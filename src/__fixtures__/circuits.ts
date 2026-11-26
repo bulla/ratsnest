@@ -11,7 +11,8 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * The engine's own circuits, for its tests to build on and break on purpose. Seven are copies of
  * scratchpi's circuits and layouts (ADR 0001), renamed by what they hold, so that no test in `src/`
  * names a circuit that ships (ADR 0007): the ones that ship are `examples/`, from M3. The eighth has
- * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches.
+ * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches. The
+ * ninth has a motion sensor beside the board, on jumpers (ADR 0043, ADR 0044).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -22,6 +23,7 @@ export const FIXTURE_IDS = [
   "rgb-led-and-d-pad",
   "ring-and-button",
   "two-lights-on-a-supply",
+  "motion-sensor-and-light",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -44,6 +46,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       buttons: [],
       buzzers: [],
+      sensors: [],
     },
     layout: {
       steps: [
@@ -86,6 +89,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       leds: [{ id: "red", name: "red LED", pin: { kind: "gpio", gpio: 15 }, colour: "red" }],
       buttons: [{ id: "button", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" }],
       buzzers: [],
+      sensors: [],
     },
     layout: {
       steps: [
@@ -140,6 +144,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       leds: [],
       buttons: [{ id: "button", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" }],
       buzzers: [{ id: "buzzer", name: "buzzer", pin: { kind: "gpio", gpio: 15 } }],
+      sensors: [],
     },
     layout: {
       steps: [
@@ -198,6 +203,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         { id: "left", name: "BTN2", pin: { kind: "gpio", gpio: 15 }, colour: "green" },
       ],
       buzzers: [],
+      sensors: [],
     },
     layout: {
       steps: [
@@ -261,6 +267,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         { id: "down", name: "BTN4", pin: { kind: "gpio", gpio: 13 }, colour: "yellow" },
       ],
       buzzers: [],
+      sensors: [],
     },
     layout: {
       steps: [
@@ -360,6 +367,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         { id: "down", name: "BTN4", pin: { kind: "gpio", gpio: 13 }, colour: "yellow" },
       ],
       buzzers: [],
+      sensors: [],
     },
     layout: {
       steps: [
@@ -477,6 +485,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       buttons: [{ id: "button", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" }],
       buzzers: [],
+      sensors: [],
     },
     layout: {
       steps: [
@@ -553,6 +562,7 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       buttons: [{ id: "button", name: "BTN1", colour: "yellow" }],
       buzzers: [],
+      sensors: [],
     },
     layout: {
       steps: [
@@ -578,6 +588,42 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         },
       ],
       test: "The red LED lights once the supply is connected. Hold BTN1 down and the yellow one lights too.",
+    },
+  },
+  "motion-sensor-and-light": {
+    circuit: {
+      name: "A motion sensor and a light",
+      description:
+        "A PIR motion sensor beside the board, on GP22, and a red light on GP15 that lights for two seconds when the sensor sees movement.",
+      credit: CREDIT,
+      leds: [{ id: "red", name: "red LED", pin: { kind: "gpio", gpio: 15 }, colour: "red" }],
+      buttons: [],
+      buzzers: [],
+      sensors: [{ id: "pir", name: "motion sensor", pin: { kind: "gpio", gpio: 22 } }],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Connect the bottom − rail to ground",
+          parts: [{ kind: "wire", from: "j19", to: "bottom-19", role: "ground" }],
+        },
+        {
+          title: "Motion sensor on GP22",
+          note: "It takes its power from VBUS, the USB's own, rather than 3V3, and holds its pin high while it sees movement.",
+          parts: [{ kind: "pir", sensor: "pir", power: "a2", output: "a13", ground: "a14" }],
+        },
+        {
+          title: "Red LED on GP15",
+          parts: [
+            { kind: "resistor", ohms: 330, from: "j21", to: "j26" },
+            { kind: "led", led: "red", anode: "i26", cathode: "i27" },
+            { kind: "wire", from: "j27", to: "bottom-27", role: "ground" },
+          ],
+        },
+      ],
+      script:
+        "from machine import Pin\nfrom time import sleep\n\nred_led = Pin(15, Pin.OUT)\nmotion_sensor = Pin(22, Pin.IN)\n\ntry:\n    while True:\n        if motion_sensor.value():\n            red_led.value(1)\n            sleep(2)\n            red_led.value(0)\n            while motion_sensor.value():\n                sleep(0.05)\n        sleep(0.05)\nfinally:\n    red_led.value(0)",
+      test: "Wait a minute for the sensor to settle, then wave a hand over its dome: the red LED lights for two seconds. Press Stop in Thonny to end the script.",
     },
   },
 };

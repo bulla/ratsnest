@@ -112,6 +112,28 @@ A circuit with a supply:
   way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
   On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
 
+## A motion sensor (ADR 0043, ADR 0044)
+
+A PIR motion sensor is read on a pin, so it is declared as a button is, in `sensors`, and placed by
+the three holes its female-to-male jumpers go in. The engine draws it lying beside the board, past
+the edge those holes are on, and writes where each jumper goes:
+
+```ts
+  sensors: [{ id: "pir", name: { en: "motion sensor" }, pin: { kind: "gpio", gpio: 22 } }],
+  // …and in a step:
+  { kind: "pir", sensor: "pir", power: "a2", output: "a13", ground: "a14" },
+```
+
+- **`power` on VBUS**, for its 5 V: `a2` or `b2`, the strip of VBUS, pin 40. Never 3V3.
+- **`output` on its own pin**, which nothing else joins: no resistor, since OUT drives it both ways.
+- **`ground` on ground**: a GND pin's strip or a − rail. Prefer a pin the Pico prints `GND` to pin
+  33, which it prints `AGND`.
+- **All three on one side of the channel**: rows a to e and the top rails, or rows f to j and the
+  bottom rails. The top side has VBUS, GND and GP16 to GP22 and GP26 to GP28, everything it needs.
+  With a second breadboard above, the bottom side.
+- **Its script reads the pin**, high while the sensor sees movement, and its `test` says to wait up
+  to a minute after plugging in for the sensor to settle. A circuit with a supply has no sensor.
+
 ## Its credit (ADR 0035)
 
 A circuit may have a `credit`, after its description: where the drawing and the font come from, and

@@ -105,8 +105,12 @@ describe("the migrations' runner (ADR 0015)", () => {
 });
 
 describe("format 1 to 2: a `setup`, one `test`, and a credit for a circuit that had none (ADR 0036, ADR 0037)", () => {
-  it("has ratsnest's examples in format 1 to be tested on, one for each example", () => {
-    expect(formatOne.map(({ name }) => name)).toEqual(examples.map(({ name }) => name));
+  it("has ratsnest's examples in format 1 to be tested on, each one there was when format 2 came", () => {
+    // The eight examples of 0.2.0, which brought format 2. One added since never was in format 1,
+    // and has no file here: writing one would be inventing what it was.
+    expect(formatOne).toHaveLength(8);
+    const names = examples.map(({ name }) => name);
+    for (const { name } of formatOne) expect(names).toContain(name);
     for (const { source } of formatOne) expect(source).toContain("  format: 1,\n");
   });
 

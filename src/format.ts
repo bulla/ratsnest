@@ -97,6 +97,17 @@ export interface Buzzer {
   readonly pin: GpioPin;
 }
 
+/**
+ * A PIR motion sensor (ADR 0043), on the pin its OUT goes to: it gives the pin 3.3 V while it sees
+ * movement, and 0 V otherwise. It takes 5 V from VBUS.
+ */
+export interface Sensor {
+  readonly id: string;
+  /** What the page calls it: `motion sensor`. */
+  readonly name: Text;
+  readonly pin: GpioPin;
+}
+
 /** What a jumper is for, which is also its colour: black, red or yellow. */
 export type WireRole = "ground" | "power" | "signal";
 
@@ -177,8 +188,32 @@ export interface RingPart {
   readonly dataOut: Hole;
 }
 
+/**
+ * A PIR motion sensor module, lying beside the board, dome up, and joined to it by three
+ * female-to-male jumpers pushed onto its pins: the holes are where their other ends go, on one side
+ * of the channel, and the drawing lays it past that edge (ADR 0044). `sensor` is the sensor's id.
+ */
+export interface PirPart {
+  readonly kind: "pir";
+  readonly sensor: string;
+  /** Where the jumper on its VCC pin goes: VBUS, for its 5 V. */
+  readonly power: Hole;
+  /** Where the jumper on its OUT pin goes: its pin. */
+  readonly output: Hole;
+  /** Where the jumper on its GND pin goes: ground. */
+  readonly ground: Hole;
+}
+
 /** Anything plugged into the breadboard. */
-export type Part = Wire | Resistor | LedPart | ButtonPart | BuzzerPart | RgbLedPart | RingPart;
+export type Part =
+  | Wire
+  | Resistor
+  | LedPart
+  | ButtonPart
+  | BuzzerPart
+  | RgbLedPart
+  | RingPart
+  | PirPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the
@@ -278,6 +313,8 @@ export interface PicoCircuit extends CircuitBase {
   readonly leds?: readonly Led[];
   readonly buttons?: readonly Button[];
   readonly buzzers?: readonly Buzzer[];
+  /** What the script reads: a PIR motion sensor, each on its pin (ADR 0043). */
+  readonly sensors?: readonly Sensor[];
   /** A MicroPython script for Thonny that exercises every part, in each language's own names. */
   readonly script: Text;
 }

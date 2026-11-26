@@ -6,14 +6,17 @@ import {
   type Hole,
   holeAt,
   holeOfPin,
+  isOnSecondBoard,
   isUnderPico,
   legsOf,
   type Part,
   parseHole,
   type Row,
   rowsOf,
+  sideOf,
   stripOf,
   supplyLeadsOf,
+  usesSecondBoard,
 } from "./drawing/breadboard";
 import { formatOhms } from "./drawing/breadboard-svg";
 import { HEADER_PINS, type HeaderPin, headerPinOfGpio } from "./drawing/geometry";
@@ -110,6 +113,8 @@ function componentOf(part: Part): string | undefined {
     case "rgbLed":
     case "ring":
       return part.led;
+    case "pir":
+      return part.sensor;
     default:
       return undefined;
   }
@@ -135,6 +140,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${circuit.leds.find((led) => led.id === part.led)?.name ?? `RGB LED "${part.led}"`}`;
     case "ring":
       return `the ${circuit.leds.find((led) => led.id === part.led)?.name ?? `ring "${part.led}"`}`;
+    case "pir":
+      return `the ${circuit.sensors.find((s) => s.id === part.sensor)?.name ?? `motion sensor "${part.sensor}"`}`;
   }
 }
 
@@ -177,6 +184,22 @@ function shapeProblems(part: Part, name: string): string[] {
       const inOrder = columns.every((column, i) => column === (columns[0] ?? 0) + i * step);
       return along && inOrder ? [] : [`${name} needs its four legs side by side in one row`];
     }
+    case "pir": {
+      // On jumpers, its holes can be anywhere on one side of the channel, past whose edge it lies
+      // (ADR 0044), and on the first board, whose edges it lies past.
+      const legs = legsOf(part);
+      if (legs.some(isOnSecondBoard)) return [`${name}'s jumpers go in the first breadboard`];
+      const sides = new Set(legs.map(sideOf));
+      const strips = new Set(legs.map(stripOf));
+      return [
+        ...(sides.size === 1
+          ? []
+          : [
+              `${name}'s jumpers are not all on one side of the channel: it lies past the edge they are on, so they go in rows a to e and the top rails, or in rows f to j and the bottom rails`,
+            ]),
+        ...(strips.size === legs.length ? [] : [`${name} has two jumpers in one strip`]),
+      ];
+    }
     case "button": {
       const [left, right] = part.columns;
       const [first, second] = rowsOf(part);
@@ -208,6 +231,7 @@ function placedProblems(circuit: ShownCircuit, parts: readonly Part[]): string[]
     ["ring", circuit.leds.filter(isRing).map((l) => l.id), "ring"],
     ["button", circuit.buttons.map((b) => b.id), "button"],
     ["buzzer", circuit.buzzers.map((b) => b.id), "buzzer"],
+    ["pir", circuit.sensors.map((s) => s.id), "motion sensor"],
   ] as const;
   for (const [kind, ids, noun] of kinds) {
     const placed = parts
@@ -256,6 +280,17 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
       taken.set(hole, name);
     }
     problems.push(...shapeProblems(part, name));
+  }
+  // A sensor on jumpers lies past the edge its holes are on, and above the board is the second
+  // board's, where there is one (ADR 0044).
+  if (usesSecondBoard(parts)) {
+    for (const part of parts) {
+      if (part.kind === "pir" && legsOf(part).every((leg) => sideOf(leg) === "top")) {
+        problems.push(
+          `${describe(part, circuit)} would lie over the second breadboard: put its jumpers below the channel, in rows f to j or the bottom rails`,
+        );
+      }
+    }
   }
   // Nothing in a hole a button's body covers: it sits on the board over them (scratchpi's ADR 0154).
   for (const part of parts) {
@@ -406,6 +441,27 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
+  // A motion sensor (ADR 0043): VCC on VBUS, the 5 V it runs on, GND on ground, and OUT on its pin,
+  // which it has to itself. No resistor: OUT is driven both ways.
+  for (const sensor of circuit.sensors) {
+    const part = parts.find((p) => p.kind === "pir" && p.sensor === sensor.id);
+    if (part?.kind !== "pir") continue;
+    const name = `the ${sensor.name}`;
+    const pin = gpioNet(sensor.pin.gpio, name);
+    if (!pin) continue;
+    if (net(part.power) !== fiveVolt) {
+      problems.push(`${name}'s VCC is not on ${FIVE_VOLT_LABEL}, the 5 V it runs on`);
+    }
+    if (net(part.ground) !== ground) problems.push(`${name}'s GND is not on ground`);
+    if (net(part.output) !== pin) {
+      problems.push(`${name}'s OUT is not on GP${sensor.pin.gpio}`);
+    } else if ((terminals.get(pin) ?? 0) !== 2) {
+      problems.push(
+        `${name}'s OUT shares GP${sensor.pin.gpio} with something else, and must have it to itself`,
+      );
+    }
+  }
+
   for (const resistor of resistors) {
     if (!accounted.has(resistor)) {
       problems.push(`${describe(resistor, circuit)} is not a light's resistor or a pull-down`);
@@ -442,8 +498,10 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   );
 
   // Wires in the colour of what they carry. A red one carries 3V3, or the 5 V of VBUS where
-  // a part takes it (scratchpi's ADR 0222): anywhere else, VBUS on a red wire is a mistake.
-  const takesFiveVolts = parts.some((part) => part.kind === "rgbLed" || part.kind === "ring");
+  // a part takes it (scratchpi's ADR 0222, ADR 0043): anywhere else, VBUS on a red wire is a mistake.
+  const takesFiveVolts = parts.some(
+    (part) => part.kind === "rgbLed" || part.kind === "ring" || part.kind === "pir",
+  );
   for (const part of parts) {
     if (part.kind !== "wire") continue;
     const pins = pinsIn(net(part.from));

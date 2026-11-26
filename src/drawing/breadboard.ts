@@ -282,6 +282,18 @@ export type Part =
       readonly power: Hole;
       readonly ground: Hole;
       readonly dataOut: Hole;
+    }
+  /**
+   * A PIR motion sensor module (ADR 0043), lying beside the board and joined to it by three
+   * female-to-male jumpers on its VCC, OUT and GND pins: these are the holes their other ends go
+   * in, all on one side of the channel, past which it is drawn (ADR 0044).
+   */
+  | {
+      readonly kind: "pir";
+      readonly sensor: string;
+      readonly power: Hole;
+      readonly output: Hole;
+      readonly ground: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -344,7 +356,18 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.power, part.dataOut, part.ground, part.dataIn];
     case "ring":
       return [part.dataIn, part.power, part.ground, part.dataOut];
+    case "pir":
+      return [part.power, part.output, part.ground];
   }
+}
+
+/**
+ * The side of the channel a hole is on: rows a to e and the top rails, or rows f to j and the bottom
+ * rails. A part on jumpers lies past that side's edge (ADR 0044).
+ */
+export function sideOf(hole: Hole): "top" | "bottom" {
+  const at = holeAt(hole);
+  return at.kind === "rail" ? (at.rail.startsWith("top") ? "top" : "bottom") : halfOf(at.row);
 }
 
 /** Whether anything in a layout is on the second board, which the drawing then draws too. */

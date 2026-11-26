@@ -30,6 +30,7 @@ const gpiosOf = (circuit: ShownCircuit): number[] => [
   ...circuit.leds.flatMap((led) => (led.pin ? [led.pin.gpio] : [])),
   ...circuit.buttons.flatMap((button) => (button.pin ? [button.pin.gpio] : [])),
   ...circuit.buzzers.map((buzzer) => buzzer.pin.gpio),
+  ...circuit.sensors.map((sensor) => sensor.pin.gpio),
 ];
 
 /** A part's name in the French test circuits, which are the fixtures written in French. */
@@ -38,6 +39,7 @@ const FRENCH_NAMES: Readonly<Record<string, string>> = {
   "green LED": "LED verte",
   "RGB LED": "LED RVB",
   "LED ring": "anneau de LED",
+  "motion sensor": "détecteur de mouvement",
 };
 
 /**
@@ -60,6 +62,7 @@ function inFrench({ circuit, layout }: Fixture): { circuit: ShownCircuit; layout
       leds: circuit.leds.map(named),
       buttons: circuit.buttons.map(named),
       buzzers: circuit.buzzers.map(named),
+      sensors: circuit.sensors.map(named),
     },
     layout: {
       ...layout,
@@ -372,6 +375,88 @@ describe("a ring's page, the ring laid out below the board (scratchpi's ADR 0238
     const html = steps(frenchPage("ring-and-button"));
     expect(words(html)).toContain("L’anneau de LED, debout");
     expect(html).toContain("passe par-dessus la plaque");
+  });
+});
+
+describe("a motion sensor's page, the sensor beside the board (ADR 0043, ADR 0044)", () => {
+  const ID = "motion-sensor-and-light";
+
+  it("says where each of its three jumpers goes, from the pin of its name", () => {
+    expect(steps(page(ID))).toContain(
+      'The motion sensor, beside the board, dome up: a red jumper from its VCC pin to <span class="hole">a2</span> (VBUS, pin 40), a yellow one from its OUT pin to <span class="hole">a13</span> (GP22, pin 29) and a black one from its GND pin to <span class="hole">a14</span> (GND, pin 28).',
+    );
+  });
+
+  it("lists the sensor and its three jumpers, and says to plug them on by name", () => {
+    const html = page(ID);
+    expect(html).toContain(
+      '<span class="count">1</span><span>Motion sensor: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.</span>',
+    );
+    expect(html).toContain(
+      '<span class="count">3</span><span>Female-to-male jumpers, one red, one yellow and one black',
+    );
+    expect(html).toContain("Push each jumper onto the pin of its name");
+    // Only its own page has one.
+    for (const id of FIXTURE_IDS) {
+      if (id !== ID) expect(page(id)).not.toContain("motion sensor");
+    }
+  });
+
+  it("puts the sensor's pin where the Pico lands, tags its three pins, and labels it", () => {
+    const html = page(ID);
+    expect(words(html)).toContain("GP22 in c13");
+    for (const label of ["VBUS", "GP22", "GND"]) expect(html).toContain(`>${label}</text>`);
+    expect(html).toContain('class="callout-title">motion sensor</text>');
+    expect(html).toContain('class="callout-detail">OUT to a13</text>');
+    expect(html).toContain('data-kind="pir">');
+  });
+
+  it("says it in French, a sensor taking le", () => {
+    const html = frenchPage(ID);
+    expect(words(steps(html))).toContain(
+      "Le détecteur de mouvement, à côté de la plaque, dôme en haut",
+    );
+    expect(words(html)).toContain("Fils de connexion femelle-mâle");
+    expect(html).toContain('class="callout-detail">OUT en a13</text>');
+  });
+
+  it("says it in Russian, its name only where it stands as it is (ADR 0011)", () => {
+    const { circuit, layout } = FIXTURES[ID];
+    const html = wiringPage(
+      {
+        ...circuit,
+        name: "Датчик движения и светодиод",
+        description: "Испытательная схема.",
+        credit: "Рисунок по технической документации Pico 2 W.",
+        leds: circuit.leds.map((led) => ({ ...led, name: "Красный светодиод" })),
+        sensors: circuit.sensors.map((sensor) => ({ ...sensor, name: "Датчик движения" })),
+      },
+      {
+        ...layout,
+        steps: layout.steps.map((step, index) => ({
+          title: `Шаг ${index + 2}`,
+          parts: step.parts,
+        })),
+        test: "Скрипт зажигает светодиод.",
+      },
+      FILES,
+      { language: "ru" },
+    );
+    const prose = html
+      .slice(html.indexOf("<body>"))
+      .replace(/<(script|style|pre)[\s\S]*?<\/\1>/g, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ");
+    expect(prose).toContain(
+      "Датчик движения, рядом с платой, куполом вверх: красная перемычка от вывода VCC в a2 (VBUS, вывод 40)",
+    );
+    expect(prose).toContain("Перемычка мама-папа, около 20 см");
+    for (const english of ["jumper", "sensor", " the ", " and "]) {
+      expect(prose).not.toContain(english);
+    }
+    expect(prose).not.toMatch(/\s[:;?!]/);
+    const lacking = new Set([...written(html)].filter((c) => !fileOf(c)));
+    expect([...lacking]).toEqual([]);
   });
 });
 

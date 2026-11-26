@@ -225,9 +225,13 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   buzzer: ["kind", "buzzer", "plus", "minus"],
   rgbLed: ["kind", "led", "power", "dataOut", "ground", "dataIn"],
   ring: ["kind", "led", "dataIn", "power", "ground", "dataOut"],
+  pir: ["kind", "sensor", "power", "output", "ground"],
 };
 
-/** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
+/**
+ * The parts a circuit with a supply may hold: no buzzer, RGB LED, ring or motion sensor, which need a
+ * Pico.
+ */
 const SUPPLY_PARTS = ["wire", "resistor", "led", "button"];
 
 function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean): void {
@@ -321,6 +325,10 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
       reference("led", ids.rgbLeds, "RGB lights");
       for (const leg of ["power", "dataOut", "ground", "dataIn"]) fields.hole(leg);
       return;
+    case "pir":
+      reference("sensor", ids.sensors, "sensors");
+      for (const leg of ["power", "output", "ground"]) fields.hole(leg);
+      return;
   }
 }
 
@@ -330,6 +338,7 @@ interface Ids {
   readonly rgbLeds: Set<string>;
   readonly buttons: Set<string>;
   readonly buzzers: Set<string>;
+  readonly sensors: Set<string>;
 }
 
 /**
@@ -350,6 +359,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   if (supplied) {
     const needsPico: Readonly<Record<string, string>> = {
       buzzers: "a buzzer needs a Pico to drive it",
+      sensors: "a sensor needs a Pico to read it",
       script: "it has no Pico to run a script, and its `test` says what to do instead",
     };
     for (const [key, why] of Object.entries(needsPico)) {
@@ -383,6 +393,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
         "leds",
         "buttons",
         "buzzers",
+        "sensors",
         "steps",
         "script",
         "test",
@@ -400,6 +411,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
     rgbLeds: new Set(),
     buttons: new Set(),
     buzzers: new Set(),
+    sensors: new Set(),
   };
   const seen = new Map<string, string>();
   const declare = (fields: Fields, path: string, into: Set<string>) => {
@@ -460,6 +472,13 @@ export function shapeProblems(data: unknown): FieldProblem[] {
       const path = pathOf("buzzers", index);
       fields.only(["id", "name", "pin"], "a buzzer");
       declare(fields, path, ids.buzzers);
+      fields.text("name");
+      pinField(fields, "gpio", path, problems);
+    });
+    circuit.list("sensors", true, (fields, index) => {
+      const path = pathOf("sensors", index);
+      fields.only(["id", "name", "pin"], "a sensor");
+      declare(fields, path, ids.sensors);
       fields.text("name");
       pinField(fields, "gpio", path, problems);
     });
@@ -569,6 +588,7 @@ export function textsOf(circuit: Circuit): [string, Text][] {
     ...names("leds", circuit.leds),
     ...names("buttons", circuit.buttons),
     ...(isSupplied(circuit) ? [] : names("buzzers", circuit.buzzers)),
+    ...(isSupplied(circuit) ? [] : names("sensors", circuit.sensors)),
     ...circuit.steps.flatMap((step, index): [string, Text][] => [
       [pathOf(pathOf("steps", index), "title"), step.title],
       ...(step.note ? [[pathOf(pathOf("steps", index), "note"), step.note] as [string, Text]] : []),
@@ -665,6 +685,7 @@ export function wordProblems(circuit: Circuit): FieldProblem[] {
           ...(circuit.leds ?? []).map((led) => led.pin.gpio),
           ...(circuit.buttons ?? []).map((button) => button.pin.gpio),
           ...(circuit.buzzers ?? []).map((buzzer) => buzzer.pin.gpio),
+          ...(circuit.sensors ?? []).map((sensor) => sensor.pin.gpio),
         ],
   );
   const problems: FieldProblem[] = [];

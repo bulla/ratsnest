@@ -79,7 +79,7 @@ describe("a file's format (ADR 0015)", () => {
 describe("a file's fields (ADR 0016)", () => {
   it("are only a circuit's, so a misspelt one is caught", () => {
     expect(said(changed((data) => (data.descripton = { en: "Typo" })))).toEqual([
-      "descripton is not a field of a circuit: it has `format`, `setup`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `steps`, `script` or `test`",
+      "descripton is not a field of a circuit: it has `format`, `setup`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `sensors`, `steps`, `script` or `test`",
     ]);
   });
 
@@ -426,6 +426,22 @@ describe("a circuit with a supply (ADR 0032)", () => {
     expect(said(ring)[0]).toStartWith("steps[0].parts[4].kind is `ring`, which needs a Pico");
   });
 
+  it("has no sensor, which needs a Pico to read it (ADR 0043)", () => {
+    expect(said(supplied((data) => (data.sensors = [])))).toEqual([
+      "sensors is not a field of a circuit with a supply: a sensor needs a Pico to read it (ADR 0032)",
+    ]);
+    const pir = supplied((data) =>
+      (step(data, 0).parts as unknown[]).push({
+        kind: "pir",
+        sensor: "pir",
+        power: "a2",
+        output: "a13",
+        ground: "a14",
+      }),
+    );
+    expect(said(pir)[0]).toStartWith("steps[0].parts[4].kind is `pir`, which needs a Pico");
+  });
+
   it("says what a working circuit does in `test`", () => {
     expect(said(supplied((data) => delete data.test))).toEqual([
       "the circuit has no `test`, a text",
@@ -497,5 +513,34 @@ describe("a circuit's setup (ADR 0037)", () => {
     expect(said(resupplied)).toContain(
       "script is not a field of a circuit with a supply: it has no Pico to run a script, and its `test` says what to do instead (ADR 0032)",
     );
+  });
+});
+
+describe("a motion sensor (ADR 0043)", () => {
+  const sensing = (change: (data: Record<string, unknown>) => void) =>
+    changed(change, "motion-sensor-and-light");
+  const sensor = (data: Record<string, unknown>) =>
+    (data.sensors as Record<string, unknown>[])[0] as Record<string, unknown>;
+
+  it("is declared with an id, a name and the pin its OUT goes to", () => {
+    expect(said(sensing(() => {}))).toEqual([]);
+    expect(said(sensing((data) => delete sensor(data).pin))).toEqual([
+      "sensors[0] has no `pin`, a pin",
+    ]);
+    expect(said(sensing((data) => (sensor(data).colour = "white")))).toEqual([
+      "sensors[0].colour is not a field of a sensor: it has `id`, `name` or `pin`",
+    ]);
+  });
+
+  it("is placed by its id, its three jumpers in holes", () => {
+    expect(said(sensing((data) => (part(data, 1, 0).sensor = "door")))).toEqual([
+      "steps[1].parts[0].sensor is `door`, which is not the id of any of the circuit's sensors",
+    ]);
+    expect(said(sensing((data) => (part(data, 1, 0).output = "a31")))).toEqual([
+      "steps[1].parts[0].output is not a hole on a half-size breadboard: holes are named as it prints them, `a21` or `top-19`, and `2:f5` on a second one",
+    ]);
+    expect(said(sensing((data) => (part(data, 1, 0).vcc = "a2")))).toEqual([
+      "steps[1].parts[0].vcc is not a field of a pir: it has `kind`, `sensor`, `power`, `output` or `ground`",
+    ]);
   });
 });
