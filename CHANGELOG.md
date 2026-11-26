@@ -12,22 +12,85 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
 
 ### Added
 
-- A circuit on a Pico can read a PIR motion sensor: declared in `sensors`, with an `id`, a `name` and
-  the `pin` its OUT goes to, and placed by `{ kind: "pir", sensor, power, output, ground }`, the
-  holes its three female-to-male jumpers go in. `rnest check` holds it to VBUS for its 5 V, ground,
-  and a pin of its own, its jumpers all on one side of the channel, and below it when a second
-  breadboard is used. Its page draws it lying beside the board, past the edge its holes are on, dome
-  up, its pins named and its jumpers red, yellow and black; says where each jumper goes; lists the
-  sensor and its three jumpers; and notes that the jumpers go on by the names printed on the sensor.
-  `examples/motion-light.ts` lights an LED for two seconds whenever it sees movement.
-
 - `rnest generate --format png` and `--format webp` write a circuit's drawing as a picture, for
   places that take no SVG, into `pages/<circuit>.<orientation>.<theme>.<language>.png` or `.webp`:
   the SVG of `--format svg`, its credit and background with it, drawn at 12 px to the millimetre,
   twice the SVG's size, and a WebP lossless. A browser draws it: macOS's own, and on Linux and
   Windows a Chrome, Chromium, Edge or Brave, which must be installed, or named by `BUN_CHROME_PATH`.
-  With none, or one that does not finish a step in 15 seconds, `generate` says so and makes nothing. The `circuit` skill makes one when asked, and
-  never publishes it.
+  A picture the browser does not finish a step of in 15 seconds is begun again, on a fresh page,
+  three times in all. With no browser, or one stuck all three times, `generate` says so and makes
+  nothing. The `circuit` skill makes one when asked, and never publishes it.
+- An electrolytic capacitor, `{ kind: "electrolytic", microfarads, plus, minus }`, in a circuit with a
+  supply: it keeps a light lit once its button is let go, and the light fades out. `rnest check`
+  holds it the right way round, its − leg on −, its + leg between a button and a light's resistor,
+  and slow enough to see the fade, its microfarads times that resistor's ohms 0.2 s at least. The
+  page draws it standing, a navy can with its value printed on it and a stripe down its − side,
+  says where its legs go, lists it rated 16 V or more, and notes that it goes in one way round.
+  On a Pico it is refused, with no use there yet.
+- A transistor, `{ kind: "transistor", model: "2N3904", emitter, base, collector }`, in a circuit on
+  a Pico: a pin switches a light through it. `rnest check` holds its legs in its model's order, left
+  to right, its flat face towards row j; its emitter on ground; its base on the light's pin through
+  one resistor of 1 kΩ to 10 kΩ; and the light between 3V3(OUT) and its collector through one
+  resistor of 220 Ω to 1 kΩ. The page draws it as a black TO-92 case with `NPN` and `2N3904` printed
+  on its flat face and its legs' letters above them, lists it, and notes its legs' order and that
+  another model, such as a BC547, may differ. On a supply it is refused, with no use there yet.
+- The 2N3906, a PNP transistor, `model: "2N3906"`: a pin switches a light through it on the high
+  side, the light lit while the pin is low. `rnest check` holds its emitter on 3V3(OUT), and never
+  VBUS, its base on the light's pin through one resistor of 1 kΩ to 10 kΩ, and the light between its
+  collector and ground through one of its own. It is drawn as the 2N3904 is, printed `PNP`. Each
+  transistor's note on its legs names a look-alike whose legs differ, the BC547 or the BC557.
+- Two NPN transistors in a circuit with a supply flash two lights in turn: a flasher, and a tester
+  for the capacitor in one of its two places. `rnest check` holds each transistor's emitter on −,
+  its light from + to its collector, its base from + through one resistor of 10 kΩ to 100 kΩ, and
+  one capacitor from the other's collector to its base, + towards the collector, the two holding it
+  off for 0.1 s to 5 s at a time.
+- A light's callout leader rises over the transistors and capacitors in its way to its label, from
+  the top of its lens, rather than running behind them.
+- `rnest check` refuses a capacitance, such as `470 µF`, written in a circuit's own words, as it
+  refuses a resistance: the engine writes every value.
+- A diode, `{ kind: "diode", model: "1N4148", anode, cathode }`, the 1N4148, 1N4001 or 1N4007, in a
+  circuit with a supply: it keeps a light's current one way, so that two buttons can share a light
+  without lighting each other's. `rnest check` holds it on a light's way, its band towards −, refuses
+  one in backwards, one on no light's way and one from + straight to −, and refuses a light whose
+  diodes, at about 0.7 V each, leave too little of the supply for its resistor. The page draws it
+  lying, orange glass with a black band or black with a grey one, its model on a tag beside it, says
+  where its anode and cathode go, lists it, and notes which way round it goes. On a Pico it is
+  refused, with no use there yet.
+- A light's callout leader rises over the lights and buttons in its way too, each lifted leader to a
+  lane of its own, the light further from its label higher. No page made before changes.
+- A ceramic capacitor, `{ kind: "ceramic", nanofarads, from, to }`, in a circuit on a Pico: one pin
+  charges it through a resistor while another reads it, and the script times it. `rnest check` holds
+  one leg on ground, the other on the pin that reads it and on one resistor of 1 kΩ to 8.2 kΩ from a
+  second pin, and the two slow enough to time, 0.1 ms at least; its value must be one its code can
+  print. The page draws it as a mustard disc printed with its value, `100` over `nF`, says where its
+  legs go and the code the real one is marked with, `104` for 100 nF, lists it, and notes how the
+  code reads and what its resistor can be. On a supply it is refused.
+- A step's words may name a pin the layout wires a part to, not only one a light, a button or a
+  buzzer is on.
+- An SPDT slide switch, `{ kind: "slideSwitch", left, middle, right }`, in a circuit with a supply: it
+  lights one light or the other, whichever way it is slid, and stays so when let go. `rnest check`
+  holds its three legs side by side, judges each light at whichever way the switch lights it,
+  refuses an outer leg that lights no light of its own and a short at either way, and takes a
+  resistor shared on its middle leg. The page draws it standing, a metal shell with its black slide
+  on top, says where its middle and outer legs go, lists it with its legs 2.54 mm apart, and notes
+  that it stays as it is slid. On a Pico it is refused, with no use there yet.
+- A slide potentiometer, `{ kind: "slidePotentiometer", ohms, wiper, end, otherEnd }`, in a circuit
+  on a Pico,
+  lying across both breadboards: the Pico reads its wiper on an analogue pin. `rnest check` holds its
+  wiper two holes from the end beside it and its other end 17 rows along, on the other breadboard;
+  nothing in the holes under its body; one end on 3V3(OUT) and the other on ground; its wiper straight
+  on GP26, GP27 or GP28 and on nothing else, refusing it on 3V3(OUT) or ground, swapped with an end;
+  and its value from 1 kΩ to 100 kΩ. The page draws it lying, a dark metal body with its slot, the cap
+  on its knob and its value printed on it, says where its wiper and each end go, lists it, and notes
+  which leg is the wiper. On a supply it is refused.
+- A DIP switch, `{ kind: "dipSwitch", switches, column, board }`, 2 to 8 switches across the channel,
+  in a circuit on a Pico: each switch goes from ground to a pin of its own, which the script pulls up
+  inside the Pico, since the Pico 2 W's pull-downs cannot be relied on. `rnest check` holds each
+  switch with one leg on ground and the other straight on a GPIO of its own, with nothing else on it,
+  and refuses a leg on 3V3(OUT) saying why. The page draws it from above, a blue body with a white
+  slide in each switch's window, ON along its top edge and the switches' numbers along its bottom,
+  says which way round it goes and where its first and last switches' legs are, lists it, and notes
+  how its switches are read. On a supply it is refused.
 
 ## [0.2.0] - 2026-11-23
 

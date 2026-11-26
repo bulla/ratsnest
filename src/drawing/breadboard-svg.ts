@@ -1,7 +1,10 @@
+import { formatNanofarads } from "../ceramics";
 import type { ButtonColour, LedColour } from "../circuit";
+import { DIODES } from "../diodes";
 import { widthOf } from "../fonts";
 import { isStanding, type Orientation, turned } from "../orientation";
 import { PIE_WEDGES, wedgePath } from "../rgb";
+import { TRANSISTORS, type TransistorLeg } from "../transistors";
 import {
   BREADBOARD_HEIGHT_MM,
   BREADBOARD_WIDTH_MM,
@@ -9,6 +12,7 @@ import {
   CHANNEL_Y_MM,
   COLUMNS,
   columnX,
+  dipLegsOf,
   type Hole,
   holeAt,
   holeCentre,
@@ -28,7 +32,8 @@ import {
   rowsOf,
   rowY,
   SECOND_BOARD_Y_MM,
-  sideOf,
+  SLIDE_POTENTIOMETER_BODY_MM,
+  slidePotentiometerBoxOf,
   supplyLeadsOf,
   usesSecondBoard,
   type WireRole,
@@ -127,9 +132,73 @@ export const SUPPLY_TOKENS = {
   tape: "cell-tape",
 } as const;
 
+/**
+ * The colours of an electrolytic capacitor (ADR 0043): its can's sleeve, the pale stripe down its −
+ * side, the value printed on the sleeve, and the minus signs printed on the stripe.
+ */
+export const ELECTROLYTIC_TOKENS = {
+  sleeve: "capacitor",
+  stripe: "capacitor-stripe",
+  ink: "capacitor-ink",
+  stripeInk: "capacitor-stripe-ink",
+} as const;
+
+/** The colours of a transistor's TO-92 case, and of what is printed on its flat face (ADR 0044). */
+export const TRANSISTOR_TOKENS = { body: "transistor", ink: "transistor-ink" } as const;
+
+/**
+ * The colours of a diode's case and of the band at its cathode (ADR 0049): orange glass with a black
+ * band, as a signal diode's is, and black with a grey band, as a rectifier's is.
+ */
+export const DIODE_TOKENS = {
+  glass: "diode-glass",
+  glassBand: "diode-glass-band",
+  black: "diode-black",
+  blackBand: "diode-black-band",
+} as const;
+
+/** The colours of a ceramic capacitor's disc, and of the value printed on it (ADR 0051). */
+export const CERAMIC_TOKENS = { body: "ceramic", ink: "ceramic-ink" } as const;
+
+/** The colours of a slide switch's metal shell, its black base, and its slide (ADR 0052). */
+export const SLIDE_SWITCH_TOKENS = {
+  shell: "slide-switch",
+  base: "slide-switch-base",
+  slide: "slide-switch-slide",
+} as const;
+
+/**
+ * The colours of a slide potentiometer's metal body, its slot, the cap on its knob, and the value
+ * printed on it (ADR 0053).
+ */
+export const SLIDE_POTENTIOMETER_TOKENS = {
+  body: "slide-potentiometer",
+  slot: "slide-potentiometer-slot",
+  knob: "slide-potentiometer-knob",
+  ink: "slide-potentiometer-ink",
+} as const;
+
+/**
+ * The colours of a DIP switch's body, the windows its slides are in, the slides, and what is printed
+ * on it, its ON side and its switches' numbers (ADR 0054).
+ */
+export const DIP_SWITCH_TOKENS = {
+  body: "dip-switch",
+  window: "dip-switch-window",
+  slide: "dip-switch-slide",
+  ink: "dip-switch-ink",
+} as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
+  ...Object.values(ELECTROLYTIC_TOKENS),
+  ...Object.values(TRANSISTOR_TOKENS),
+  ...Object.values(DIODE_TOKENS),
+  ...Object.values(CERAMIC_TOKENS),
+  ...Object.values(SLIDE_SWITCH_TOKENS),
+  ...Object.values(SLIDE_POTENTIOMETER_TOKENS),
+  ...Object.values(DIP_SWITCH_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -262,6 +331,14 @@ export function formatOhms(ohms: number): string {
   if (ohms >= 1_000_000) return `${ohms / 1_000_000} MΩ`;
   if (ohms >= 1000) return `${ohms / 1000} kΩ`;
   return `${ohms} Ω`;
+}
+
+/**
+ * `470 µF`, `0.47 µF`: a capacitor's value as its can prints it, which the drawing prints the same in
+ * every language (ADR 0040).
+ */
+export function formatMicrofarads(microfarads: number): string {
+  return `${microfarads} µF`;
 }
 
 // --- The board itself. ---
@@ -808,16 +885,30 @@ function segmentTouches(
 }
 
 /**
- * Where a resistor's value tag goes, given everything else on the board (scratchpi's ADR 0154). Towards the
- * channel for a resistor lying along a row, and to its right for one that is not, as every
- * layout before Four buttons had it — unless something is there, in which case the first of a
- * few other places that is clear: the other side, or the other end. Four buttons is the first
- * layout crowded enough to need them.
+ * A part that lies flat between two holes and has a tag beside it: a resistor, its value on the tag,
+ * or a diode, its model (ADR 0040, ADR 0049).
  */
-export function clearTagOf(
-  part: Extract<Part, { kind: "resistor" }>,
-  others: readonly Part[],
-): Point | undefined {
+export type Lying = Extract<Part, { kind: "resistor" }> | Extract<Part, { kind: "diode" }>;
+
+/** A lying part's two ends: a resistor's either way, and a diode's anode, then its cathode. */
+const endsOf = (part: Lying): readonly [Hole, Hole] =>
+  part.kind === "resistor" ? [part.from, part.to] : [part.anode, part.cathode];
+
+/** What a lying part's tag says: a resistor's value in the page's language, or a diode's model. */
+const tagLabelOf = (part: Lying): string =>
+  part.kind === "resistor" ? sayOhms(part.ohms) : part.model;
+
+/** How far either side of its line a lying part's body reaches: a diode's black case is the thickest. */
+const LYING_REACH_MM = 1.2;
+
+/**
+ * Where a resistor's value tag goes, or a diode's model tag, given everything else on the board
+ * (scratchpi's ADR 0154). Towards the channel for a part lying along a row, and to its right for one
+ * that is not, as every layout before Four buttons had it — unless something is there, in which case
+ * the first of a few other places that is clear: the other side, or the other end. Four buttons is
+ * the first layout crowded enough to need them.
+ */
+export function clearTagOf(part: Lying, others: readonly Part[]): Point | undefined {
   return placeTag(part, others)?.at;
 }
 
@@ -825,18 +916,16 @@ export function clearTagOf(
  * Where a value tag goes and on how many lines: the first place that is clear, nearest first, and on a
  * standing board on one line if that is clear there, or else on two.
  */
-function placeTag(
-  part: Extract<Part, { kind: "resistor" }>,
-  others: readonly Part[],
-): { at: Point; lines: number } | undefined {
-  const a = holeCentre(part.from);
-  const b = holeCentre(part.to);
+function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: number } | undefined {
+  const [from, to] = endsOf(part);
+  const a = holeCentre(from);
+  const b = holeCentre(to);
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
   const along = (t: number) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
   // The tag's footprint on the board's own drawing: upright on a standing board, it is as wide
   // there as it is tall on the page. At 0° the distances are the ones it has always had.
-  const label = sayOhms(part.ohms);
+  const label = tagLabelOf(part);
   const standing = isStanding(turn);
   // On a flat board, the places a tag on one line has always had, then the same for two lines, as
   // far out as their depth needs: a value written wider, as Russian writes it, may need them.
@@ -887,13 +976,13 @@ function placeTag(
     };
     const inside = (p: Point, reach: number) => segmentTouches(p, p, reach, box);
     if (standing) {
-      const second = isOnSecondBoard(part.from) || isOnSecondBoard(part.to);
+      const second = isOnSecondBoard(from) || isOnSecondBoard(to);
       const plastic = { top: second ? SECOND_BOARD_Y_MM : 0, bottom: BREADBOARD_HEIGHT_MM };
       if (box.x < 0 || box.x + box.w > BREADBOARD_WIDTH_MM) return false;
       if (box.y < plastic.top || box.y + box.h > plastic.bottom) return false;
     }
     // Its own body, the rails, and the column numbers, which a tag has never sat over.
-    if (segmentTouches(a, b, 1.15, box)) return false;
+    if (segmentTouches(a, b, part.kind === "diode" ? LYING_REACH_MM : 1.15, box)) return false;
     for (const rail of RAILS) {
       if (box.y < railY(rail) + 0.9 && box.y + box.h > railY(rail) - 0.9) return false;
     }
@@ -920,6 +1009,10 @@ function placeTag(
       if (other.kind === "resistor") {
         if (segmentTouches(holeCentre(other.from), holeCentre(other.to), 1.15, box)) return false;
       }
+      if (other.kind === "diode") {
+        const [anode, cathode] = [holeCentre(other.anode), holeCentre(other.cathode)];
+        if (segmentTouches(anode, cathode, LYING_REACH_MM, box)) return false;
+      }
       if (other.kind === "wire") {
         // An arch's shadow is part of it too, a little down and to the right of it.
         const path = wirePath(other);
@@ -939,13 +1032,13 @@ function placeTag(
         const centre = buttonCentre(other);
         if (inside(centre, BUTTON_BODY_MM / 2 + 0.4)) return false;
       }
-      if (other.kind === "pir") {
-        for (const path of pirJumperPaths(other)) {
-          for (let i = 1; i < path.length; i++) {
-            if (segmentTouches(path[i - 1] as Point, path[i] as Point, 0.6, box)) return false;
-          }
-        }
-      }
+      if (other.kind === "electrolytic" && overlap(box, canBoxOf(other))) return false;
+      if (other.kind === "transistor" && overlap(box, to92BoxOf(other))) return false;
+      if (other.kind === "ceramic" && overlap(box, discBoxOf(other))) return false;
+      if (other.kind === "slideSwitch" && overlap(box, slideBoxOf(other))) return false;
+      if (other.kind === "slidePotentiometer" && overlap(box, slidePotentiometerBoxOf(other)))
+        return false;
+      if (other.kind === "dipSwitch" && overlap(box, dipBoxOf(other))) return false;
       for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
     }
     return true;
@@ -978,14 +1071,15 @@ function placeTag(
 }
 
 /** The same, falling back to where a tag has always gone if nowhere is clear. */
-export function tagOf(part: Extract<Part, { kind: "resistor" }>, others: readonly Part[]): Point {
+export function tagOf(part: Lying, others: readonly Part[]): Point {
   return clearTagOf(part, others) ?? defaultTagOf(part);
 }
 
 /** Towards the channel along a row, and to the right otherwise: before `clearTagOf` looked. */
-function defaultTagOf(part: Extract<Part, { kind: "resistor" }>): Point {
-  const a = holeCentre(part.from);
-  const b = holeCentre(part.to);
+function defaultTagOf(part: Lying): Point {
+  const [from, to] = endsOf(part);
+  const a = holeCentre(from);
+  const b = holeCentre(to);
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
   return horizontal
@@ -1082,6 +1176,74 @@ function twoLineTag(tag: Point, label: string): string {
   return (
     rect(tag.x - w / 2, tag.y - h / 2, w, h, `rx="1.15" ${TAG_FRAME}`) +
     lines.map((line, i) => text(tag.x, first + i * STANDING_LINE_MM, line, TAG_INK)).join("")
+  );
+}
+
+/**
+ * A diode, lying flat between its holes as a resistor does (ADR 0040, ADR 0049): a small orange glass
+ * case with a black band, or a larger black one with a grey band, as its model's is, the band at its
+ * cathode. Its lead shows through the glass. Its model is on a tag beside it, placed as a resistor's
+ * value is: lying, its case is too thin to hold an upright word at a quarter turn.
+ */
+export const DIODE_MM = {
+  glass: { length: 4.4, height: 1.9 },
+  black: { length: 5.4, height: 2.4 },
+  band: 0.8,
+} as const;
+
+function drawDiode(part: Extract<Part, { kind: "diode" }>, tag: Point, lines = 1): string {
+  const a = holeCentre(part.anode);
+  const k = holeCentre(part.cathode);
+  const mid = { x: (a.x + k.x) / 2, y: (a.y + k.y) / 2 };
+  const length = Math.hypot(k.x - a.x, k.y - a.y);
+  const angle = (Math.atan2(k.y - a.y, k.x - a.x) * 180) / Math.PI;
+  const glass = DIODES[part.model].case === "glass";
+  const shape = glass ? DIODE_MM.glass : DIODE_MM.black;
+  const body = Math.min(shape.length, length - 1.2);
+  const half = body / 2;
+  const height = shape.height;
+  const [fill, band] = glass
+    ? [DIODE_TOKENS.glass, DIODE_TOKENS.glassBand]
+    : [DIODE_TOKENS.black, DIODE_TOKENS.blackBand];
+  // Drawn along +x from its anode to its cathode, around its middle, then turned to lie between them.
+  const local =
+    line(
+      -length / 2,
+      0,
+      length / 2,
+      0,
+      `stroke="${token("lead")}" stroke-width="0.5" stroke-linecap="round"`,
+    ) +
+    rect(
+      -half,
+      -height / 2,
+      body,
+      height,
+      `rx="${glass ? height / 2 : 0.45}" fill="${token(fill)}"${glass ? ` fill-opacity="0.88"` : ""} stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`,
+    ) +
+    rect(
+      half - (glass ? 0.55 : 0.45) - DIODE_MM.band,
+      -height / 2 + 0.06,
+      DIODE_MM.band,
+      height - 0.12,
+      `fill="${token(band)}"`,
+    ) +
+    line(
+      -half + 0.7,
+      -height / 2 + 0.5,
+      half - DIODE_MM.band - 0.8,
+      -height / 2 + 0.5,
+      `stroke="${token("shine")}" stroke-opacity="${glass ? 0.55 : 0.2}" stroke-width="0.3" stroke-linecap="round"`,
+    );
+  return (
+    `<g transform="translate(${n(mid.x)} ${n(mid.y)}) rotate(${n(angle)})">${local}</g>` +
+    legEnd(a.x, a.y) +
+    legEnd(k.x, k.y) +
+    (turn === 0 ? "" : `<g${upright(tag.x, tag.y)}>`) +
+    (lines === 1
+      ? oneLineTag(tag, part.model, tagWidthOf(part.model))
+      : twoLineTag(tag, part.model)) +
+    (turn === 0 ? "" : "</g>")
   );
 }
 
@@ -1222,6 +1384,504 @@ function drawBuzzer(plus: Hole, minus: Hole): string {
 }
 
 /**
+ * An electrolytic capacitor, standing on its two legs and seen from the side, as a light is (ADR 0040,
+ * ADR 0043): a can in its sleeve, a pale stripe down the side its − leg is on, with minus signs on it,
+ * an aluminium top, and its value printed on the sleeve, the number over its unit, upright at every
+ * quarter turn. Its + leg is kinked, as a light's long leg is. It is drawn the same size whatever its
+ * value, and short, so that it stands over no more than the three rows above its legs.
+ */
+export const CAN_MM = { width: 5.4, height: 4.6, lift: 2, top: 0.55, stripe: 1.25 } as const;
+
+/** Where a can's value is printed: the middle of its sleeve, beside the stripe. */
+function canPrintOf(part: Extract<Part, { kind: "electrolytic" }>): {
+  x: number;
+  y: number;
+  towardMinus: number;
+} {
+  const p = holeCentre(part.plus);
+  const m = holeCentre(part.minus);
+  const towardMinus = Math.sign(m.x - p.x) || 1;
+  const mid = (p.x + m.x) / 2;
+  return {
+    x: mid - (towardMinus * CAN_MM.stripe) / 2,
+    y: p.y - CAN_MM.lift - CAN_MM.height / 2,
+    towardMinus,
+  };
+}
+
+/** The box a can stands over on the board's own drawing, its top included. */
+export function canBoxOf(part: Extract<Part, { kind: "electrolytic" }>): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  const p = holeCentre(part.plus);
+  const m = holeCentre(part.minus);
+  const mid = (p.x + m.x) / 2;
+  const bottom = p.y - CAN_MM.lift;
+  const top = bottom - CAN_MM.height - CAN_MM.top;
+  return { x: mid - CAN_MM.width / 2, y: top, w: CAN_MM.width, h: bottom - top };
+}
+
+function drawElectrolytic(part: Extract<Part, { kind: "electrolytic" }>): string {
+  const p = holeCentre(part.plus);
+  const m = holeCentre(part.minus);
+  const y = p.y;
+  const mid = (p.x + m.x) / 2;
+  const half = CAN_MM.width / 2;
+  const bottom = y - CAN_MM.lift;
+  const top = bottom - CAN_MM.height;
+  const ry = CAN_MM.top;
+  const print = canPrintOf(part);
+  const toward = print.towardMinus;
+  // The stripe runs down the side the − leg is on, the whole height of the sleeve.
+  const stripeInner = mid + toward * (half - CAN_MM.stripe);
+  const stripeOuter = mid + toward * half;
+  const stripeX = Math.min(stripeInner, stripeOuter);
+  const stripeMid = (stripeInner + stripeOuter) / 2;
+  const sleeve = `M${n(mid - half)} ${n(top)}V${n(bottom)}A${half} ${ry} 0 0 0 ${n(mid + half)} ${n(bottom)}V${n(top)}Z`;
+  const stripe = `M${n(stripeX)} ${n(top)}V${n(bottom + ry)}H${n(stripeX + CAN_MM.stripe)}V${n(top)}Z`;
+  const kink = 0.6 * -toward;
+  const [number, unit] = formatMicrofarads(part.microfarads).split(" ");
+  const ink = `font-weight="800" fill="${token(ELECTROLYTIC_TOKENS.ink)}"`;
+  const lines =
+    text(print.x, print.y - 0.85, number ?? "", `font-size="1.55" ${ink}`) +
+    text(print.x, print.y + 0.85, unit ?? "", `font-size="1.25" ${ink}`);
+  return (
+    // The − leg straight, and the + leg kinked, as a light's long leg is.
+    line(m.x, y, m.x, bottom, `stroke="${token("lead")}" stroke-width="0.45"`) +
+    `<path d="M${n(p.x)} ${n(bottom)}V${n(y - 1.55)}L${n(p.x + kink)} ${n(y - 1.05)}L${n(p.x)} ${n(y - 0.55)}V${n(y)}" fill="none" stroke="${token("lead")}" stroke-width="0.45" stroke-linejoin="round"/>` +
+    legEnd(p.x, y) +
+    legEnd(m.x, y) +
+    `<path d="${sleeve}" fill="${token(ELECTROLYTIC_TOKENS.sleeve)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"/>` +
+    `<clipPath id="can-${n(mid * 1000)}-${n(y * 1000)}"><path d="${sleeve}"/></clipPath>` +
+    `<path d="${stripe}" clip-path="url(#can-${n(mid * 1000)}-${n(y * 1000)})" fill="${token(ELECTROLYTIC_TOKENS.stripe)}"/>` +
+    // A sheen down the sleeve, on the side away from the stripe.
+    rect(
+      mid - toward * (half - 0.75) - 0.35,
+      top,
+      0.7,
+      CAN_MM.height,
+      `fill="${token("shine")}" fill-opacity="0.16"`,
+    ) +
+    `<ellipse cx="${n(mid)}" cy="${n(top)}" rx="${half}" ry="${ry}" fill="${token("board-metal")}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"/>` +
+    `<path d="M${n(mid - 1)} ${n(top - 0.12)}L${n(mid + 1)} ${n(top + 0.12)}M${n(mid - 1)} ${n(top + 0.12)}L${n(mid + 1)} ${n(top - 0.12)}" stroke="${token("shade")}" stroke-opacity="0.3" stroke-width="0.14"/>` +
+    [0.25, 0.5, 0.75]
+      .map((at) =>
+        word(
+          stripeMid,
+          top + CAN_MM.height * at,
+          "−",
+          `font-size="1.3" font-weight="900" fill="${token(ELECTROLYTIC_TOKENS.stripeInk)}"`,
+        ),
+      )
+      .join("") +
+    (turn === 0 ? lines : `<g${upright(print.x, print.y)}>${lines}</g>`)
+  );
+}
+
+/**
+ * A transistor in its TO-92 case, standing on its three legs with its flat face towards the viewer,
+ * as a datasheet draws it (ADR 0040, ADR 0044): a black case, larger than life so that what is printed
+ * on it reads, its type large, `NPN`, its model small beneath, and the letter of each leg above it,
+ * every word upright at every quarter turn and the same in every language. Its legs leave the case
+ * 1.27 mm apart, as a TO-92's do, and bend out to the holes, a pitch apart.
+ */
+export const TO92_MM = { width: 6.6, height: 5, lift: 2 } as const;
+
+/** The box a transistor's case stands over on the board's own drawing. */
+export function to92BoxOf(part: Extract<Part, { kind: "transistor" }>): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  const b = holeCentre(part.base);
+  return {
+    x: b.x - TO92_MM.width / 2,
+    y: b.y - TO92_MM.lift - TO92_MM.height,
+    w: TO92_MM.width,
+    h: TO92_MM.height,
+  };
+}
+
+const TO92_LEG_LETTER: Record<TransistorLeg, string> = {
+  emitter: "E",
+  base: "B",
+  collector: "C",
+};
+
+function drawTransistor(part: Extract<Part, { kind: "transistor" }>): string {
+  const model = TRANSISTORS[part.model];
+  const mid = holeCentre(part.base).x;
+  const y = holeCentre(part.base).y;
+  const half = TO92_MM.width / 2;
+  const bottom = y - TO92_MM.lift;
+  const top = bottom - TO92_MM.height;
+  const lead = `fill="none" stroke="${token("lead")}" stroke-width="0.45" stroke-linejoin="round"`;
+  const legs = model.legs.map((leg) => {
+    const hole = holeCentre(part[leg]);
+    const out = mid + (hole.x - mid) / 2;
+    return {
+      leg,
+      out,
+      path: `<path d="M${n(hole.x)} ${n(y)}V${n(y - 0.6)}L${n(out)} ${n(y - 1.4)}V${n(bottom)}" ${lead}/>`,
+      end: legEnd(hole.x, y),
+    };
+  });
+  const ink = `fill="${token(TRANSISTOR_TOKENS.ink)}"`;
+  const centre = { x: mid, y: top + 1.825 };
+  const print =
+    text(centre.x, top + 1.35, model.type, `font-size="1.5" font-weight="900" ${ink}`) +
+    text(centre.x, top + 2.6, part.model, `font-size="0.9" font-weight="800" ${ink}`);
+  return (
+    legs.map((leg) => leg.path + leg.end).join("") +
+    `<path d="M${n(mid - half)} ${n(bottom)}V${n(top + 0.9)}Q${n(mid - half)} ${n(top)} ${n(mid - half + 0.9)} ${n(top)}H${n(mid + half - 0.9)}Q${n(mid + half)} ${n(top)} ${n(mid + half)} ${n(top + 0.9)}V${n(bottom)}Z" fill="${token(TRANSISTOR_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"/>` +
+    // The rounded back shows past the flat face at either side, and catches the light.
+    rect(
+      mid - half + 0.35,
+      top + 0.7,
+      0.45,
+      TO92_MM.height - 1,
+      `rx="0.2" fill="${token("shine")}" fill-opacity="0.14"`,
+    ) +
+    rect(
+      mid + half - 0.8,
+      top + 0.7,
+      0.45,
+      TO92_MM.height - 1,
+      `rx="0.2" fill="${token("shine")}" fill-opacity="0.08"`,
+    ) +
+    (turn === 0 ? print : `<g${upright(centre.x, centre.y)}>${print}</g>`) +
+    legs
+      .map((leg) =>
+        word(
+          leg.out,
+          bottom - 0.75,
+          TO92_LEG_LETTER[leg.leg],
+          `font-size="0.85" font-weight="800" ${ink}`,
+        ),
+      )
+      .join("")
+  );
+}
+
+/**
+ * A ceramic capacitor, standing on its two legs and seen from the front (ADR 0040, ADR 0051): a
+ * mustard disc, larger than life so that its value reads, printed with it as a can is, the number over
+ * its unit, `100` over `nF`, upright at every quarter turn and the same in every language. Its legs
+ * come straight down from it to their holes, one hole apart, so that it stands over the two rows above
+ * them. A number wider than `number` at full size, `0.022`, is printed smaller, to cross the disc.
+ */
+export const DISC_MM = { radius: 2.3, lift: 1.4, number: 3 } as const;
+
+/** The middle of a ceramic capacitor's disc, as it stands over its holes. */
+function discCentreOf(part: Extract<Part, { kind: "ceramic" }>): Point {
+  const a = holeCentre(part.from);
+  const b = holeCentre(part.to);
+  return { x: (a.x + b.x) / 2, y: a.y - DISC_MM.lift - DISC_MM.radius };
+}
+
+/** The box a ceramic capacitor's disc stands over on the board's own drawing. */
+export function discBoxOf(part: Extract<Part, { kind: "ceramic" }>): Box {
+  const { x, y } = discCentreOf(part);
+  return {
+    x: x - DISC_MM.radius,
+    y: y - DISC_MM.radius,
+    w: 2 * DISC_MM.radius,
+    h: 2 * DISC_MM.radius,
+  };
+}
+
+function drawCeramic(part: Extract<Part, { kind: "ceramic" }>): string {
+  const centre = discCentreOf(part);
+  const r = DISC_MM.radius;
+  const legs = [part.from, part.to].map(holeCentre);
+  const [number = "", unit = ""] = formatNanofarads(part.nanofarads).split(" ");
+  const size = Math.min(1.55, (1.55 * DISC_MM.number) / widthOf(number, 1.55, 900));
+  const ink = `font-weight="900" fill="${token(CERAMIC_TOKENS.ink)}"`;
+  const value =
+    text(centre.x, centre.y - 0.7, number, `font-size="${n(size)}" ${ink}`) +
+    text(centre.x, centre.y + 0.9, unit, `font-size="1.25" ${ink}`);
+  return (
+    legs
+      .map(
+        (leg) =>
+          line(
+            leg.x,
+            leg.y,
+            leg.x,
+            centre.y + 1.6,
+            `stroke="${token("lead")}" stroke-width="0.45"`,
+          ) + legEnd(leg.x, leg.y),
+      )
+      .join("") +
+    circle(
+      centre.x,
+      centre.y,
+      r,
+      `fill="${token(CERAMIC_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`,
+    ) +
+    `<ellipse cx="${n(centre.x - 1.2)}" cy="${n(centre.y - 1.45)}" rx="0.5" ry="0.3" fill="${token("shine")}" fill-opacity="0.35"/>` +
+    (turn === 0 ? value : `<g${upright(centre.x, centre.y)}>${value}</g>`)
+  );
+}
+
+/**
+ * An SPDT slide switch, standing on its three legs and seen from the front (ADR 0052): a metal shell
+ * on a black base, its legs straight down from it to their holes, a pitch apart, and on top its
+ * black slide, which runs along it and is drawn towards its left leg, to which it then joins its
+ * middle one. Nothing is printed on it, so nothing on it needs turning upright.
+ */
+export const SLIDE_MM = {
+  width: 8.6,
+  height: 3.4,
+  lift: 1.2,
+  base: 0.8,
+  slot: 4.8,
+  slide: 2.2,
+  rise: 2,
+} as const;
+
+/** The box a slide switch stands over on the board's own drawing, its slide on top included. */
+export function slideBoxOf(part: Extract<Part, { kind: "slideSwitch" }>): Box {
+  const { x, y } = holeCentre(part.middle);
+  const top = y - SLIDE_MM.lift - SLIDE_MM.height - SLIDE_MM.rise;
+  return {
+    x: x - SLIDE_MM.width / 2,
+    y: top,
+    w: SLIDE_MM.width,
+    h: SLIDE_MM.height + SLIDE_MM.rise,
+  };
+}
+
+function drawSlideSwitch(part: Extract<Part, { kind: "slideSwitch" }>): string {
+  const { x: mid, y } = holeCentre(part.middle);
+  const half = SLIDE_MM.width / 2;
+  const bottom = y - SLIDE_MM.lift;
+  const top = bottom - SLIDE_MM.height;
+  const lead = `stroke="${token("lead")}" stroke-width="0.45"`;
+  const edge = `stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`;
+  const legs = [part.left, part.middle, part.right]
+    .map((hole) => {
+      const leg = holeCentre(hole);
+      return line(leg.x, leg.y, leg.x, bottom, lead) + legEnd(leg.x, leg.y);
+    })
+    .join("");
+  const slot = { left: mid - SLIDE_MM.slot / 2, right: mid + SLIDE_MM.slot / 2 };
+  const slide = { x: slot.left + 0.15, y: top - SLIDE_MM.rise, w: SLIDE_MM.slide };
+  const grooves = [0.55, 1.05, 1.55]
+    .map((dy) =>
+      line(
+        slide.x + 0.4,
+        slide.y + dy,
+        slide.x + slide.w - 0.4,
+        slide.y + dy,
+        `stroke="${token("shine")}" stroke-opacity="0.22" stroke-width="0.18"`,
+      ),
+    )
+    .join("");
+  return (
+    legs +
+    rect(
+      mid - half + 0.25,
+      bottom - SLIDE_MM.base,
+      SLIDE_MM.width - 0.5,
+      SLIDE_MM.base,
+      `rx="0.15" fill="${token(SLIDE_SWITCH_TOKENS.base)}"`,
+    ) +
+    rect(
+      mid - half,
+      top,
+      SLIDE_MM.width,
+      SLIDE_MM.height - SLIDE_MM.base,
+      `rx="0.3" fill="${token(SLIDE_SWITCH_TOKENS.shell)}" ${edge}`,
+    ) +
+    // The shell's top catches the light, and its slot runs along it.
+    rect(
+      mid - half + 0.4,
+      top + 0.35,
+      SLIDE_MM.width - 0.8,
+      0.4,
+      `rx="0.2" fill="${token("shine")}" fill-opacity="0.35"`,
+    ) +
+    rect(
+      slot.left,
+      top - 0.2,
+      SLIDE_MM.slot,
+      0.55,
+      `rx="0.2" fill="${token(SLIDE_SWITCH_TOKENS.base)}"`,
+    ) +
+    rect(
+      slide.x,
+      slide.y,
+      slide.w,
+      SLIDE_MM.rise + 0.2,
+      `rx="0.35" fill="${token(SLIDE_SWITCH_TOKENS.slide)}" ${edge}`,
+    ) +
+    grooves
+  );
+}
+
+/**
+ * A slide potentiometer, lying across both breadboards and seen from above (ADR 0040, ADR 0053): a
+ * long dark metal body between its legs, which show past its ends, its slot along its middle, and the
+ * cap on its knob across the slot, drawn halfway along it. Its value is printed on it as a resistor's
+ * tag writes it, `10 kΩ`, between the knob and its other end, upright at every quarter turn and the
+ * same in every language.
+ */
+export const SLIDE_POTENTIOMETER_MM = { slot: 1, knob: 5, overhang: 0.5, print: 1.6 } as const;
+
+function drawSlidePotentiometer(part: Extract<Part, { kind: "slidePotentiometer" }>): string {
+  const box = slidePotentiometerBoxOf(part);
+  const end = holeCentre(part.end);
+  const other = holeCentre(part.otherEnd);
+  const edge = `stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`;
+  // Each leg comes out from under the body's end, straight along it, to its hole.
+  const legs = [part.wiper, part.end, part.otherEnd]
+    .map((hole) => {
+      const leg = holeCentre(hole);
+      const toward = leg.y < box.y + box.h / 2 ? box.y : box.y + box.h;
+      return (
+        line(leg.x, leg.y, leg.x, toward, `stroke="${token("lead")}" stroke-width="0.6"`) +
+        legEnd(leg.x, leg.y)
+      );
+    })
+    .join("");
+  const mid = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
+  const slotEnds = SLIDE_POTENTIOMETER_BODY_MM.inset + 1.8;
+  const knob = { w: box.w + 2 * SLIDE_POTENTIOMETER_MM.overhang, h: SLIDE_POTENTIOMETER_MM.knob };
+  const ridges = [-1.2, 0, 1.2]
+    .map((dy) =>
+      line(
+        mid.x - knob.w / 2 + 0.8,
+        mid.y + dy,
+        mid.x + knob.w / 2 - 0.8,
+        mid.y + dy,
+        `stroke="${token("shade")}" stroke-opacity="0.3" stroke-width="0.25"`,
+      ),
+    )
+    .join("");
+  // Its value, a quarter of the way along from its other end, where the knob does not cover it.
+  const at = { x: mid.x, y: other.y + (end.y - other.y) * 0.25 };
+  const print = text(
+    at.x,
+    at.y,
+    escaped(formatOhms(part.ohms)),
+    `font-size="${SLIDE_POTENTIOMETER_MM.print}" font-weight="800" fill="${token(SLIDE_POTENTIOMETER_TOKENS.ink)}"`,
+  );
+  return (
+    legs +
+    rect(
+      box.x,
+      box.y,
+      box.w,
+      box.h,
+      `rx="0.6" fill="${token(SLIDE_POTENTIOMETER_TOKENS.body)}" ${edge}`,
+    ) +
+    // The metal's edges catch the light along its length.
+    rect(
+      box.x + 0.45,
+      box.y + 0.45,
+      box.w - 0.9,
+      box.h - 0.9,
+      `rx="0.4" fill="none" stroke="${token("shine")}" stroke-opacity="0.18" stroke-width="0.3"`,
+    ) +
+    rect(
+      mid.x - SLIDE_POTENTIOMETER_MM.slot / 2,
+      box.y + slotEnds,
+      SLIDE_POTENTIOMETER_MM.slot,
+      box.h - 2 * slotEnds,
+      `rx="0.5" fill="${token(SLIDE_POTENTIOMETER_TOKENS.slot)}"`,
+    ) +
+    rect(
+      mid.x - knob.w / 2,
+      mid.y - knob.h / 2,
+      knob.w,
+      knob.h,
+      `rx="0.7" fill="${token(SLIDE_POTENTIOMETER_TOKENS.knob)}" ${edge}`,
+    ) +
+    ridges +
+    (turn === 0 ? print : `<g${upright(at.x, at.y)}>${print}</g>`)
+  );
+}
+
+/**
+ * A DIP switch across the channel, seen from above (ADR 0040, ADR 0054): a blue body between its two
+ * rows of legs, whose ends show past its edges, a window over each switch with its white slide in it,
+ * drawn off, away from the ON printed along its top edge, and each switch's number along its bottom
+ * edge, every word upright at every quarter turn and the same in every language.
+ */
+export const DIP_MM = { side: 1.35, inset: 0.6, window: { w: 1.45, h: 3.3 }, print: 0.95 } as const;
+
+/** The box a DIP switch's body lies over, between its two rows of legs. */
+export function dipBoxOf(part: Extract<Part, { kind: "dipSwitch" }>): Box {
+  const legs = dipLegsOf(part);
+  const first = holeCentre(legs[0]?.[0] ?? "e1");
+  const last = holeCentre(legs[legs.length - 1]?.[1] ?? "f1");
+  return {
+    x: first.x - DIP_MM.side,
+    y: first.y + DIP_MM.inset,
+    w: last.x - first.x + 2 * DIP_MM.side,
+    h: last.y - first.y - 2 * DIP_MM.inset,
+  };
+}
+
+function drawDipSwitch(part: Extract<Part, { kind: "dipSwitch" }>): string {
+  const box = dipBoxOf(part);
+  const middle = box.y + box.h / 2;
+  const lead = `stroke="${token("lead")}" stroke-width="0.55"`;
+  const ink = `font-size="${DIP_MM.print}" font-weight="900" fill="${token(DIP_SWITCH_TOKENS.ink)}"`;
+  const { w, h } = DIP_MM.window;
+  const switches = dipLegsOf(part).map(([top, bottom], index) => {
+    const [t, b] = [holeCentre(top), holeCentre(bottom)];
+    return {
+      legs:
+        line(t.x, t.y, t.x, box.y, lead) +
+        legEnd(t.x, t.y) +
+        line(b.x, b.y, b.x, box.y + box.h, lead) +
+        legEnd(b.x, b.y),
+      face:
+        rect(
+          t.x - w / 2,
+          middle - h / 2,
+          w,
+          h,
+          `rx="0.2" fill="${token(DIP_SWITCH_TOKENS.window)}"`,
+        ) +
+        // Off: its slide at the end away from ON.
+        rect(
+          t.x - w / 2 + 0.2,
+          middle + 0.1,
+          w - 0.4,
+          h / 2 - 0.3,
+          `rx="0.15" fill="${token(DIP_SWITCH_TOKENS.slide)}"`,
+        ) +
+        word(t.x, box.y + box.h - 0.72, String(index + 1), ink),
+    };
+  });
+  return (
+    switches.map((each) => each.legs).join("") +
+    rect(
+      box.x,
+      box.y,
+      box.w,
+      box.h,
+      `rx="0.4" fill="${token(DIP_SWITCH_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`,
+    ) +
+    switches.map((each) => each.face).join("") +
+    // ON above the gap between switches 1 and 2, where it clears their windows at every turn.
+    word(
+      box.x + DIP_MM.side + PIN_PITCH_MM / 2,
+      box.y + 0.78,
+      "ON",
+      ink.replace(`font-size="${DIP_MM.print}"`, 'font-size="0.85"'),
+    )
+  );
+}
+
+/**
  * A 10 mm addressable RGB LED (scratchpi's ADR 0222), standing up: four leads, data out's kinked as the
  * longest, a frosted lens over them, and its pie of red, green and blue showing through
  * (scratchpi's ADR 0224). Its glow is white, all three at once, when the step that tests it is picked.
@@ -1357,213 +2017,6 @@ function drawRing(part: Extract<Part, { kind: "ring" }>): string {
   );
 }
 
-// --- A part on jumpers, beside the board (ADR 0044). ---
-
-/**
- * A PIR motion sensor module (ADR 0043), at its size: its board, the square base of its dome, and a
- * strip below it where its pins' names are printed, deep enough for `GND` upright on a standing board.
- * Its header is drawn wider than life, so that each name has room beside its neighbour's (ADR 0044),
- * and the plug of each jumper stands out past its board's edge.
- */
-export const PIR_MM = {
-  width: 32.4,
-  height: 28,
-  base: 23,
-  dome: 11,
-  strip: 4.4,
-  pitch: 3.6,
-  plug: { width: 2.5, length: 4.5 },
-  /** How far past the breadboard's edge the edge its pins are at lies. */
-  gap: 9,
-} as const;
-
-type PirPart = Extract<Part, { kind: "pir" }>;
-
-/** Its pins along its edge, read with them towards you and its dome up: VCC, OUT and GND. */
-const PIR_PINS = [
-  ["power", "VCC"],
-  ["output", "OUT"],
-  ["ground", "GND"],
-] as const;
-
-/** What a jumper on one of its pins carries, which is the jumper's colour. */
-const PIR_ROLE: Record<(typeof PIR_PINS)[number][0], WireRole> = {
-  power: "power",
-  output: "signal",
-  ground: "ground",
-};
-
-/** Where a motion sensor lies, and where its pins and their jumpers' plugs are. */
-export interface PirLayout {
-  /** Its board, past the breadboard's edge. */
-  readonly box: Box;
-  /** The edge of the breadboard it lies past, the side of the channel its holes are on. */
-  readonly side: "top" | "bottom";
-  /** The y its pins are at, the edge of its board nearer the breadboard. */
-  readonly edge: number;
-  /** +1 when the breadboard is below it, −1 when above: the way its pins point. */
-  readonly toward: 1 | -1;
-  readonly pins: readonly {
-    readonly leg: (typeof PIR_PINS)[number][0];
-    readonly label: string;
-    readonly x: number;
-  }[];
-}
-
-/**
- * Where a motion sensor lies (ADR 0044): past the edge its holes are on, its pins towards the board,
- * its middle over theirs, moved along only as far as keeps it within the board's length. Past the
- * bottom edge it is turned round, so its pins read GND, OUT and VCC from the left.
- */
-export function pirLayoutOf(part: PirPart): PirLayout {
-  const side = sideOf(part.power);
-  const xs = legsOf(part).map((leg) => holeCentre(leg).x);
-  const middle = xs.reduce((sum, x) => sum + x, 0) / xs.length;
-  const x = Math.min(Math.max(middle - PIR_MM.width / 2, 0), BREADBOARD_WIDTH_MM - PIR_MM.width);
-  const toward = side === "top" ? 1 : -1;
-  const edge = side === "top" ? -PIR_MM.gap : BREADBOARD_HEIGHT_MM + PIR_MM.gap;
-  const centre = x + PIR_MM.width / 2;
-  const order = side === "top" ? PIR_PINS : [...PIR_PINS].reverse();
-  return {
-    box: {
-      x,
-      y: side === "top" ? edge - PIR_MM.height : edge,
-      w: PIR_MM.width,
-      h: PIR_MM.height,
-    },
-    side,
-    edge,
-    toward,
-    pins: order.map(([leg, label], index) => ({
-      leg,
-      label,
-      x: centre + (index - 1) * PIR_MM.pitch,
-    })),
-  };
-}
-
-/** A jumper from the end of its plug on one of the sensor's pins to its hole, as a cubic curve. */
-function pirJumperCurve(
-  layout: PirLayout,
-  pin: PirLayout["pins"][number],
-  hole: Point,
-): [Point, Point, Point, Point] {
-  const start = { x: pin.x, y: layout.edge + layout.toward * PIR_MM.plug.length };
-  const half = (hole.y - start.y) / 2;
-  return [start, { x: start.x, y: start.y + half }, { x: hole.x, y: hole.y - half }, hole];
-}
-
-/** The lines a motion sensor's jumpers are drawn along, for a value tag to keep off. */
-export function pirJumperPaths(part: PirPart): Point[][] {
-  const layout = pirLayoutOf(part);
-  return layout.pins.map((pin) => {
-    const [p0, p1, p2, p3] = pirJumperCurve(layout, pin, holeCentre(part[pin.leg]));
-    return Array.from({ length: 41 }, (_, i) => {
-      const t = i / 40;
-      const u = 1 - t;
-      const at = (k: "x" | "y") =>
-        u * u * u * p0[k] + 3 * u * u * t * p1[k] + 3 * u * t * t * p2[k] + t * t * t * p3[k];
-      return { x: at("x"), y: at("y") };
-    });
-  });
-}
-
-/**
- * A PIR motion sensor lying beside the board, dome up (ADR 0043, ADR 0044), seen from above: its
- * green board with a mounting hole at each side, the white dome on its square base, its pins' names
- * printed upright on the strip by its pins, a black plug on each pin, and a jumper from each plug to
- * its hole, red to VCC, yellow to OUT and black to GND.
- */
-function drawPir(part: PirPart): string {
-  const layout = pirLayoutOf(part);
-  const { box, edge, toward } = layout;
-  // A distance from the edge its pins are at, away from the breadboard, as a y.
-  const away = (distance: number) => edge - toward * distance;
-  const centre = box.x + box.w / 2;
-  const domeY = away(PIR_MM.strip + PIR_MM.base / 2);
-  const tab = (box.w - PIR_MM.base) / 2;
-  const out: string[] = [
-    rect(
-      box.x,
-      box.y,
-      box.w,
-      box.h,
-      `rx="0.9" fill="${token("board")}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.25"`,
-    ),
-  ];
-  for (const x of [box.x + tab / 2, box.x + box.w - tab / 2]) {
-    out.push(
-      circle(x, domeY, 1.25, `fill="${token("board-metal")}"`),
-      circle(x, domeY, 0.8, `fill="${token("board-chip")}"`),
-    );
-  }
-  const baseTop = Math.min(away(PIR_MM.strip), away(PIR_MM.strip + PIR_MM.base));
-  out.push(
-    rect(
-      centre - PIR_MM.base / 2,
-      baseTop,
-      PIR_MM.base,
-      PIR_MM.base,
-      `rx="0.8" fill="${token("led-white")}" stroke="${token("breadboard-edge")}" stroke-width="0.25"`,
-    ),
-    circle(centre + 0.7, domeY + 0.9, PIR_MM.dome, `fill="${token("shade")}" fill-opacity="0.12"`),
-    circle(
-      centre,
-      domeY,
-      PIR_MM.dome,
-      `fill="${token("led-white")}" stroke="${token("breadboard-edge")}" stroke-width="0.3"`,
-    ),
-  );
-  // The dome's lens is moulded in facets: rings about its middle, and spokes between them.
-  const facet = `fill="none" stroke="${token("shade")}" stroke-opacity="0.1" stroke-width="0.22"`;
-  out.push(circle(centre, domeY, 3.6, facet), circle(centre, domeY, 7.4, facet));
-  for (let spoke = 0; spoke < 8; spoke += 1) {
-    const angle = (spoke * Math.PI) / 4 + Math.PI / 8;
-    const [dx, dy] = [Math.cos(angle), Math.sin(angle)];
-    out.push(
-      line(
-        centre + dx * 3.6,
-        domeY + dy * 3.6,
-        centre + dx * PIR_MM.dome,
-        domeY + dy * PIR_MM.dome,
-        facet,
-      ),
-    );
-  }
-  out.push(circle(centre - 3.8, domeY - 3.8, 2.4, `fill="${token("shine")}" fill-opacity="0.55"`));
-  const plugTop = Math.min(edge, edge + toward * PIR_MM.plug.length);
-  for (const pin of layout.pins) {
-    out.push(
-      word(
-        pin.x,
-        away(PIR_MM.strip / 2),
-        pin.label,
-        `font-size="1.3" font-weight="800" fill="${token("board-silk")}"`,
-      ),
-      rect(
-        pin.x - PIR_MM.plug.width / 2,
-        plugTop,
-        PIR_MM.plug.width,
-        PIR_MM.plug.length,
-        `rx="0.3" fill="${token("board-chip")}"`,
-      ),
-    );
-  }
-  for (const pin of layout.pins) {
-    const hole = holeCentre(part[pin.leg]);
-    const [p0, p1, p2, p3] = pirJumperCurve(layout, pin, hole);
-    const colour = token(WIRE_TOKEN[PIR_ROLE[pin.leg]]);
-    const d = `M${n(p0.x)} ${n(p0.y)} C${n(p1.x)} ${n(p1.y)} ${n(p2.x)} ${n(p2.y)} ${n(p3.x)} ${n(p3.y)}`;
-    out.push(
-      `<path d="${d}" fill="none" stroke="${colour}" stroke-width="1.15" stroke-linecap="round"/>`,
-      `<path d="${d}" transform="translate(0.22 0)" fill="none" stroke="${token("shine")}" stroke-opacity="0.22" stroke-width="0.28" stroke-dasharray="0 1.2 1000"/>`,
-      circle(hole.x, hole.y, 0.72, `fill="${colour}"`),
-      circle(hole.x, hole.y, 0.32, `fill="${token("lead")}"`),
-    );
-  }
-  return out.join("");
-}
-
 // --- Labels in the margin. ---
 
 /**
@@ -1623,11 +2076,19 @@ export interface Leader {
  * it: between rows d and e from the top of its body, then between f and g from the bottom, then a
  * row further out on each side in turn.
  */
-export function leaderOf(part: Part, labelled: readonly Part[]): Leader | undefined {
+export function leaderOf(
+  part: Part,
+  labelled: readonly Part[],
+  standing: readonly Part[] = [],
+): Leader | undefined {
   const end = labelEndOf(part);
   const edges = anchorOf(part);
   if (!edges) return undefined;
   const anchor = { x: end === "far" ? edges.right : edges.left, y: edges.y };
+  if (part.kind === "led") {
+    const lifted = liftedOverStanding(part, anchor, end, standing, labelled);
+    if (lifted) return lifted;
+  }
   if (part.kind === "button") {
     const { x: mid, y: cy } = buttonCentre(part);
     // How far along towards its label's end a button is: larger is nearer that end.
@@ -1657,6 +2118,86 @@ export function leaderOf(part: Part, labelled: readonly Part[]): Leader | undefi
     }
   }
   return { dot: anchor, run: anchor, end };
+}
+
+/**
+ * The box a standing part takes on the board's own drawing, which a light's leader rises over rather
+ * than run behind (ADR 0047, ADR 0050): a transistor's case, a capacitor's can or disc, a slide
+ * switch's shell and its slide (ADR 0052), a light's lens down to its legs' holes, and a button's body
+ * with its legs.
+ */
+function standingBoxOf(part: Part): Box | undefined {
+  switch (part.kind) {
+    case "transistor":
+      return to92BoxOf(part);
+    case "electrolytic":
+      return canBoxOf(part);
+    case "ceramic":
+      return discBoxOf(part);
+    case "slideSwitch":
+      return slideBoxOf(part);
+    case "led": {
+      const a = holeCentre(part.anode);
+      const mid = (a.x + holeCentre(part.cathode).x) / 2;
+      const top = a.y - LENS_RISE_MM - LENS_RADIUS_MM;
+      const half = LENS_RADIUS_MM + 0.4;
+      return { x: mid - half, y: top, w: 2 * half, h: a.y - top };
+    }
+    case "button": {
+      const { x, y } = buttonCentre(part);
+      const legs = legsOf(part).map((hole) => holeCentre(hole).y);
+      const top = Math.min(y - BUTTON_BODY_MM / 2, ...legs) - 0.52;
+      const bottom = Math.max(y + BUTTON_BODY_MM / 2, ...legs) + 0.52;
+      return { x: x - BUTTON_BODY_MM / 2, y: top, w: BUTTON_BODY_MM, h: bottom - top };
+    }
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * A light's leader lifted over the standing parts in its way to its label's end of the board
+ * (ADR 0047, ADR 0050): from the top of its lens, up to the first lane between rows above every one of
+ * them that nothing standing crosses and no other leader runs along. A leader run straight would pass
+ * behind them, and read as running into them. The lights nearer the end choose first, so that a
+ * light further from it rises higher, and its leader crosses none of theirs.
+ */
+function liftedOverStanding(
+  part: Extract<Part, { kind: "led" }>,
+  anchor: Point,
+  end: LabelEnd,
+  standing: readonly Part[],
+  labelled: readonly Part[],
+): Leader | undefined {
+  const [from, to] = end === "far" ? [anchor.x, BREADBOARD_WIDTH_MM] : [0, anchor.x];
+  const boxes = standing.flatMap((other) => {
+    const box = other === part ? undefined : standingBoxOf(other);
+    return box && box.x < to && box.x + box.w > from ? [box] : [];
+  });
+  const across = (y: number) => boxes.filter((box) => box.y < y && box.y + box.h > y);
+  const blocking = across(anchor.y);
+  if (blocking.length === 0) return undefined;
+  const a = holeCentre(part.anode);
+  const mid = (a.x + holeCentre(part.cathode).x) / 2;
+  const top = a.y - LENS_RISE_MM - LENS_RADIUS_MM;
+  const highest = Math.min(top, ...blocking.map((box) => box.y));
+  // The lanes other leaders run along to the same end: every part's but a light's further from it,
+  // which keeps clear of this one's in turn.
+  const nearer = (other: Part) => {
+    const edges = anchorOf(other);
+    return edges !== undefined && (end === "far" ? edges.right > anchor.x : edges.left < anchor.x);
+  };
+  const taken = labelled.flatMap((other) =>
+    other !== part && labelEndOf(other) === end && (other.kind !== "led" || nearer(other))
+      ? [leaderOf(other, labelled, standing)?.run.y ?? Number.NaN]
+      : [],
+  );
+  const floor = isOnSecondBoard(part.anode) ? SECOND_BOARD_Y_MM : 0;
+  const lane = BETWEEN_ROWS.filter((y) => y > floor && y < highest - 0.5)
+    .sort((p, q) => q - p)
+    .find((y) => across(y).length === 0 && !taken.some((t) => Math.abs(t - y) < 0.01));
+  if (lane === undefined) return undefined;
+  return { dot: { x: mid, y: top }, run: { x: mid, y: lane }, end };
 }
 
 /**
@@ -1699,11 +2240,6 @@ function anchorOf(part: Part): { left: number; right: number; y: number } | unde
         right: mid + RGB_LENS_RADIUS_MM + 0.2,
         y: nearestBetweenRows(centre),
       };
-    }
-    case "pir": {
-      // Its own board, past the breadboard's edge, where nothing else is (ADR 0044).
-      const { box } = pirLayoutOf(part);
-      return { left: box.x - 0.2, right: box.x + box.w + 0.2, y: box.y + box.h / 2 };
     }
     case "ring": {
       // The header's ends: the ring itself hangs below the board, past the margin.
@@ -1933,8 +2469,26 @@ function drawPart(
     case "ring":
       body = drawRing(part);
       break;
-    case "pir":
-      body = drawPir(part);
+    case "electrolytic":
+      body = drawElectrolytic(part);
+      break;
+    case "transistor":
+      body = drawTransistor(part);
+      break;
+    case "diode":
+      body = drawDiode(part, tagOf(part, others), placeTag(part, others)?.lines ?? 1);
+      break;
+    case "ceramic":
+      body = drawCeramic(part);
+      break;
+    case "slideSwitch":
+      body = drawSlideSwitch(part);
+      break;
+    case "slidePotentiometer":
+      body = drawSlidePotentiometer(part);
+      break;
+    case "dipSwitch":
+      body = drawDipSwitch(part);
       break;
   }
   const label =
@@ -2009,26 +2563,24 @@ function drawTurned(drawing: Breadboard): string {
   const over = (top: boolean) =>
     arches.some((part) => archesOverTop(part) === top) ? ARCH_LIFT_MM + 1.5 : 0;
   // A second board above the first (scratchpi's ADR 0226) is room enough for an arch over the top edge.
+  const top = second ? SECOND_BOARD_Y_MM - 3 : -3 - over(true);
   // A ring laid out below the board (scratchpi's ADR 0238) is room enough for an arch under it.
   const rings = drawing.parts.flatMap(({ part }) => (part.kind === "ring" ? [part] : []));
-  // A motion sensor beside the board (ADR 0044) takes the picture past the edge it lies past.
-  const sensors = drawing.parts.flatMap(({ part }) =>
-    part.kind === "pir" ? [pirLayoutOf(part).box] : [],
-  );
-  const top = Math.min(
-    second ? SECOND_BOARD_Y_MM - 3 : -3 - over(true),
-    ...sensors.map((box) => box.y - 3),
-  );
   const bottom = Math.max(
     BREADBOARD_HEIGHT_MM + 3 + over(false),
     ...rings.map((ring) => ringCentreOf(ring).y + RING_MM.outer + 3),
-    ...sensors.map((box) => box.y + box.h + 3),
   );
   const height = bottom - top;
   const labelled = drawing.parts.filter((drawn) => drawn.label).map((drawn) => drawn.part);
   const leaders = new Map(
     drawing.parts.flatMap((drawn) => {
-      const leader = drawn.label ? leaderOf(drawn.part, labelled) : undefined;
+      const leader = drawn.label
+        ? leaderOf(
+            drawn.part,
+            labelled,
+            drawing.parts.map(({ part }) => part),
+          )
+        : undefined;
       return leader ? [[drawn, leader] as const] : [];
     }),
   );
@@ -2054,12 +2606,11 @@ function drawTurned(drawing: Breadboard): string {
     turn === 0
       ? { x: flatLeft, y: flatTop, w: width + left - flatLeft, h: flatBottom - flatTop }
       : turnedView({ x: left, y: top, w: far - left, h: height }, [...places.values()]);
-  // Wires are laid over everything else, the way they are on the bench, a sensor's long jumpers
-  // over the flat ones (ADR 0044), and an arching one is over them too.
+  // Wires are laid over everything else, the way they are on the bench, and an arching one is
+  // over them too.
   const ordered = [
-    ...drawing.parts.filter(({ part }) => part.kind !== "wire" && part.kind !== "pir"),
+    ...drawing.parts.filter(({ part }) => part.kind !== "wire"),
     ...drawing.parts.filter(({ part }) => part.kind === "wire" && !part.arch),
-    ...drawing.parts.filter(({ part }) => part.kind === "pir"),
     ...drawing.parts.filter(({ part }) => part.kind === "wire" && part.arch),
   ];
   return (
@@ -2103,9 +2654,11 @@ interface Box {
 const overlap = (a: Box, b: Box): boolean =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
-/** A resistor as a person finds it on the page: its value and its two holes. */
-const resistorName = (part: Extract<Part, { kind: "resistor" }>): string =>
-  `the ${formatOhms(part.ohms)} resistor from ${printedName(part.from)} to ${printedName(part.to)}`;
+/** A lying part as a person finds it on the page: a resistor's value or a diode's model, and its holes. */
+const lyingName = (part: Lying): string =>
+  part.kind === "resistor"
+    ? `the ${formatOhms(part.ohms)} resistor from ${printedName(part.from)} to ${printedName(part.to)}`
+    : `the ${part.model} diode from ${printedName(part.anode)} to ${printedName(part.cathode)}`;
 
 /**
  * Every word the engine places that crowds something at a quarter turn (ADR 0003, ADR 0007): a value
@@ -2124,18 +2677,21 @@ export function crowdingProblems(
   pico = onPico;
   try {
     const problems: string[] = [];
-    const resistors = parts.flatMap((part) => (part.kind === "resistor" ? [part] : []));
+    const lying = parts.flatMap((part) =>
+      part.kind === "resistor" || part.kind === "diode" ? [part] : [],
+    );
     const tags: { name: string; box: Box }[] = [];
-    for (const resistor of resistors) {
-      const placed = placeTag(resistor, parts);
+    for (const part of lying) {
+      const what = part.kind === "resistor" ? "value tag" : "model tag";
+      const placed = placeTag(part, parts);
       if (!placed) {
-        problems.push(`${resistorName(resistor)} has nowhere clear for its value tag`);
+        problems.push(`${lyingName(part)} has nowhere clear for its ${what}`);
         continue;
       }
       const clear = placed.at;
-      const { w, h } = tagFootprintOf(sayOhms(resistor.ohms), placed.lines);
+      const { w, h } = tagFootprintOf(tagLabelOf(part), placed.lines);
       tags.push({
-        name: `${resistorName(resistor)}'s value tag`,
+        name: `${lyingName(part)}'s ${what}`,
         box: { x: clear.x - w / 2, y: clear.y - h / 2, w, h },
       });
     }
@@ -2158,37 +2714,6 @@ export function crowdingProblems(
       for (let j = i + 1; j < words.length; j++) {
         const [a, b] = [words[i], words[j]];
         if (a && b && overlap(a.box, b.box)) problems.push(`${a.name} is on ${b.name}`);
-      }
-    }
-    // A motion sensor beside the board, on another, or on the ring that hangs past the same edge
-    // (ADR 0044): neither has anywhere else to go.
-    const beside = parts.flatMap((part) => {
-      if (part.kind === "pir") {
-        return [
-          {
-            name: `the motion sensor whose OUT is in ${printedName(part.output)}`,
-            box: pirLayoutOf(part).box,
-            sensor: true,
-          },
-        ];
-      }
-      if (part.kind !== "ring") return [];
-      const centre = ringCentreOf(part);
-      const r = RING_MM.outer;
-      return [
-        {
-          name: `the ring in ${printedName(part.dataIn)}`,
-          box: { x: centre.x - r, y: centre.y - r, w: 2 * r, h: 2 * r },
-          sensor: false,
-        },
-      ];
-    });
-    for (let i = 0; i < beside.length; i++) {
-      for (let j = i + 1; j < beside.length; j++) {
-        const [a, b] = [beside[i], beside[j]];
-        if (a && b && (a.sensor || b.sensor) && overlap(a.box, b.box)) {
-          problems.push(`${a.name} is on ${b.name}`);
-        }
       }
     }
     return problems;

@@ -95,6 +95,48 @@
   --color-cell-edge: #6b7078;
   --color-cell-ink: #1d1f23;
   --color-cell-tape: #f2c511;
+  /* An electrolytic capacitor (ADR 0043): a navy sleeve over its can, a pale stripe down the side
+     its − leg is on, its value printed white on the sleeve and its minus signs navy on the stripe.
+     Its top is aluminium, the board's own metal. Both prints are read, so each clears 4.5:1 on what
+     it is printed on. */
+  --color-capacitor: #1f3d78;
+  --color-capacitor-stripe: #c9d4e8;
+  --color-capacitor-ink: #ffffff;
+  --color-capacitor-stripe-ink: #1f3d78;
+  /* A transistor's black TO-92 case (ADR 0044), and its type, model and legs' letters printed white
+     on its flat face, at 4.5:1 at least. */
+  --color-transistor: #2a2b2f;
+  --color-transistor-ink: #ffffff;
+  /* A diode's case and the band at its cathode (ADR 0049): a signal diode's orange glass with a black
+     band, and a rectifier's black case with a grey one. The band says which way round it goes, so it
+     clears 3:1 on its case, as a part of a drawing that carries meaning must. */
+  --color-diode-glass: #e8823a;
+  --color-diode-glass-band: #1d1d1b;
+  --color-diode-black: #26272b;
+  --color-diode-black-band: #c4c6c8;
+  /* A ceramic capacitor's mustard disc (ADR 0051), and the value printed on it, which is read, so it
+     clears 4.5:1. */
+  --color-ceramic: #d9a23a;
+  --color-ceramic-ink: #3b2a12;
+  /* An SPDT slide switch (ADR 0052): its metal shell, its black base, and the slide on top, whose
+     place along it says which way it is set, so it clears 3:1 on the shell. */
+  --color-slide-switch: #b8bcc1;
+  --color-slide-switch-base: #2a2b2f;
+  --color-slide-switch-slide: #1d1e21;
+  /* A slide potentiometer (ADR 0053): its dark metal body, the slot along it, the pale cap on its
+     knob, which says where it is set, so it clears 3:1 on the body, and its value printed
+     on the body, which is read, so it clears 4.5:1. */
+  --color-slide-potentiometer: #3a3d43;
+  --color-slide-potentiometer-slot: #121315;
+  --color-slide-potentiometer-knob: #c9cbc6;
+  --color-slide-potentiometer-ink: #e9eae6;
+  /* A DIP switch (ADR 0054): its blue body, the dark windows its white slides sit in, which says
+     whether each is on, so a slide clears 3:1 on its window, and its ON and numbers printed on the
+     body, which are read, so they clear 4.5:1. */
+  --color-dip-switch: #2b5aa6;
+  --color-dip-switch-window: #16181c;
+  --color-dip-switch-slide: #f1f1ec;
+  --color-dip-switch-ink: #ffffff;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

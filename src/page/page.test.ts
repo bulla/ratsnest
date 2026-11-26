@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { FIXTURE_IDS, FIXTURES, type Fixture, type FixtureId } from "../__fixtures__/circuits";
 import { TRILINGUAL } from "../__fixtures__/trilingual";
 import type { Layout, ShownCircuit } from "../circuit";
+import { legsOf, pinOfStrip } from "../drawing/breadboard";
+import { HEADER_PINS } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, fileOf } from "../fonts";
 import { shownIn } from "../shown";
 import { PAGE_WORDS, type PageFiles, wiringPage } from "./page";
@@ -30,8 +32,18 @@ const gpiosOf = (circuit: ShownCircuit): number[] => [
   ...circuit.leds.flatMap((led) => (led.pin ? [led.pin.gpio] : [])),
   ...circuit.buttons.flatMap((button) => (button.pin ? [button.pin.gpio] : [])),
   ...circuit.buzzers.map((buzzer) => buzzer.pin.gpio),
-  ...circuit.sensors.map((sensor) => sensor.pin.gpio),
 ];
+
+/** Every GPIO a layout wires a part to, a ceramic capacitor's pins among them (ADR 0051). */
+const wiredOf = (layout: Layout): number[] =>
+  layout.steps.flatMap((step) =>
+    step.parts.flatMap((part) =>
+      legsOf(part).flatMap((hole) => {
+        const pin = pinOfStrip(hole);
+        return HEADER_PINS.find((header) => header.number === pin)?.gpio ?? [];
+      }),
+    ),
+  );
 
 /** A part's name in the French test circuits, which are the fixtures written in French. */
 const FRENCH_NAMES: Readonly<Record<string, string>> = {
@@ -39,7 +51,6 @@ const FRENCH_NAMES: Readonly<Record<string, string>> = {
   "green LED": "LED verte",
   "RGB LED": "LED RVB",
   "LED ring": "anneau de LED",
-  "motion sensor": "détecteur de mouvement",
 };
 
 /**
@@ -62,7 +73,6 @@ function inFrench({ circuit, layout }: Fixture): { circuit: ShownCircuit; layout
       leds: circuit.leds.map(named),
       buttons: circuit.buttons.map(named),
       buzzers: circuit.buzzers.map(named),
-      sensors: circuit.sensors.map(named),
     },
     layout: {
       ...layout,
@@ -137,7 +147,7 @@ describe.each([...FIXTURE_IDS])("the page for %s", (id) => {
   });
 
   it("mentions no GPIO the circuit does not use", () => {
-    const used = gpiosOf(circuit);
+    const used = [...gpiosOf(circuit), ...wiredOf(layout)];
     for (const step of layout.steps) {
       for (const [, gpio] of `${step.title} ${step.note ?? ""}`.matchAll(/GP(\d+)/g)) {
         expect(used).toContain(Number(gpio));
@@ -299,13 +309,18 @@ describe("an RGB LED's page, on two breadboards (scratchpi's ADR 0226)", () => {
     expect(html).not.toContain("5 V on GP28");
   });
 
-  it("draws the second board, above the first, only on its own page", () => {
+  it("draws the second board, above the first, only on a page that uses it", () => {
     const boards = (html: string) => html.match(/<g class="breadboard"/g)?.length ?? 0;
-    expect(boards(page("rgb-led-and-d-pad"))).toBe(2);
-    expect(page("rgb-led-and-d-pad")).toContain(
-      '<g class="breadboard" transform="translate(0 -53.34)">',
-    );
-    for (const id of FIXTURE_IDS) if (id !== "rgb-led-and-d-pad") expect(boards(page(id))).toBe(1);
+    // The RGB LED's, and a slide potentiometer's, which lies across both (ADR 0053).
+    const two: readonly FixtureId[] = [
+      "rgb-led-and-d-pad",
+      "slide-potentiometer-read-by-an-analogue-pin",
+    ];
+    for (const id of two) {
+      expect(boards(page(id))).toBe(2);
+      expect(page(id)).toContain('<g class="breadboard" transform="translate(0 -53.34)">');
+    }
+    for (const id of FIXTURE_IDS) if (!two.includes(id)) expect(boards(page(id))).toBe(1);
   });
 
   it("says it in French", () => {
@@ -375,88 +390,6 @@ describe("a ring's page, the ring laid out below the board (scratchpi's ADR 0238
     const html = steps(frenchPage("ring-and-button"));
     expect(words(html)).toContain("L’anneau de LED, debout");
     expect(html).toContain("passe par-dessus la plaque");
-  });
-});
-
-describe("a motion sensor's page, the sensor beside the board (ADR 0043, ADR 0044)", () => {
-  const ID = "motion-sensor-and-light";
-
-  it("says where each of its three jumpers goes, from the pin of its name", () => {
-    expect(steps(page(ID))).toContain(
-      'The motion sensor, beside the board, dome up: a red jumper from its VCC pin to <span class="hole">a2</span> (VBUS, pin 40), a yellow one from its OUT pin to <span class="hole">a13</span> (GP22, pin 29) and a black one from its GND pin to <span class="hole">a14</span> (GND, pin 28).',
-    );
-  });
-
-  it("lists the sensor and its three jumpers, and says to plug them on by name", () => {
-    const html = page(ID);
-    expect(html).toContain(
-      '<span class="count">1</span><span>Motion sensor: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.</span>',
-    );
-    expect(html).toContain(
-      '<span class="count">3</span><span>Female-to-male jumpers, one red, one yellow and one black',
-    );
-    expect(html).toContain("Push each jumper onto the pin of its name");
-    // Only its own page has one.
-    for (const id of FIXTURE_IDS) {
-      if (id !== ID) expect(page(id)).not.toContain("motion sensor");
-    }
-  });
-
-  it("puts the sensor's pin where the Pico lands, tags its three pins, and labels it", () => {
-    const html = page(ID);
-    expect(words(html)).toContain("GP22 in c13");
-    for (const label of ["VBUS", "GP22", "GND"]) expect(html).toContain(`>${label}</text>`);
-    expect(html).toContain('class="callout-title">motion sensor</text>');
-    expect(html).toContain('class="callout-detail">OUT to a13</text>');
-    expect(html).toContain('data-kind="pir">');
-  });
-
-  it("says it in French, a sensor taking le", () => {
-    const html = frenchPage(ID);
-    expect(words(steps(html))).toContain(
-      "Le détecteur de mouvement, à côté de la plaque, dôme en haut",
-    );
-    expect(words(html)).toContain("Fils de connexion femelle-mâle");
-    expect(html).toContain('class="callout-detail">OUT en a13</text>');
-  });
-
-  it("says it in Russian, its name only where it stands as it is (ADR 0011)", () => {
-    const { circuit, layout } = FIXTURES[ID];
-    const html = wiringPage(
-      {
-        ...circuit,
-        name: "Датчик движения и светодиод",
-        description: "Испытательная схема.",
-        credit: "Рисунок по технической документации Pico 2 W.",
-        leds: circuit.leds.map((led) => ({ ...led, name: "Красный светодиод" })),
-        sensors: circuit.sensors.map((sensor) => ({ ...sensor, name: "Датчик движения" })),
-      },
-      {
-        ...layout,
-        steps: layout.steps.map((step, index) => ({
-          title: `Шаг ${index + 2}`,
-          parts: step.parts,
-        })),
-        test: "Скрипт зажигает светодиод.",
-      },
-      FILES,
-      { language: "ru" },
-    );
-    const prose = html
-      .slice(html.indexOf("<body>"))
-      .replace(/<(script|style|pre)[\s\S]*?<\/\1>/g, "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ");
-    expect(prose).toContain(
-      "Датчик движения, рядом с платой, куполом вверх: красная перемычка от вывода VCC в a2 (VBUS, вывод 40)",
-    );
-    expect(prose).toContain("Перемычка мама-папа, около 20 см");
-    for (const english of ["jumper", "sensor", " the ", " and "]) {
-      expect(prose).not.toContain(english);
-    }
-    expect(prose).not.toMatch(/\s[:;?!]/);
-    const lacking = new Set([...written(html)].filter((c) => !fileOf(c)));
-    expect([...lacking]).toEqual([]);
   });
 });
 
@@ -746,5 +679,196 @@ describe("a page in Russian (ADR 0010, ADR 0011)", () => {
   it("writes every letter in Nunito's files", () => {
     const lacking = new Set([...written(html)].filter((c) => !fileOf(c)));
     expect([...lacking]).toEqual([]);
+  });
+});
+
+describe("a page with diodes (ADR 0049)", () => {
+  const { circuit, layout } = FIXTURES["lights-kept-apart-by-diodes"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says where each diode's anode goes, and its cathode, at its band", () => {
+    expect(inLanguage("en")).toContain(
+      "A 1N4007 diode: its anode in i14, and its cathode, at the band, in i18.",
+    );
+    expect(inLanguage("en")).toContain(
+      "A 1N4148 diode: its anode in j23, and its cathode, at the band, in j18.",
+    );
+  });
+
+  it("lists each model by what it is sold as, and its case", () => {
+    expect(inLanguage("en")).toContain("11N4007 rectifier diode, in a black case.");
+    expect(inLanguage("en")).toContain("11N4148 signal diode, in an orange glass case.");
+  });
+
+  it("notes which way round a diode goes, and that any model it knows does on a light's way", () => {
+    const html = page("lights-kept-apart-by-diodes");
+    expect(html).toContain(PAGE_WORDS.en.diodePolarity);
+    expect(html).toContain("The 1N4148, 1N4001 and 1N4007 all do on a light's way");
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain("Diode de redressement 1N4007, en boîtier noir.");
+    expect(inLanguage("ru")).toContain("Импульсный диод 1N4148 в оранжевом стеклянном корпусе.");
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});
+
+describe("a page with a ceramic capacitor (ADR 0051)", () => {
+  const { circuit, layout } = FIXTURES["capacitor-timed-by-two-pins"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says where its legs go, either way round, and the code it is marked with", () => {
+    expect(inLanguage("en")).toContain(
+      "A 47 nF ceramic capacitor, marked 473, either way round: one leg in f26 and the other in f27.",
+    );
+  });
+
+  it("lists it by its value and its code", () => {
+    expect(inLanguage("en")).toContain("147 nF ceramic capacitor, marked 473.");
+  });
+
+  it("notes how its code says its value, and what its resistor can be", () => {
+    const html = page("capacitor-timed-by-two-pins");
+    expect(html).toContain(PAGE_WORDS.en.ceramicCode("473", "47 nF"));
+    expect(html).toContain(PAGE_WORDS.en.chargeResistor("1 kΩ", "8.2 kΩ"));
+  });
+
+  it("picks the capacitor out in its test step, since its script times it", () => {
+    expect(page("capacitor-timed-by-two-pins")).toContain(
+      'data-g="step-2 test" data-kind="ceramic"',
+    );
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain("Condensateur céramique de 47 nF, marqué 473.");
+    expect(inLanguage("ru")).toContain("Керамический конденсатор 47 нФ, маркировка 473.");
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});
+
+describe("a page with a slide switch (ADR 0052)", () => {
+  const { circuit, layout } = FIXTURES["lights-chosen-by-a-slide-switch"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says where its middle leg goes, and its outer ones, either way round", () => {
+    expect(inLanguage("en")).toContain(
+      "A slide switch, either way round: its middle leg in f20, one outer leg in f19 and the other in f21.",
+    );
+  });
+
+  it("lists it with its legs a breadboard's pitch apart", () => {
+    expect(inLanguage("en")).toContain(
+      "1SPDT slide switch, its three legs 2.54 mm apart, as a breadboard's holes are.",
+    );
+  });
+
+  it("notes that it stays as it is slid, as a button does not", () => {
+    expect(page("lights-chosen-by-a-slide-switch")).toContain(PAGE_WORDS.en.slideSwitchNote);
+  });
+
+  it("picks the switch out in its test step, since the reader slides it", () => {
+    expect(page("lights-chosen-by-a-slide-switch")).toContain(
+      'data-g="step-1 test" data-kind="slideSwitch"',
+    );
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain(
+      "sa patte du milieu en f20, une patte extérieure en f19 et l’autre en f21.",
+    );
+    expect(inLanguage("ru")).toContain(
+      "Ползунковый переключатель SPDT: три ножки с шагом 2,54 мм, как отверстия макетной платы.",
+    );
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});
+
+describe("a page with a slide potentiometer (ADR 0053)", () => {
+  const { circuit, layout } = FIXTURES["slide-potentiometer-read-by-an-analogue-pin"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says where its wiper goes, and each end, across both breadboards", () => {
+    expect(inLanguage("en")).toContain(
+      "A 10 kΩ slide potentiometer, lying across both breadboards: its wiper in a11 (GP26, pin 31), the end beside it in a9 (AGND, pin 33), and its other end in e9 on the second breadboard.",
+    );
+  });
+
+  it("lists it by its value and its length", () => {
+    expect(inLanguage("en")).toContain(
+      "110 kΩ slide potentiometer, 45 mm long, with two legs at one end and one at the other, and a cap for the knob.",
+    );
+  });
+
+  it("notes which leg is its wiper, and the analogue pins it may go to", () => {
+    expect(page("slide-potentiometer-read-by-an-analogue-pin")).toContain(
+      PAGE_WORDS.en.slidePotentiometerWiper(["GP26", "GP27", "GP28"]),
+    );
+  });
+
+  it("picks the potentiometer out in its test step, since the reader slides it", () => {
+    expect(page("slide-potentiometer-read-by-an-analogue-pin")).toContain(
+      'data-g="step-1 test" data-kind="slidePotentiometer"',
+    );
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain(
+      "son curseur en a11 (GP26, broche 31), l’extrémité à côté en a9 (AGND, broche 33)",
+    );
+    expect(inLanguage("ru")).toContain("Ползунковый потенциометр 10 кОм, длиной 45 мм");
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});
+
+describe("a page with a DIP switch (ADR 0054)", () => {
+  const { circuit, layout } = FIXTURES["switches-read-by-pull-ups"];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says which way round it goes, and where its first and last switches' legs are", () => {
+    expect(inLanguage("en")).toContain(
+      "A 2-way DIP switch across the channel, its ON side towards row a: switch 1 in e22 and f22, and switch 2 in e23 and f23.",
+    );
+  });
+
+  it("lists it by how many switches it has", () => {
+    expect(inLanguage("en")).toContain(
+      "12-way DIP switch, with its legs in two rows 7.62 mm apart, to go across the channel.",
+    );
+  });
+
+  it("notes that its switches go to ground, read through the Pico's own pull-ups", () => {
+    expect(page("switches-read-by-pull-ups")).toContain(PAGE_WORDS.en.dipPullUp);
+  });
+
+  it("picks the switch out in its test step, since the reader turns its switches", () => {
+    expect(page("switches-read-by-pull-ups")).toContain(
+      'data-g="step-2 test" data-kind="dipSwitch"',
+    );
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain("l’interrupteur 1 en e22 et f22");
+    expect(inLanguage("ru")).toContain("DIP-переключатель на 2 позиции");
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
   });
 });

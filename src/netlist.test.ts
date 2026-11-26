@@ -359,92 +359,6 @@ describe("the ring, standing in row j (scratchpi's ADR 0234, 0238)", () => {
   });
 });
 
-describe("a motion sensor beside the board (ADR 0043, ADR 0044)", () => {
-  const SENSOR = FIXTURES["motion-sensor-and-light"].circuit;
-  const LAYOUT = FIXTURES["motion-sensor-and-light"].layout;
-  const isPir = (part: Part) => part.kind === "pir";
-  const pir = LAYOUT.steps.flatMap((step) => [...step.parts]).find(isPir);
-  if (pir?.kind !== "pir") throw new Error("The motion sensor's test circuit has no sensor");
-  const moved = (next: Partial<typeof pir>) =>
-    edited(LAYOUT, (parts) => replace(parts, isPir, { ...pir, ...next }));
-
-  it("takes VBUS, ground and its pin, on jumpers into the top half", () => {
-    expect(pir).toEqual({ kind: "pir", sensor: "pir", power: "a2", output: "a13", ground: "a14" });
-    expect(wiringProblems(SENSOR, LAYOUT)).toEqual([]);
-  });
-
-  it("finds it on 3V3, which is too little for it", () => {
-    expect(wiringProblems(SENSOR, moved({ power: "a6" }))).toEqual([
-      "the motion sensor's VCC is not on VBUS, the 5 V it runs on",
-    ]);
-  });
-
-  it("finds its jumpers swapped, which would put VBUS where its pin should be", () => {
-    const problems = wiringProblems(SENSOR, moved({ power: "a13", output: "a2" }));
-    expect(problems).toContain("the motion sensor's VCC is not on VBUS, the 5 V it runs on");
-    expect(problems).toContain("the motion sensor's OUT is not on GP22");
-  });
-
-  it("finds its OUT and GND the wrong way round", () => {
-    const problems = wiringProblems(SENSOR, moved({ output: "a14", ground: "a13" }));
-    expect(problems).toContain("the motion sensor's GND is not on ground");
-    expect(problems).toContain("the motion sensor's OUT is not on GP22");
-  });
-
-  it("finds its pin shared with something else", () => {
-    const layout = edited(LAYOUT, (parts) => [
-      ...parts,
-      { kind: "wire", from: "b13", to: "b15", role: "signal" },
-    ]);
-    expect(wiringProblems(SENSOR, layout)).toContain(
-      "the motion sensor's OUT shares GP22 with something else, and must have it to itself",
-    );
-  });
-
-  it("lets a red wire carry VBUS, which it takes", () => {
-    const layout = edited(LAYOUT, (parts) => [
-      ...replace(parts, isPir, { ...pir, power: "top+3" }),
-      { kind: "wire", from: "a2", to: "top+2", role: "power" },
-    ]);
-    expect(wiringProblems(SENSOR, layout)).toEqual([]);
-  });
-
-  it("finds its jumpers on both sides of the channel, with no one edge to lie past", () => {
-    const layout = edited(LAYOUT, (parts) => [...replace(parts, isPir, { ...pir, ground: "i19" })]);
-    expect(wiringProblems(SENSOR, layout)).toContain(
-      "the motion sensor's jumpers are not all on one side of the channel: it lies past the edge they are on, so they go in rows a to e and the top rails, or in rows f to j and the bottom rails",
-    );
-  });
-
-  it("finds it past the top edge when a second board is there, or with a jumper in that board", () => {
-    const second: Part = { kind: "wire", from: "2:j3", to: "2:j5", role: "signal" };
-    expect(
-      wiringProblems(
-        SENSOR,
-        edited(LAYOUT, (parts) => [...parts, second]),
-      ),
-    ).toContain(
-      "the motion sensor would lie over the second breadboard: put its jumpers below the channel, in rows f to j or the bottom rails",
-    );
-    expect(wiringProblems(SENSOR, moved({ output: "2:j13" }))).toContain(
-      "the motion sensor's jumpers go in the first breadboard",
-    );
-  });
-
-  it("is placed once, by the id its circuit gives it", () => {
-    expect(
-      wiringProblems(
-        SENSOR,
-        edited(LAYOUT, (parts) => replace(parts, isPir, null)),
-      ),
-    ).toEqual(['the motion sensor "pir" is placed 0 times, not once']);
-    expect(wiringProblems(SENSOR, moved({ sensor: "door" }))).toEqual([
-      'the motion sensor "pir" is placed 0 times, not once',
-      'a motion sensor "door" is placed that A motion sensor and a light does not have',
-    ]);
-  });
-});
-
 describe("a jumper that arches over the board (scratchpi's ADR 0166)", () => {
   const FOUR = FIXTURES["d-pad"].circuit;
   const arches = (layout: Layout) =>
@@ -565,7 +479,799 @@ describe("a circuit with a supply (ADR 0033)", () => {
 
   it("finds a resistor that is no light's", () => {
     expect(problems(add({ kind: "resistor", ohms: 330, from: "g25", to: "g28" }))).toContain(
-      "the 330 Ω resistor from g25 to g28 is not a light's resistor",
+      "the 330 Ω resistor from g25 to g28 is not a light's resistor, or a flasher's base resistor",
+    );
+  });
+});
+
+describe("an electrolytic capacitor keeping a light lit (ADR 0043)", () => {
+  const { circuit, layout } = FIXTURES["light-kept-lit-by-a-capacitor"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const capacitor = (next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "electrolytic", next);
+  const NAME = "the 1000 µF capacitor with its + leg in i15";
+
+  it("takes one between a button and a light's resistor, its − leg on −", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds one in backwards", () => {
+    const turned = problems(
+      capacitor({ kind: "electrolytic", microfarads: 1000, plus: "i14", minus: "i15" }),
+    );
+    expect(turned).toContain(
+      "the 1000 µF capacitor with its + leg in i14 is in backwards: its − leg, under the stripe, goes towards −, and its + leg towards +",
+    );
+  });
+
+  it("finds its legs anywhere but side by side in one row", () => {
+    expect(
+      problems(capacitor({ kind: "electrolytic", microfarads: 1000, plus: "i15", minus: "h14" })),
+    ).toContain(`${NAME} needs its legs in one row, one hole apart`);
+  });
+
+  it("finds its − leg off −", () => {
+    const off = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "j14", {
+        kind: "wire",
+        from: "j14",
+        to: "j17",
+        role: "signal",
+      }),
+    );
+    expect(off).toContain(`${NAME} has its − leg, under the stripe, off −: it goes straight to −`);
+  });
+
+  it("finds one across the supply, before any button", () => {
+    const across = problems(
+      capacitor({ kind: "electrolytic", microfarads: 1000, plus: "i13", minus: "i14" }),
+    );
+    expect(across).toContain(
+      "the 1000 µF capacitor with its + leg in i13 is across the supply, where it keeps no light lit: its + leg goes between a button and a light's resistor",
+    );
+  });
+
+  it("finds one that keeps no light lit, across the light itself", () => {
+    const after = problems((parts) => [
+      ...capacitor({ kind: "electrolytic", microfarads: 1000, plus: "i20", minus: "i19" })(parts),
+      { kind: "wire", from: "j19", to: "bottom-19", role: "ground" },
+    ]);
+    expect(after).toContain(
+      "the 1000 µF capacitor with its + leg in i20 keeps no light lit: its + leg goes between a button and a light's resistor, and its − leg to −",
+    );
+  });
+
+  it("finds one that empties too fast to see its light fade", () => {
+    const small = problems(
+      capacitor({ kind: "electrolytic", microfarads: 100, plus: "i15", minus: "i14" }),
+    );
+    expect(small).toContain(
+      "the 100 µF capacitor with its + leg in i15 empties through the 470 Ω resistor in about 0.05 s, too fast to see its light fade: with that resistor it needs 426 µF or more",
+    );
+  });
+
+  it("finds one on a Pico, where it has no use yet", () => {
+    const { circuit: pico, layout: picoLayout } = FIXTURES["two-lights"];
+    const found = wiringProblems(
+      pico,
+      edited(picoLayout, (parts) => [
+        ...parts,
+        { kind: "electrolytic", microfarads: 470, plus: "g28", minus: "g29" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 470 µF capacitor with its + leg in g28 has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0043)",
+    );
+  });
+});
+
+describe("a transistor switching a light (ADR 0044)", () => {
+  const { circuit, layout } = FIXTURES["light-on-a-transistor"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const NAME = "the 2N3904 with its emitter in e24";
+
+  it("takes one with its emitter on ground, its base on the pin through a resistor, and the light on its collector", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its legs out of order, its flat face turned away", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "transistor", {
+        kind: "transistor",
+        model: "2N3904",
+        emitter: "e26",
+        base: "e25",
+        collector: "e24",
+      }),
+    );
+    expect(turned).toContain(
+      "the 2N3904 with its emitter in e26 needs its legs side by side in one row: emitter, base, collector, left to right, its flat face towards row j",
+    );
+  });
+
+  it("finds its light in backwards", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "led", {
+        kind: "led",
+        led: "green",
+        anode: "e29",
+        cathode: "e30",
+      }),
+    );
+    expect(turned).toContain(
+      "the green LED is in backwards: its long leg must be towards 3V3(OUT), and its short leg towards the 2N3904's collector",
+    );
+  });
+
+  it("finds its emitter off ground", () => {
+    const off = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "a24", null),
+    );
+    expect(off).toContain(`${NAME} has its emitter off ground`);
+  });
+
+  it("finds its base straight on the pin, or through a resistor out of range", () => {
+    const base = (next: Part) => (parts: Part[]) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "b20", next);
+    expect(problems(base({ kind: "wire", from: "b20", to: "b25", role: "signal" }))).toContain(
+      `${NAME} has its base straight on GP17: a resistor of 1 kΩ to 10 kΩ goes between them`,
+    );
+    expect(problems(base({ kind: "resistor", ohms: 100000, from: "b20", to: "b25" }))).toContain(
+      `${NAME}'s base resistor is 100 kΩ, outside 1 kΩ to 10 kΩ`,
+    );
+  });
+
+  it("finds its light with no resistor of its own", () => {
+    const bare = problems((parts) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "a26", {
+        kind: "wire",
+        from: "a26",
+        to: "a29",
+        role: "signal",
+      }),
+    );
+    expect(bare).toContain(
+      "the green LED is not wired from 3V3(OUT) through one resistor to the 2N3904's collector",
+    );
+  });
+
+  it("finds one that switches no light", () => {
+    const spare = problems((parts) => [
+      ...parts,
+      { kind: "transistor", model: "2N3904", emitter: "h23", base: "h24", collector: "h25" },
+    ]);
+    expect(spare).toContain(
+      "the 2N3904 with its emitter in h23 switches no light: its emitter goes on ground, its base through a resistor from a light's pin, and its collector under the light",
+    );
+  });
+});
+
+describe("a PNP transistor switching a light on the high side (ADR 0045)", () => {
+  const { circuit, layout } = FIXTURES["light-under-a-pnp-transistor"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const NAME = "the 2N3906 with its emitter in e24";
+
+  it("takes one with its emitter on 3V3, its base on the pin through a resistor, and the light from its collector to ground", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its light in backwards", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "led", {
+        kind: "led",
+        led: "yellow",
+        anode: "e30",
+        cathode: "e29",
+      }),
+    );
+    expect(turned).toContain(
+      "the yellow LED is in backwards: its long leg must be towards the 2N3906's collector, and its short leg towards ground",
+    );
+  });
+
+  it("finds its emitter off 3V3, on ground as an NPN's would be", () => {
+    const grounded = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "a24", {
+        kind: "wire",
+        from: "a24",
+        to: "top-25",
+        role: "ground",
+      }),
+    );
+    expect(grounded).toContain(`${NAME} has its emitter off 3V3(OUT)`);
+  });
+
+  it("finds its light with no resistor of its own", () => {
+    const bare = problems((parts) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "a26", {
+        kind: "wire",
+        from: "a26",
+        to: "a29",
+        role: "signal",
+      }),
+    );
+    expect(bare).toContain(
+      "the yellow LED is not wired from the 2N3906's collector through one resistor to ground",
+    );
+  });
+
+  it("finds one that switches no light", () => {
+    const spare = problems((parts) => [
+      ...parts,
+      { kind: "transistor", model: "2N3906", emitter: "h23", base: "h24", collector: "h25" },
+    ]);
+    expect(spare).toContain(
+      "the 2N3906 with its emitter in h23 switches no light: its emitter goes on 3V3(OUT), its base through a resistor from a light's pin, and its collector over the light",
+    );
+  });
+});
+
+describe("two transistors flashing two lights, on a supply (ADR 0046)", () => {
+  const { circuit, layout } = FIXTURES["two-lights-flashing"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const LEFT = "the 2N3904 with its emitter in f9";
+  const RIGHT = "the 2N3904 with its emitter in f20";
+  const capacitor = (microfarads: number, next: Part) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "electrolytic" && p.microfarads === microfarads, next);
+
+  it("takes two crosswise, each with its light, its base resistor and its capacitor", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds a light in backwards", () => {
+    const turned = problems((parts) =>
+      replace(parts, (p) => p.kind === "led" && p.led === "green", {
+        kind: "led",
+        led: "green",
+        anode: "f6",
+        cathode: "f5",
+      }),
+    );
+    expect(turned).toContain(
+      "the green LED is in backwards: its long leg must be towards +, and its short leg towards the 2N3904's collector",
+    );
+  });
+
+  it("finds an emitter off −", () => {
+    const off = problems((parts) =>
+      replace(parts, (p) => p.kind === "wire" && p.from === "j9", null),
+    );
+    expect(off).toContain(`${LEFT} has its emitter off −`);
+  });
+
+  it("finds a base resistor out of its range", () => {
+    const low = problems((parts) =>
+      replace(parts, (p) => p.kind === "resistor" && p.from === "j10", {
+        kind: "resistor",
+        ohms: 1000,
+        from: "j10",
+        to: "bottom+10",
+      }),
+    );
+    expect(low).toContain(`${LEFT}'s base resistor is 1 kΩ, outside 10 kΩ to 100 kΩ`);
+  });
+
+  it("finds a capacitor in backwards, its stripe towards the collector", () => {
+    const turned = problems(
+      capacitor(47, { kind: "electrolytic", microfarads: 47, plus: "f15", minus: "f14" }),
+    );
+    expect(turned).toContain(
+      "the 47 µF capacitor with its + leg in f15 is in backwards: its + leg goes towards the collector, and its − leg, under the stripe, towards the base",
+    );
+  });
+
+  it("finds a transistor with no capacitor to its base", () => {
+    const lone = problems((parts) =>
+      parts.filter(
+        (p) =>
+          !(p.kind === "electrolytic" && p.microfarads === 47) &&
+          !(p.kind === "wire" && (p.from === "g11" || p.from === "h15")),
+      ),
+    );
+    expect(lone).toContain(
+      `${RIGHT} needs one capacitor from the other transistor's collector to its base: two transistors, each with one, make a flasher`,
+    );
+  });
+
+  it("finds a beat too fast to see", () => {
+    const fast = problems(
+      capacitor(4.7, { kind: "electrolytic", microfarads: 1, plus: "f18", minus: "f17" }),
+    );
+    expect(fast).toContain(
+      `the 33 kΩ resistor and the 1 µF capacitor with its + leg in f18 hold ${LEFT} off for about 0.02 s at a time, too fast to see the lights flash: 0.1 s at least`,
+    );
+  });
+
+  it("finds a PNP transistor, which has no use on a supply", () => {
+    const pnp = problems((parts) =>
+      replace(parts, (p) => p.kind === "transistor" && p.emitter === "f20", {
+        kind: "transistor",
+        model: "2N3906",
+        emitter: "f20",
+        base: "f21",
+        collector: "f22",
+      }),
+    );
+    expect(pnp).toContain(
+      "the 2N3906 with its emitter in f20 has no use ratsnest knows on a supply: two NPN transistors make a flasher (ADR 0046)",
+    );
+  });
+});
+
+describe("a diode on a light's way (ADR 0049)", () => {
+  const { circuit, layout } = FIXTURES["lights-kept-apart-by-diodes"];
+  const problems = (edit: (parts: Part[]) => Part[], on: ShownCircuit = circuit) =>
+    wiringProblems(on, edited(layout, edit));
+  const diode = (anode: string, next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "diode" && p.anode === anode, next);
+
+  it("takes two that keep each button from the other's own light", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds one in backwards, its band towards its button", () => {
+    const turned = problems(
+      diode("i14", { kind: "diode", model: "1N4007", anode: "i18", cathode: "i14" }),
+    );
+    expect(turned).toEqual([
+      "the 1N4007 with its anode in i18 is in backwards: its band, at its cathode, goes towards −, the way its light's current runs",
+    ]);
+  });
+
+  it("finds its legs too close together for its body", () => {
+    expect(
+      problems(diode("i14", { kind: "diode", model: "1N4007", anode: "i14", cathode: "i16" })),
+    ).toContain(
+      "the 1N4007 with its anode in i14 needs its legs three holes apart or more, for its body to lie between them",
+    );
+  });
+
+  it("finds one beside a light's resistor, which it takes the light's current round", () => {
+    const beside = problems((parts) => [
+      ...parts,
+      { kind: "diode", model: "1N4148", anode: "g14", cathode: "g8" },
+    ]);
+    expect(beside).toContain("the red LED has no resistor between + and −");
+    expect(beside).toContain(
+      "the 1N4148 with its anode in g14 is on no light's way: it goes between + and a light's resistor, or between a light and −, its band towards −",
+    );
+  });
+
+  it("finds one from + straight to −, a short", () => {
+    expect(
+      problems((parts) => [
+        ...parts,
+        { kind: "diode", model: "1N4148", anode: "g16", cathode: "g7" },
+      ]),
+    ).toEqual([
+      "the 1N4148 with its anode in g16 lets the supply's current straight from + to −, with nothing to hold it back: a short",
+    ]);
+  });
+
+  it("finds too little of the 3 V supply left for a light once a diode has taken its own", () => {
+    const three: ShownCircuit = { ...circuit, supply: { volts: 3, rails: "bottom" } };
+    expect(problems((parts) => parts, three)).toEqual([
+      "the orange LED has a diode on its way, each taking about 0.7 V, which leaves too little of the 3 V supply to light it: take `volts: 3.7`",
+    ]);
+  });
+
+  it("finds one on a Pico, where it has no use yet", () => {
+    const { circuit: pico, layout: picoLayout } = FIXTURES["two-lights"];
+    const found = wiringProblems(
+      pico,
+      edited(picoLayout, (parts) => [
+        ...parts,
+        { kind: "diode", model: "1N4148", anode: "g28", cathode: "g24" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 1N4148 with its anode in g28 has no use ratsnest knows on a Pico: a diode keeps a light's current one way on a supply (ADR 0049)",
+    );
+  });
+
+  describe("anywhere on a light's way", () => {
+    const { circuit: two, layout: twoLayout } = FIXTURES["two-lights-on-a-supply"];
+    const supplied: ShownCircuit = { ...two, supply: { volts: 4.5, rails: "top" } };
+    const red = (next: Part[]) => (parts: Part[]) => [
+      ...parts.filter(
+        (p) => !(p.kind === "led" && p.led === "red") && !(p.kind === "wire" && p.from === "a10"),
+      ),
+      ...next,
+    ];
+
+    it("takes one between a light's resistor and its long leg", () => {
+      const between = wiringProblems(
+        supplied,
+        edited(
+          twoLayout,
+          red([
+            { kind: "diode", model: "1N4148", anode: "d9", cathode: "d12" },
+            { kind: "led", led: "red", anode: "c12", cathode: "c13" },
+            { kind: "wire", from: "a13", to: "top-13", role: "ground" },
+          ]),
+        ),
+      );
+      expect(between).toEqual([]);
+    });
+
+    it("takes one between a light's short leg and −, and finds it in backwards there", () => {
+      const below = (anode: string, cathode: string) =>
+        wiringProblems(
+          supplied,
+          edited(
+            twoLayout,
+            red([
+              { kind: "led", led: "red", anode: "c9", cathode: "c10" },
+              { kind: "diode", model: "1N4148", anode, cathode },
+              { kind: "wire", from: "a13", to: "top-13", role: "ground" },
+            ]),
+          ),
+        );
+      expect(below("d10", "d13")).toEqual([]);
+      expect(below("d13", "d10")).toContain(
+        "the 1N4148 with its anode in d13 is in backwards: its band, at its cathode, goes towards −, the way its light's current runs",
+      );
+    });
+  });
+});
+
+describe("a ceramic capacitor timed by two pins (ADR 0051)", () => {
+  const { circuit, layout } = FIXTURES["capacitor-timed-by-two-pins"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const NAME = "the 47 nF capacitor with its legs in f26 and f27";
+  const swap = (matches: (part: Part) => boolean, next: Part | null) => (parts: Part[]) =>
+    replace(parts, matches, next);
+  const resistor = (p: Part) => p.kind === "resistor";
+  const reader = (p: Part) => p.kind === "wire" && p.from === "j18";
+
+  it("takes one with a leg on ground, the other on a pin, and a resistor to it from a second pin", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its legs anywhere but side by side in one row", () => {
+    expect(
+      problems(
+        swap((p) => p.kind === "ceramic", {
+          kind: "ceramic",
+          nanofarads: 47,
+          from: "f26",
+          to: "f28",
+        }),
+      ),
+    ).toContain(
+      "the 47 nF capacitor with its legs in f26 and f28 needs its legs in one row, one hole apart",
+    );
+  });
+
+  it("finds neither leg on ground", () => {
+    const off = problems(
+      swap((p) => p.kind === "wire" && p.from === "j27", {
+        kind: "wire",
+        from: "j27",
+        to: "j29",
+        role: "signal",
+      }),
+    );
+    expect(off).toContain(`${NAME} has neither leg on ground: one goes straight to ground`);
+  });
+
+  it("finds its other leg on no pin, or on both", () => {
+    expect(problems(swap(reader, null))).toContain(
+      `${NAME} has its other leg on no pin: a pin goes straight to it, to read it`,
+    );
+    const both = problems(swap(resistor, { kind: "wire", from: "i20", to: "i26", role: "signal" }));
+    expect(both).toContain(
+      `${NAME} has its other leg on GP13 and GP14: one pin reads it, and another charges it through a resistor`,
+    );
+  });
+
+  it("finds it charged by no pin", () => {
+    expect(
+      problems(swap(resistor, { kind: "resistor", ohms: 6800, from: "i23", to: "i26" })),
+    ).toContain(
+      `${NAME} is charged by no pin: one resistor goes to its other leg from a second pin`,
+    );
+  });
+
+  it("finds something else on its other leg", () => {
+    expect(
+      problems((parts) => [
+        ...parts,
+        { kind: "resistor", ohms: 1000, from: "h26", to: "bottom-28" },
+      ]),
+    ).toContain(
+      `${NAME} has something else on its other leg: only its resistor and the pin that reads it go there`,
+    );
+  });
+
+  it("finds a resistor too weak to empty it past an input that leaks (erratum E9)", () => {
+    expect(
+      problems(swap(resistor, { kind: "resistor", ohms: 10000, from: "i20", to: "i26" })),
+    ).toContain(`${NAME}'s resistor is 10 kΩ, outside 1 kΩ to 8.2 kΩ`);
+  });
+
+  it("finds one that charges too fast for the script to time", () => {
+    expect(
+      problems(
+        swap((p) => p.kind === "ceramic", {
+          kind: "ceramic",
+          nanofarads: 4.7,
+          from: "f26",
+          to: "f27",
+        }),
+      ),
+    ).toContain(
+      "the 4.7 nF capacitor with its legs in f26 and f27 charges through the 6.8 kΩ resistor in about 32 µs, too fast for the script to time: with that resistor it needs 15 nF or more",
+    );
+  });
+
+  it("finds one on a supply, where it has no use yet", () => {
+    const { circuit: supplied, layout: suppliedLayout } = FIXTURES["two-lights-on-a-supply"];
+    const found = wiringProblems(
+      supplied,
+      edited(suppliedLayout, (parts) => [
+        ...parts,
+        { kind: "ceramic", nanofarads: 100, from: "h28", to: "h29" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 100 nF capacitor with its legs in h28 and h29 has no use ratsnest knows on a supply: a ceramic capacitor is timed by a Pico's pins (ADR 0051)",
+    );
+  });
+});
+
+describe("a slide switch lighting one light or the other (ADR 0052)", () => {
+  const { circuit, layout } = FIXTURES["lights-chosen-by-a-slide-switch"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const slide = (next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "slideSwitch", next);
+
+  it("takes one with its middle leg on +, and a light on each outer leg's way", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its legs not side by side, its middle leg between the other two", () => {
+    expect(
+      problems(slide({ kind: "slideSwitch", left: "f19", middle: "f21", right: "f20" })),
+    ).toContain(
+      "the slide switch with its middle leg in f21 needs its three legs side by side in one row: left, middle and right, left to right",
+    );
+  });
+
+  it("finds an outer leg that lights no light of its own", () => {
+    // Both lights on its left leg, and its right leg on + too: slid right, it lights nothing.
+    const found = problems((parts) => [
+      ...replace(parts, (p) => p.kind === "resistor" && p.from === "h21", {
+        kind: "resistor",
+        ohms: 220,
+        from: "h19",
+        to: "h26",
+      }),
+      { kind: "wire", from: "j21", to: "bottom+21", role: "power" },
+    ]);
+    expect(found).toEqual([
+      "the slide switch with its middle leg in f20 lights no light of its own when slid towards f21: each outer leg goes on a light's way, so that it lights one light or the other",
+    ]);
+  });
+
+  it("finds a short across the supply one way it can be slid", () => {
+    expect(
+      problems((parts) => [
+        ...parts,
+        { kind: "wire", from: "j21", to: "bottom-21", role: "ground" },
+      ]),
+    ).toEqual([
+      "the supply's + and − are joined while the slide switch with its middle leg in f20 is slid towards f21: a short across it",
+    ]);
+  });
+
+  it("takes one resistor on its middle leg, shared by the light each way lights", () => {
+    const shared = problems((parts) => [
+      ...parts.filter((p) => p.kind !== "resistor" && !(p.kind === "wire" && p.from === "j20")),
+      { kind: "wire", from: "j17", to: "bottom+17", role: "power" },
+      { kind: "resistor", ohms: 220, from: "h17", to: "h20" },
+      { kind: "wire", from: "i19", to: "i14", role: "signal" },
+      { kind: "wire", from: "h21", to: "h26", role: "signal" },
+    ]);
+    expect(shared).toEqual([]);
+  });
+
+  it("finds a light in backwards on either outer leg's way", () => {
+    expect(
+      problems((parts) =>
+        replace(parts, (p) => p.kind === "led" && p.led === "yellow", {
+          kind: "led",
+          led: "yellow",
+          anode: "g13",
+          cathode: "g14",
+        }),
+      ),
+    ).toContain("the yellow LED is in backwards: its long leg must be towards +");
+  });
+
+  it("finds one on a Pico, where it has no use yet", () => {
+    const { circuit: pico, layout: picoLayout } = FIXTURES["two-lights"];
+    const found = wiringProblems(
+      pico,
+      edited(picoLayout, (parts) => [
+        ...parts,
+        { kind: "slideSwitch", left: "g26", middle: "g27", right: "g28" },
+      ]),
+    );
+    expect(found).toContain(
+      "the slide switch with its middle leg in g27 has no use ratsnest knows on a Pico: a slide switch lights one light or the other on a supply (ADR 0052)",
+    );
+  });
+});
+
+describe("a slide potentiometer read by an analogue pin (ADR 0053)", () => {
+  const { circuit, layout } = FIXTURES["slide-potentiometer-read-by-an-analogue-pin"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  /** The layout with the potentiometer, and the jumper to its other end, replaced by `next`. */
+  const rebuilt = (next: Part[]) => (parts: Part[]) => [
+    ...parts.filter(
+      (p) => p.kind !== "slidePotentiometer" && !(p.kind === "wire" && p.from.startsWith("2:")),
+    ),
+    ...next,
+  ];
+
+  it("takes one with its ends on 3V3(OUT) and ground and its wiper straight on GP26", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds its wiper on ground, swapped with the end beside it", () => {
+    expect(
+      problems(
+        rebuilt([
+          { kind: "slidePotentiometer", ohms: 10000, wiper: "a9", end: "a11", otherEnd: "2:e11" },
+          { kind: "wire", from: "2:d6", to: "2:d11", role: "power" },
+        ]),
+      ),
+    ).toEqual([
+      "the 10 kΩ slide potentiometer with its wiper in a9 has its wiper on ground: its wiper, beside one end, goes to an analogue pin, GP26, GP27 or GP28, and its two ends to 3V3(OUT) and ground",
+    ]);
+  });
+
+  it("finds its wiper on a pin that reads no voltage", () => {
+    expect(
+      problems(
+        rebuilt([
+          { kind: "slidePotentiometer", ohms: 10000, wiper: "a16", end: "a14", otherEnd: "2:e14" },
+          { kind: "wire", from: "2:d6", to: "2:d14", role: "power" },
+        ]),
+      ),
+    ).toEqual([
+      "the 10 kΩ slide potentiometer with its wiper in a16 has its wiper on GP20, which reads no voltage: an analogue pin, GP26, GP27 or GP28, does",
+    ]);
+  });
+
+  it("finds both its ends on ground", () => {
+    expect(
+      problems((parts) => [
+        ...parts.filter((p) => p.kind !== "wire"),
+        { kind: "wire", from: "a4", to: "2:e4", role: "ground" },
+        { kind: "wire", from: "2:d4", to: "2:d9", role: "ground" },
+      ]),
+    ).toEqual([
+      "the 10 kΩ slide potentiometer with its wiper in a11 has its ends on ground and ground: one end goes on 3V3(OUT) and the other on ground",
+    ]);
+  });
+
+  it("finds its legs out of its shape", () => {
+    expect(
+      problems((parts) =>
+        replace(parts, (p) => p.kind === "slidePotentiometer", {
+          kind: "slidePotentiometer",
+          ohms: 10000,
+          wiper: "a11",
+          end: "a9",
+          otherEnd: "2:d9",
+        }),
+      ),
+    ).toContain(
+      "the 10 kΩ slide potentiometer with its wiper in a11 needs its wiper two holes from the end beside it, in one row, and its other end in that end's column, 17 rows along, on the other breadboard",
+    );
+  });
+
+  it("finds a leg in a hole under its body", () => {
+    expect(
+      problems((parts) => [...parts, { kind: "wire", from: "2:g10", to: "2:g15", role: "signal" }]),
+    ).toContain(
+      "the yellow wire from 2:g10 to 2:g15 has a leg in 2:g10, under the 10 kΩ slide potentiometer with its wiper in a11",
+    );
+  });
+
+  it("finds something else on its wiper", () => {
+    expect(
+      problems((parts) => [...parts, { kind: "resistor", ohms: 4700, from: "b11", to: "b14" }]),
+    ).toContain(
+      "the 10 kΩ slide potentiometer with its wiper in a11 has something else on its wiper: only its analogue pin, GP26, goes there",
+    );
+  });
+
+  it("finds a value too small or too large for the Pico to read", () => {
+    expect(
+      problems((parts) =>
+        replace(parts, (p) => p.kind === "slidePotentiometer", {
+          kind: "slidePotentiometer",
+          ohms: 470,
+          wiper: "a11",
+          end: "a9",
+          otherEnd: "2:e9",
+        }),
+      ),
+    ).toEqual([
+      "the 470 Ω slide potentiometer with its wiper in a11 is 470 Ω, outside 1 kΩ to 100 kΩ",
+    ]);
+  });
+
+  it("finds one on a supply, where it has no use yet", () => {
+    const { circuit: supplied, layout: suppliedLayout } = FIXTURES["two-lights-on-a-supply"];
+    const found = wiringProblems(
+      supplied,
+      edited(suppliedLayout, (parts) => [
+        ...parts,
+        { kind: "slidePotentiometer", ohms: 10000, wiper: "a28", end: "a26", otherEnd: "2:e26" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 10 kΩ slide potentiometer with its wiper in a28 has no use ratsnest knows on a supply: a slide potentiometer is read by a Pico's analogue pin (ADR 0053)",
+    );
+  });
+});
+
+describe("a DIP switch, each switch from ground to a pin the Pico pulls up (ADR 0054)", () => {
+  const { circuit, layout } = FIXTURES["switches-read-by-pull-ups"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const wire = (from: string, next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "wire" && p.from === from, next);
+  const dip = "the 2-way DIP switch in columns 22 to 23";
+
+  it("takes one whose switches each go from ground to a pin of their own", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds a switch on 3V3(OUT), as a tutorial with pull-downs would wire it", () => {
+    expect(problems(wire("a22", { kind: "wire", from: "a22", to: "a6", role: "power" }))).toContain(
+      `switch 1 of ${dip} has a leg on 3V3(OUT): each switch goes from ground to a pin of its own, which the script pulls up inside the Pico, since its pull-downs cannot be relied on (erratum E9)`,
+    );
+  });
+
+  it("finds two switches on one pin", () => {
+    expect(
+      problems(wire("b23", { kind: "wire", from: "b23", to: "b21", role: "signal" })),
+    ).toContain(`switch 2 of ${dip} shares GP16 with switch 1: each has a pin of its own`);
+  });
+
+  it("finds a switch with neither leg on ground", () => {
+    const found = problems(wire("j23", null));
+    expect(found).toContain(
+      `switch 2 of ${dip} has neither leg on ground: one goes straight to ground, and the other to a pin of its own`,
+    );
+  });
+
+  it("finds something else on a switch's pin", () => {
+    expect(
+      problems((parts) => [...parts, { kind: "resistor", ohms: 4700, from: "b21", to: "top-21" }]),
+    ).toContain(`switch 1 of ${dip} has something else on GP16: only the switch goes there`);
+  });
+
+  it("finds one on a supply, where it has no use yet", () => {
+    const { circuit: supplied, layout: suppliedLayout } = FIXTURES["two-lights-on-a-supply"];
+    const found = wiringProblems(
+      supplied,
+      edited(suppliedLayout, (parts) => [...parts, { kind: "dipSwitch", switches: 2, column: 27 }]),
+    );
+    expect(found).toContain(
+      "the 2-way DIP switch in columns 27 to 28 has no use ratsnest knows on a supply: a DIP switch is read by a Pico's pins (ADR 0054)",
     );
   });
 });

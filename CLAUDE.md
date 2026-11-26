@@ -23,7 +23,14 @@ language held to ADR 0011's rules (M6). It builds into one executable per platfo
 `ratsnest init` makes circuits projects (M7), every release's version is computed and checked, and
 the first release, 0.1.1, is published (M9), and `ratsnest update` moves a project and its executable
 to a newer ratsnest (M10), and the `circuit` skill publishes a project's pages as Artifacts (M8). A
-circuit can do without a Pico, on a supply, and every circuit is in format 2, since 0.2.0 (M12).
+circuit can do without a Pico, on a supply, and every circuit is in format 2, since 0.2.0 (M12). New
+parts come one at a time, each with the circuit that teaches it, in the roadmap's Backlog: the
+electrolytic capacitor, keeping a light lit on a supply, is the first (M13), and the NPN and PNP
+transistors, a pin switching a light through either, the second and third (M14, M15), with the owner's
+capacitor tester and flasher after them (M16), the diode, two buttons sharing a light, the fourth
+(M17), the ceramic capacitor, two pins timing it, the fifth (M18), the slide switch, one light or
+the other, the sixth (M19), the slide potentiometer, read across both breadboards, the seventh
+(M20), and the DIP switch, its switches read through the Pico's own pull-ups, the eighth (M21).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -86,13 +93,11 @@ extend one base: every circuit's setup, name, description, credit, steps and `te
 **A new part comes with a circuit that needs it, and the wiring check learns that one use**
 (ADR 0038), so that every page still shows a circuit that works. A part bought by its model is one
 of a closed list the engine holds, with its pinout, its print and its parts list's line, 2N3904 and
-2N3906 first (ADR 0039); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
+2N3906 first, then the 1N4148, 1N4001 and 1N4007 diodes (ADR 0039, ADR 0049); one bought by its value keeps it free, as a resistor's `ohms`. What tells a
 part apart is printed on its body, upright at every turn and the same in every language, `NPN` and
 `470 µF`, and on a tag only where it cannot fit (ADR 0040). A new part is placed in its step as a
-resistor is, its legs named by role, with no name or callout of its own (ADR 0041), unless the
-script reads it on a pin: a PIR motion sensor is declared in `sensors`, as a button is in `buttons`,
-takes its 5 V from VBUS (ADR 0043), and lies beside the board on three jumpers, past the edge its
-holes are on (ADR 0044). The parts to come, in order, are in the roadmap's Backlog.
+resistor is, its legs named by role, with no name or callout of its own (ADR 0041). The parts to
+come, in order, are in the roadmap's Backlog.
 
 **One asset is one self-contained HTML page per circuit** (ADR 0004): the drawing, the steps that
 pick out their parts, the parts list with its colour bands, a MicroPython test script and the
@@ -221,10 +226,18 @@ there.
 │       │                ADR 0014). The one copy that `ratsnest init` puts in every circuits project
 │       └── interview/   Pressure-tests a plan one question at a time
 ├── examples/            scratchpi's seven circuits, ported, `battery-button.ts`, the first on a
-│                        supply (ADR 0032), and `motion-light.ts`, the first with a part beside the
-│                        board (ADR 0043): ratsnest's own, checked like anyone's, and in
-│                        `format-1/` the files the migration to format 2 is tested on, left out of
-│                        the type check (ADR 0014, ADR 0015, ADR 0036)
+│                        supply (ADR 0032), `fading-light.ts`, the first with a capacitor
+│                        (ADR 0043), `transistor-switch.ts` and `high-side-switch.ts`, with an NPN
+│                        and a PNP transistor (ADR 0044, ADR 0045), `capacitor-tester.ts`, the
+│                        owner's flasher (ADR 0046), `two-buttons-three-lights.ts`, with two diodes
+│                        (ADR 0049), `capacitor-timer.ts`, with a ceramic capacitor (ADR 0051), and
+│                        `one-light-or-the-other.ts`, with a slide switch (ADR 0052),
+│                        `colours-on-a-slider.ts`, with a slide potentiometer (ADR 0053), and
+│                        `five-switches.ts`, with a DIP switch (ADR 0054): ratsnest's own,
+│                        checked like anyone's, and in
+│                        `format-1/` the files the migration to format 2 is tested on, one for each
+│                        example older than format 2, left out of the type check (ADR 0014,
+│                        ADR 0015, ADR 0036)
 ├── fonts/               Nunito's two files, its licence, and the address that made each (ADR 0012)
 ├── doc/
 │   ├── ROADMAP.md       What is next and everything still open, and one line per milestone done
@@ -252,11 +265,14 @@ there.
 │   ├── netlist.ts       The wiring check: what a layout joins, against what its circuit says
 │   ├── language.ts      The languages a page is written in
 │   ├── pins.ts, rgb.ts  The GPIO a Pico 2 W breaks out, and an RGB LED's colours
-│   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, one on a
-│   │                    supply and one with a motion sensor, and the `circuit` skill's default
-│   │                    credits, read from the skill
-│   ├── drawing/         The Pico, the breadboard, a supply's cell and the parts, drawn: CC BY-SA
-│   │                    4.0, unlike the rest (ADR 0018)
+│   ├── transistors.ts   The transistors ratsnest knows, by model: each one's type and legs (ADR 0039)
+│   ├── diodes.ts        The diodes ratsnest knows, by model: each one's case, and what it is sold as
+│   │                    (ADR 0039, ADR 0049)
+│   ├── ceramics.ts      A ceramic capacitor's value, and the code a real disc prints (ADR 0051)
+│   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, and one
+│   │                    on a supply, and the `circuit` skill's default credits, read from the skill
+│   ├── drawing/         The Pico, the breadboard and a supply's cell, drawn: CC BY-SA 4.0, unlike
+│   │                    the rest (ADR 0018)
 │   └── page/            The page and the drawing alone: their generator, their words, the page's
 │                        stylesheet and its one script, `drawing.css`, which both carry (ADR 0031),
 │                        `tokens.css`, the only file that writes a colour (ADR 0004), and
@@ -437,7 +453,8 @@ does not pay for it again.
   and `pico` in `breadboard-svg.ts` are set for the length of those two calls and put back after.
   `tagOf` asked on its own, as a test does, keeps a value tag off a Pico that a circuit with a supply
   does not have (ADR 0032), so the tag it gives can differ from the one drawn. The test of where a
-  tag always was leaves the supply's test circuit out for that reason.
+  tag always was leaves the supply's test circuits out for that reason, and the test that every tag
+  has a place asks a supply's layout through `crowdingProblems`, with no Pico, as the drawing does.
 - **GitHub Actions runs Node for ratsnest, though ratsnest runs none.** A `uses:` step is a
   JavaScript action, run on the runner's own Node.js at the version its `action.yml` names, so the
   0.2.0 release warned about `upload-artifact@v4` and `download-artifact@v4`, which named Node.js 20
@@ -455,7 +472,38 @@ does not pay for it again.
   macOS's WebKit once hung in continuous integration, on the CLI test that draws a PNG then a WebP,
   while the same pictures passed in their own file and the compiled check: the job ran until the
   test's timeout said nothing of where. Every browser step is now wrapped in `within`, which gives
-  it 15 seconds and fails naming the step, so the next hang says which.
+  it 15 seconds and fails naming the step, and the next hangs said which: "load the drawing", now
+  and then, on macOS's WebKit and on Linux's Chrome alike, on `develop` as on pull requests, and
+  never on a machine of ours. `navigate` resolves on the page's `load` event alone, and a view
+  sometimes never has one, while the next view in the same browser draws at once, as the jobs'
+  times showed: one 15 s wait, then every other picture. So `pictureOf` begins a stuck picture again
+  on a fresh view, `TRIES` times in all, through `tried` (ADR 0048); the tests' timeouts leave room
+  for it.
+- **The check on values in a circuit's words knows its units by name.** `VALUE` in `src/fields.ts`
+  is a list of units, and it knew no capacitance until the first capacitor's example wrote `470 µF`
+  in its description and passed. A part whose value the engine writes brings its unit to that list,
+  in every language, with a test in `src/fields.test.ts`.
+- **Every label on the first board runs to its far end, at a lane its part's row fixes**, so three
+  lights and two buttons could not all run clear on one board: a light in row f or g and a button
+  across the channel each block the other's lane. A light's leader now rises over the lights,
+  buttons, transistors and capacitors in its way, each to a lane of its own (ADR 0050), but a
+  button's still runs straight, through a light if one is further along at its height. The diode's
+  example was found by a search over layouts, scored by `wiringProblems`, `crowdingProblems` at four
+  turns and the leaders' lanes, since by hand every move to clear one tag crowded another. The tag
+  placer keeps off holes, parts lying flat and cases, but not a light's lens, which the search had to
+  check itself: look at a new layout at every turn before calling it done.
+- **A standing part stands over the rows above its legs**, on the drawing, as a light's lens does,
+  and wires are drawn over everything. So a hole a reader needs to see, a wire's end above all, goes
+  below a standing part, never above it: the fading light's capacitor has its − leg wired from row j,
+  under its legs in row i. A part with three legs is harder still: the transistor's example found room only in
+  the top half, its emitter and its light reached from row a, above its case, and the rails above.
+- **A test that walks every test circuit at every orientation outgrows Bun's 5 s.** Bun gives each
+  test 5 seconds unless it says otherwise, and continuous integration's Mac runs the suite nearly
+  four times slower than a fast machine. The SVG tests that draw and parse every test circuit at all
+  four orientations, sixty files after M16, took a second and a half here and 5.7 s there, and failed
+  a pull request that changed only the roadmap. They have `EVERY_FILE`, 30 seconds, in
+  `src/page/svg.test.ts`: a new test that walks every file takes it too, and each new part's test
+  circuit makes them all slower.
 - **Solid's package hands Bun and Deno its server build** (ADR 0008). If Solid ever comes in, its
   tests run as `bun test --conditions browser`, or a component's first call says a client-only API
   was called on the server.

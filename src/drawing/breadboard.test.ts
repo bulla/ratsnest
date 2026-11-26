@@ -1,10 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { FIXTURE_IDS, FIXTURES } from "../__fixtures__/circuits";
+import { widthOf } from "../fonts";
 import {
   BREADBOARD_HEIGHT_MM,
-  BREADBOARD_WIDTH_MM,
   CHANNEL_Y_MM,
   coveredBy,
+  coveredBySlidePotentiometer,
   holeCentre,
   holeOfPin,
   isOnSecondBoard,
@@ -26,13 +27,11 @@ import {
   type Breadboard,
   clearTagOf,
   crowdingProblems,
+  DISC_MM,
   drawBreadboard,
   formatOhms,
   labelEndOf,
   leaderOf,
-  PIR_MM,
-  pirJumperPaths,
-  pirLayoutOf,
   resistorBands,
   tagOf,
   wirePath,
@@ -311,7 +310,13 @@ describe("a resistor's value tag", () => {
     (id) => [id, FIXTURES[id].layout.steps.flatMap((s) => s.parts)] as const,
   );
 
-  it.each(everyLayout)("finds a place clear of everything else on %s", (_, parts) => {
+  it.each(everyLayout)("finds a place clear of everything else on %s", (id, parts) => {
+    // Asked on its own, a tag keeps off a Pico that a circuit with a supply does not have (ADR 0032),
+    // so a supply's layout is asked as the drawing asks it, with no Pico.
+    if (FIXTURES[id].circuit.supply) {
+      expect(crowdingProblems(parts, 0, formatOhms, false)).toEqual([]);
+      return;
+    }
     for (const part of parts) {
       if (part.kind !== "resistor") continue;
       expect(clearTagOf(part, parts), `${part.from} to ${part.to}`).toBeDefined();
@@ -327,6 +332,9 @@ describe("a resistor's value tag", () => {
       // With no Pico on the board (ADR 0032), a tag may stand where the Pico would be: asked here,
       // outside a drawing, the Pico is assumed.
       if (FIXTURES[id].circuit.supply) continue;
+      // A transistor's case, or a ceramic capacitor's disc, stands where a tag always went, and a tag
+      // keeps off it (ADR 0044, ADR 0051).
+      if (parts.some((part) => part.kind === "transistor" || part.kind === "ceramic")) continue;
       for (const part of parts) {
         if (part.kind !== "resistor") continue;
         if ([part.from, part.to].some((hole) => /^(?:2:)?(?:top|bottom)/.test(hole))) continue;
@@ -449,104 +457,299 @@ describe("a jumper that arches over the board (scratchpi's ADR 0166)", () => {
   });
 });
 
-describe("a motion sensor beside the board, on its jumpers (ADR 0044)", () => {
-  type Pir = Extract<Part, { kind: "pir" }>;
-  const top: Pir = { kind: "pir", sensor: "pir", power: "a2", output: "a13", ground: "a14" };
-  const bottom: Pir = {
-    kind: "pir",
-    sensor: "pir",
-    power: "j10",
-    output: "bottom-13",
-    ground: "i14",
-  };
-  const drawing = (parts: Part[]): Breadboard => ({
-    parts: parts.map((part) => ({ part, group: "step-1" })),
-    tags: [],
-    ledColour: () => "red",
-    buttonColour: () => "red",
-    title: "A breadboard",
-    description: "A breadboard.",
-  });
-  const near = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-    Math.hypot(a.x - b.x, a.y - b.y);
+describe("a light's leader, lifted over the cases and cans in its way (ADR 0047)", () => {
+  const parts = FIXTURES["two-lights-flashing"].layout.steps.flatMap((step) => [...step.parts]);
+  const lights = parts.filter((part) => part.kind === "led");
+  const [green, blue] = lights;
 
-  it("lies past the top edge for holes above the channel, its pins down, VCC, OUT and GND", () => {
-    const layout = pirLayoutOf(top);
-    expect(layout.side).toBe("top");
-    expect(layout.box.y + layout.box.h).toBe(-PIR_MM.gap);
-    expect(layout.edge).toBe(-PIR_MM.gap);
-    expect(layout.pins.map((pin) => pin.label)).toEqual(["VCC", "OUT", "GND"]);
-    // Its middle over its holes', and its header wider than life, so each name has room.
-    const middle = (holeCentre("a2").x + holeCentre("a13").x + holeCentre("a14").x) / 3;
-    expect(layout.box.x + layout.box.w / 2).toBeCloseTo(middle, 6);
-    expect((layout.pins[1]?.x ?? 0) - (layout.pins[0]?.x ?? 0)).toBeCloseTo(PIR_MM.pitch, 6);
+  it("rises from the top of its lens to the lane between d and e, over every one of them", () => {
+    if (!green) throw new Error("No green light");
+    const leader = leaderOf(green, lights, parts);
+    expect(leader?.run.y).toBe((rowY("d") + rowY("e")) / 2);
+    expect(leader?.dot.x).toBe(leader?.run.x);
   });
 
-  it("lies past the bottom edge for holes below it, turned round, so its pins read GND first", () => {
-    const layout = pirLayoutOf(bottom);
-    expect(layout.side).toBe("bottom");
-    expect(layout.box.y).toBe(BREADBOARD_HEIGHT_MM + PIR_MM.gap);
-    expect(layout.pins.map((pin) => pin.label)).toEqual(["GND", "OUT", "VCC"]);
+  it("runs straight where nothing stands in its way, as it always has", () => {
+    if (!blue) throw new Error("No blue light");
+    expect(leaderOf(blue, lights, parts)).toEqual(leaderOf(blue, lights));
+    expect(leaderOf(blue, lights, parts)?.run).toEqual(leaderOf(blue, lights, parts)?.dot);
+  });
+});
+
+describe("a diode, lying as a resistor does (ADR 0040, ADR 0049)", () => {
+  const parts = FIXTURES["lights-kept-apart-by-diodes"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const diodes = parts.filter((part) => part.kind === "diode");
+  const drawn = (part: Part, orientation: 0 | 90 = 0) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part, group: "step-1" }],
+      tags: [],
+      supply: { rails: "bottom", label: "4.5 V", group: "supply" },
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A diode",
+      description: "A diode.",
+    });
+
+  it("is drawn in its model's case, orange glass for a 1N4148 and black for a 1N4007", () => {
+    const [rectifier, signal] = diodes;
+    if (!rectifier || !signal) throw new Error("No diodes");
+    expect(drawn(signal)).toContain("var(--color-diode-glass-band)");
+    expect(drawn(signal)).not.toContain("var(--color-diode-black)");
+    expect(drawn(rectifier)).toContain("var(--color-diode-black-band)");
+    expect(drawn(rectifier)).not.toContain("var(--color-diode-glass)");
   });
 
-  it("stays within the board's length, clear of the Pico's cable and the labels", () => {
-    const left = pirLayoutOf({ ...top, output: "a3", ground: "a4" }).box;
-    expect(left.x).toBe(0);
-    const right = pirLayoutOf({ ...top, power: "a28", output: "a29", ground: "a30" }).box;
-    expect(right.x + right.w).toBeCloseTo(BREADBOARD_WIDTH_MM, 6);
-  });
-
-  it("runs each jumper from its pin's plug to its hole", () => {
-    const layout = pirLayoutOf(top);
-    const paths = pirJumperPaths(top);
-    expect(paths.map((path) => path.at(-1))).toEqual(
-      ["a2", "a13", "a14"].map((hole) => holeCentre(hole)),
-    );
-    for (const [index, pin] of layout.pins.entries()) {
-      expect(paths[index]?.[0]).toEqual({ x: pin.x, y: layout.edge + PIR_MM.plug.length });
+  it("has its band at its cathode's end, whichever way it lies", () => {
+    for (const diode of diodes) {
+      // Drawn along +x from its anode to its cathode, the band is on the +x side of its middle.
+      const band =
+        /<rect x="([\d.-]+)" y="[\d.-]+" width="[\d.]+" height="[\d.]+" fill="var\(--color-diode-(?:glass|black)-band\)"/.exec(
+          drawn(diode),
+        );
+      expect(Number(band?.[1])).toBeGreaterThan(0);
+      const turn = /<g transform="translate\(([\d.]+) [\d.]+\) rotate\(([\d.-]+)\)">/.exec(
+        drawn(diode),
+      );
+      const along =
+        diode.kind === "diode" ? holeCentre(diode.cathode).x - holeCentre(diode.anode).x : 0;
+      expect(Math.cos((Number(turn?.[2]) * Math.PI) / 180) * along).toBeGreaterThan(0);
     }
   });
 
-  it("is drawn with its pins' names, its jumpers in the colours of what they carry, inside the picture", () => {
-    const svg = drawBreadboard(drawing([top]));
-    for (const name of ["VCC", "OUT", "GND"]) expect(svg).toContain(`>${name}</text>`);
-    for (const role of ["power", "signal", "ground"]) {
-      expect(svg).toContain(`stroke="var(--color-wire-${role})"`);
+  it("prints its model on a tag, upright at every quarter turn, as a resistor's value is", () => {
+    for (const diode of diodes) {
+      if (diode.kind !== "diode") continue;
+      expect(drawn(diode)).toContain(`>${diode.model}</text>`);
+      expect(drawn(diode, 90)).toContain(`>${diode.model}</text></g>`);
     }
-    const [, y] = (/viewBox="([^"]+)"/.exec(svg)?.[1] ?? "").split(" ").map(Number);
-    expect(y).toBeLessThan(pirLayoutOf(top).box.y);
-  });
-
-  it("keeps a value tag off its jumpers", () => {
-    // A resistor whose tag would first go below it, across the sensor's OUT jumper coming down to d25.
-    const resistor: Part = { kind: "resistor", ohms: 330, from: "b22", to: "b30" };
-    const sensor: Pir = { kind: "pir", sensor: "pir", power: "a2", output: "d25", ground: "a3" };
-    const alone = clearTagOf(resistor, [resistor]);
-    const beside = clearTagOf(resistor, [resistor, sensor]);
-    if (!alone || !beside) throw new Error("no clear place for the tag");
-    const out = pirJumperPaths(sensor)[1] ?? [];
-    const nearest = (at: { x: number; y: number }) =>
-      Math.min(...out.map((point) => near(point, at)));
-    // Half a tag's width, 330 Ω on one line, is more than 3 mm.
-    expect(nearest(alone)).toBeLessThan(3);
-    expect(beside).not.toEqual(alone);
-    expect(nearest(beside)).toBeGreaterThan(3);
-  });
-
-  it("is refused lying on another past the same edge, at every quarter turn", () => {
-    const other: Pir = { kind: "pir", sensor: "door", power: "a5", output: "a16", ground: "a19" };
-    for (const orientation of [0, 90, 180, 270] as const) {
-      expect(crowdingProblems([top, other], orientation)).toEqual([
-        "the motion sensor whose OUT is in a13 is on the motion sensor whose OUT is in a16",
-      ]);
+    // Asked as the drawing asks, with no Pico on a circuit with a supply: every tag has a place.
+    for (const turn of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems(parts, turn, formatOhms, false)).toEqual([]);
     }
-    expect(crowdingProblems([top, bottom], 0)).toEqual([]);
+  });
+});
+
+describe("a light's leader, lifted over the lights and buttons in its way (ADR 0050)", () => {
+  const parts = FIXTURES["lights-kept-apart-by-diodes"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const labelled = parts.filter((part) => part.kind === "led" || part.kind === "button");
+  const led = (id: string) => parts.find((part) => part.kind === "led" && part.led === id) as Part;
+  const button = (id: string) =>
+    parts.find((part) => part.kind === "button" && part.button === id) as Part;
+  const lane = (part: Part) => leaderOf(part, labelled, parts)?.run.y;
+
+  it("rises from the top of its lens, over the lights and buttons between it and its label", () => {
+    for (const id of ["red", "orange"]) {
+      const leader = leaderOf(led(id), labelled, parts);
+      expect(leader?.dot.x).toBe(leader?.run.x);
+      expect(leader?.dot.y).toBeGreaterThan(leader?.run.y ?? Number.POSITIVE_INFINITY);
+    }
   });
 
-  it("has its callout leave its own board, past the breadboard's edge", () => {
-    const leader = leaderOf(top, [top]);
-    const { box } = pirLayoutOf(top);
-    expect(leader?.dot).toEqual({ x: box.x + box.w + 0.2, y: box.y + box.h / 2 });
-    expect(leader?.end).toBe("far");
+  it("gives each one a lane of its own, above a blocked button's, the light further from the end higher", () => {
+    const [red, orange, left] = [lane(led("red")), lane(led("orange")), lane(button("left"))];
+    expect(left).toBe((rowY("d") + rowY("e")) / 2);
+    expect(orange).toBe((rowY("c") + rowY("d")) / 2);
+    expect(red).toBe((rowY("b") + rowY("c")) / 2);
+  });
+
+  it("runs straight where nothing stands in its way, as it always has", () => {
+    const blue = leaderOf(led("blue"), labelled, parts);
+    expect(blue?.run).toEqual(blue?.dot);
+    expect(leaderOf(button("right"), labelled, parts)?.run.y).toBe(CHANNEL_Y_MM);
+  });
+});
+
+describe("a ceramic capacitor, standing as a disc (ADR 0040, ADR 0051)", () => {
+  const parts = FIXTURES["capacitor-timed-by-two-pins"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const disc = parts.find((part) => part.kind === "ceramic") as Part;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: disc, group: "step-1" }],
+      tags: [],
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A capacitor",
+      description: "A capacitor.",
+    });
+
+  it("prints its value, its number over its unit as a can's, the same in every language, upright at every quarter turn", () => {
+    expect(drawn(0)).toContain(">47</text>");
+    expect(drawn(0)).toContain(">nF</text>");
+    expect(drawn(0)).not.toContain(">473<");
+    for (const turn of [90, 180, 270] as const) {
+      expect(drawn(turn)).toContain(`rotate(${-turn} `);
+      expect(drawn(turn)).toContain(">nF</text></g>");
+    }
+  });
+
+  it("prints a long number smaller, to cross the disc", () => {
+    const sizeOf = (nanofarads: number): number => {
+      const svg = drawBreadboard({
+        orientation: 0,
+        parts: [{ part: { ...disc, nanofarads } as Part, group: "step-1" }],
+        tags: [],
+        ledColour: () => "red",
+        buttonColour: () => "red",
+        title: "A capacitor",
+        description: "A capacitor.",
+      });
+      return Number(svg.match(new RegExp(`font-size="([\\d.]+)"[^>]*>${nanofarads}<`))?.[1]);
+    };
+    expect(sizeOf(100)).toBe(1.55);
+    expect(sizeOf(0.022)).toBeLessThan(1.55);
+    expect(widthOf("0.022", sizeOf(0.022), 900)).toBeLessThanOrEqual(DISC_MM.number + 0.001);
+  });
+
+  it("stands over the rows above its legs, which a value tag keeps off", () => {
+    expect(drawn(0)).toContain("var(--color-ceramic)");
+    for (const turn of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems(parts, turn)).toEqual([]);
+    }
+  });
+});
+
+describe("a slide switch, standing on its three legs (ADR 0052)", () => {
+  const parts = FIXTURES["lights-chosen-by-a-slide-switch"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const slide = parts.find((part) => part.kind === "slideSwitch") as Extract<
+    Part,
+    { kind: "slideSwitch" }
+  >;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: slide, group: "step-1" }],
+      tags: [],
+      supply: { rails: "bottom", label: "3 V", group: "supply" },
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A slide switch",
+      description: "A slide switch.",
+    });
+
+  it("draws its shell, its base and its slide, the slide towards its left leg", () => {
+    const svg = drawn(0);
+    for (const token of ["slide-switch", "slide-switch-base", "slide-switch-slide"]) {
+      expect(svg).toContain(`var(--color-${token})`);
+    }
+    const at =
+      /<rect x="([\d.-]+)" y="[\d.-]+" width="([\d.]+)" height="[\d.]+" rx="0.35" fill="var\(--color-slide-switch-slide\)"/.exec(
+        svg,
+      );
+    const middle = Number(at?.[1]) + Number(at?.[2]) / 2;
+    expect(middle).toBeLessThan(holeCentre(slide.middle).x);
+    expect(middle).toBeGreaterThan(holeCentre(slide.left).x - 1);
+  });
+
+  it("stands over the rows above its legs, which a value tag keeps off at every quarter turn", () => {
+    for (const turn of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems(parts, turn, formatOhms, false)).toEqual([]);
+    }
+  });
+});
+
+describe("a slide potentiometer, lying across both breadboards (ADR 0053)", () => {
+  const parts = FIXTURES["slide-potentiometer-read-by-an-analogue-pin"].layout.steps.flatMap(
+    (step) => [...step.parts],
+  );
+  const potentiometer = parts.find((part) => part.kind === "slidePotentiometer") as Extract<
+    Part,
+    { kind: "slidePotentiometer" }
+  >;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: potentiometer, group: "step-1" }],
+      tags: [],
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A slide potentiometer",
+      description: "A slide potentiometer.",
+    });
+
+  it("draws both breadboards, and its body, slot and knob between its legs", () => {
+    expect(usesSecondBoard(parts)).toBe(true);
+    const svg = drawn(0);
+    for (const token of [
+      "slide-potentiometer",
+      "slide-potentiometer-slot",
+      "slide-potentiometer-knob",
+      "slide-potentiometer-ink",
+    ]) {
+      expect(svg).toContain(`var(--color-${token})`);
+    }
+  });
+
+  it("prints its value as a resistor's tag writes it, upright at every quarter turn", () => {
+    expect(drawn(0)).toContain(">10 kΩ</text>");
+    for (const turn of [90, 180, 270] as const) {
+      expect(drawn(turn)).toContain(`rotate(${-turn} `);
+      expect(drawn(turn)).toContain(">10 kΩ</text></g>");
+    }
+  });
+
+  it("covers the holes between its legs, across its three columns, and no others", () => {
+    const covered = coveredBySlidePotentiometer(potentiometer);
+    expect(covered).toContain("2:g10");
+    expect(covered).toContain("top+10");
+    expect(covered).toContain("2:bottom-9");
+    expect(covered).not.toContain("a9");
+    expect(covered).not.toContain("b9");
+    expect(covered).not.toContain("2:e9");
+    expect(covered).not.toContain("b8");
+    expect(covered).not.toContain("b12");
+  });
+});
+
+describe("a DIP switch across the channel (ADR 0054)", () => {
+  const parts = FIXTURES["switches-read-by-pull-ups"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const dip = parts.find((part) => part.kind === "dipSwitch") as Part;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [{ part: dip, group: "step-1" }],
+      tags: [],
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A DIP switch",
+      description: "A DIP switch.",
+    });
+
+  it("has its legs in rows e and f, switch by switch from its first column", () => {
+    expect(legsOf(dip)).toEqual(["e22", "f22", "e23", "f23"]);
+    expect(legsOf({ kind: "dipSwitch", switches: 2, column: 5, board: 2 })).toEqual([
+      "2:e5",
+      "2:f5",
+      "2:e6",
+      "2:f6",
+    ]);
+  });
+
+  it("prints ON and each switch's number, upright at every quarter turn", () => {
+    for (const word of ["ON", "1", "2"]) expect(drawn(0)).toContain(`>${word}</text>`);
+    for (const turn of [90, 180, 270] as const) {
+      for (const word of ["ON", "1", "2"]) expect(drawn(turn)).toContain(`>${word}</text></g>`);
+    }
+  });
+
+  it("draws each slide off, at the end of its window away from ON", () => {
+    const slides = [
+      ...drawn(0).matchAll(
+        /<rect x="[\d.-]+" y="([\d.-]+)" width="[\d.]+" height="[\d.]+" rx="0.15" fill="var\(--color-dip-switch-slide\)"/g,
+      ),
+    ];
+    expect(slides).toHaveLength(2);
+    for (const slide of slides) expect(Number(slide[1])).toBeGreaterThan(CHANNEL_Y_MM);
   });
 });

@@ -97,17 +97,6 @@ export interface Buzzer {
   readonly pin: GpioPin;
 }
 
-/**
- * A PIR motion sensor (ADR 0043), on the pin its OUT goes to: it gives the pin 3.3 V while it sees
- * movement, and 0 V otherwise. It takes 5 V from VBUS.
- */
-export interface Sensor {
-  readonly id: string;
-  /** What the page calls it: `motion sensor`. */
-  readonly name: Text;
-  readonly pin: GpioPin;
-}
-
 /** What a jumper is for, which is also its colour: black, red or yellow. */
 export type WireRole = "ground" | "power" | "signal";
 
@@ -189,19 +178,103 @@ export interface RingPart {
 }
 
 /**
- * A PIR motion sensor module, lying beside the board, dome up, and joined to it by three
- * female-to-male jumpers pushed onto its pins: the holes are where their other ends go, on one side
- * of the channel, and the drawing lays it past that edge (ADR 0044). `sensor` is the sensor's id.
+ * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0043). Its value is in
+ * microfarads, `470` for 470 µF, and printed on its can. Its + leg is the longer one, and its − leg is
+ * under the pale stripe down its side: it goes in one way round only.
  */
-export interface PirPart {
-  readonly kind: "pir";
-  readonly sensor: string;
-  /** Where the jumper on its VCC pin goes: VBUS, for its 5 V. */
-  readonly power: Hole;
-  /** Where the jumper on its OUT pin goes: its pin. */
-  readonly output: Hole;
-  /** Where the jumper on its GND pin goes: ground. */
-  readonly ground: Hole;
+export interface ElectrolyticPart {
+  readonly kind: "electrolytic";
+  readonly microfarads: number;
+  readonly plus: Hole;
+  readonly minus: Hole;
+}
+
+/**
+ * A transistor ratsnest knows, by its model (ADR 0039): `2N3904`, an NPN transistor, and `2N3906`, a
+ * PNP one, whose legs are both emitter, base and collector, left to right, with the flat face towards
+ * you.
+ */
+export type TransistorModel = "2N3904" | "2N3906";
+
+/**
+ * A transistor in a TO-92 case, standing up, its three legs side by side in one row (ADR 0044): the
+ * emitter, the base and the collector, left to right, so that its flat face is towards row j.
+ */
+export interface TransistorPart {
+  readonly kind: "transistor";
+  readonly model: TransistorModel;
+  readonly emitter: Hole;
+  readonly base: Hole;
+  readonly collector: Hole;
+}
+
+/**
+ * A diode ratsnest knows, by its model (ADR 0039, ADR 0049): `1N4148`, a small signal diode in an
+ * orange glass case, or `1N4001` or `1N4007`, rectifiers in a black case. Any of them does on a
+ * light's way.
+ */
+export type DiodeModel = "1N4148" | "1N4001" | "1N4007";
+
+/**
+ * A diode, lying flat as a resistor does, its legs three holes apart or more (ADR 0049). It lets
+ * current through one way only, from its anode to its cathode, the end its band is at.
+ */
+export interface DiodePart {
+  readonly kind: "diode";
+  readonly model: DiodeModel;
+  readonly anode: Hole;
+  readonly cathode: Hole;
+}
+
+/**
+ * A ceramic capacitor, a small disc standing on its two legs, one hole apart in one row (ADR 0051).
+ * Its value is in nanofarads, `100` for 100 nF, which the drawing's disc prints, and the page gives the
+ * code a real one is marked with, `104`. It goes in either way round, as a resistor does.
+ */
+export interface CeramicPart {
+  readonly kind: "ceramic";
+  readonly nanofarads: number;
+  readonly from: Hole;
+  readonly to: Hole;
+}
+
+/**
+ * An SPDT slide switch, standing on its three legs side by side in one row, left to right
+ * (ADR 0052). Its slide joins its middle leg to its left leg or to its right one, whichever way it is
+ * pushed, and stays there when let go.
+ */
+export interface SlideSwitchPart {
+  readonly kind: "slideSwitch";
+  readonly left: Hole;
+  readonly middle: Hole;
+  readonly right: Hole;
+}
+
+/**
+ * A slide potentiometer, lying across both breadboards, as its legs are too far apart for one
+ * (ADR 0053). Its value is in ohms, `10000` for 10 kΩ. Its wiper and the end beside it are two holes
+ * apart in one row, and its other end is in line with that end, 17 rows further along it, 43.18 mm,
+ * on the other board: `a6` and `2:e6`.
+ */
+export interface SlidePotentiometerPart {
+  readonly kind: "slidePotentiometer";
+  readonly ohms: number;
+  readonly wiper: Hole;
+  readonly end: Hole;
+  readonly otherEnd: Hole;
+}
+
+/**
+ * A DIP switch across the channel, its legs in rows e and f (ADR 0054): `switches` of them, from 2
+ * to 8, side by side, switch 1 in `column` and the rest to its right, its ON side towards row a.
+ * Each switch joins its two legs while it is on.
+ */
+export interface DipSwitchPart {
+  readonly kind: "dipSwitch";
+  readonly switches: number;
+  readonly column: number;
+  /** `2` puts it on the second breadboard, snapped onto the first one's top edge. */
+  readonly board?: 2;
 }
 
 /** Anything plugged into the breadboard. */
@@ -213,7 +286,13 @@ export type Part =
   | BuzzerPart
   | RgbLedPart
   | RingPart
-  | PirPart;
+  | ElectrolyticPart
+  | TransistorPart
+  | DiodePart
+  | CeramicPart
+  | SlideSwitchPart
+  | SlidePotentiometerPart
+  | DipSwitchPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the
@@ -313,8 +392,6 @@ export interface PicoCircuit extends CircuitBase {
   readonly leds?: readonly Led[];
   readonly buttons?: readonly Button[];
   readonly buzzers?: readonly Buzzer[];
-  /** What the script reads: a PIR motion sensor, each on its pin (ADR 0043). */
-  readonly sensors?: readonly Sensor[];
   /** A MicroPython script for Thonny that exercises every part, in each language's own names. */
   readonly script: Text;
 }

@@ -1,8 +1,11 @@
+import { formatNanofarads } from "../ceramics";
 import type { ButtonColour, Supply } from "../circuit";
+import type { DiodeUse } from "../diodes";
 import type { WireRole } from "../drawing/breadboard";
-import { type Band, formatOhms } from "../drawing/breadboard-svg";
+import { type Band, formatMicrofarads, formatOhms } from "../drawing/breadboard-svg";
 import { plural } from "../language";
 import type { Orientation } from "../orientation";
+import type { TransistorLeg, TransistorType } from "../transistors";
 
 /**
  * Everything a page says of its own, in each language the engine writes (ADR 0010): the sentences it
@@ -28,11 +31,8 @@ export type Place =
       readonly second?: boolean;
     };
 
-/**
- * A light, a button, a buzzer or a sensor: what an article agrees with in a language that has
- * gender.
- */
-export type PartKind = "led" | "button" | "buzzer" | "sensor";
+/** A light, a button or a buzzer: what an article agrees with in a language that has gender. */
+export type PartKind = "led" | "button" | "buzzer";
 
 /** Where a button sits on the breadboard (`placementOf`, scratchpi's ADR 0154). */
 export type ButtonPlacement = "across" | "above" | "below";
@@ -67,6 +67,10 @@ export interface PageWords {
 
   /** A value in ohms, as the language writes a decimal: `4.7 kΩ`, `4,7 kΩ`. */
   readonly ohms: (value: number) => string;
+  /** A value in microfarads, as the language writes it: `470 µF`, `0,47 µF`, `470 мкФ`. */
+  readonly microfarads: (value: number) => string;
+  /** A value in nanofarads, as the language writes it: `100 nF`, `4,7 nF`, `100 нФ`. */
+  readonly nanofarads: (value: number) => string;
   /** A resistor's colour, band by band. */
   readonly band: (band: Band) => string;
   /** A jumper's colour, by what it carries, agreeing with how many there are. */
@@ -104,18 +108,43 @@ export interface PageWords {
     ground: Place,
     dataOut: Place,
   ) => string;
+  /** An electrolytic capacitor (ADR 0043), its value written already: its + leg, then its − leg. */
+  readonly electrolytic: (microfarads: string, plus: Place, minus: Place) => string;
+  /** A transistor (ADR 0044), by its model and type, and where each of its legs goes. */
+  readonly transistor: (
+    model: string,
+    type: TransistorType,
+    emitter: Place,
+    base: Place,
+    collector: Place,
+  ) => string;
+  /** A diode (ADR 0049), by its model: its anode, then its cathode, the end its band is at. */
+  readonly diode: (model: string, anode: Place, cathode: Place) => string;
+  /** A ceramic capacitor (ADR 0051), its value written already, the code it prints, and its legs. */
+  readonly ceramic: (nanofarads: string, code: string, from: Place, to: Place) => string;
+  /** A slide switch (ADR 0052): its middle leg, then its outer ones, left and right. */
+  readonly slideSwitch: (middle: Place, left: Place, right: Place) => string;
   /**
-   * A motion sensor beside the board (ADR 0043, ADR 0044): where the jumper on each of its pins goes,
-   * by the name its board prints beside the pin, and the jumper's colour.
+   * A slide potentiometer (ADR 0053), its value written already: its wiper, the end beside it, and
+   * its other end, on the other breadboard.
    */
-  readonly pir: (name: string, power: Place, output: Place, ground: Place) => string;
+  readonly slidePotentiometer: (ohms: string, wiper: Place, end: Place, otherEnd: Place) => string;
+  /**
+   * A DIP switch (ADR 0054): how many switches, the holes of switch 1's two legs and of the last's,
+   * and whether they are on the second breadboard, which is said once rather than for each hole.
+   */
+  readonly dipSwitch: (
+    switches: number,
+    first: readonly string[],
+    last: readonly string[],
+    second: boolean,
+  ) => string;
 
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
   readonly buttonLabel: (where: ButtonPlacement) => string;
   readonly buzzerLabel: (plus: string) => string;
   readonly rgbLedLabel: (dataIn: string) => string;
-  readonly pirLabel: (output: string) => string;
 
   /** The first step and the last, which every circuit has. */
   readonly picoTitle: string;
@@ -136,9 +165,20 @@ export interface PageWords {
   /** A button, and the colour of the cap to fit on it (scratchpi's ADR 0174). */
   readonly listButton: (name: string, cap: ButtonColour) => string;
   readonly listBuzzer: (name: string) => string;
-  /** A motion sensor, and the three jumpers that join it to the board, a line each (ADR 0043). */
-  readonly listPir: (name: string) => string;
-  readonly listPirJumpers: string;
+  /** Electrolytic capacitors of one value, written already, and how many (ADR 0043). */
+  readonly listElectrolytic: (microfarads: string, count: number) => string;
+  /** Transistors of one model, and how many (ADR 0044). */
+  readonly listTransistor: (model: string, type: TransistorType, count: number) => string;
+  /** Diodes of one model, what they are sold as, and how many (ADR 0049). */
+  readonly listDiode: (model: string, use: DiodeUse, count: number) => string;
+  /** Slide switches, and how many (ADR 0052). */
+  readonly listSlideSwitch: (count: number) => string;
+  /** Slide potentiometers of one value, written already, and how many (ADR 0053). */
+  readonly listSlidePotentiometer: (ohms: string, count: number) => string;
+  /** DIP switches of one size, and how many (ADR 0054). */
+  readonly listDipSwitch: (switches: number, count: number) => string;
+  /** Ceramic capacitors of one value, written already, the code they print, and how many (ADR 0051). */
+  readonly listCeramic: (nanofarads: string, code: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
   readonly listLongWire: (colour: string, count: number) => string;
   readonly listCable: string;
@@ -149,9 +189,36 @@ export interface PageWords {
   readonly rgbLedPolarity: (dataPin: string) => string;
   /** Which way round the ring goes, and what turning it round would do (scratchpi's ADR 0238). */
   readonly ringPolarity: (dataPin: string) => string;
-  /** That a motion sensor's jumpers go on by its pins' names, and that it settles once powered. */
-  readonly pirPins: string;
   readonly anyResistor: (low: string, high: string) => string;
+  /** Which way round an electrolytic capacitor goes, and what turning it round would do. */
+  readonly electrolyticPolarity: string;
+  /** Which way round a light goes on a Pico whose lights a transistor may switch (ADR 0044). */
+  readonly switchedLedPolarity: string;
+  /**
+   * A transistor model's legs, left to right, and a model that looks the same and has them in
+   * another order (ADR 0039, ADR 0045).
+   */
+  readonly transistorPinout: (
+    model: string,
+    legs: readonly TransistorLeg[],
+    unlike: string,
+  ) => string;
+  /** What a transistor's base resistor can be. */
+  readonly baseResistor: (low: string, high: string) => string;
+  /** Which way round a diode goes, and what turning it round would do (ADR 0049). */
+  readonly diodePolarity: string;
+  /** What a slide switch joins, and that it stays so when let go, as a button does not (ADR 0052). */
+  readonly slideSwitchNote: string;
+  /** Which leg of a slide potentiometer is its wiper, the analogue pins it can go to, and why (ADR 0053). */
+  readonly slidePotentiometerWiper: (pins: readonly string[]) => string;
+  /** That each switch goes from ground to a pin the Pico pulls up, and why not to 3V3 (ADR 0054). */
+  readonly dipPullUp: string;
+  /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
+  readonly diodeAlike: (models: readonly string[]) => string;
+  /** That a ceramic capacitor goes either way round, and how its code says its value (ADR 0051). */
+  readonly ceramicCode: (code: string, nanofarads: string) => string;
+  /** What a ceramic capacitor's charging resistor can be (ADR 0051). */
+  readonly chargeResistor: (low: string, high: string) => string;
   readonly rowsLettered: string;
   readonly unplug: string;
 
@@ -229,6 +296,12 @@ const ENGLISH_SUPPLIES: Record<Supply["volts"], string> = {
 
 const ENGLISH_JUMPERS = { one: "jumper wire", other: "jumper wires" } as const;
 
+const ENGLISH_LEGS: Record<TransistorLeg, string> = {
+  emitter: "emitter",
+  base: "base",
+  collector: "collector",
+};
+
 const capitalised = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** `the top − rail`, or the hole as the page marked it up, and which board it is on. */
@@ -270,6 +343,8 @@ export const ENGLISH_PAGE: PageWords = {
   list: englishList,
 
   ohms: formatOhms,
+  microfarads: formatMicrofarads,
+  nanofarads: formatNanofarads,
   band: (band) => (band === "gold" ? "gold" : (ENGLISH_BANDS[Number(band)] ?? band)),
   wire: (role) => ENGLISH_WIRES[role],
 
@@ -287,14 +362,25 @@ export const ENGLISH_PAGE: PageWords = {
     `The ${name}, its legs in ${englishList(legs)}${second ? " on the second breadboard" : ""}: +5 V, then data out, the longest, then ground, then data in.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `The ${name}, standing up: data in ${englishIn(dataIn)}, 5 V ${englishIn(power)}, ground ${englishIn(ground)} and data out ${englishIn(dataOut)}.`,
-  pir: (name, power, output, ground) =>
-    `The ${name}, beside the board, dome up: a red jumper from its VCC pin ${englishTo(power)}, a yellow one from its OUT pin ${englishTo(output)} and a black one from its GND pin ${englishTo(ground)}.`,
+  electrolytic: (microfarads, plus, minus) =>
+    `A ${microfarads} capacitor: its + leg ${englishIn(plus)}, and its − leg, under the stripe, ${englishIn(minus)}.`,
+  transistor: (model, type, emitter, base, collector) =>
+    `A ${model} ${type} transistor, its flat face towards row <span class="hole">j</span>: its emitter ${englishIn(emitter)}, its base ${englishIn(base)} and its collector ${englishIn(collector)}.`,
+  diode: (model, anode, cathode) =>
+    `A ${model} diode: its anode ${englishIn(anode)}, and its cathode, at the band, ${englishIn(cathode)}.`,
+  ceramic: (nanofarads, code, from, to) =>
+    `A ${nanofarads} ceramic capacitor, marked ${code}, either way round: one leg ${englishIn(from)} and the other ${englishIn(to)}.`,
+  slideSwitch: (middle, left, right) =>
+    `A slide switch, either way round: its middle leg ${englishIn(middle)}, one outer leg ${englishIn(left)} and the other ${englishIn(right)}.`,
+  slidePotentiometer: (ohms, wiper, end, otherEnd) =>
+    `A ${ohms} slide potentiometer, lying across both breadboards: its wiper ${englishIn(wiper)}, the end beside it ${englishIn(end)}, and its other end ${englishIn(otherEnd)}.`,
+  dipSwitch: (switches, first, last, second) =>
+    `A ${switches}-way DIP switch across the channel, its ON side towards row <span class="hole">a</span>: switch 1 in ${englishList(first)}, and switch ${switches} in ${englishList(last)}${second ? ", on the second breadboard" : ""}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
   buzzerLabel: (plus) => `+ leg in ${plus}`,
   rgbLedLabel: (dataIn) => `data in at ${dataIn}`,
-  pirLabel: (output) => `OUT to ${output}`,
 
   picoTitle: "Put the Pico across the middle",
   picoBody: (pinOne, lands, orientation) =>
@@ -321,10 +407,24 @@ export const ENGLISH_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}: a 6 mm tactile switch with four legs, and a ${ENGLISH_CAPS[cap]} cap.`,
   listBuzzer: (name) => `Passive ${name}, with its + leg marked.`,
-  listPir: (name) =>
-    `${capitalised(name)}: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.`,
-  listPirJumpers:
-    "Female-to-male jumpers, one red, one yellow and one black, about 20 cm: they go on the motion sensor's pins.",
+  listElectrolytic: (microfarads, count) =>
+    `${microfarads} electrolytic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, rated 16 V or more.`,
+  listTransistor: (model, type, count) =>
+    `${model} ${type} ${plural("en", count, { one: "transistor", other: "transistors" })}, in a TO-92 case.`,
+  listDiode: (model, use, count) =>
+    `${model} ${use} ${plural("en", count, { one: "diode", other: "diodes" })}, in ${use === "signal" ? "an orange glass case" : "a black case"}.`,
+  listSlideSwitch: (count) =>
+    plural("en", count, {
+      one: "SPDT slide switch, its three legs 2.54 mm apart, as a breadboard's holes are.",
+      other:
+        "SPDT slide switches, each with three legs 2.54 mm apart, as a breadboard's holes are.",
+    }),
+  listSlidePotentiometer: (ohms, count) =>
+    `${ohms} slide ${plural("en", count, { one: "potentiometer", other: "potentiometers" })}, 45 mm long, with two legs at one end and one at the other, and a cap for the knob.`,
+  listDipSwitch: (switches, count) =>
+    `${switches}-way DIP ${plural("en", count, { one: "switch", other: "switches" })}, with its legs in two rows 7.62 mm apart, to go across the channel.`,
+  listCeramic: (nanofarads, code, count) =>
+    `${nanofarads} ceramic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, marked ${code}.`,
   listWire: (colour, count) =>
     `${capitalised(colour)} ${plural("en", count, ENGLISH_JUMPERS)}, short.`,
   listLongWire: (colour, count) =>
@@ -337,10 +437,29 @@ export const ENGLISH_PAGE: PageWords = {
     `The RGB LED's longest leg is data out, and goes in the second hole. Check it before the LED goes in: turned round, it would put 5 V on ${dataPin}.`,
   ringPolarity: (dataPin) =>
     `The ring's back names its four pins: data in, 5 V, ground and data out. Check them against the steps before it goes in: turned round, it would put 5 V on ${dataPin}.`,
-  pirPins:
-    "The motion sensor's board names its three pins, beside them or under its dome: VCC or +, OUT or SIG, and GND. Push each jumper onto the pin of its name, whatever order they are in: it differs from one sensor to another. Once powered, it takes up to a minute to settle.",
   anyResistor: (low, high) =>
     `Any resistor from ${low} to ${high} works for a light. A bigger one makes it dimmer.`,
+  electrolyticPolarity:
+    "An electrolytic capacitor goes in one way round: its − leg is the shorter one, under the pale stripe down its side, and goes towards −. Put in backwards, it can be damaged.",
+  switchedLedPolarity:
+    "An LED's long leg is + and goes towards the pin, or, where a transistor switches it, towards 3V3 or towards the transistor, as its step says. One put in backwards stays dark, but it is not damaged: turn it round.",
+  transistorPinout: (model, legs, unlike) =>
+    `With its flat face towards you and its legs down, a ${model}'s legs are its ${englishList(legs.map((leg) => ENGLISH_LEGS[leg]))}, left to right. Others that look the same, such as a ${unlike}, have them in another order: take the model the parts list names.`,
+  baseResistor: (low, high) => `Any resistor from ${low} to ${high} works for a transistor's base.`,
+  diodePolarity:
+    "A diode lets current through one way only: from its anode to its cathode, the end with the band, which goes towards −. One put in backwards lets none through, and its light stays dark, but it is not damaged: turn it round.",
+  slideSwitchNote:
+    "A slide switch joins its middle leg to one outer leg or the other, whichever way its slide is pushed, and stays so when let go, where a push button joins its legs only while it is held.",
+  slidePotentiometerWiper: (pins) =>
+    `Of a slide potentiometer's two legs at one end, its wiper is the one with no leg in line with it at the other end. It goes to an analogue pin, ${englishList(pins).replace(" and ", " or ")}, and the two ends to 3V3(OUT) and ground, either way round. Wired to 3V3(OUT) instead, the wiper would join it to ground at one end of its travel.`,
+  dipPullUp:
+    "Each switch of a DIP switch joins its two legs while it is on. One leg goes to ground and the other to a pin of its own, which the script pulls up inside the Pico, so it reads 1 while its switch is off and 0 while it is on. Wired to 3V3(OUT) instead, each pin would need a pull-down, and the Pico 2 W's own cannot be relied on to hold it low.",
+  diodeAlike: (models) =>
+    `The ${englishList(models)} all do on a light's way: a light takes far less current than any of them can carry.`,
+  ceramicCode: (code, nanofarads) =>
+    `A ceramic capacitor goes in either way round. Its value is printed on it as a code in picofarads, two figures and then how many zeros follow them: ${code} is ${nanofarads}.`,
+  chargeResistor: (low, high) =>
+    `Any resistor from ${low} to ${high} works to charge the capacitor. A bigger one, or a bigger capacitor, takes longer.`,
   rowsLettered:
     "Some breadboards letter their rows the other way up. If yours does, follow the picture rather than the letters.",
   unplug: "Unplug the USB cable while you change the wiring.",
@@ -427,6 +546,13 @@ const frenchFrom = (place: Place): string =>
 const frenchTo = (place: Place): string =>
   (place.kind === "rail" ? `au ${frenchRail(place)}` : `à ${place.html}`) + frenchBoard(place);
 
+/** A transistor's legs, with the article each takes. */
+const FRENCH_LEGS: Record<TransistorLeg, string> = {
+  emitter: "l’émetteur",
+  base: "la base",
+  collector: "le collecteur",
+};
+
 /** A cap's colour, agreeing with *bouton* and *capuchon*, which are both masculine. */
 const FRENCH_CAPS: Record<ButtonColour, string> = {
   red: "rouge",
@@ -458,7 +584,7 @@ const frenchList = (items: readonly string[]): string =>
 
 /**
  * The definite article a part's name takes at the start of a sentence: *La* for a light,
- * *Le* for a button, a buzzer or a sensor, and *L’* before a vowel or a mute *h*, whatever the gender.
+ * *Le* for a button or a buzzer, and *L’* before a vowel or a mute *h*, whatever the gender.
  */
 function the(kind: PartKind, name: string): string {
   if (/^[aeiouyhàâéèêëîïôöùûü]/i.test(name)) return `L’${name}`;
@@ -490,6 +616,8 @@ export const FRENCH_PAGE: PageWords = {
   list: frenchList,
 
   ohms: (value) => formatOhms(value).replace(".", ","),
+  microfarads: (value) => formatMicrofarads(value).replace(".", ","),
+  nanofarads: (value) => formatNanofarads(value).replace(".", ","),
   band: (band) => (band === "gold" ? "or" : (FRENCH_BANDS[Number(band)] ?? band)),
   wire: (role, count) => {
     const [one, more] = FRENCH_WIRES[role];
@@ -510,14 +638,25 @@ export const FRENCH_PAGE: PageWords = {
     `${the("led", name)}, ses pattes en ${frenchList(legs)}${second ? " de la seconde plaque" : ""}${NNBSP}: le +5 V, puis la sortie des données, la plus longue, puis la masse, puis l’entrée des données.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `${the("led", name)}, debout${NNBSP}: l’entrée des données ${frenchIn(dataIn)}, le 5 V ${frenchIn(power)}, la masse ${frenchIn(ground)} et la sortie des données ${frenchIn(dataOut)}.`,
-  pir: (name, power, output, ground) =>
-    `${the("sensor", name)}, à côté de la plaque, dôme en haut${NNBSP}: un fil rouge de sa broche VCC ${frenchTo(power)}, un fil jaune de sa broche OUT ${frenchTo(output)} et un fil noir de sa broche GND ${frenchTo(ground)}.`,
+  electrolytic: (microfarads, plus, minus) =>
+    `Un condensateur de ${microfarads}${NNBSP}: sa patte + ${frenchIn(plus)}, et sa patte −, du côté de la bande, ${frenchIn(minus)}.`,
+  transistor: (model, type, emitter, base, collector) =>
+    `Un transistor ${type} ${model}, sa face plate vers la rangée <span class="hole">j</span>${NNBSP}: son émetteur ${frenchIn(emitter)}, sa base ${frenchIn(base)} et son collecteur ${frenchIn(collector)}.`,
+  diode: (model, anode, cathode) =>
+    `Une diode ${model}${NNBSP}: son anode ${frenchIn(anode)}, et sa cathode, du côté de la bande, ${frenchIn(cathode)}.`,
+  ceramic: (nanofarads, code, from, to) =>
+    `Un condensateur céramique de ${nanofarads}, marqué ${code}, dans un sens ou dans l’autre${NNBSP}: une patte ${frenchIn(from)} et l’autre ${frenchIn(to)}.`,
+  slideSwitch: (middle, left, right) =>
+    `Un interrupteur à glissière, dans un sens ou dans l’autre${NNBSP}: sa patte du milieu ${frenchIn(middle)}, une patte extérieure ${frenchIn(left)} et l’autre ${frenchIn(right)}.`,
+  slidePotentiometer: (ohms, wiper, end, otherEnd) =>
+    `Un potentiomètre à glissière de ${ohms}, couché à cheval sur les deux plaques${NNBSP}: son curseur ${frenchIn(wiper)}, l’extrémité à côté ${frenchIn(end)}, et son autre extrémité ${frenchIn(otherEnd)}.`,
+  dipSwitch: (switches, first, last, second) =>
+    `Un interrupteur DIP à ${switches} voies à cheval sur la rainure centrale, son côté ON vers la rangée <span class="hole">a</span>${NNBSP}: l’interrupteur 1 en ${frenchList(first)}, et l’interrupteur ${switches} en ${frenchList(last)}${second ? ", sur la seconde plaque" : ""}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
   buzzerLabel: (plus) => `patte + en ${plus}`,
   rgbLedLabel: (dataIn) => `entrée en ${dataIn}`,
-  pirLabel: (output) => `OUT en ${output}`,
 
   picoTitle: "Placez le Pico à cheval sur la rainure centrale",
   picoBody: (pinOne, lands, orientation) =>
@@ -548,9 +687,25 @@ export const FRENCH_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}${NNBSP}: un interrupteur tactile de 6 mm à quatre pattes, avec un capuchon ${FRENCH_CAPS[cap]}.`,
   listBuzzer: (name) => `${capitalised(name)} passif, avec sa patte + marquée.`,
-  listPir: (name) =>
-    `${capitalised(name)}${NNBSP}: un module PIR à trois broches, VCC, OUT et GND, alimenté en 5 V. Sa broche OUT donne 3,3 V tant qu’il voit du mouvement.`,
-  listPirJumpers: `Fils de connexion femelle-mâle, un rouge, un jaune et un noir, d’environ 20 cm${NNBSP}: ils se branchent sur les broches du détecteur de mouvement.`,
+  listElectrolytic: (microfarads, count) =>
+    `${plural("fr", count, { one: "Condensateur électrolytique", many: "Condensateurs électrolytiques", other: "Condensateurs électrolytiques" })} de ${microfarads}, de 16 V ou plus.`,
+  listTransistor: (model, type, count) =>
+    `${plural("fr", count, { one: "Transistor", many: "Transistors", other: "Transistors" })} ${type} ${model}, en boîtier TO-92.`,
+  listDiode: (model, use, count) =>
+    `${plural("fr", count, { one: "Diode", many: "Diodes", other: "Diodes" })} ${use === "signal" ? "de signal" : "de redressement"} ${model}, en boîtier ${use === "signal" ? "de verre orange" : "noir"}.`,
+  listSlideSwitch: (count) =>
+    plural("fr", count, {
+      one: "Interrupteur à glissière inverseur (SPDT), ses trois pattes espacées de 2,54 mm, comme les trous d’une plaque d’essai.",
+      many: "Interrupteurs à glissière inverseurs (SPDT), chacun à trois pattes espacées de 2,54 mm, comme les trous d’une plaque d’essai.",
+      other:
+        "Interrupteurs à glissière inverseurs (SPDT), chacun à trois pattes espacées de 2,54 mm, comme les trous d’une plaque d’essai.",
+    }),
+  listSlidePotentiometer: (ohms, count) =>
+    `${plural("fr", count, { one: "Potentiomètre à glissière", many: "Potentiomètres à glissière", other: "Potentiomètres à glissière" })} de ${ohms}, de 45 mm de long, à deux pattes à un bout et une à l’autre, avec un capuchon pour le bouton.`,
+  listDipSwitch: (switches, count) =>
+    `${plural("fr", count, { one: "Interrupteur", many: "Interrupteurs", other: "Interrupteurs" })} DIP à ${switches} voies, ses pattes sur deux rangées espacées de 7,62 mm, pour se mettre à cheval sur la rainure centrale.`,
+  listCeramic: (nanofarads, code, count) =>
+    `${plural("fr", count, { one: "Condensateur céramique", many: "Condensateurs céramiques", other: "Condensateurs céramiques" })} de ${nanofarads}, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
   listWire: (colour, count) => {
     const more = `Fils de connexion ${colour}, courts.`;
     return plural("fr", count, {
@@ -575,9 +730,27 @@ export const FRENCH_PAGE: PageWords = {
     `La plus longue patte de la LED RVB est la sortie des données, et va dans le deuxième trou. Vérifiez-la avant de planter la LED${NNBSP}: à l’envers, elle mettrait 5 V sur ${dataPin}.`,
   ringPolarity: (dataPin) =>
     `Le dos de l’anneau nomme ses quatre broches${NNBSP}: entrée des données, 5 V, masse et sortie des données. Vérifiez-les d’après les étapes avant de le planter${NNBSP}: à l’envers, il mettrait 5 V sur ${dataPin}.`,
-  pirPins: `La carte du détecteur de mouvement nomme ses trois broches, à côté d’elles ou sous son dôme${NNBSP}: VCC ou +, OUT ou SIG, et GND. Branchez chaque fil sur la broche de son nom, quel que soit leur ordre${NNBSP}: il change d’un détecteur à l’autre. Une fois alimenté, il lui faut jusqu’à une minute pour se stabiliser.`,
   anyResistor: (low, high) =>
     `N’importe quelle résistance de ${low} à ${high} convient pour une LED. Plus elle est grande, plus la LED éclaire faiblement.`,
+  electrolyticPolarity: `Un condensateur électrolytique se plante dans un seul sens${NNBSP}: sa patte − est la plus courte, du côté de la bande pâle sur son flanc, et va vers le −. Monté à l’envers, il peut être abîmé.`,
+  switchedLedPolarity: `La grande patte d’une LED est le + et va du côté de la broche, ou, quand un transistor la commande, du côté du 3V3 ou du transistor, comme le dit son étape. Une LED mise à l’envers reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
+  transistorPinout: (model, legs, unlike) =>
+    `Face plate vers vous et pattes en bas, les pattes d’un ${model} sont ${frenchList(legs.map((leg) => FRENCH_LEGS[leg]))}, de gauche à droite. D’autres qui lui ressemblent, comme le ${unlike}, les ont dans un autre ordre${NNBSP}: prenez le modèle que nomme la liste des composants.`,
+  baseResistor: (low, high) =>
+    `N’importe quelle résistance de ${low} à ${high} convient pour la base d’un transistor.`,
+  diodePolarity: `Une diode ne laisse passer le courant que dans un sens${NNBSP}: de son anode à sa cathode, le bout marqué d’une bande, qui va vers le −. Une diode mise à l’envers ne laisse rien passer, et sa LED reste éteinte, mais elle n’est pas abîmée${NNBSP}: retournez-la.`,
+  slideSwitchNote:
+    "Un interrupteur à glissière relie sa patte du milieu à l’une ou l’autre de ses pattes extérieures, selon le côté où l’on pousse sa glissière, et reste ainsi une fois lâché, là où un bouton poussoir ne relie ses pattes que tant qu’on le maintient enfoncé.",
+  slidePotentiometerWiper: (pins) =>
+    `Des deux pattes d’un même bout d’un potentiomètre à glissière, le curseur est celle qui n’a aucune patte dans son alignement à l’autre bout. Il va sur une broche analogique, ${frenchList(pins).replace(" et ", " ou ")}, et les deux extrémités sur le 3V3(OUT) et la masse, dans un sens ou dans l’autre. Relié au 3V3(OUT), le curseur le relierait à la masse à un bout de sa course.`,
+  dipPullUp:
+    "Chaque interrupteur d’un interrupteur DIP relie ses deux pattes tant qu’il est en marche. Une patte va à la masse et l’autre à une broche à elle, que le script tire vers le haut à l’intérieur du Pico, si bien qu’elle lit 1 tant que son interrupteur est à l’arrêt et 0 tant qu’il est en marche. Relié au 3V3(OUT), chaque broche aurait besoin d’une résistance de tirage vers le bas, et celles du Pico 2 W ne suffisent pas à la maintenir au niveau bas.",
+  diodeAlike: (models) =>
+    `Les diodes ${frenchList(models)} conviennent toutes sur le chemin d’une LED${NNBSP}: une LED consomme bien moins de courant que chacune d’elles n’en supporte.`,
+  ceramicCode: (code, nanofarads) =>
+    `Un condensateur céramique se plante dans un sens ou dans l’autre. Sa valeur y est imprimée en code, en picofarads${NNBSP}: deux chiffres, puis le nombre de zéros qui les suivent. ${code} vaut ${nanofarads}.`,
+  chargeResistor: (low, high) =>
+    `N’importe quelle résistance de ${low} à ${high} convient pour charger le condensateur. Plus elle est grande, ou plus le condensateur l’est, plus il met de temps à se charger.`,
   rowsLettered:
     "Sur certaines plaques d’essai, les lettres des rangées vont dans l’autre sens. Si c’est le cas de la vôtre, suivez le dessin plutôt que les lettres.",
   unplug: "Débranchez le câble USB pendant que vous changez le câblage.",
@@ -683,10 +856,25 @@ const russianIn = (place: Place): string =>
   (place.kind === "rail" ? `в ${russianRail(place, true)}` : `в ${place.html}`) +
   russianBoard(place);
 
+/** A DIP switch's positions, as *на* takes them: *на 2 позиции*, *на 5 позиций* (ADR 0054). */
+const russianPositions = (count: number): string =>
+  plural("ru", count, { one: "позицию", few: "позиции", many: "позиций", other: "позиции" });
+
 const russianList = (items: readonly string[]): string =>
   items.length <= 1
     ? items.join("")
     : `${items.slice(0, -1).join(", ")} и ${items[items.length - 1]}`;
+
+/** A transistor's legs. */
+const RUSSIAN_LEGS: Record<TransistorLeg, string> = {
+  emitter: "эмиттер",
+  base: "база",
+  collector: "коллектор",
+};
+
+/** A value in microfarads as Russian writes it: a decimal comma, and *мкФ*. */
+const russianMicrofarads = (value: number): string =>
+  formatMicrofarads(value).replace(".", ",").replace("µF", "мкФ");
 
 /** A value in ohms as Russian writes it: a decimal comma, and *Ом*. */
 const russianOhms = (value: number): string =>
@@ -717,6 +905,8 @@ export const RUSSIAN_PAGE: PageWords = {
   list: russianList,
 
   ohms: russianOhms,
+  microfarads: russianMicrofarads,
+  nanofarads: (value) => formatNanofarads(value).replace(".", ",").replace("nF", "нФ"),
   band: (band) => (band === "gold" ? "золотой" : (RUSSIAN_BANDS[Number(band)] ?? band)),
   wire: (role) => RUSSIAN_WIRES[role],
 
@@ -735,14 +925,25 @@ export const RUSSIAN_PAGE: PageWords = {
     `${name}: ножки в ${russianList(legs)}${second ? " на второй плате" : ""}: +5 В, затем выход данных, самая длинная, затем земля, затем вход данных.`,
   ring: (name, dataIn, power, ground, dataOut) =>
     `${name}, стоя: вход данных ${russianIn(dataIn)}, 5 В ${russianIn(power)}, земля ${russianIn(ground)} и выход данных ${russianIn(dataOut)}.`,
-  pir: (name, power, output, ground) =>
-    `${name}, рядом с платой, куполом вверх: красная перемычка от вывода VCC ${russianIn(power)}, жёлтая от вывода OUT ${russianIn(output)} и чёрная от вывода GND ${russianIn(ground)}.`,
+  electrolytic: (microfarads, plus, minus) =>
+    `Конденсатор ${microfarads}: ножка + ${russianIn(plus)}, ножка −, со стороны полосы, ${russianIn(minus)}.`,
+  transistor: (model, type, emitter, base, collector) =>
+    `Транзистор ${type} ${model}, плоской стороной к ряду <span class="hole">j</span>: эмиттер ${russianIn(emitter)}, база ${russianIn(base)}, коллектор ${russianIn(collector)}.`,
+  diode: (model, anode, cathode) =>
+    `Диод ${model}: анод ${russianIn(anode)}, катод, со стороны полосы, ${russianIn(cathode)}.`,
+  ceramic: (nanofarads, code, from, to) =>
+    `Керамический конденсатор ${nanofarads} с маркировкой ${code}, любой стороной: одна ножка ${russianIn(from)}, другая ${russianIn(to)}.`,
+  slideSwitch: (middle, left, right) =>
+    `Ползунковый переключатель, любой стороной: средняя ножка ${russianIn(middle)}, одна крайняя ножка ${russianIn(left)}, другая ${russianIn(right)}.`,
+  dipSwitch: (switches, first, last, second) =>
+    `DIP-переключатель на ${switches} ${russianPositions(switches)} поперёк центральной канавки, стороной ON к ряду <span class="hole">a</span>: переключатель 1 в ${russianList(first)}, переключатель ${switches} в ${russianList(last)}${second ? ", на второй плате" : ""}.`,
+  slidePotentiometer: (ohms, wiper, end, otherEnd) =>
+    `Ползунковый потенциометр ${ohms}, поперёк обеих плат: движок ${russianIn(wiper)}, вывод рядом с ним ${russianIn(end)}, другой вывод ${russianIn(otherEnd)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
   buzzerLabel: (plus) => `ножка + в ${plus}`,
   rgbLedLabel: (dataIn) => `вход данных в ${dataIn}`,
-  pirLabel: (output) => `OUT в ${output}`,
 
   picoTitle: "Установите Pico поперёк середины",
   picoBody: (pinOne, lands, orientation) =>
@@ -771,10 +972,20 @@ export const RUSSIAN_PAGE: PageWords = {
   listButton: (name, cap) =>
     `${capitalised(name)}: тактовая кнопка 6 мм с четырьмя ножками и ${RUSSIAN_CAPS[cap].alone} колпачок.`,
   listBuzzer: (name) => `${capitalised(name)}: пассивного типа, ножка + отмечена.`,
-  listPir: (name) =>
-    `${capitalised(name)}: модуль PIR с тремя выводами, VCC, OUT и GND, питание 5 В. Пока он видит движение, на OUT 3,3 В.`,
-  listPirJumpers:
-    "Перемычка мама-папа, около 20 см: красная, жёлтая и чёрная, для выводов датчика движения.",
+  listElectrolytic: (microfarads) =>
+    `Электролитический конденсатор ${microfarads}, на 16 В или больше.`,
+  listTransistor: (model, type) => `Транзистор ${type} ${model} в корпусе TO-92.`,
+  listDiode: (model, use) =>
+    use === "signal"
+      ? `Импульсный диод ${model} в оранжевом стеклянном корпусе.`
+      : `Выпрямительный диод ${model} в чёрном корпусе.`,
+  listSlideSwitch: () =>
+    "Ползунковый переключатель SPDT: три ножки с шагом 2,54 мм, как отверстия макетной платы.",
+  listSlidePotentiometer: (ohms) =>
+    `Ползунковый потенциометр ${ohms}, длиной 45 мм: два вывода с одного конца и один с другого, с колпачком для ручки.`,
+  listDipSwitch: (switches) =>
+    `DIP-переключатель на ${switches} ${russianPositions(switches)}: ножки в два ряда на расстоянии 7,62 мм, чтобы встать поперёк центральной канавки.`,
+  listCeramic: (nanofarads, code) => `Керамический конденсатор ${nanofarads}, маркировка ${code}.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
   listCable:
@@ -786,10 +997,29 @@ export const RUSSIAN_PAGE: PageWords = {
     `Самая длинная ножка RGB-светодиода: выход данных, она идёт во второе отверстие. Проверьте её до установки: перевёрнутый, он подал бы 5 В на ${dataPin}.`,
   ringPolarity: (dataPin) =>
     `На обороте кольца подписаны его четыре вывода: вход данных, 5 В, земля и выход данных. Сверьте их с шагами до установки: перевёрнутое, оно подало бы 5 В на ${dataPin}.`,
-  pirPins:
-    "На плате датчика движения подписаны три вывода, рядом с ними или под куполом: VCC или +, OUT или SIG, и GND. Надевайте каждую перемычку на вывод с её подписью, в каком бы порядке они ни шли: у разных датчиков он разный. После включения датчику нужно до минуты, чтобы успокоиться.",
   anyResistor: (low, high) =>
     `Для светодиода подойдёт любой резистор от ${low} до ${high}. Чем больше сопротивление, тем тусклее свет.`,
+  electrolyticPolarity:
+    "Электролитический конденсатор ставится только одной стороной: ножка − короче, она под светлой полосой на корпусе и идёт к −. Вставленный наоборот, он может испортиться.",
+  switchedLedPolarity:
+    "Длинная ножка светодиода: это +, она идёт к выводу, а если светодиод переключает транзистор, к 3V3 или к транзистору, как сказано в его шаге. Светодиод, вставленный наоборот, не горит, но и не портится: переверните его.",
+  transistorPinout: (model, legs, unlike) =>
+    `Если смотреть на плоскую сторону, ножками вниз, у ${model} слева направо: ${russianList(legs.map((leg) => RUSSIAN_LEGS[leg]))}. У похожих на него, например ${unlike}, порядок другой: берите модель, названную в списке деталей.`,
+  baseResistor: (low, high) => `Для базы транзистора подойдёт любой резистор от ${low} до ${high}.`,
+  diodePolarity:
+    "Диод пропускает ток только в одну сторону: от анода к катоду, концу с полосой, который смотрит к −. Диод, вставленный наоборот, ничего не пропускает, и его светодиод не горит, но диод не портится: переверните его.",
+  slideSwitchNote:
+    "Ползунковый переключатель соединяет среднюю ножку с одной или другой крайней, смотря куда сдвинут ползунок, и остаётся так, когда его отпускают, а кнопка соединяет свои ножки, только пока её держат.",
+  slidePotentiometerWiper: (pins) =>
+    `Из двух выводов на одном конце ползункового потенциометра движком служит тот, напротив которого на другом конце вывода нет. Он идёт на аналоговый вывод ${russianList(pins).replace(" и ", " или ")}, а крайние выводы идут на 3V3(OUT) и землю, в любом порядке. Подключённый к 3V3(OUT), движок замкнул бы его на землю в одном конце хода.`,
+  dipPullUp:
+    "Каждый переключатель DIP-переключателя соединяет свои две ножки, пока он включён. Одна ножка идёт на землю, другая на свой вывод, который скрипт подтягивает вверх внутри Pico, так что вывод читает 1, пока переключатель выключен, и 0, пока он включён. Если подключить переключатели к 3V3(OUT), каждому выводу понадобится подтяжка вниз, а на встроенную подтяжку Pico 2 W нельзя положиться.",
+  diodeAlike: (models) =>
+    `На пути светодиода подойдёт любой из диодов ${russianList(models)}: светодиоду нужно гораздо меньше тока, чем выдерживает каждый из них.`,
+  ceramicCode: (code, nanofarads) =>
+    `Керамический конденсатор ставится любой стороной. Номинал напечатан на корпусе кодом в пикофарадах: две цифры, затем число нулей после них. ${code} означает ${nanofarads}.`,
+  chargeResistor: (low, high) =>
+    `Для зарядки конденсатора подойдёт любой резистор от ${low} до ${high}. Чем больше сопротивление или ёмкость, тем дольше зарядка.`,
   rowsLettered:
     "На некоторых макетных платах ряды подписаны в обратном порядке. Если на вашей так, следуйте рисунку, а не буквам.",
   unplug: "Отключайте кабель USB, пока меняете схему.",

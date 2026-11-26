@@ -1,5 +1,8 @@
+import { ceramicCode } from "../ceramics";
 import type { ButtonColour, Layout, PlainLed, ShownCircuit } from "../circuit";
+import { DIODE_NAMES, DIODES, type DiodeName } from "../diodes";
 import {
+  dipLegsOf,
   type Hole,
   holeAt,
   holeOfPin,
@@ -23,9 +26,16 @@ import {
 import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN, widthOf } from "../fonts";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
-import { LIGHT_OHMS_RANGE } from "../netlist";
+import {
+  ANALOGUE_GPIOS,
+  BASE_OHMS_RANGE,
+  CHARGE_OHMS_RANGE,
+  FLASHER_BASE_OHMS_RANGE,
+  LIGHT_OHMS_RANGE,
+} from "../netlist";
 import { isStanding, type Orientation } from "../orientation";
 import { DEFAULT_THEME, type Theme } from "../theme";
+import { TRANSISTORS, type TransistorName } from "../transistors";
 import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place, RUSSIAN_PAGE } from "./words";
 
 /**
@@ -143,7 +153,6 @@ interface Names {
   /** A button's cap colour (scratchpi's ADR 0174). */
   readonly cap: (id: string) => ButtonColour;
   readonly buzzer: (id: string) => string;
-  readonly sensor: (id: string) => string;
 }
 
 function namesOf(circuit: ShownCircuit): Names {
@@ -155,7 +164,6 @@ function namesOf(circuit: ShownCircuit): Names {
     button: (id) => find(circuit.buttons, id),
     cap: (id) => buttonColourOf(circuit, id),
     buzzer: (id) => find(circuit.buzzers, id),
-    sensor: (id) => find(circuit.sensors, id),
   };
 }
 
@@ -204,13 +212,45 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         at(part.ground),
         at(part.dataOut),
       );
-    case "pir":
-      return words.pir(
-        escaped(names.sensor(part.sensor)),
-        at(part.power),
-        at(part.output),
-        at(part.ground),
+    case "electrolytic":
+      return words.electrolytic(words.microfarads(part.microfarads), at(part.plus), at(part.minus));
+    case "transistor":
+      return words.transistor(
+        part.model,
+        TRANSISTORS[part.model].type,
+        at(part.emitter),
+        at(part.base),
+        at(part.collector),
       );
+    case "diode":
+      return words.diode(part.model, at(part.anode), at(part.cathode));
+    case "ceramic":
+      return words.ceramic(
+        words.nanofarads(part.nanofarads),
+        ceramicCode(part.nanofarads) ?? "",
+        at(part.from),
+        at(part.to),
+      );
+    case "slideSwitch":
+      return words.slideSwitch(at(part.middle), at(part.left), at(part.right));
+    case "slidePotentiometer":
+      return words.slidePotentiometer(
+        words.ohms(part.ohms),
+        at(part.wiper),
+        at(part.end),
+        at(part.otherEnd),
+      );
+    case "dipSwitch": {
+      const legs = dipLegsOf(part).map((pair) =>
+        pair.map((leg) => holeHtml(leg, words, names.pico)),
+      );
+      return words.dipSwitch(
+        part.switches,
+        legs[0] ?? [],
+        legs[legs.length - 1] ?? [],
+        part.board === 2,
+      );
+    }
   }
 }
 
@@ -226,8 +266,6 @@ function labelOf(part: Part, names: Names, words: PageWords): DrawnPart["label"]
     case "rgbLed":
     case "ring":
       return { title: names.led(part.led), detail: words.rgbLedLabel(printedName(part.dataIn)) };
-    case "pir":
-      return { title: names.sensor(part.sensor), detail: words.pirLabel(printedName(part.output)) };
     default:
       return undefined;
   }
@@ -238,8 +276,19 @@ const isComponent = (part: Part) =>
   part.kind === "button" ||
   part.kind === "buzzer" ||
   part.kind === "rgbLed" ||
-  part.kind === "ring" ||
-  part.kind === "pir";
+  part.kind === "ring";
+
+/**
+ * The parts the test step picks out: the components a reader watches and presses, a ceramic
+ * capacitor, which is what its circuit's script times (ADR 0051), and a slide switch, a slide
+ * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054).
+ */
+const isTested = (part: Part) =>
+  isComponent(part) ||
+  part.kind === "ceramic" ||
+  part.kind === "slideSwitch" ||
+  part.kind === "slidePotentiometer" ||
+  part.kind === "dipSwitch";
 
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
@@ -269,7 +318,6 @@ function componentPins(circuit: ShownCircuit): { name: string; gpio: number }[] 
       button.pin ? [{ name: button.name, gpio: button.pin.gpio }] : [],
     ),
     ...circuit.buzzers.map((buzzer) => ({ name: buzzer.name, gpio: buzzer.pin.gpio })),
-    ...circuit.sensors.map((sensor) => ({ name: sensor.name, gpio: sensor.pin.gpio })),
   ];
 }
 
@@ -349,12 +397,43 @@ function partsListHtml(
       items.push([1, words.listBuzzer(escaped(names.buzzer(part.buzzer)))]);
     }
   }
-  // A motion sensor, and the three jumpers that join it to the board (ADR 0043).
-  for (const part of parts) {
-    if (part.kind === "pir") {
-      items.push([1, words.listPir(escaped(names.sensor(part.sensor)))]);
-      items.push([3, words.listPirJumpers]);
-    }
+  const slides = parts.filter((p) => p.kind === "slideSwitch").length;
+  if (slides > 0) items.push([slides, words.listSlideSwitch(slides)]);
+  const potentiometers = [
+    ...new Set(parts.flatMap((p) => (p.kind === "slidePotentiometer" ? [p.ohms] : []))),
+  ].sort((a, b) => a - b);
+  for (const value of potentiometers) {
+    const count = parts.filter((p) => p.kind === "slidePotentiometer" && p.ohms === value).length;
+    items.push([count, words.listSlidePotentiometer(words.ohms(value), count)]);
+  }
+  const dips = [
+    ...new Set(parts.flatMap((p) => (p.kind === "dipSwitch" ? [p.switches] : []))),
+  ].sort((a, b) => a - b);
+  for (const switches of dips) {
+    const count = parts.filter((p) => p.kind === "dipSwitch" && p.switches === switches).length;
+    items.push([count, words.listDipSwitch(switches, count)]);
+  }
+  const microfarads = [
+    ...new Set(parts.flatMap((p) => (p.kind === "electrolytic" ? [p.microfarads] : []))),
+  ].sort((a, b) => a - b);
+  for (const value of microfarads) {
+    const count = parts.filter((p) => p.kind === "electrolytic" && p.microfarads === value).length;
+    items.push([count, words.listElectrolytic(words.microfarads(value), count)]);
+  }
+  for (const model of transistorModelsOf(parts)) {
+    const count = parts.filter((p) => p.kind === "transistor" && p.model === model).length;
+    items.push([count, words.listTransistor(model, TRANSISTORS[model].type, count)]);
+  }
+  for (const value of nanofaradsOf(parts)) {
+    const count = parts.filter((p) => p.kind === "ceramic" && p.nanofarads === value).length;
+    items.push([
+      count,
+      words.listCeramic(words.nanofarads(value), ceramicCode(value) ?? "", count),
+    ]);
+  }
+  for (const model of diodeModelsOf(parts)) {
+    const count = parts.filter((p) => p.kind === "diode" && p.model === model).length;
+    items.push([count, words.listDiode(model, DIODES[model].use, count)]);
   }
   for (const arch of [false, true]) {
     for (const role of ["ground", "power", "signal"] as const) {
@@ -380,20 +459,64 @@ function dataPinOf(circuit: ShownCircuit, led: string): string {
   return `GP${circuit.leds.find((each) => each.id === led)?.pin?.gpio ?? "?"}`;
 }
 
+/** The models of the transistors a circuit has, each once, in the order the steps place them. */
+const transistorModelsOf = (parts: readonly Part[]): TransistorName[] => [
+  ...new Set(parts.flatMap((p) => (p.kind === "transistor" ? [p.model] : []))),
+];
+
+/** The values of the ceramic capacitors a circuit has, each once, smallest first. */
+const nanofaradsOf = (parts: readonly Part[]): number[] =>
+  [...new Set(parts.flatMap((p) => (p.kind === "ceramic" ? [p.nanofarads] : [])))].sort(
+    (a, b) => a - b,
+  );
+
+/** The models of the diodes a circuit has, each once, in the order the steps place them. */
+const diodeModelsOf = (parts: readonly Part[]): DiodeName[] => [
+  ...new Set(parts.flatMap((p) => (p.kind === "diode" ? [p.model] : []))),
+];
+
 function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWords): string {
   const notes: string[] = [];
+  const models = transistorModelsOf(parts);
   if (parts.some((p) => p.kind === "led")) {
     const [low, high] = LIGHT_OHMS_RANGE;
     notes.push(
-      circuit.supply ? words.supplyLedPolarity : words.ledPolarity,
+      circuit.supply
+        ? words.supplyLedPolarity
+        : models.length > 0
+          ? words.switchedLedPolarity
+          : words.ledPolarity,
       words.anyResistor(words.ohms(low), words.ohms(high)),
     );
+  }
+  for (const model of models) {
+    notes.push(words.transistorPinout(model, TRANSISTORS[model].legs, TRANSISTORS[model].unlike));
+  }
+  if (models.length > 0) {
+    // A flasher's base resistors set its beat, and are larger than a switch's (ADR 0046).
+    const [low, high] = circuit.supply ? FLASHER_BASE_OHMS_RANGE : BASE_OHMS_RANGE;
+    notes.push(words.baseResistor(words.ohms(low), words.ohms(high)));
   }
   for (const part of parts) {
     if (part.kind === "rgbLed") notes.push(words.rgbLedPolarity(dataPinOf(circuit, part.led)));
     if (part.kind === "ring") notes.push(words.ringPolarity(dataPinOf(circuit, part.led)));
   }
-  if (parts.some((p) => p.kind === "pir")) notes.push(words.pirPins);
+  if (parts.some((p) => p.kind === "electrolytic")) notes.push(words.electrolyticPolarity);
+  if (parts.some((p) => p.kind === "slideSwitch")) notes.push(words.slideSwitchNote);
+  if (parts.some((p) => p.kind === "slidePotentiometer")) {
+    notes.push(words.slidePotentiometerWiper(ANALOGUE_GPIOS.map((gpio) => `GP${gpio}`)));
+  }
+  if (parts.some((p) => p.kind === "dipSwitch")) notes.push(words.dipPullUp);
+  const [ceramic] = nanofaradsOf(parts);
+  if (ceramic !== undefined) {
+    const [low, high] = CHARGE_OHMS_RANGE;
+    notes.push(
+      words.ceramicCode(ceramicCode(ceramic) ?? "", words.nanofarads(ceramic)),
+      words.chargeResistor(words.ohms(low), words.ohms(high)),
+    );
+  }
+  if (diodeModelsOf(parts).length > 0)
+    notes.push(words.diodePolarity, words.diodeAlike(DIODE_NAMES));
   notes.push(words.rowsLettered, circuit.supply ? words.supplyUnplug : words.unplug);
   return notes.map((note) => `<li>${escaped(note)}</li>`).join("");
 }
@@ -412,7 +535,7 @@ function drawingOf(circuit: ShownCircuit, layout: Layout, inputs: PageInputs): s
       const label = labelOf(part, names, words);
       return {
         part,
-        group: isComponent(part) ? `${stepGroup(index)} ${TEST_GROUP}` : stepGroup(index),
+        group: isTested(part) ? `${stepGroup(index)} ${TEST_GROUP}` : stepGroup(index),
         ...(label ? { label } : {}),
       };
     }),

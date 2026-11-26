@@ -79,7 +79,7 @@ describe("a file's format (ADR 0015)", () => {
 describe("a file's fields (ADR 0016)", () => {
   it("are only a circuit's, so a misspelt one is caught", () => {
     expect(said(changed((data) => (data.descripton = { en: "Typo" })))).toEqual([
-      "descripton is not a field of a circuit: it has `format`, `setup`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `sensors`, `steps`, `script` or `test`",
+      "descripton is not a field of a circuit: it has `format`, `setup`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `steps`, `script` or `test`",
     ]);
   });
 
@@ -157,6 +157,77 @@ describe("a file's fields (ADR 0016)", () => {
     expect(said(changed((data) => (part(data, 0, 0).colour = "black")))[0]).toStartWith(
       "steps[0].parts[0].colour is not a field of a wire",
     );
+  });
+
+  it("name a transistor by a model ratsnest knows (ADR 0039, ADR 0044)", () => {
+    const transistor = (model: string) =>
+      changed(
+        (data) =>
+          ((step(data, 1).parts as Record<string, unknown>[])[0] = {
+            kind: "transistor",
+            model,
+            emitter: "e24",
+            base: "e25",
+            collector: "e26",
+          }),
+        "light-on-a-transistor",
+      );
+    expect(said(transistor("2N3904"))).toEqual([]);
+    expect(said(transistor("2N3906"))).toEqual([]);
+    expect(said(transistor("BC547"))).toEqual([
+      "steps[1].parts[0].model is not one of `2N3904` or `2N3906`",
+    ]);
+  });
+
+  it("name a diode by a model ratsnest knows, in a circuit with a supply (ADR 0039, ADR 0049)", () => {
+    const diode = (model: string) => {
+      const data = structuredClone(
+        supplyFileOf(FIXTURES["lights-kept-apart-by-diodes"]),
+      ) as unknown as Record<string, unknown>;
+      (step(data, 4).parts as Record<string, unknown>[])[0] = {
+        kind: "diode",
+        model,
+        anode: "i14",
+        cathode: "i18",
+      };
+      return data;
+    };
+    for (const model of ["1N4148", "1N4001", "1N4007"]) expect(said(diode(model))).toEqual([]);
+    expect(said(diode("1N5819"))).toEqual([
+      "steps[4].parts[0].model is not one of `1N4148`, `1N4001` or `1N4007`",
+    ]);
+  });
+
+  it("give a ceramic capacitor a value its code can print, on a Pico (ADR 0051)", () => {
+    const ceramic = (nanofarads: unknown) =>
+      changed(
+        (data) =>
+          ((step(data, 1).parts as Record<string, unknown>[])[0] = {
+            kind: "ceramic",
+            nanofarads,
+            from: "f26",
+            to: "f27",
+          }),
+        "capacitor-timed-by-two-pins",
+      );
+    for (const value of [47, 100, 4.7, 0.022]) expect(said(ceramic(value))).toEqual([]);
+    for (const value of [0.0047, 123, "100"]) {
+      expect(said(ceramic(value))).toEqual([
+        "steps[1].parts[0].nanofarads is not a value in nanofarads a ceramic capacitor's code can print: two figures at most, and 0.01 or more, such as `100` or `4.7`",
+      ]);
+    }
+  });
+
+  it("let a step's words name a pin the layout wires a part to, though no component is on it (ADR 0051)", () => {
+    const named = (gpio: number) =>
+      changed(
+        (data) => (step(data, 2).title = { en: `Its resistor from GP${gpio}` }),
+        "capacitor-timed-by-two-pins",
+      );
+    expect(said(named(14))).toEqual([]);
+    expect(said(named(16))).toEqual([
+      "steps[2].title.en names GP16, which no part of the circuit is on",
+    ]);
   });
 
   it("put every leg in a hole a half-size breadboard prints", () => {
@@ -353,6 +424,14 @@ describe("ADR 0011's rules for a circuit's words", () => {
     );
   });
 
+  it("refuse a capacitor's value written out, as a resistor's is (rule 7, ADR 0043)", () => {
+    expect(
+      said(changed((data) => (data.description = { en: "A light, and a 470 µF capacitor." }))),
+    ).toEqual([
+      "description.en writes a value, `470 µF`: the engine writes every value, in the page's language (ADR 0011)",
+    ]);
+  });
+
   it("hold each language to its typography (rule 8)", () => {
     expect(said(changed((data) => (data.description = { en: "Ready ? Go." })))).toEqual([
       "description.en puts a space before `?`, which English does not (ADR 0011)",
@@ -403,6 +482,35 @@ describe("a circuit with a supply (ADR 0032)", () => {
     ]);
   });
 
+  it("has no ceramic capacitor, which a Pico times (ADR 0051)", () => {
+    const ceramic = supplied((data) =>
+      (step(data, 0).parts as unknown[]).push({
+        kind: "ceramic",
+        nanofarads: 100,
+        from: "j25",
+        to: "j26",
+      }),
+    );
+    expect(said(ceramic)[0]).toStartWith("steps[0].parts[4].kind is `ceramic`, which needs a Pico");
+  });
+
+  it("places a slide switch by its three legs (ADR 0052)", () => {
+    const slide = (middle: unknown) =>
+      supplied((data) =>
+        (step(data, 0).parts as unknown[]).push({
+          kind: "slideSwitch",
+          left: "j24",
+          middle,
+          right: "j26",
+        }),
+      );
+    const fine = said(slide("j25"));
+    expect(fine.filter((line) => line.includes("parts[4]"))).toEqual([]);
+    expect(said(slide("x25"))).toContain(
+      "steps[0].parts[4].middle is not a hole on a half-size breadboard: holes are named as it prints them, `a21` or `top-19`, and `2:f5` on a second one",
+    );
+  });
+
   it("has no buzzer, RGB LED or script, which need a Pico", () => {
     expect(said(supplied((data) => (data.buzzers = [])))).toEqual([
       "buzzers is not a field of a circuit with a supply: a buzzer needs a Pico to drive it (ADR 0032)",
@@ -424,22 +532,6 @@ describe("a circuit with a supply (ADR 0032)", () => {
       }),
     );
     expect(said(ring)[0]).toStartWith("steps[0].parts[4].kind is `ring`, which needs a Pico");
-  });
-
-  it("has no sensor, which needs a Pico to read it (ADR 0043)", () => {
-    expect(said(supplied((data) => (data.sensors = [])))).toEqual([
-      "sensors is not a field of a circuit with a supply: a sensor needs a Pico to read it (ADR 0032)",
-    ]);
-    const pir = supplied((data) =>
-      (step(data, 0).parts as unknown[]).push({
-        kind: "pir",
-        sensor: "pir",
-        power: "a2",
-        output: "a13",
-        ground: "a14",
-      }),
-    );
-    expect(said(pir)[0]).toStartWith("steps[0].parts[4].kind is `pir`, which needs a Pico");
   });
 
   it("says what a working circuit does in `test`", () => {
@@ -516,31 +608,23 @@ describe("a circuit's setup (ADR 0037)", () => {
   });
 });
 
-describe("a motion sensor (ADR 0043)", () => {
-  const sensing = (change: (data: Record<string, unknown>) => void) =>
-    changed(change, "motion-sensor-and-light");
-  const sensor = (data: Record<string, unknown>) =>
-    (data.sensors as Record<string, unknown>[])[0] as Record<string, unknown>;
+describe("a DIP switch's fields (ADR 0054)", () => {
+  const dip = (part: Record<string, unknown>) =>
+    changed(
+      (data) => ((step(data, 1).parts as Record<string, unknown>[])[0] = part),
+      "switches-read-by-pull-ups",
+    );
 
-  it("is declared with an id, a name and the pin its OUT goes to", () => {
-    expect(said(sensing(() => {}))).toEqual([]);
-    expect(said(sensing((data) => delete sensor(data).pin))).toEqual([
-      "sensors[0] has no `pin`, a pin",
-    ]);
-    expect(said(sensing((data) => (sensor(data).colour = "white")))).toEqual([
-      "sensors[0].colour is not a field of a sensor: it has `id`, `name` or `pin`",
-    ]);
-  });
-
-  it("is placed by its id, its three jumpers in holes", () => {
-    expect(said(sensing((data) => (part(data, 1, 0).sensor = "door")))).toEqual([
-      "steps[1].parts[0].sensor is `door`, which is not the id of any of the circuit's sensors",
-    ]);
-    expect(said(sensing((data) => (part(data, 1, 0).output = "a31")))).toEqual([
-      "steps[1].parts[0].output is not a hole on a half-size breadboard: holes are named as it prints them, `a21` or `top-19`, and `2:f5` on a second one",
-    ]);
-    expect(said(sensing((data) => (part(data, 1, 0).vcc = "a2")))).toEqual([
-      "steps[1].parts[0].vcc is not a field of a pir: it has `kind`, `sensor`, `power`, `output` or `ground`",
-    ]);
+  it("takes 2 to 8 switches, from a column every switch has one from, on either breadboard", () => {
+    expect(said(dip({ kind: "dipSwitch", switches: 2, column: 22 }))).toEqual([]);
+    expect(said(dip({ kind: "dipSwitch", switches: 9, column: 22 }))).toContain(
+      "steps[1].parts[0].switches is not a whole number from 2 to 8",
+    );
+    expect(said(dip({ kind: "dipSwitch", switches: 5, column: 27 }))).toContain(
+      "steps[1].parts[0].column is not a column from which every switch has one, from 1 to 30",
+    );
+    expect(said(dip({ kind: "dipSwitch", switches: 2, column: 22, board: 3 }))).toContain(
+      "steps[1].parts[0].board is not 2, the second breadboard, or left out for the first",
+    );
   });
 });

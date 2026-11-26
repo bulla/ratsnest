@@ -1,3 +1,5 @@
+import type { DiodeName } from "../diodes";
+import type { TransistorName } from "../transistors";
 import { PIN_EDGE_INSET_MM, PIN_PITCH_MM, PIN_TOP_INSET_MM, PINS_PER_SIDE } from "./geometry";
 
 /**
@@ -284,16 +286,79 @@ export type Part =
       readonly dataOut: Hole;
     }
   /**
-   * A PIR motion sensor module (ADR 0043), lying beside the board and joined to it by three
-   * female-to-male jumpers on its VCC, OUT and GND pins: these are the holes their other ends go
-   * in, all on one side of the channel, past which it is drawn (ADR 0044).
+   * An electrolytic capacitor, standing up, its legs side by side in one row (ADR 0043): its value in
+   * microfarads, its + leg the longer, and its − leg under the stripe down its can.
    */
   | {
-      readonly kind: "pir";
-      readonly sensor: string;
-      readonly power: Hole;
-      readonly output: Hole;
-      readonly ground: Hole;
+      readonly kind: "electrolytic";
+      readonly microfarads: number;
+      readonly plus: Hole;
+      readonly minus: Hole;
+    }
+  /**
+   * A transistor in a TO-92 case, standing up, its legs side by side in one row (ADR 0044): emitter,
+   * base and collector, left to right, its flat face towards row j. Its model is one ratsnest knows.
+   */
+  | {
+      readonly kind: "transistor";
+      readonly model: TransistorName;
+      readonly emitter: Hole;
+      readonly base: Hole;
+      readonly collector: Hole;
+    }
+  /**
+   * A diode, lying flat as a resistor does (ADR 0049): its model one ratsnest knows, and its cathode
+   * the end its band is at.
+   */
+  | {
+      readonly kind: "diode";
+      readonly model: DiodeName;
+      readonly anode: Hole;
+      readonly cathode: Hole;
+    }
+  /**
+   * A ceramic capacitor, a disc standing on its legs, one hole apart in one row (ADR 0051): its value
+   * in nanofarads, printed on it. It goes in either way round.
+   */
+  | {
+      readonly kind: "ceramic";
+      readonly nanofarads: number;
+      readonly from: Hole;
+      readonly to: Hole;
+    }
+  /**
+   * An SPDT slide switch, standing on its three legs side by side in one row (ADR 0052): its middle
+   * leg is joined to its left one or its right one, whichever way its slide is pushed.
+   */
+  | {
+      readonly kind: "slideSwitch";
+      readonly left: Hole;
+      readonly middle: Hole;
+      readonly right: Hole;
+    }
+  /**
+   * A slide potentiometer, lying across both breadboards (ADR 0053): its value in ohms, its wiper and
+   * the end beside it two holes apart in one row, and its other end in line with that end, 17 rows
+   * further along it, on the other board.
+   */
+  | {
+      readonly kind: "slidePotentiometer";
+      readonly ohms: number;
+      readonly wiper: Hole;
+      readonly end: Hole;
+      readonly otherEnd: Hole;
+    }
+  /**
+   * A DIP switch across the channel, its legs in rows e and f (ADR 0054): `switches` of them side by
+   * side, switch 1 in `column` and the rest to its right, its ON side towards row a. Each switch
+   * joins its leg in row e to its leg in row f while it is on.
+   */
+  | {
+      readonly kind: "dipSwitch";
+      readonly switches: number;
+      readonly column: number;
+      /** `2` puts it on the second breadboard, as a button can be (ADR 0028). */
+      readonly board?: 2;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -343,31 +408,108 @@ export function legsOf(part: Part): readonly Hole[] {
   switch (part.kind) {
     case "wire":
     case "resistor":
+    case "ceramic":
       return [part.from, part.to];
     case "led":
+    case "diode":
       return [part.anode, part.cathode];
     case "button": {
       const rows = rowsOf(part);
       return part.columns.flatMap((column) => rows.map((row) => buttonHole(part, row, column)));
     }
     case "buzzer":
+    case "electrolytic":
       return [part.plus, part.minus];
     case "rgbLed":
       return [part.power, part.dataOut, part.ground, part.dataIn];
+    case "transistor":
+      return [part.emitter, part.base, part.collector];
+    case "slideSwitch":
+      return [part.left, part.middle, part.right];
+    case "slidePotentiometer":
+      return [part.wiper, part.end, part.otherEnd];
+    case "dipSwitch":
+      return dipLegsOf(part).flat();
     case "ring":
       return [part.dataIn, part.power, part.ground, part.dataOut];
-    case "pir":
-      return [part.power, part.output, part.ground];
   }
 }
 
+/** The fewest and the most switches a DIP switch can have side by side (ADR 0054). */
+export const DIP_SWITCHES = [2, 8] as const;
+
 /**
- * The side of the channel a hole is on: rows a to e and the top rails, or rows f to j and the bottom
- * rails. A part on jumpers lies past that side's edge (ADR 0044).
+ * A DIP switch's legs, switch by switch from switch 1: each switch's leg in row e, above the
+ * channel, and its leg in row f, below it, on the board it is on.
  */
-export function sideOf(hole: Hole): "top" | "bottom" {
-  const at = holeAt(hole);
-  return at.kind === "rail" ? (at.rail.startsWith("top") ? "top" : "bottom") : halfOf(at.row);
+export function dipLegsOf(part: {
+  readonly switches: number;
+  readonly column: number;
+  readonly board?: 2;
+}): [Hole, Hole][] {
+  return Array.from({ length: part.switches }, (_, k) => [
+    buttonHole(part, "e", part.column + k),
+    buttonHole(part, "f", part.column + k),
+  ]);
+}
+
+/**
+ * How far a slide potentiometer's legs are apart along it, from the end beside its wiper to its other
+ * end (ADR 0053): 17 rows, 43.18 mm, which no one board's rows reach, so it lies across both.
+ */
+export const SLIDE_POTENTIOMETER_LENGTH_MM = 17 * P;
+
+/** How far a slide potentiometer's body reaches past its legs' columns, and short of their rows. */
+export const SLIDE_POTENTIOMETER_BODY_MM = { side: 1.7, inset: 1.3 } as const;
+
+/**
+ * The box a slide potentiometer's body lies over, between its legs: from the end beside its wiper to
+ * its other end, across the columns of its end and its wiper.
+ */
+export function slidePotentiometerBoxOf(part: Extract<Part, { kind: "slidePotentiometer" }>): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  const [wiper, end, other] = [part.wiper, part.end, part.otherEnd].map(holeCentre) as [
+    { x: number; y: number },
+    { x: number; y: number },
+    { x: number; y: number },
+  ];
+  const left = Math.min(wiper.x, end.x) - SLIDE_POTENTIOMETER_BODY_MM.side;
+  const right = Math.max(wiper.x, end.x) + SLIDE_POTENTIOMETER_BODY_MM.side;
+  const top = Math.min(end.y, other.y) + SLIDE_POTENTIOMETER_BODY_MM.inset;
+  const bottom = Math.max(end.y, other.y) - SLIDE_POTENTIOMETER_BODY_MM.inset;
+  return { x: left, y: top, w: right - left, h: bottom - top };
+}
+
+/**
+ * The holes a slide potentiometer's body lies over, which nothing else can go in: every hole of
+ * either board, rails among them, whose middle is under it.
+ */
+export function coveredBySlidePotentiometer(
+  part: Extract<Part, { kind: "slidePotentiometer" }>,
+): Hole[] {
+  const box = slidePotentiometerBoxOf(part);
+  const holes: Hole[] = [];
+  for (const board of ["", SECOND]) {
+    for (let column = 1; column <= COLUMNS; column++) {
+      const names = [
+        ...ROWS.map((row) => `${row}${column}`),
+        ...(RAIL_COLUMNS.includes(column)
+          ? ["top+", "top-", "bottom-", "bottom+"].map((rail) => `${rail}${column}`)
+          : []),
+      ];
+      for (const name of names) {
+        const { x, y } = holeCentre(`${board}${name}`);
+        if (x > box.x && x < box.x + box.w && y > box.y && y < box.y + box.h) {
+          holes.push(`${board}${name}`);
+        }
+      }
+    }
+  }
+  return holes;
 }
 
 /** Whether anything in a layout is on the second board, which the drawing then draws too. */

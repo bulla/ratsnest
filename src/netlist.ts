@@ -1,25 +1,29 @@
-import type { Layout, Supply } from "./circuit";
-import { isRing, type ShownCircuit } from "./circuit";
+import { formatNanofarads } from "./ceramics";
+import type { Layout, LedColour, Supply } from "./circuit";
+import { isRing, type ShownCircuit, SUPPLY_VOLTS, THREE_VOLT_COLOURS } from "./circuit";
+import { DIODE_VOLTS } from "./diodes";
 import {
   buttonHole,
   coveredBy,
+  coveredBySlidePotentiometer,
+  dipLegsOf,
   type Hole,
   holeAt,
+  holeCentre,
   holeOfPin,
-  isOnSecondBoard,
   isUnderPico,
   legsOf,
   type Part,
   parseHole,
   type Row,
   rowsOf,
-  sideOf,
+  SLIDE_POTENTIOMETER_LENGTH_MM,
   stripOf,
   supplyLeadsOf,
-  usesSecondBoard,
 } from "./drawing/breadboard";
-import { formatOhms } from "./drawing/breadboard-svg";
-import { HEADER_PINS, type HeaderPin, headerPinOfGpio } from "./drawing/geometry";
+import { formatMicrofarads, formatOhms } from "./drawing/breadboard-svg";
+import { HEADER_PINS, type HeaderPin, headerPinOfGpio, PIN_PITCH_MM } from "./drawing/geometry";
+import { TRANSISTORS } from "./transistors";
 
 /**
  * What a layout actually wires up, compared with what its circuit says it is (scratchpi's ADR 0082).
@@ -48,6 +52,55 @@ export const LIGHT_OHMS_RANGE = [220, 1000] as const;
  * the pin low on an RP2350 whose inputs leak, which erratum E9 puts at 8.2 kΩ (scratchpi's ADR 0159).
  */
 export const PULL_DOWN_OHMS_RANGE = [1000, 8200] as const;
+/**
+ * How long a capacitor keeps a light lit, at the least: its capacitance times the light's resistor,
+ * in seconds (ADR 0043). Shorter, and the light goes out too fast to be seen fading.
+ */
+export const FADE_SECONDS = 0.2;
+/**
+ * What a transistor's base resistor can be, from a 3.3 V pin (ADR 0044): enough current into the base
+ * to switch a light's, and no more than a pin gives easily. 1 kΩ lets 2.6 mA in, and 10 kΩ 0.26 mA,
+ * which a 2N3904 turns into all of a light's 15 mA.
+ */
+export const BASE_OHMS_RANGE = [1000, 10000] as const;
+/**
+ * What a flasher's base resistor can be, from + (ADR 0046): it sets, with its capacitor, how long
+ * its transistor stays off, and feeds the base enough to light its light the rest of the time. At
+ * 3 V, 47 kΩ lets 49 µA in, which a 2N3904 turns into a light's few milliamperes.
+ */
+export const FLASHER_BASE_OHMS_RANGE = [10000, 100000] as const;
+/**
+ * How long each half of a flasher's beat can last, in seconds: about 0.69 times its base resistor
+ * times its capacitor (ADR 0046). Shorter, and the lights blur into one; longer, and they seem to
+ * have stopped.
+ */
+export const FLASH_SECONDS_RANGE = [0.1, 5] as const;
+/**
+ * What a ceramic capacitor's charging resistor can be (ADR 0051): little current from its pin, and
+ * strong enough to empty the capacitor past an RP2350 input that leaks while it is between low and
+ * high, which erratum E9 puts at 8.2 kΩ, as for a pull-down.
+ */
+export const CHARGE_OHMS_RANGE = [1000, 8200] as const;
+/**
+ * How long a capacitor takes to charge through its resistor, at the least: the two's time constant,
+ * in seconds (ADR 0051). Shorter, and the script's loop cannot time it.
+ */
+export const TIMING_SECONDS = 0.0001;
+/**
+ * What a slide potentiometer can be, from 3V3(OUT) to ground (ADR 0053): little current through it,
+ * 3.3 mA at most, and low enough for the Pico's analogue input to read it steadily.
+ */
+export const SLIDE_POTENTIOMETER_OHMS_RANGE = [1000, 100000] as const;
+/** The GPIOs a Pico 2 W can read a voltage on, its analogue inputs (ADR 0053). */
+export const ANALOGUE_GPIOS = [26, 27, 28] as const;
+/**
+ * What a light's resistor needs left of a supply's voltage, at the least, once the light and the diodes
+ * on its way have taken theirs (ADR 0049): below it, a light glows too dimly to be sure of.
+ */
+export const HEADROOM_VOLTS = 0.5;
+/** What a light takes itself, about: 3 V for a blue, white, green, aqua, pink or purple one (ADR 0033). */
+const lightVolts = (colour: LedColour): number =>
+  (THREE_VOLT_COLOURS as readonly string[]).includes(colour) ? 3 : 2;
 
 /** Union–find over strip names, pin names and the one shared ground. */
 class Nets {
@@ -72,12 +125,47 @@ class Nets {
 const pinNode = (pin: HeaderPin) => `pin ${pin.number}`;
 
 type ButtonPart = Extract<Part, { kind: "button" }>;
+type Diode = Extract<Part, { kind: "diode" }>;
+type Light = Extract<Part, { kind: "led" }>;
+type ResistorPart = Extract<Part, { kind: "resistor" }>;
+type SlideSwitch = Extract<Part, { kind: "slideSwitch" }>;
+type Transistor = Extract<Part, { kind: "transistor" }>;
 
 /**
- * The nets a layout makes, with the buttons `pressed` says are held. On a Pico, its pins join the
- * strips they are in and its grounds each other; a circuit with a supply has no Pico (ADR 0032).
+ * How many diodes, each the right way round, each net is reached through from + and from −
+ * (ADR 0049): 0 for the rail itself, and nothing for a net it does not reach. A diode lets current
+ * through from its anode to its cathode alone, and the way with the fewest is the one the current
+ * takes, each diode on it taking about 0.7 V.
  */
-function wireUp(parts: readonly Part[], pressed: (part: ButtonPart) => boolean, pico = true): Nets {
+interface Reach {
+  readonly fed: ReadonlyMap<string, number>;
+  readonly drained: ReadonlyMap<string, number>;
+}
+
+/**
+ * A light's way from + to −: up from its long leg to a net + reaches, and down from its short leg to
+ * one − reaches, through resistors and diodes the right way round, with nothing else on a net between
+ * (ADR 0033, ADR 0049). `top` and `bottom` are where it meets what + and − reach.
+ */
+interface Way {
+  readonly resistors: readonly ResistorPart[];
+  readonly diodes: readonly Diode[];
+  readonly top: string;
+  readonly bottom: string;
+}
+
+/**
+ * The nets a layout makes, with the buttons `pressed` says are held, and each slide switch's middle
+ * leg joined to the outer leg `slid` says it is slid towards, or to neither (ADR 0052). On a Pico, its
+ * pins join the strips they are in and its grounds each other; a circuit with a supply has no Pico
+ * (ADR 0032).
+ */
+function wireUp(
+  parts: readonly Part[],
+  pressed: (part: ButtonPart) => boolean,
+  pico = true,
+  slid: (part: SlideSwitch) => Hole | undefined = () => undefined,
+): Nets {
   const nets = new Nets();
   if (pico) {
     for (const pin of HEADER_PINS) {
@@ -94,6 +182,10 @@ function wireUp(parts: readonly Part[], pressed: (part: ButtonPart) => boolean, 
       nets.join(hole(first, left), hole(second, left));
       nets.join(hole(first, right), hole(second, right));
       if (pressed(part)) nets.join(hole(first, left), hole(first, right));
+    }
+    if (part.kind === "slideSwitch") {
+      const towards = slid(part);
+      if (towards !== undefined) nets.join(stripOf(part.middle), stripOf(towards));
     }
   }
   return nets;
@@ -113,8 +205,6 @@ function componentOf(part: Part): string | undefined {
     case "rgbLed":
     case "ring":
       return part.led;
-    case "pir":
-      return part.sensor;
     default:
       return undefined;
   }
@@ -140,8 +230,20 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${circuit.leds.find((led) => led.id === part.led)?.name ?? `RGB LED "${part.led}"`}`;
     case "ring":
       return `the ${circuit.leds.find((led) => led.id === part.led)?.name ?? `ring "${part.led}"`}`;
-    case "pir":
-      return `the ${circuit.sensors.find((s) => s.id === part.sensor)?.name ?? `motion sensor "${part.sensor}"`}`;
+    case "electrolytic":
+      return `the ${formatMicrofarads(part.microfarads)} capacitor with its + leg in ${part.plus}`;
+    case "transistor":
+      return `the ${part.model} with its emitter in ${part.emitter}`;
+    case "diode":
+      return `the ${part.model} with its anode in ${part.anode}`;
+    case "ceramic":
+      return `the ${formatNanofarads(part.nanofarads)} capacitor with its legs in ${part.from} and ${part.to}`;
+    case "slideSwitch":
+      return `the slide switch with its middle leg in ${part.middle}`;
+    case "slidePotentiometer":
+      return `the ${formatOhms(part.ohms)} slide potentiometer with its wiper in ${part.wiper}`;
+    case "dipSwitch":
+      return `the ${part.switches}-way DIP switch in columns ${part.column} to ${part.column + part.switches - 1}${part.board === 2 ? " of the second breadboard" : ""}`;
   }
 }
 
@@ -174,6 +276,73 @@ function shapeProblems(part: Part, name: string): string[] {
       return sameRow(part.plus, part.minus, 3)
         ? []
         : [`${name} needs its legs in one row, three holes apart`];
+    case "electrolytic":
+      return sameRow(part.plus, part.minus, 1)
+        ? []
+        : [`${name} needs its legs in one row, one hole apart`];
+    case "ceramic":
+      return sameRow(part.from, part.to, 1)
+        ? []
+        : [`${name} needs its legs in one row, one hole apart`];
+    case "transistor": {
+      // Its legs in its model's order, left to right, so that its flat face is towards row j.
+      const [first, second, third] = TRANSISTORS[part.model].legs.map((leg) => part[leg]) as [
+        Hole,
+        Hole,
+        Hole,
+      ];
+      const along =
+        sameRow(first, second, 1) &&
+        sameRow(second, third, 1) &&
+        holeAt(second).column === holeAt(first).column + 1 &&
+        holeAt(third).column === holeAt(second).column + 1;
+      return along
+        ? []
+        : [
+            `${name} needs its legs side by side in one row: ${TRANSISTORS[part.model].legs.join(", ")}, left to right, its flat face towards row j`,
+          ];
+    }
+    case "slidePotentiometer": {
+      // Its wiper two holes from the end beside it, in one row, and its other end 17 rows along from
+      // that end, in its column, on the other board (ADR 0053).
+      const [wiper, end, other] = [part.wiper, part.end, part.otherEnd].map(holeAt);
+      const [e, o] = [holeCentre(part.end), holeCentre(part.otherEnd)];
+      const pair = sameRow(part.wiper, part.end, 2);
+      const along =
+        wiper?.kind === "main" &&
+        end?.kind === "main" &&
+        other?.kind === "main" &&
+        Math.abs(o.x - e.x) < 0.01 &&
+        Math.abs(Math.abs(o.y - e.y) - SLIDE_POTENTIOMETER_LENGTH_MM) < 0.01;
+      return pair && along
+        ? []
+        : [
+            `${name} needs its wiper two holes from the end beside it, in one row, and its other end in that end's column, 17 rows along, on the other breadboard`,
+          ];
+    }
+    case "slideSwitch": {
+      // Side by side, left to right, its middle leg between the other two (ADR 0052).
+      const along =
+        sameRow(part.left, part.middle, 1) &&
+        sameRow(part.middle, part.right, 1) &&
+        holeAt(part.middle).column === holeAt(part.left).column + 1 &&
+        holeAt(part.right).column === holeAt(part.middle).column + 1;
+      return along
+        ? []
+        : [
+            `${name} needs its three legs side by side in one row: left, middle and right, left to right`,
+          ];
+    }
+    case "diode": {
+      // Lying as a resistor does, long enough for its body and its band (ADR 0049).
+      const [a, k] = [holeCentre(part.anode), holeCentre(part.cathode)];
+      if (stripOf(part.anode) === stripOf(part.cathode)) {
+        return [`${name} has both ends in one strip, so it does nothing`];
+      }
+      return Math.hypot(k.x - a.x, k.y - a.y) < 3 * PIN_PITCH_MM - 0.01
+        ? [`${name} needs its legs three holes apart or more, for its body to lie between them`]
+        : [];
+    }
     case "rgbLed":
     case "ring": {
       // Side by side, in the guide's order, whichever way round it faces (scratchpi's ADR 0222, 0238).
@@ -183,22 +352,6 @@ function shapeProblems(part: Part, name: string): string[] {
       const step = (columns[1] ?? 0) - (columns[0] ?? 0);
       const inOrder = columns.every((column, i) => column === (columns[0] ?? 0) + i * step);
       return along && inOrder ? [] : [`${name} needs its four legs side by side in one row`];
-    }
-    case "pir": {
-      // On jumpers, its holes can be anywhere on one side of the channel, past whose edge it lies
-      // (ADR 0044), and on the first board, whose edges it lies past.
-      const legs = legsOf(part);
-      if (legs.some(isOnSecondBoard)) return [`${name}'s jumpers go in the first breadboard`];
-      const sides = new Set(legs.map(sideOf));
-      const strips = new Set(legs.map(stripOf));
-      return [
-        ...(sides.size === 1
-          ? []
-          : [
-              `${name}'s jumpers are not all on one side of the channel: it lies past the edge they are on, so they go in rows a to e and the top rails, or in rows f to j and the bottom rails`,
-            ]),
-        ...(strips.size === legs.length ? [] : [`${name} has two jumpers in one strip`]),
-      ];
     }
     case "button": {
       const [left, right] = part.columns;
@@ -231,7 +384,6 @@ function placedProblems(circuit: ShownCircuit, parts: readonly Part[]): string[]
     ["ring", circuit.leds.filter(isRing).map((l) => l.id), "ring"],
     ["button", circuit.buttons.map((b) => b.id), "button"],
     ["buzzer", circuit.buzzers.map((b) => b.id), "buzzer"],
-    ["pir", circuit.sensors.map((s) => s.id), "motion sensor"],
   ] as const;
   for (const [kind, ids, noun] of kinds) {
     const placed = parts
@@ -281,21 +433,13 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
     problems.push(...shapeProblems(part, name));
   }
-  // A sensor on jumpers lies past the edge its holes are on, and above the board is the second
-  // board's, where there is one (ADR 0044).
-  if (usesSecondBoard(parts)) {
-    for (const part of parts) {
-      if (part.kind === "pir" && legsOf(part).every((leg) => sideOf(leg) === "top")) {
-        problems.push(
-          `${describe(part, circuit)} would lie over the second breadboard: put its jumpers below the channel, in rows f to j or the bottom rails`,
-        );
-      }
-    }
-  }
-  // Nothing in a hole a button's body covers: it sits on the board over them (scratchpi's ADR 0154).
+  // Nothing in a hole a button's body covers: it sits on the board over them (scratchpi's ADR 0154),
+  // nor under a slide potentiometer's, which lies on them (ADR 0053).
   for (const part of parts) {
-    if (part.kind !== "button") continue;
-    for (const hole of coveredBy(part)) {
+    if (part.kind !== "button" && part.kind !== "slidePotentiometer") continue;
+    for (const hole of part.kind === "button"
+      ? coveredBy(part)
+      : coveredBySlidePotentiometer(part)) {
       const under = taken.get(hole);
       if (under) problems.push(`${under} has a leg in ${hole}, under ${describe(part, circuit)}`);
     }
@@ -303,6 +447,27 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   if (problems.length > 0) return problems;
   problems.push(...placedProblems(circuit, parts));
   if (supply) return [...problems, ...supplyWiringProblems(circuit, parts, supply)];
+
+  // A capacitor's one use is on a supply, keeping a light lit (ADR 0038, ADR 0043), a diode's
+  // keeping a light's current one way, on a supply (ADR 0049), and a slide switch's lighting one
+  // light or the other, on a supply too (ADR 0052).
+  for (const part of parts) {
+    if (part.kind === "electrolytic") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a Pico: an electrolytic capacitor keeps a light lit on a supply (ADR 0043)`,
+      );
+    }
+    if (part.kind === "diode") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a Pico: a diode keeps a light's current one way on a supply (ADR 0049)`,
+      );
+    }
+    if (part.kind === "slideSwitch") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a Pico: a slide switch lights one light or the other on a supply (ADR 0052)`,
+      );
+    }
+  }
 
   const nets = wireUp(parts, () => false);
   const net = (hole: Hole) => nets.find(stripOf(hole));
@@ -339,7 +504,12 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   const inRange = (r: { ohms: number }, [low, high]: readonly [number, number]) =>
     r.ohms >= low && r.ohms <= high;
 
-  // A light: pin, one resistor, the LED the right way round, ground.
+  // A light: pin, one resistor, the LED the right way round, ground; or a transistor's, switched by
+  // its pin through the transistor's base (ADR 0044).
+  const transistors = parts.filter(
+    (part): part is Extract<Part, { kind: "transistor" }> => part.kind === "transistor",
+  );
+  const switching = new Set<Part>();
   for (const led of circuit.leds) {
     const part = parts.find((p) => p.kind === "led" && p.led === led.id);
     if (part?.kind !== "led" || led.pin?.kind !== "gpio") continue;
@@ -349,6 +519,76 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     const anode = net(part.anode);
     const cathode = net(part.cathode);
     const where = `GP${led.pin.gpio}`;
+
+    // A light on a transistor's collector, straight or through its resistor, is that transistor's.
+    const reaches = (leg: string, collector: string) =>
+      leg === collector || between(leg, collector).length === 1;
+    const transistor = transistors.find(
+      (t) => reaches(cathode, net(t.collector)) || reaches(anode, net(t.collector)),
+    );
+    if (transistor) {
+      switching.add(transistor);
+      const tName = describe(transistor, circuit);
+      const collector = net(transistor.collector);
+      // An NPN switches a light's low side, from 3V3 down to its collector, and a PNP its high side,
+      // from its collector down to ground (ADR 0045): which rail its emitter is on, and which of the
+      // light's legs faces it, are all that differ.
+      const npn = TRANSISTORS[transistor.model].type === "NPN";
+      const [toward, away] = npn ? [cathode, anode] : [anode, cathode];
+      const [rail, railName] = npn ? [power, POWER_LABEL] : [ground, "ground"];
+      const collectorName = `the ${transistor.model}'s collector`;
+      if (reaches(away, collector) && !reaches(toward, collector)) {
+        problems.push(
+          npn
+            ? `${name} is in backwards: its long leg must be towards ${POWER_LABEL}, and its short leg towards ${collectorName}`
+            : `${name} is in backwards: its long leg must be towards ${collectorName}, and its short leg towards ground`,
+        );
+        continue;
+      }
+      if (net(transistor.emitter) !== (npn ? ground : power)) {
+        problems.push(`${tName} has its emitter off ${npn ? "ground" : POWER_LABEL}`);
+      }
+      const base = net(transistor.base);
+      const bases = between(pin, base);
+      if (base === pin) {
+        problems.push(
+          `${tName} has its base straight on ${where}: a resistor of ${BASE_OHMS_RANGE.map(formatOhms).join(" to ")} goes between them`,
+        );
+      } else if (bases.length !== 1) {
+        problems.push(`${tName} has its base off ${where}: one resistor goes between them`);
+      } else {
+        const resistor = bases[0] as Extract<Part, { kind: "resistor" }>;
+        accounted.add(resistor);
+        if (!inRange(resistor, BASE_OHMS_RANGE)) {
+          problems.push(
+            `${tName}'s base resistor is ${formatOhms(resistor.ohms)}, outside ${BASE_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+          );
+        }
+      }
+      // Between its rail and the collector through one resistor, on either side of the light.
+      const [middle, series] =
+        toward === collector
+          ? [away, between(rail, away)]
+          : away === rail
+            ? [toward, between(toward, collector)]
+            : [undefined, []];
+      if (!middle || series.length !== 1 || terminals.get(middle) !== 2) {
+        problems.push(
+          npn
+            ? `${name} is not wired from ${railName} through one resistor to ${collectorName}`
+            : `${name} is not wired from ${collectorName} through one resistor to ${railName}`,
+        );
+        continue;
+      }
+      const resistor = series[0] as Extract<Part, { kind: "resistor" }>;
+      accounted.add(resistor);
+      if (!inRange(resistor, LIGHT_OHMS_RANGE)) {
+        problems.push(
+          `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+        );
+      }
+      continue;
+    }
 
     if (anode === ground || cathode === pin) {
       problems.push(`${name} is in backwards: its long leg must be towards ${where}`);
@@ -441,30 +681,176 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
-  // A motion sensor (ADR 0043): VCC on VBUS, the 5 V it runs on, GND on ground, and OUT on its pin,
-  // which it has to itself. No resistor: OUT is driven both ways.
-  for (const sensor of circuit.sensors) {
-    const part = parts.find((p) => p.kind === "pir" && p.sensor === sensor.id);
-    if (part?.kind !== "pir") continue;
-    const name = `the ${sensor.name}`;
-    const pin = gpioNet(sensor.pin.gpio, name);
-    if (!pin) continue;
-    if (net(part.power) !== fiveVolt) {
-      problems.push(`${name}'s VCC is not on ${FIVE_VOLT_LABEL}, the 5 V it runs on`);
+  // A ceramic capacitor, timed by a pair of pins (ADR 0051): one leg straight on ground, the other on
+  // the pin that reads it, and one resistor to it from a second pin, which charges it.
+  for (const capacitor of parts) {
+    if (capacitor.kind !== "ceramic") continue;
+    const name = describe(capacitor, circuit);
+    const [first, second] = [net(capacitor.from), net(capacitor.to)];
+    const node = first === ground ? second : second === ground ? first : undefined;
+    if (node === undefined || node === ground) {
+      problems.push(`${name} has neither leg on ground: one goes straight to ground`);
+      continue;
     }
-    if (net(part.ground) !== ground) problems.push(`${name}'s GND is not on ground`);
-    if (net(part.output) !== pin) {
-      problems.push(`${name}'s OUT is not on GP${sensor.pin.gpio}`);
-    } else if ((terminals.get(pin) ?? 0) !== 2) {
+    const readers = pinsIn(node).filter((pin) => pin.kind === "gpio");
+    if (readers.length !== 1) {
       problems.push(
-        `${name}'s OUT shares GP${sensor.pin.gpio} with something else, and must have it to itself`,
+        readers.length === 0
+          ? `${name} has its other leg on no pin: a pin goes straight to it, to read it`
+          : `${name} has its other leg on ${readers.map((pin) => pin.label).join(" and ")}: one pin reads it, and another charges it through a resistor`,
+      );
+      continue;
+    }
+    const chargers = resistors.filter((r) => {
+      const ends = [net(r.from), net(r.to)];
+      const far = ends[0] === node ? ends[1] : ends[1] === node ? ends[0] : undefined;
+      return far !== undefined && far !== node && pinsIn(far).some((pin) => pin.kind === "gpio");
+    });
+    const [resistor] = chargers;
+    if (!resistor || chargers.length !== 1) {
+      problems.push(
+        `${name} is charged by no pin: one resistor goes to its other leg from a second pin`,
+      );
+      continue;
+    }
+    accounted.add(resistor);
+    if ((terminals.get(node) ?? 0) !== 3) {
+      problems.push(
+        `${name} has something else on its other leg: only its resistor and the pin that reads it go there`,
+      );
+    }
+    if (!inRange(resistor, CHARGE_OHMS_RANGE)) {
+      problems.push(
+        `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${CHARGE_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+      );
+      continue;
+    }
+    const seconds = resistor.ohms * capacitor.nanofarads * 1e-9;
+    if (seconds < TIMING_SECONDS) {
+      problems.push(
+        `${name} charges through the ${formatOhms(resistor.ohms)} resistor in about ${Math.round(seconds * 1e6)} µs, too fast for the script to time: with that resistor it needs ${formatNanofarads(Math.ceil(TIMING_SECONDS / (resistor.ohms * 1e-9)))} or more`,
+      );
+    }
+  }
+
+  // A slide potentiometer, read by the Pico (ADR 0053): a divider from 3V3(OUT) to ground, one end on
+  // each, and its wiper straight on an analogue pin, with nothing else on it.
+  for (const potentiometer of parts) {
+    if (potentiometer.kind !== "slidePotentiometer") continue;
+    const name = describe(potentiometer, circuit);
+    const ends = [net(potentiometer.end), net(potentiometer.otherEnd)];
+    const wiper = net(potentiometer.wiper);
+    const analogue = ANALOGUE_GPIOS.map((gpio) => `GP${gpio}`);
+    if (wiper === power || wiper === ground) {
+      problems.push(
+        `${name} has its wiper on ${wiper === power ? POWER_LABEL : "ground"}: its wiper, beside one end, goes to an analogue pin, ${analogue.join(", ").replace(/, (?=[^,]*$)/, " or ")}, and its two ends to ${POWER_LABEL} and ground`,
+      );
+      continue;
+    }
+    if (!(ends.includes(power) && ends.includes(ground))) {
+      const on = ends.map((end) =>
+        end === power
+          ? POWER_LABEL
+          : end === ground
+            ? "ground"
+            : (pinsIn(end)[0]?.label ?? "nothing"),
+      );
+      problems.push(
+        `${name} has its ends on ${on.join(" and ")}: one end goes on ${POWER_LABEL} and the other on ground`,
+      );
+      continue;
+    }
+    const pins = pinsIn(wiper).filter((pin) => pin.kind === "gpio");
+    const [pin] = pins;
+    if (!pin || pins.length !== 1) {
+      problems.push(
+        `${name} has its wiper on ${pins.length === 0 ? "no pin" : pins.map((p) => p.label).join(" and ")}: it goes straight to one analogue pin, ${analogue.join(", ").replace(/, (?=[^,]*$)/, " or ")}`,
+      );
+      continue;
+    }
+    if (!analogue.includes(pin.label)) {
+      problems.push(
+        `${name} has its wiper on ${pin.label}, which reads no voltage: an analogue pin, ${analogue.join(", ").replace(/, (?=[^,]*$)/, " or ")}, does`,
+      );
+      continue;
+    }
+    if ((terminals.get(wiper) ?? 0) !== 2) {
+      problems.push(
+        `${name} has something else on its wiper: only its analogue pin, ${pin.label}, goes there`,
+      );
+    }
+    if (
+      potentiometer.ohms < SLIDE_POTENTIOMETER_OHMS_RANGE[0] ||
+      potentiometer.ohms > SLIDE_POTENTIOMETER_OHMS_RANGE[1]
+    ) {
+      problems.push(
+        `${name} is ${formatOhms(potentiometer.ohms)}, outside ${SLIDE_POTENTIOMETER_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+      );
+    }
+  }
+
+  // A DIP switch, each of its switches read by a pin of its own (ADR 0054): one leg straight on
+  // ground and the other straight on a GPIO, which the script pulls up inside the Pico, since its
+  // pull-downs cannot be relied on (erratum E9).
+  for (const dip of parts) {
+    if (dip.kind !== "dipSwitch") continue;
+    const read = new Map<string, number>();
+    dipLegsOf(dip).forEach(([top, bottom], index) => {
+      const name = `switch ${index + 1} of ${describe(dip, circuit)}`;
+      const ends = [net(top), net(bottom)];
+      if (ends.includes(power)) {
+        problems.push(
+          `${name} has a leg on ${POWER_LABEL}: each switch goes from ground to a pin of its own, which the script pulls up inside the Pico, since its pull-downs cannot be relied on (erratum E9)`,
+        );
+        return;
+      }
+      const [first, second] = ends as [string, string];
+      const other = first === ground ? second : second === ground ? first : undefined;
+      if (other === undefined || other === ground) {
+        problems.push(
+          other === ground
+            ? `${name} has both legs on ground: one goes to ground, and the other to a pin of its own`
+            : `${name} has neither leg on ground: one goes straight to ground, and the other to a pin of its own`,
+        );
+        return;
+      }
+      const pins = pinsIn(other).filter((pin) => pin.kind === "gpio");
+      const [pin] = pins;
+      if (!pin || pins.length !== 1) {
+        problems.push(
+          `${name} has its other leg on ${pins.length === 0 ? "no pin" : pins.map((p) => p.label).join(" and ")}: it goes straight to one pin of its own`,
+        );
+        return;
+      }
+      const before = read.get(pin.label);
+      if (before !== undefined) {
+        problems.push(
+          `${name} shares ${pin.label} with switch ${before}: each has a pin of its own`,
+        );
+        return;
+      }
+      read.set(pin.label, index + 1);
+      if ((terminals.get(other) ?? 0) !== 2) {
+        problems.push(`${name} has something else on ${pin.label}: only the switch goes there`);
+      }
+    });
+  }
+
+  for (const transistor of transistors) {
+    if (!switching.has(transistor)) {
+      problems.push(
+        TRANSISTORS[transistor.model].type === "NPN"
+          ? `${describe(transistor, circuit)} switches no light: its emitter goes on ground, its base through a resistor from a light's pin, and its collector under the light`
+          : `${describe(transistor, circuit)} switches no light: its emitter goes on ${POWER_LABEL}, its base through a resistor from a light's pin, and its collector over the light`,
       );
     }
   }
 
   for (const resistor of resistors) {
     if (!accounted.has(resistor)) {
-      problems.push(`${describe(resistor, circuit)} is not a light's resistor or a pull-down`);
+      problems.push(
+        `${describe(resistor, circuit)} is not a light's resistor, a pull-down, a transistor's base resistor or a capacitor's charging resistor`,
+      );
     }
   }
 
@@ -498,10 +884,8 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   );
 
   // Wires in the colour of what they carry. A red one carries 3V3, or the 5 V of VBUS where
-  // a part takes it (scratchpi's ADR 0222, ADR 0043): anywhere else, VBUS on a red wire is a mistake.
-  const takesFiveVolts = parts.some(
-    (part) => part.kind === "rgbLed" || part.kind === "ring" || part.kind === "pir",
-  );
+  // a part takes it (scratchpi's ADR 0222): anywhere else, VBUS on a red wire is a mistake.
+  const takesFiveVolts = parts.some((part) => part.kind === "rgbLed" || part.kind === "ring");
   for (const part of parts) {
     if (part.kind !== "wire") continue;
     const pins = pinsIn(net(part.from));
@@ -560,31 +944,206 @@ function supplyWiringProblems(
     (part): part is Extract<Part, { kind: "led" }> => part.kind === "led",
   );
 
-  /** The nets with every button held but those `released` names. */
-  const held = (released: ReadonlySet<Part> = new Set()) =>
-    wireUp(parts, (part) => !released.has(part), false);
+  const slides = parts.filter((part): part is SlideSwitch => part.kind === "slideSwitch");
+  /**
+   * Every way the slide switches can be set, each slid towards its left leg or its right one
+   * (ADR 0052): one way, setting nothing, where there is none.
+   */
+  const settings = slides.reduce<ReadonlyMap<SlideSwitch, Hole>[]>(
+    (sofar, slide) =>
+      sofar.flatMap((setting) =>
+        [slide.left, slide.right].map((leg) => new Map([...setting, [slide, leg]])),
+      ),
+    [new Map()],
+  );
+  /** How a problem says which way the switches are set: nothing, where there is none. */
+  const setAs = (setting: ReadonlyMap<SlideSwitch, Hole>) =>
+    [...setting].map(([slide, leg]) => `${describe(slide, circuit)} is slid towards ${leg}`);
+  /** The nets with every button held but those `released` names, the switches set as `setting` is. */
+  const held = (
+    released: ReadonlySet<Part> = new Set(),
+    setting: ReadonlyMap<SlideSwitch, Hole> = new Map(),
+  ) =>
+    wireUp(
+      parts,
+      (part) => !released.has(part),
+      false,
+      (slide) => setting.get(slide),
+    );
+  /** Nothing held, and every slide switch joined to neither of its outer legs. */
   const open = wireUp(parts, () => false, false);
-  const all = held();
+  /** Every button held, at each way the switches can be set: what lights each light. */
+  const states = settings.map((setting) => held(new Set(), setting));
   const plusOf = (nets: Nets) => nets.find(stripOf(leads.plus));
   const minusOf = (nets: Nets) => nets.find(stripOf(leads.minus));
 
   // A short first: + joined to −, with nothing held, or with every button held, which joins the
-  // most any of them can.
-  if (plusOf(open) === minusOf(open)) {
-    return [...problems, "the supply's + and − are joined: a short across it"];
-  }
-  if (plusOf(all) === minusOf(all)) {
-    return [...problems, "the supply's + and − are joined while every button is held: a short"];
+  // most any of them can, at every way the switches can be set.
+  for (const setting of settings) {
+    const set = setAs(setting);
+    const unheld = wireUp(
+      parts,
+      () => false,
+      false,
+      (slide) => setting.get(slide),
+    );
+    if (plusOf(unheld) === minusOf(unheld)) {
+      const when = set.length > 0 ? ` while ${set.join(" and ")}` : "";
+      return [...problems, `the supply's + and − are joined${when}: a short across it`];
+    }
+    const all = held(new Set(), setting);
+    if (plusOf(all) === minusOf(all)) {
+      const when = ["every button is held", ...set].join(" and ");
+      return [...problems, `the supply's + and − are joined while ${when}: a short`];
+    }
   }
 
-  /** How many legs, and leads, each net of `nets` has, a button's sides left out. */
+  // A ceramic capacitor's one use is on a Pico, which times it (ADR 0051), and a slide
+  // potentiometer's and a DIP switch's too, which it reads (ADR 0053, ADR 0054).
+  for (const part of parts) {
+    if (part.kind === "ceramic") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a supply: a ceramic capacitor is timed by a Pico's pins (ADR 0051)`,
+      );
+    }
+    if (part.kind === "slidePotentiometer") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a supply: a slide potentiometer is read by a Pico's analogue pin (ADR 0053)`,
+      );
+    }
+    if (part.kind === "dipSwitch") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a supply: a DIP switch is read by a Pico's pins (ADR 0054)`,
+      );
+    }
+  }
+
+  const diodes = parts.filter((part): part is Diode => part.kind === "diode");
+  /** What + and − reach through the diodes, as `through` has them: as placed, or one turned round. */
+  const reachOf = (nets: Nets, through: readonly Diode[] = diodes): Reach => {
+    const spread = (start: string, forward: boolean) => {
+      const levels = new Map([[start, 0]]);
+      for (let frontier = [start]; frontier.length > 0; ) {
+        const next: string[] = [];
+        for (const node of frontier) {
+          for (const diode of through) {
+            const [from, to] = forward
+              ? [diode.anode, diode.cathode]
+              : [diode.cathode, diode.anode];
+            const target = nets.find(stripOf(to));
+            if (nets.find(stripOf(from)) !== node || levels.has(target)) continue;
+            levels.set(target, (levels.get(node) ?? 0) + 1);
+            next.push(target);
+          }
+        }
+        frontier = next;
+      }
+      return levels;
+    };
+    return { fed: spread(plusOf(nets), true), drained: spread(minusOf(nets), false) };
+  };
+  /**
+   * Whether a part only joins strips, as the nets have it: a wire, a button and a slide switch, whose
+   * legs are left out of the legs a light's way passes.
+   */
+  const joins = (part: Part) =>
+    part.kind === "wire" || part.kind === "button" || part.kind === "slideSwitch";
+  /**
+   * The legs in each net, with the diodes as `through` has them, a button's sides and a slide switch's
+   * legs left out.
+   */
+  const legsAt = (nets: Nets, through: readonly Diode[]) => {
+    const at = new Map<string, { part: Part; hole: Hole }[]>();
+    for (const placed of parts) {
+      if (joins(placed)) continue;
+      const part = placed.kind === "diode" ? (through[diodes.indexOf(placed)] ?? placed) : placed;
+      for (const hole of legsOf(part)) {
+        const node = nets.find(stripOf(hole));
+        at.set(node, [...(at.get(node) ?? []), { part, hole }]);
+      }
+    }
+    return at;
+  };
+  /** A light's way in `nets`, or nothing if a walk from either leg meets anything but its own. */
+  const wayOf = (
+    light: Light,
+    nets: Nets,
+    reach: Reach,
+    through: readonly Diode[] = diodes,
+  ): Way | undefined => {
+    const at = legsAt(nets, through);
+    const walk = (start: string, up: boolean) => {
+      const resistors: ResistorPart[] = [];
+      const passed: Diode[] = [];
+      let node = start;
+      let from: Part = light;
+      while (!(up ? reach.fed : reach.drained).has(node)) {
+        const here = (at.get(node) ?? []).filter((leg) => leg.part !== from);
+        const [leg] = here;
+        if (here.length !== 1 || !leg || resistors.length + passed.length > parts.length) return;
+        const { part, hole } = leg;
+        if (part.kind === "resistor") {
+          resistors.push(part);
+          node = nets.find(stripOf(hole === part.from ? part.to : part.from));
+        } else if (part.kind === "diode" && hole === (up ? part.cathode : part.anode)) {
+          passed.push(part);
+          node = nets.find(stripOf(up ? part.anode : part.cathode));
+        } else return;
+        from = part;
+      }
+      return { resistors, diodes: passed, end: node };
+    };
+    const up = walk(nets.find(stripOf(light.anode)), true);
+    const down = walk(nets.find(stripOf(light.cathode)), false);
+    if (!up || !down) return undefined;
+    return {
+      resistors: [...up.resistors, ...down.resistors],
+      diodes: [...up.diodes, ...down.diodes],
+      top: up.end,
+      bottom: down.end,
+    };
+  };
+
+  // A diode the right way round from + to −, alone or with others, is a short too (ADR 0049), at
+  // every way the switches can be set.
+  for (const [nets, when] of settings.flatMap((setting) => {
+    const set = setAs(setting);
+    const unheld = wireUp(
+      parts,
+      () => false,
+      false,
+      (slide) => setting.get(slide),
+    );
+    return [
+      [unheld, set.length > 0 ? ` while ${set.join(" and ")}` : ""],
+      [held(new Set(), setting), ` while ${["every button is held", ...set].join(" and ")}`],
+    ] as const;
+  })) {
+    const reach = reachOf(nets);
+    const across = diodes.find(
+      (diode) =>
+        reach.fed.has(nets.find(stripOf(diode.anode))) &&
+        reach.drained.has(nets.find(stripOf(diode.cathode))),
+    );
+    if (across) {
+      return [
+        ...problems,
+        `${describe(across, circuit)} lets the supply's current straight from + to −${when}, with nothing to hold it back: a short`,
+      ];
+    }
+  }
+
+  /**
+   * How many legs, and leads, each net of `nets` has, a button's sides and a slide switch's legs left
+   * out.
+   */
   const legsIn = (nets: Nets) => {
     const counts = new Map<string, number>();
     const count = (node: string) => counts.set(node, (counts.get(node) ?? 0) + 1);
     count(nets.find(stripOf(leads.plus)));
     count(nets.find(stripOf(leads.minus)));
     for (const part of parts) {
-      if (part.kind === "wire" || part.kind === "button") continue;
+      if (joins(part)) continue;
       for (const hole of legsOf(part)) count(nets.find(stripOf(hole)));
     }
     return counts;
@@ -598,65 +1157,327 @@ function supplyWiringProblems(
     });
 
   /** Whether a light has a way from + through a resistor to −, in the nets given. */
-  const lit = (light: Extract<Part, { kind: "led" }>, nets: Nets) => {
-    const [plus, minus] = [plusOf(nets), minusOf(nets)];
-    const anode = nets.find(stripOf(light.anode));
-    const cathode = nets.find(stripOf(light.cathode));
-    return (
-      (cathode === minus && between(nets, plus, anode).length > 0) ||
-      (anode === plus && between(nets, cathode, minus).length > 0)
-    );
-  };
+  const lit = (light: Light, nets: Nets) =>
+    (wayOf(light, nets, reachOf(nets))?.resistors.length ?? 0) > 0;
 
-  // Every light, with every button held: the right way round, between + and −, through exactly one
-  // resistor of its own, of a value that lights it safely.
-  const accounted = new Set<Part>();
-  const legs = legsIn(all);
-  const [plus, minus] = [plusOf(all), minusOf(all)];
-  for (const light of lights) {
+  /** What a light comes to in one state of the board, every button held. */
+  interface Verdict {
+    readonly problems: readonly string[];
+    /** Its resistor, once it is wired from + through it to −, of a value in range or not. */
+    readonly resistor?: ResistorPart;
+    /** The transistor it is on the collector of, if any. */
+    readonly transistor?: Transistor;
+    /** Its way from + to −, once it is wired so, and what + and − reach. */
+    readonly way?: Way;
+    readonly reach: Reach;
+  }
+  // A light on a transistor's collector is that transistor's, as on a Pico (ADR 0044, ADR 0046).
+  const transistors = parts.filter((part): part is Transistor => part.kind === "transistor");
+  const outOfRange = (light: Light, resistor: ResistorPart): string[] =>
+    resistor.ohms < LIGHT_OHMS_RANGE[0] || resistor.ohms > LIGHT_OHMS_RANGE[1]
+      ? [
+          `${describe(light, circuit)}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+        ]
+      : [];
+  /**
+   * A light, in nets with every button held: the right way round, between + and −, through exactly
+   * one resistor of its own, of a value that lights it safely.
+   */
+  const judge = (light: Light, all: Nets): Verdict => {
     const name = describe(light, circuit);
+    const legs = legsIn(all);
+    const plus = plusOf(all);
+    const reach = reachOf(all);
+    const reaches = (leg: string, collector: string) =>
+      leg === collector || between(all, leg, collector).length === 1;
     const anode = all.find(stripOf(light.anode));
     const cathode = all.find(stripOf(light.cathode));
-    if (anode === minus || cathode === plus) {
-      problems.push(`${name} is in backwards: its long leg must be towards +`);
-      continue;
+    const transistor = transistors.find((t) => {
+      const collector = all.find(stripOf(t.collector));
+      return reaches(cathode, collector) || reaches(anode, collector);
+    });
+    if (transistor) {
+      const collector = all.find(stripOf(transistor.collector));
+      const collectorName = `the ${transistor.model}'s collector`;
+      if (reaches(anode, collector) && !reaches(cathode, collector)) {
+        return {
+          problems: [
+            `${name} is in backwards: its long leg must be towards +, and its short leg towards ${collectorName}`,
+          ],
+          transistor,
+          reach,
+        };
+      }
+      const [middle, series] =
+        cathode === collector
+          ? [anode, between(all, plus, anode)]
+          : anode === plus
+            ? [cathode, between(all, cathode, collector)]
+            : [undefined, []];
+      const [resistor] = series;
+      if (!middle || !resistor || series.length !== 1 || legs.get(middle) !== 2) {
+        return {
+          problems: [`${name} is not wired from + through one resistor to ${collectorName}`],
+          transistor,
+          reach,
+        };
+      }
+      return { problems: outOfRange(light, resistor), resistor, transistor, reach };
     }
-    if (anode === plus && cathode === minus) {
-      problems.push(`${name} has no resistor between + and −`);
-      continue;
+    // What + and − reach through diodes counts as + and − (ADR 0049).
+    if (reach.drained.has(anode) || reach.fed.has(cathode)) {
+      return { problems: [`${name} is in backwards: its long leg must be towards +`], reach };
     }
-    const [middle, series] =
-      cathode === minus
-        ? [anode, between(all, plus, anode)]
-        : anode === plus
-          ? [cathode, between(all, cathode, minus)]
-          : [undefined, []];
-    if (!middle || series.length !== 1 || legs.get(middle) !== 2) {
-      problems.push(`${name} is not wired from + through one resistor to −`);
-      continue;
+    if (reach.fed.has(anode) && reach.drained.has(cathode)) {
+      return { problems: [`${name} has no resistor between + and −`], reach };
     }
-    const resistor = series[0] as Extract<Part, { kind: "resistor" }>;
-    accounted.add(resistor);
-    if (resistor.ohms < LIGHT_OHMS_RANGE[0] || resistor.ohms > LIGHT_OHMS_RANGE[1]) {
+    const way = wayOf(light, all, reach);
+    const [resistor] = way?.resistors ?? [];
+    if (!way || !resistor || way.resistors.length !== 1) {
+      return { problems: [`${name} is not wired from + through one resistor to −`], reach };
+    }
+    return { problems: outOfRange(light, resistor), resistor, way, reach };
+  };
+
+  // Every light, judged with every button held and the switches set the first way that wires it from
+  // + to − (ADR 0052): with no slide switch, the one way there is. The resistor it takes at every way
+  // that does is its own.
+  const accounted = new Set<Part>();
+  const switching = new Set<Part>();
+  const ways = new Map<Light, Verdict>();
+  for (const light of lights) {
+    const verdicts = states.map((all) => judge(light, all));
+    const chosen = verdicts.find((verdict) => verdict.resistor) ?? (verdicts[0] as Verdict);
+    problems.push(...chosen.problems);
+    for (const verdict of verdicts) {
+      if (verdict.transistor) switching.add(verdict.transistor);
+      if (verdict.resistor) accounted.add(verdict.resistor);
+    }
+    if (chosen.way) ways.set(light, chosen);
+  }
+
+  // Every diode on a light's way, the right way round (ADR 0049): in the way itself, or taking the
+  // current from + to where a light's way starts, or from where one ends to −, its band towards −, at
+  // some way the switches can be set.
+  const carries = (diode: Diode, through: readonly Diode[], all: Nets): boolean => {
+    const reached = reachOf(all, through);
+    const lit = lights.flatMap((light) => {
+      const way = wayOf(light, all, reached, through);
+      return way?.resistors.length === 1 ? [way] : [];
+    });
+    if (lit.some((way) => way.diodes.includes(diode))) return true;
+    const node = (hole: Hole) => all.find(stripOf(hole));
+    const tops = new Set(lit.map((way) => way.top));
+    const bottoms = new Set(lit.map((way) => way.bottom));
+    // A step further from + than its anode, into a light's way or a diode that takes it on.
+    const feeds = (each: Diode): boolean => {
+      const anode = reached.fed.get(node(each.anode));
+      return (
+        anode !== undefined &&
+        reached.fed.get(node(each.cathode)) === anode + 1 &&
+        (tops.has(node(each.cathode)) ||
+          through.some((next) => node(next.anode) === node(each.cathode) && feeds(next)))
+      );
+    };
+    const drains = (each: Diode): boolean => {
+      const cathode = reached.drained.get(node(each.cathode));
+      return (
+        cathode !== undefined &&
+        reached.drained.get(node(each.anode)) === cathode + 1 &&
+        (bottoms.has(node(each.anode)) ||
+          through.some((next) => node(next.cathode) === node(each.anode) && drains(next)))
+      );
+    };
+    return feeds(diode) || drains(diode);
+  };
+  for (const diode of diodes) {
+    if (states.some((all) => carries(diode, diodes, all))) continue;
+    const turned = { ...diode, anode: diode.cathode, cathode: diode.anode };
+    const name = describe(diode, circuit);
+    const others = diodes.map((each) => (each === diode ? turned : each));
+    problems.push(
+      states.some((all) => carries(turned, others, all))
+        ? `${name} is in backwards: its band, at its cathode, goes towards −, the way its light's current runs`
+        : `${name} is on no light's way: it goes between + and a light's resistor, or between a light and −, its band towards −`,
+    );
+  }
+
+  // Enough of the supply left for each light once the diodes on its way have taken theirs (ADR 0049).
+  for (const [light, { way, reach }] of ways) {
+    if (!way) continue;
+    const count =
+      way.diodes.length + (reach.fed.get(way.top) ?? 0) + (reach.drained.get(way.bottom) ?? 0);
+    if (count === 0) continue;
+    const colour = circuit.leds.find((led) => led.id === light.led)?.colour;
+    const left = (volts: number) =>
+      volts - lightVolts(colour === "rgb" || !colour ? "red" : colour) - count * DIODE_VOLTS;
+    if (left(supply.volts) >= HEADROOM_VOLTS) continue;
+    const enough = SUPPLY_VOLTS.find((volts) => left(volts) >= HEADROOM_VOLTS);
+    problems.push(
+      `${describe(light, circuit)} has ${count === 1 ? "a diode" : `${count} diodes`} on its way, each taking about ${DIODE_VOLTS} V, which leaves too little of the ${supply.volts} V supply to light it: ${enough ? `take \`volts: ${enough}\`` : "take fewer diodes"}`,
+    );
+  }
+  // Two NPN transistors, crosswise, make a flasher (ADR 0046): each one's emitter on −, its light on
+  // its collector, its base fed from + through a resistor, and a capacitor from the other one's
+  // collector to its base, which holds it off for a while each time the other turns on.
+  const capacitors = parts.filter(
+    (part): part is Extract<Part, { kind: "electrolytic" }> => part.kind === "electrolytic",
+  );
+  const coupling = new Set<Part>();
+  const netOf = (hole: Hole) => open.find(stripOf(hole));
+  for (const transistor of transistors) {
+    const name = describe(transistor, circuit);
+    if (TRANSISTORS[transistor.model].type !== "NPN") {
       problems.push(
-        `${name}'s resistor is ${formatOhms(resistor.ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+        `${name} has no use ratsnest knows on a supply: two NPN transistors make a flasher (ADR 0046)`,
+      );
+      continue;
+    }
+    if (!switching.has(transistor)) {
+      problems.push(
+        `${name} switches no light: its collector goes under a light, which goes to + through its resistor`,
+      );
+    }
+    if (netOf(transistor.emitter) !== minusOf(open)) {
+      problems.push(`${name} has its emitter off −`);
+    }
+    const base = netOf(transistor.base);
+    const range = FLASHER_BASE_OHMS_RANGE.map(formatOhms).join(" to ");
+    const feeds = between(open, plusOf(open), base);
+    let fed: Extract<Part, { kind: "resistor" }> | undefined;
+    if (base === plusOf(open)) {
+      problems.push(`${name} has its base straight on +: a resistor of ${range} goes between them`);
+    } else if (feeds.length !== 1) {
+      problems.push(`${name} has its base off +: one resistor of ${range} goes between them`);
+    } else {
+      fed = feeds[0] as Extract<Part, { kind: "resistor" }>;
+      accounted.add(fed);
+      if (fed.ohms < FLASHER_BASE_OHMS_RANGE[0] || fed.ohms > FLASHER_BASE_OHMS_RANGE[1]) {
+        problems.push(`${name}'s base resistor is ${formatOhms(fed.ohms)}, outside ${range}`);
+        fed = undefined;
+      }
+    }
+    // The other transistors' collectors, one of which its capacitor comes from.
+    const others = transistors
+      .filter((other) => other !== transistor)
+      .map((other) => netOf(other.collector));
+    const crosswise = capacitors.filter((capacitor) => {
+      const ends = [netOf(capacitor.plus), netOf(capacitor.minus)];
+      return ends.includes(base) && others.some((collector) => ends.includes(collector));
+    });
+    if (crosswise.length !== 1) {
+      problems.push(
+        `${name} needs one capacitor from the other transistor's collector to its base: two transistors, each with one, make a flasher`,
+      );
+      continue;
+    }
+    const capacitor = crosswise[0] as Extract<Part, { kind: "electrolytic" }>;
+    coupling.add(capacitor);
+    if (netOf(capacitor.minus) !== base) {
+      problems.push(
+        `${describe(capacitor, circuit)} is in backwards: its + leg goes towards the collector, and its − leg, under the stripe, towards the base`,
+      );
+      continue;
+    }
+    if (fed) {
+      const seconds = 0.69 * fed.ohms * capacitor.microfarads * 1e-6;
+      const [shortest, longest] = FLASH_SECONDS_RANGE;
+      const said = `the ${formatOhms(fed.ohms)} resistor and ${describe(capacitor, circuit)} hold ${name} off for about ${Math.round(seconds * 100) / 100} s at a time`;
+      if (seconds < shortest) {
+        problems.push(`${said}, too fast to see the lights flash: ${shortest} s at least`);
+      } else if (seconds > longest) {
+        problems.push(`${said}, so slowly that they seem to have stopped: ${longest} s at most`);
+      }
+    }
+  }
+
+  for (const resistor of resistors) {
+    if (!accounted.has(resistor)) {
+      problems.push(
+        `${describe(resistor, circuit)} is not a light's resistor, or a flasher's base resistor`,
       );
     }
   }
-  for (const resistor of resistors) {
-    if (!accounted.has(resistor)) {
-      problems.push(`${describe(resistor, circuit)} is not a light's resistor`);
+
+  // Every other capacitor keeps a light lit (ADR 0043): its − leg on −, its + leg between a button
+  // and a light's resistor, which a button charges and the light empties, slowly enough to be seen.
+  for (const capacitor of capacitors) {
+    if (coupling.has(capacitor)) continue;
+    const name = describe(capacitor, circuit);
+    const plusLeg = open.find(stripOf(capacitor.plus));
+    const minusLeg = open.find(stripOf(capacitor.minus));
+    const [plus, minus] = [plusOf(open), minusOf(open)];
+    if (plusLeg === minus || minusLeg === plus) {
+      problems.push(
+        `${name} is in backwards: its − leg, under the stripe, goes towards −, and its + leg towards +`,
+      );
+      continue;
+    }
+    if (minusLeg !== minus) {
+      problems.push(`${name} has its − leg, under the stripe, off −: it goes straight to −`);
+      continue;
+    }
+    if (plusLeg === plus) {
+      problems.push(
+        `${name} is across the supply, where it keeps no light lit: its + leg goes between a button and a light's resistor`,
+      );
+      continue;
+    }
+    // What a held button charges it from, and the light it then empties into, through its resistor.
+    const charged = states.some((all) => all.find(stripOf(capacitor.plus)) === plusOf(all));
+    const kept = lights.flatMap((light) => {
+      const anode = open.find(stripOf(light.anode));
+      const cathode = open.find(stripOf(light.cathode));
+      return cathode === minus ? between(open, plusLeg, anode) : [];
+    });
+    if (!charged || kept.length !== 1) {
+      problems.push(
+        `${name} keeps no light lit: its + leg goes between a button and a light's resistor, and its − leg to −`,
+      );
+      continue;
+    }
+    const resistor = kept[0] as Extract<Part, { kind: "resistor" }>;
+    const seconds = resistor.ohms * capacitor.microfarads * 1e-6;
+    if (seconds < FADE_SECONDS) {
+      problems.push(
+        `${name} empties through the ${formatOhms(resistor.ohms)} resistor in about ${Math.round(seconds * 100) / 100} s, too fast to see its light fade: with that resistor it needs ${formatMicrofarads(Math.ceil(FADE_SECONDS / (resistor.ohms * 1e-6)))} or more`,
+      );
     }
   }
 
-  // Every button switches a light: let go of it alone, and a light lit while all are held goes out.
+  // Every button switches a light: let go of it alone, and a light lit while all are held goes out,
+  // at some way the switches can be set.
   if (problems.length === 0) {
     for (const button of buttons) {
-      const without = held(new Set([button]));
-      if (!lights.some((light) => lit(light, all) && !lit(light, without))) {
+      const switches = settings.some((setting) => {
+        const all = held(new Set(), setting);
+        const without = held(new Set([button]), setting);
+        return lights.some((light) => lit(light, all) && !lit(light, without));
+      });
+      if (!switches) {
         problems.push(
           `${describe(button, circuit)} switches no light: it goes on a light's way, between + and the light or between the light and −`,
         );
+      }
+    }
+    // And every slide switch lights one light or the other (ADR 0052): slid towards either outer leg,
+    // with every button held, it lights a light that slid the other way it does not.
+    for (const slide of slides) {
+      for (const [leg, other] of [
+        [slide.left, slide.right],
+        [slide.right, slide.left],
+      ] as const) {
+        const ownLight = settings.some((setting) => {
+          if (setting.get(slide) !== leg) return false;
+          const there = held(new Set(), setting);
+          const back = held(new Set(), new Map([...setting, [slide, other]]));
+          return lights.some((light) => lit(light, there) && !lit(light, back));
+        });
+        if (!ownLight) {
+          problems.push(
+            `${describe(slide, circuit)} lights no light of its own when slid towards ${leg}: each outer leg goes on a light's way, so that it lights one light or the other`,
+          );
+        }
       }
     }
   }
@@ -677,11 +1498,9 @@ function supplyWiringProblems(
 
   // Nothing left with a leg in a net of its own, with nothing held.
   const terminals = legsIn(open);
-  for (const part of buttons) {
-    for (const hole of sidesOf(part)) {
-      const node = open.find(stripOf(hole));
-      terminals.set(node, (terminals.get(node) ?? 0) + 1);
-    }
+  for (const hole of [...buttons.flatMap(sidesOf), ...slides.flatMap(legsOf)]) {
+    const node = open.find(stripOf(hole));
+    terminals.set(node, (terminals.get(node) ?? 0) + 1);
   }
   for (const part of parts) {
     if (part.kind === "wire") continue;

@@ -11,8 +11,17 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * The engine's own circuits, for its tests to build on and break on purpose. Seven are copies of
  * scratchpi's circuits and layouts (ADR 0001), renamed by what they hold, so that no test in `src/`
  * names a circuit that ships (ADR 0007): the ones that ship are `examples/`, from M3. The eighth has
- * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches. The
- * ninth has a motion sensor beside the board, on jumpers (ADR 0043, ADR 0044).
+ * a supply in the Pico's place (ADR 0032), with one light always on and one a button switches, the
+ * ninth a capacitor that keeps a light lit once its button is let go (ADR 0043), the tenth a light
+ * that a pin switches through an NPN transistor (ADR 0044), the eleventh one it switches through a
+ * PNP transistor, on the high side (ADR 0045), the twelfth two lights that two transistors flash in
+ * turn, on a supply (ADR 0046), the thirteenth two buttons that each light a light of their own and
+ * one they share, two diodes keeping each from the other's light (ADR 0049), the fourteenth a
+ * ceramic capacitor that one pin charges through a resistor while another reads it (ADR 0051), the
+ * fifteenth a slide switch that lights one light or the other, on a supply (ADR 0052), the
+ * sixteenth a slide potentiometer that the Pico reads on an analogue pin, across two breadboards
+ * (ADR 0053), and the seventeenth a DIP switch whose switches go from ground to pins the Pico pulls
+ * up (ADR 0054).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -23,7 +32,15 @@ export const FIXTURE_IDS = [
   "rgb-led-and-d-pad",
   "ring-and-button",
   "two-lights-on-a-supply",
-  "motion-sensor-and-light",
+  "light-kept-lit-by-a-capacitor",
+  "light-on-a-transistor",
+  "light-under-a-pnp-transistor",
+  "two-lights-flashing",
+  "lights-kept-apart-by-diodes",
+  "capacitor-timed-by-two-pins",
+  "lights-chosen-by-a-slide-switch",
+  "slide-potentiometer-read-by-an-analogue-pin",
+  "switches-read-by-pull-ups",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -46,7 +63,6 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       buttons: [],
       buzzers: [],
-      sensors: [],
     },
     layout: {
       steps: [
@@ -89,7 +105,6 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       leds: [{ id: "red", name: "red LED", pin: { kind: "gpio", gpio: 15 }, colour: "red" }],
       buttons: [{ id: "button", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" }],
       buzzers: [],
-      sensors: [],
     },
     layout: {
       steps: [
@@ -144,7 +159,6 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       leds: [],
       buttons: [{ id: "button", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" }],
       buzzers: [{ id: "buzzer", name: "buzzer", pin: { kind: "gpio", gpio: 15 } }],
-      sensors: [],
     },
     layout: {
       steps: [
@@ -203,7 +217,6 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         { id: "left", name: "BTN2", pin: { kind: "gpio", gpio: 15 }, colour: "green" },
       ],
       buzzers: [],
-      sensors: [],
     },
     layout: {
       steps: [
@@ -267,7 +280,6 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         { id: "down", name: "BTN4", pin: { kind: "gpio", gpio: 13 }, colour: "yellow" },
       ],
       buzzers: [],
-      sensors: [],
     },
     layout: {
       steps: [
@@ -367,7 +379,6 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
         { id: "down", name: "BTN4", pin: { kind: "gpio", gpio: 13 }, colour: "yellow" },
       ],
       buzzers: [],
-      sensors: [],
     },
     layout: {
       steps: [
@@ -485,7 +496,6 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       buttons: [{ id: "button", name: "BTN1", pin: { kind: "gpio", gpio: 16 }, colour: "red" }],
       buzzers: [],
-      sensors: [],
     },
     layout: {
       steps: [
@@ -562,7 +572,6 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       ],
       buttons: [{ id: "button", name: "BTN1", colour: "yellow" }],
       buzzers: [],
-      sensors: [],
     },
     layout: {
       steps: [
@@ -590,40 +599,413 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       test: "The red LED lights once the supply is connected. Hold BTN1 down and the yellow one lights too.",
     },
   },
-  "motion-sensor-and-light": {
+  "light-kept-lit-by-a-capacitor": {
     circuit: {
-      name: "A motion sensor and a light",
+      name: "A light kept lit",
       description:
-        "A PIR motion sensor beside the board, on GP22, and a red light on GP15 that lights for two seconds when the sensor sees movement.",
-      credit: CREDIT,
-      leds: [{ id: "red", name: "red LED", pin: { kind: "gpio", gpio: 15 }, colour: "red" }],
-      buttons: [],
+        "A red light that BTN1 lights, and a capacitor that keeps it lit, dimming, once BTN1 is let go, on two AA batteries.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 3, rails: "bottom" },
+      leds: [{ id: "red", name: "red LED", colour: "red" }],
+      buttons: [{ id: "button", name: "BTN1", colour: "red" }],
       buzzers: [],
-      sensors: [{ id: "pir", name: "motion sensor", pin: { kind: "gpio", gpio: 22 } }],
     },
     layout: {
       steps: [
         {
-          title: "Connect the bottom − rail to ground",
-          parts: [{ kind: "wire", from: "j19", to: "bottom-19", role: "ground" }],
-        },
-        {
-          title: "Motion sensor on GP22",
-          note: "It takes its power from VBUS, the USB's own, rather than 3V3, and holds its pin high while it sees movement.",
-          parts: [{ kind: "pir", sensor: "pir", power: "a2", output: "a13", ground: "a14" }],
-        },
-        {
-          title: "Red LED on GP15",
+          title: "BTN1 between + and the capacitor",
           parts: [
-            { kind: "resistor", ohms: 330, from: "j21", to: "j26" },
-            { kind: "led", led: "red", anode: "i26", cathode: "i27" },
+            { kind: "wire", from: "j13", to: "bottom+13", role: "power" },
+            { kind: "button", button: "button", columns: [13, 15] },
+          ],
+        },
+        {
+          title: "The capacitor",
+          parts: [
+            { kind: "electrolytic", microfarads: 1000, plus: "i15", minus: "i14" },
+            { kind: "wire", from: "j14", to: "bottom-14", role: "ground" },
+          ],
+        },
+        {
+          title: "The red LED and its resistor",
+          parts: [
+            { kind: "resistor", ohms: 470, from: "j15", to: "j20" },
+            { kind: "led", led: "red", anode: "h20", cathode: "h21" },
+            { kind: "wire", from: "j21", to: "bottom-21", role: "ground" },
+          ],
+        },
+      ],
+      test: "Hold BTN1 down and the red LED lights. Let go and it dims for a second or so before it goes out.",
+    },
+  },
+  "light-on-a-transistor": {
+    circuit: {
+      name: "A light on a transistor",
+      description:
+        "A green light that GP17 switches through a 2N3904, the light's current from 3V3.",
+      credit: CREDIT,
+      leds: [{ id: "green", name: "green LED", pin: { kind: "gpio", gpio: 17 }, colour: "green" }],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Ground and 3V3 on the top rails",
+          parts: [
+            { kind: "wire", from: "a19", to: "top-19", role: "ground" },
+            { kind: "wire", from: "a6", to: "top+7", role: "power" },
+          ],
+        },
+        {
+          title: "The transistor, its emitter on ground",
+          parts: [
+            { kind: "transistor", model: "2N3904", emitter: "e24", base: "e25", collector: "e26" },
+            { kind: "wire", from: "a24", to: "top-25", role: "ground" },
+          ],
+        },
+        {
+          title: "Its base resistor, from GP17",
+          parts: [{ kind: "resistor", ohms: 4700, from: "b20", to: "b25" }],
+        },
+        {
+          title: "The green LED, from + to the collector",
+          parts: [
+            { kind: "led", led: "green", anode: "e30", cathode: "e29" },
+            { kind: "wire", from: "a30", to: "top+29", role: "power" },
+            { kind: "resistor", ohms: 220, from: "a26", to: "a29" },
+          ],
+        },
+      ],
+      script: "from machine import Pin\n\nPin(17, Pin.OUT).on()",
+      test: "The green LED lights, and stays lit until the Pico is unplugged.",
+    },
+  },
+  "light-under-a-pnp-transistor": {
+    circuit: {
+      name: "A light under a PNP transistor",
+      description:
+        "A yellow light that GP17 switches through a 2N3906 on the high side, lit while the pin is low.",
+      credit: CREDIT,
+      leds: [
+        { id: "yellow", name: "yellow LED", pin: { kind: "gpio", gpio: 17 }, colour: "yellow" },
+      ],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Ground and 3V3 on the top rails",
+          parts: [
+            { kind: "wire", from: "a19", to: "top-19", role: "ground" },
+            { kind: "wire", from: "a6", to: "top+7", role: "power" },
+          ],
+        },
+        {
+          title: "The transistor, its emitter on 3V3",
+          parts: [
+            { kind: "transistor", model: "2N3906", emitter: "e24", base: "e25", collector: "e26" },
+            { kind: "wire", from: "a24", to: "top+25", role: "power" },
+          ],
+        },
+        {
+          title: "Its base resistor, from GP17",
+          parts: [{ kind: "resistor", ohms: 4700, from: "b20", to: "b25" }],
+        },
+        {
+          title: "The yellow LED, from the collector to ground",
+          parts: [
+            { kind: "resistor", ohms: 470, from: "a26", to: "a29" },
+            { kind: "led", led: "yellow", anode: "e29", cathode: "e30" },
+            { kind: "wire", from: "a30", to: "top-29", role: "ground" },
+          ],
+        },
+      ],
+      script: "from machine import Pin\n\nPin(17, Pin.OUT).off()",
+      test: "The yellow LED lights, since GP17 is low, and stays lit until the Pico is unplugged.",
+    },
+  },
+  "two-lights-flashing": {
+    circuit: {
+      name: "Two lights flashing",
+      description:
+        "A green light and a blue one, which two 2N3904s, crosswise, flash in turn, on three AA batteries.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 4.5, rails: "bottom" },
+      leds: [
+        { id: "green", name: "green LED", colour: "green" },
+        { id: "blue", name: "blue LED", colour: "blue" },
+      ],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "The left transistor and its base resistor",
+          parts: [
+            { kind: "transistor", model: "2N3904", emitter: "f9", base: "f10", collector: "f11" },
+            { kind: "wire", from: "j9", to: "bottom-9", role: "ground" },
+            { kind: "resistor", ohms: 33000, from: "j10", to: "bottom+10" },
+          ],
+        },
+        {
+          title: "The green LED",
+          parts: [
+            { kind: "led", led: "green", anode: "f5", cathode: "f6" },
+            { kind: "wire", from: "j5", to: "bottom+5", role: "power" },
+            { kind: "resistor", ohms: 330, from: "h6", to: "h11" },
+          ],
+        },
+        {
+          title: "The right transistor and its base resistor",
+          parts: [
+            { kind: "transistor", model: "2N3904", emitter: "f20", base: "f21", collector: "f22" },
+            { kind: "wire", from: "j20", to: "bottom-20", role: "ground" },
+            { kind: "resistor", ohms: 33000, from: "j21", to: "bottom+21" },
+          ],
+        },
+        {
+          title: "The blue LED",
+          parts: [
+            { kind: "led", led: "blue", anode: "f27", cathode: "f26" },
+            { kind: "wire", from: "j27", to: "bottom+27", role: "power" },
+            { kind: "resistor", ohms: 330, from: "h22", to: "h26" },
+          ],
+        },
+        {
+          title: "A capacitor from the left collector to the right base",
+          parts: [
+            { kind: "electrolytic", microfarads: 47, plus: "f14", minus: "f15" },
+            { kind: "wire", from: "g11", to: "g14", role: "signal" },
+            { kind: "wire", from: "h15", to: "h21", role: "signal" },
+          ],
+        },
+        {
+          title: "A capacitor from the right collector to the left base",
+          parts: [
+            { kind: "electrolytic", microfarads: 4.7, plus: "f18", minus: "f17" },
+            { kind: "wire", from: "g22", to: "g18", role: "signal" },
+            { kind: "wire", from: "i17", to: "i10", role: "signal" },
+          ],
+        },
+      ],
+      test: "The green LED and the blue one flash in turn, the green one dark only for a moment.",
+    },
+  },
+  "lights-kept-apart-by-diodes": {
+    circuit: {
+      name: "Three lights, two diodes",
+      description:
+        "BTN1 lights a red light and an orange one, and BTN2 a blue light and the same orange one, two diodes keeping each button from the other's own light, on three AA batteries.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 4.5, rails: "bottom" },
+      leds: [
+        { id: "red", name: "red LED", colour: "red" },
+        { id: "blue", name: "blue LED", colour: "blue" },
+        { id: "orange", name: "orange LED", colour: "orange" },
+      ],
+      buttons: [
+        { id: "left", name: "BTN1", colour: "blue" },
+        { id: "right", name: "BTN2", colour: "yellow" },
+      ],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "BTN1 and BTN2, from +",
+          parts: [
+            { kind: "wire", from: "j16", to: "bottom+16", role: "power" },
+            { kind: "button", button: "left", columns: [14, 16] },
+            { kind: "wire", from: "j25", to: "bottom+25", role: "power" },
+            { kind: "button", button: "right", columns: [23, 25] },
+          ],
+        },
+        {
+          title: "The red LED, from BTN1",
+          parts: [
+            { kind: "resistor", ohms: 330, from: "h14", to: "h8" },
+            { kind: "led", led: "red", anode: "f8", cathode: "f7" },
+            { kind: "wire", from: "j7", to: "bottom-7", role: "ground" },
+          ],
+        },
+        {
+          title: "The blue LED, from BTN2",
+          parts: [
+            { kind: "resistor", ohms: 220, from: "i23", to: "i28" },
+            { kind: "led", led: "blue", anode: "h28", cathode: "h29" },
+            { kind: "wire", from: "j29", to: "bottom-29", role: "ground" },
+          ],
+        },
+        {
+          title: "The orange LED, its resistor under its short leg",
+          parts: [
+            { kind: "led", led: "orange", anode: "f11", cathode: "f10" },
+            { kind: "resistor", ohms: 470, from: "j10", to: "bottom-10" },
+            { kind: "wire", from: "g18", to: "g11", role: "signal" },
+          ],
+        },
+        {
+          title: "A diode from each button to the orange LED",
+          parts: [
+            { kind: "diode", model: "1N4007", anode: "i14", cathode: "i18" },
+            { kind: "diode", model: "1N4148", anode: "j23", cathode: "j18" },
+          ],
+        },
+      ],
+      test: "Hold BTN1 down and the red LED and the orange one light; hold BTN2 down and the blue one and the orange one do.",
+    },
+  },
+  "capacitor-timed-by-two-pins": {
+    circuit: {
+      name: "A capacitor and two pins",
+      description:
+        "A ceramic capacitor that GP14 charges through a resistor while GP13 reads it, and the Pico counts how long that takes.",
+      credit: CREDIT,
+      leds: [],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Ground on the bottom − rail",
+          parts: [{ kind: "wire", from: "j14", to: "bottom-14", role: "ground" }],
+        },
+        {
+          title: "The capacitor, one leg on ground",
+          parts: [
+            { kind: "ceramic", nanofarads: 47, from: "f26", to: "f27" },
             { kind: "wire", from: "j27", to: "bottom-27", role: "ground" },
+          ],
+        },
+        {
+          title: "Its resistor from GP14, and GP13 to read it",
+          parts: [
+            { kind: "resistor", ohms: 6800, from: "i20", to: "i26" },
+            { kind: "wire", from: "j18", to: "j26", role: "signal" },
           ],
         },
       ],
       script:
-        "from machine import Pin\nfrom time import sleep\n\nred_led = Pin(15, Pin.OUT)\nmotion_sensor = Pin(22, Pin.IN)\n\ntry:\n    while True:\n        if motion_sensor.value():\n            red_led.value(1)\n            sleep(2)\n            red_led.value(0)\n            while motion_sensor.value():\n                sleep(0.05)\n        sleep(0.05)\nfinally:\n    red_led.value(0)",
-      test: "Wait a minute for the sensor to settle, then wave a hand over its dome: the red LED lights for two seconds. Press Stop in Thonny to end the script.",
+        "from machine import Pin\nfrom time import sleep, ticks_diff, ticks_us\n\ncharge = Pin(14, Pin.OUT, value=0)\nsense = Pin(13, Pin.IN)\nsleep(0.1)\nstart = ticks_us()\ncharge.on()\nwhile not sense.value():\n    pass\nprint(ticks_diff(ticks_us(), start))",
+      test: "The script prints how long the capacitor took to charge, in microseconds.",
+    },
+  },
+  "lights-chosen-by-a-slide-switch": {
+    circuit: {
+      name: "A light each way",
+      description:
+        "A slide switch lights a yellow light one way and a red one the other, on two AA batteries.",
+      credit: SUPPLY_CREDIT,
+      supply: { volts: 3, rails: "bottom" },
+      leds: [
+        { id: "yellow", name: "yellow LED", colour: "yellow" },
+        { id: "red", name: "red LED", colour: "red" },
+      ],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "The slide switch, its middle leg on +",
+          parts: [
+            { kind: "slideSwitch", left: "f19", middle: "f20", right: "f21" },
+            { kind: "wire", from: "j20", to: "bottom+20", role: "power" },
+          ],
+        },
+        {
+          title: "The yellow LED, from its left leg",
+          parts: [
+            { kind: "resistor", ohms: 220, from: "i19", to: "i14" },
+            { kind: "led", led: "yellow", anode: "g14", cathode: "g13" },
+            { kind: "wire", from: "j13", to: "bottom-13", role: "ground" },
+          ],
+        },
+        {
+          title: "The red LED, from its right leg",
+          parts: [
+            { kind: "resistor", ohms: 220, from: "h21", to: "h26" },
+            { kind: "led", led: "red", anode: "f26", cathode: "f27" },
+            { kind: "wire", from: "j27", to: "bottom-27", role: "ground" },
+          ],
+        },
+      ],
+      test: "Slide the switch one way and the yellow LED lights; slide it the other way and the red one does instead.",
+    },
+  },
+  "slide-potentiometer-read-by-an-analogue-pin": {
+    circuit: {
+      name: "A potentiometer on GP26",
+      description:
+        "A slide potentiometer that the Pico reads on GP26, lying across two breadboards.",
+      credit: CREDIT,
+      leds: [],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "The slide potentiometer, across both breadboards",
+          parts: [
+            { kind: "slidePotentiometer", ohms: 10000, wiper: "a11", end: "a9", otherEnd: "2:e9" },
+          ],
+        },
+        {
+          title: "3V3 to its other end",
+          parts: [
+            { kind: "wire", from: "a6", to: "2:e6", role: "power" },
+            { kind: "wire", from: "2:d6", to: "2:d9", role: "power" },
+          ],
+        },
+      ],
+      script:
+        "from machine import ADC, Pin\nfrom time import sleep\n\npotentiometer = ADC(Pin(26))\n\nwhile True:\n    print(potentiometer.read_u16())\n    sleep(0.2)",
+      test: "The script prints the potentiometer's reading, which follows the knob from one end of its travel to the other.",
+    },
+  },
+  "switches-read-by-pull-ups": {
+    circuit: {
+      name: "Two switches on GP16 and GP17",
+      description:
+        "A DIP switch of two switches, each from ground to a pin the Pico pulls up, GP16 and GP17.",
+      credit: CREDIT,
+      leds: [],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Ground on the bottom − rail",
+          parts: [{ kind: "wire", from: "j19", to: "bottom-19", role: "ground" }],
+        },
+        {
+          title: "The DIP switch, across the channel",
+          parts: [{ kind: "dipSwitch", switches: 2, column: 22 }],
+        },
+        {
+          title: "Each switch's bottom leg to ground",
+          parts: [
+            { kind: "wire", from: "j22", to: "bottom-22", role: "ground" },
+            { kind: "wire", from: "j23", to: "bottom-23", role: "ground" },
+          ],
+        },
+        {
+          title: "Each switch's top leg to its pin",
+          parts: [
+            { kind: "wire", from: "a22", to: "a21", role: "signal" },
+            { kind: "wire", from: "b23", to: "b20", role: "signal" },
+          ],
+        },
+      ],
+      script:
+        "from machine import Pin\nfrom time import sleep\n\nfirst = Pin(16, Pin.IN, Pin.PULL_UP)\nsecond = Pin(17, Pin.IN, Pin.PULL_UP)\n\nwhile True:\n    print(first.value() == 0, second.value() == 0)\n    sleep(0.5)",
+      test: "The script prints whether each switch is on, twice a second.",
     },
   },
 };

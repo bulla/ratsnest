@@ -2,7 +2,17 @@ import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BUTTON_COLOURS, LED_COLOURS } from "../circuit";
-import { BREADBOARD_TOKENS, SUPPLY_TOKENS } from "../drawing/breadboard-svg";
+import {
+  BREADBOARD_TOKENS,
+  CERAMIC_TOKENS,
+  DIODE_TOKENS,
+  DIP_SWITCH_TOKENS,
+  ELECTROLYTIC_TOKENS,
+  SLIDE_POTENTIOMETER_TOKENS,
+  SLIDE_SWITCH_TOKENS,
+  SUPPLY_TOKENS,
+  TRANSISTOR_TOKENS,
+} from "../drawing/breadboard-svg";
 import { CHIP_STYLES } from "../drawing/chips";
 import { contrastRatio } from "./contrast";
 
@@ -197,6 +207,69 @@ describe.each(SCOPES)("the %s scale", (scope) => {
         contrastRatio(colour(SUPPLY_TOKENS.edge, scope), colour(surface, scope)),
       ).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it("prints a capacitor's value on its sleeve, and its minus signs on its stripe, legibly (ADR 0043)", () => {
+    expect(
+      contrastRatio(
+        colour(ELECTROLYTIC_TOKENS.ink, scope),
+        colour(ELECTROLYTIC_TOKENS.sleeve, scope),
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(
+        colour(ELECTROLYTIC_TOKENS.stripeInk, scope),
+        colour(ELECTROLYTIC_TOKENS.stripe, scope),
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("prints a transistor's type, model and legs legibly on its case (ADR 0044)", () => {
+    expect(
+      contrastRatio(colour(TRANSISTOR_TOKENS.ink, scope), colour(TRANSISTOR_TOKENS.body, scope)),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("sets a diode's band apart from its case at 3:1, since the band says which way round it goes (ADR 0049)", () => {
+    for (const [body, band] of [
+      [DIODE_TOKENS.glass, DIODE_TOKENS.glassBand],
+      [DIODE_TOKENS.black, DIODE_TOKENS.blackBand],
+    ] as const) {
+      expect(contrastRatio(colour(band, scope), colour(body, scope))).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("prints a ceramic capacitor's code legibly on its disc (ADR 0051)", () => {
+    expect(
+      contrastRatio(colour(CERAMIC_TOKENS.ink, scope), colour(CERAMIC_TOKENS.body, scope)),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("sets a DIP switch's slides apart from their windows at 3:1, and prints its ON and numbers legibly (ADR 0054)", () => {
+    const slide = colour(DIP_SWITCH_TOKENS.slide, scope);
+    expect(contrastRatio(slide, colour(DIP_SWITCH_TOKENS.window, scope))).toBeGreaterThanOrEqual(3);
+    expect(
+      contrastRatio(colour(DIP_SWITCH_TOKENS.ink, scope), colour(DIP_SWITCH_TOKENS.body, scope)),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("sets a slide potentiometer's knob apart from its body at 3:1, and prints its value legibly on it (ADR 0053)", () => {
+    const body = colour(SLIDE_POTENTIOMETER_TOKENS.body, scope);
+    expect(
+      contrastRatio(colour(SLIDE_POTENTIOMETER_TOKENS.knob, scope), body),
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      contrastRatio(colour(SLIDE_POTENTIOMETER_TOKENS.ink, scope), body),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("sets a slide switch's slide apart from its shell at 3:1, since where it sits says which way it is set (ADR 0052)", () => {
+    expect(
+      contrastRatio(
+        colour(SLIDE_SWITCH_TOKENS.slide, scope),
+        colour(SLIDE_SWITCH_TOKENS.shell, scope),
+      ),
+    ).toBeGreaterThanOrEqual(3);
   });
 
   it.each(Object.entries(CHIP_STYLES))(

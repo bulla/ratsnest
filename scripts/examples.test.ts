@@ -31,9 +31,15 @@ const pages = mkdtempSync(join(tmpdir(), "ratsnest-examples-"));
 afterAll(() => rmSync(pages, { recursive: true, force: true }));
 
 describe("the examples", () => {
-  it("are scratchpi's seven circuits, one with a supply in the Pico's place (ADR 0032), and one with a motion sensor (ADR 0043)", () => {
-    expect(EXAMPLES).toHaveLength(9);
-    expect(EXAMPLES.filter((name) => isSupplied(circuitOf(name)))).toEqual(["battery-button.ts"]);
+  it("are scratchpi's seven circuits, five with a supply in the Pico's place, two with a transistor on a Pico, one with a ceramic capacitor, one with a slide potentiometer and one with a DIP switch (ADR 0032, ADR 0043 to ADR 0046, ADR 0049, ADR 0051 to ADR 0054)", () => {
+    expect(EXAMPLES).toHaveLength(17);
+    expect(EXAMPLES.filter((name) => isSupplied(circuitOf(name)))).toEqual([
+      "battery-button.ts",
+      "capacitor-tester.ts",
+      "fading-light.ts",
+      "one-light-or-the-other.ts",
+      "two-buttons-three-lights.ts",
+    ]);
   });
 
   it("pass `ratsnest check`, as anyone's circuits do", () => {
@@ -42,7 +48,7 @@ describe("the examples", () => {
       out: (line) => said.push(line),
       err: (line) => said.push(line),
     });
-    expect(said).toEqual(["9 circuits checked: all well."]);
+    expect(said).toEqual(["17 circuits checked: all well."]);
     expect(status).toBe(0);
   });
 
@@ -91,7 +97,6 @@ describe("the engine (ADR 0007)", () => {
           ...(circuit.leds ?? []),
           ...(circuit.buttons ?? []),
           ...("buzzers" in circuit ? (circuit.buzzers ?? []) : []),
-          ...("sensors" in circuit ? (circuit.sensors ?? []) : []),
         ].flatMap((part) => Object.values(part.name)),
       );
       return [

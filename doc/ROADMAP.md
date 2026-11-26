@@ -22,9 +22,13 @@ executable makes circuits projects, the owner's first among them (M7), and the `
 publishes their pages as Artifacts (M8). M6 waits on the owner, below. Circuits without a Pico,
 powered by a supply on the rails (ADR 0032 to ADR 0034), are M12, released in 0.2.0 with format 2:
 every circuit's `setup`, one `test` and a credit of its own (ADR 0035 to ADR 0037). New parts,
-capacitors, transistors and diodes, each with the circuit that teaches it, are planned in the
-Backlog (ADR 0038 to ADR 0041). A PIR motion sensor came first, at the owner's asking: read on a
-pin, named as a button is, and drawn beside the board on its jumpers (ADR 0043, ADR 0044).
+capacitors, transistors, diodes, two switches and a slide potentiometer, each with the circuit that
+teaches it, were planned in the Backlog (ADR 0038 to ADR 0041), and all are built. The electrolytic capacitor is M13 (ADR 0043), the NPN and PNP
+transistors M14 and M15 (ADR 0044, ADR 0045), the owner's capacitor tester and flasher M16
+(ADR 0046, ADR 0047), the diode, two buttons sharing a light, M17 (ADR 0049, ADR 0050), the
+ceramic capacitor, two pins timing it, M18 (ADR 0051), the slide switch, one light or the other,
+M19 (ADR 0052), the slide potentiometer, the Pico reading it across both breadboards, M20
+(ADR 0053), and the DIP switch, five switches through the Pico's own pull-ups, M21 (ADR 0054).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -58,17 +62,25 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 
 ## Open points
 
+- **The slide potentiometer's legs** (ADR 0053): taken from the drawing in a tutorial the owner
+  chose, two at one end two holes apart and one 17 rows along, since no slide potentiometer was
+  measured. The owner, who has one, checks that its legs fall there, and says if they do not.
+
 - **Reading the engine's Russian** (ADR 0010, ADR 0011): the owner's friend, who reads Russian, reads
   the Russian table in `src/page/words.ts`, `RUSSIAN_PAGE`, before it ships, which is M6's last item,
   and ratsnest's Russian credits (ADR 0035), which the `circuit` skill writes into new circuits, in
   `.claude/skills/circuit/SKILL.md`, and the migration to format 2 into old ones, in
-  `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036), and the motion sensor's sentence, callout,
-  parts list's lines and note, in the same table (ADR 0043). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
+  `FORMAT_2_CREDIT` in `src/migrate.ts` (ADR 0036). A test cannot check its grammar. The parts list is written as a bill of materials, and every part's
   name stands where it is written as it is, so that none is inflected.
-- **The motion sensor's look** (ADR 0044): drawn after the tutorial the owner learned it from, at its
-  size, past the edge its holes are on, its header wider than life so that `VCC`, `OUT` and `GND`
-  each fit beside their pin. The Backlog asks for each part's drawing to be picked by the owner, in
-  both themes at all four quarter turns; this one comes out of Open points once they have looked.
+
+- **The new parts' drawings** (ADR 0043 to ADR 0047, ADR 0049 to ADR 0054): the electrolytic
+  capacitor's, the transistors', the flasher's lifted leader, the diode's two cases, the leaders
+  lifted over lights and buttons, the ceramic capacitor's disc, the slide switch's shell, its slide
+  drawn towards its left leg, the slide potentiometer's body, its value printed on it, and the DIP
+  switch's blue body, its slides drawn off, mocked up and chosen while the owner had the work go on alone, so the owner signs
+  each off on its pull request, the colourings and the looks turned down in their records. The
+  Russian they added, their sentences, parts list lines and notes, joins the table above for its
+  reader.
 
 ## Suggestions
 
@@ -91,40 +103,16 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 
 ## Backlog
 
-- **New parts, each with the circuit that teaches it** (ADR 0038 to ADR 0041), in this order. Each
-  brings its part's drawing, its kind in the format and the field checks, one rule in the wiring
-  check, the step's sentence and the parts list's line in English, French and Russian, an example
-  and a test circuit, and the `circuit` skill's knowledge of it. Each part's drawing is mocked up on
-  the board first, in both themes, at all four quarter turns, beside Fritzing's drawing of the same
-  part, and the owner picks one; the looks turned down go in the record that settles that part.
-  Each is an addition to format 2, and a minor release.
-  1. **The electrolytic capacitor: the light fades out.** On a supply, a button charges a capacitor
-     across a light and its resistor, and when it is let go the capacitor empties into the light,
-     which dims over a second or two. Drawn standing, a can with a pale stripe down its − side and
-     its value printed across it; its rule is a polarised part across a light, its + leg towards +.
-     Left to its own record: its kind's name, its value's unit and range, and the legs' spacing.
-  2. **The NPN transistor: a pin switches a light.** On a Pico, a pin drives a 2N3904's base through
-     a resistor, its emitter on ground and its collector under a light and its resistor. Drawn as a
-     black TO-92 with `NPN` and `2N3904` on its flat face and `E`, `B`, `C` by its legs; its rule is
-     a three-legged part, with a base resistor in a range of its own. Left to its own record: which
-     way its flat face may point, and the base resistor's range.
-  3. **The PNP transistor: the same switch on the high side.** On a Pico, a 2N3906's emitter on
-     3V3, its collector over a light and its resistor to ground, and the light lit while the pin is
-     low. The body of 2, printed `PNP` and `2N3906`; its rule is 2's, mirrored.
-  4. **The capacitor tester and flasher.** On the 3 V supply, two 2N3904s and two electrolytic
-     capacitors make an astable multivibrator: each transistor's collector under a light and its
-     resistor, its base on + through a large resistor, and a capacitor from each collector to the
-     other's base, + towards the collector. One capacitor is the one under test: with a good one the
-     two lights flash in turn, a larger one more slowly, and an open or a shorted one stops them.
-     Nothing new to draw; its rule is the multivibrator. The capacitor to test goes in a step of its
-     own, so that its words can point at it with neither a value nor a name (ADR 0011, ADR 0041).
-  5. **The diode: two buttons, three lights.** On a supply, each button lights a light of its own
-     and a shared one, and two diodes keep one button from lighting the other's light. Drawn lying,
-     as a resistor is, with its band at the cathode and its model on a tag (ADR 0040); its rule is a
-     one-way part on a light's way. Left to its own record: which models, several of them.
-  6. **The ceramic capacitor: the Pico times a capacitor.** On a Pico, a 100 nF capacitor charges
-     through a resistor while the Pico counts how long it takes, and the script prints it. Drawn standing, a small disc; its rule is a resistor and a capacitor on a pair of pins.
-     Left to its own record: what the disc prints, `104` as the real one does or `100 nF`.
+- **New parts, each with the circuit that teaches it** (ADR 0038 to ADR 0041): the nine planned so
+  far are built, the electrolytic capacitor's fading light, the NPN and PNP transistors' switches,
+  the capacitor tester and flasher, the diode's two buttons and three lights, the ceramic
+  capacitor's timer, the slide switch's one light or the other, the slide potentiometer's colours and
+  the DIP switch's five switches, which are M13 to M21 (ADR 0043 to ADR 0047, ADR 0049 to ADR 0054).
+  The next comes from Later when a circuit needs it, and brings, as each of those did, its part's
+  drawing, its kind in the format and the field checks, one rule in the wiring check, the step's
+  sentence and the parts list's line in English, French and Russian, an example and a test circuit,
+  and the `circuit` skill's knowledge of it. Each is an addition to format 2, and a minor release.
+
 - **Standard steps the engine knows by name**, if writing out common steps in every circuit file
   starts to hurt (ADR 0007)
 - **A check that a circuit's test script drives the pins it declares** (ADR 0006)
@@ -144,9 +132,11 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
 - **ratsnest's own site**: its examples and its documentation, on GitHub Pages once the repository is
   public, built by GitHub Actions. Which variants it serves and whether it has an index that links
   them, which ADR 0004 would have to allow, is a record of its own.
-- **More parts, each when a circuit needs it** (ADR 0038): potentiometers, SPDT switches, slide and
-  DIP switches, relays, light-dependent resistors, MOSFETs, Zener and Schottky diodes, and film
-  capacitors
+- **More parts, each when a circuit needs it** (ADR 0038): rotary potentiometers, toggle switches,
+  relays, light-dependent resistors, MOSFETs, Zener and Schottky diodes, and film capacitors
+- **The LED bar graph and the resistor array**, at the owner's asking: a bar graph's segments lit
+  through a resistor array, from GP9 to GP13, and then from the DIP switch. Each comes with a
+  circuit that needs it (ADR 0038).
 - **A full-size breadboard**, probably drawn standing up, and **other boards**: the rest of the Pico
   family first (ADR 0002, ADR 0003)
 - **Solid 2**, when something on a page has to change after it is made, such as a page that picks the
@@ -164,16 +154,25 @@ One line per milestone. Its checklist and the paragraph that summed it up are in
 [`HISTORY.md`](HISTORY.md), under the same name. Work that landed between milestones is only in that
 file's Log.
 
-| Milestone | What it gave the project                                                                | Records                                 |
-| --------- | --------------------------------------------------------------------------------------- | --------------------------------------- |
-| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept           | 0001–0020                               |
-| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding  | 0009, 0017, 0018, 0020, 0021            |
-| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app              | 0001, 0004, 0007, 0018                  |
-| M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples    | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
-| M4        | The font: Nunito carried by every page, every drawn word measured in it                 | 0011, 0012                              |
-| M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any      | 0003, 0007, 0024                        |
-| M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated         | 0015, 0016                              |
-| M9        | Releases: the version computed, the first release, 0.1.1, published on GitHub           | 0017, 0020, 0021, 0030                  |
-| M7        | The executable and circuits projects: five executables, `init`, `install.sh`, a project | 0014, 0016, 0018, 0019, 0025            |
-| M8        | Publishing: a project's pages as Artifacts, kept in `ARTIFACTS.md` and found again      | 0013, 0014, 0019                        |
-| M12       | Circuits without a Pico: a supply on the rails, its wiring check, format 2, and 0.2.0   | 0032–0037                               |
+| Milestone | What it gave the project                                                                    | Records                                 |
+| --------- | ------------------------------------------------------------------------------------------- | --------------------------------------- |
+| M0        | The design, by interview: what ratsnest is, how it is built, shipped and kept               | 0001–0020                               |
+| M1        | The frame: the package, the checks, CI on three systems, the changelog, the onboarding      | 0009, 0017, 0018, 0020, 0021            |
+| M2        | The copy: scratchpi's drawing, wiring check and page, with none of its app                  | 0001, 0004, 0007, 0018                  |
+| M3        | Circuits as data: format 1, read and never run, `check` and `generate`, the examples        | 0006, 0007, 0010, 0014–0016, 0022, 0023 |
+| M4        | The font: Nunito carried by every page, every drawn word measured in it                     | 0011, 0012                              |
+| M5        | Four orientations: the drawing turned, every word upright, nothing crowding at any          | 0003, 0007, 0024                        |
+| M10       | Updating: `ratsnest update`, the executable put in place, the circuits migrated             | 0015, 0016                              |
+| M9        | Releases: the version computed, the first release, 0.1.1, published on GitHub               | 0017, 0020, 0021, 0030                  |
+| M7        | The executable and circuits projects: five executables, `init`, `install.sh`, a project     | 0014, 0016, 0018, 0019, 0025            |
+| M8        | Publishing: a project's pages as Artifacts, kept in `ARTIFACTS.md` and found again          | 0013, 0014, 0019                        |
+| M12       | Circuits without a Pico: a supply on the rails, its wiring check, format 2, and 0.2.0       | 0032–0037                               |
+| M13       | The electrolytic capacitor: a light that fades out, the first new part with its circuit     | 0038–0041, 0043                         |
+| M14       | The NPN transistor: a pin switches a light through a 2N3904                                 | 0044                                    |
+| M15       | The PNP transistor: a pin switches a light on the high side, through a 2N3906               | 0045                                    |
+| M16       | The capacitor tester and flasher: two transistors crosswise, on two AA batteries            | 0046, 0047                              |
+| M17       | The diode: two buttons share a light, two diodes keeping each from the other's              | 0049, 0050                              |
+| M18       | The ceramic capacitor: two pins time it through a resistor, the disc printed with its value | 0051                                    |
+| M19       | The slide switch: one light or the other, which stays lit when let go                       | 0052                                    |
+| M20       | The slide potentiometer: the Pico reads it across both breadboards, and colours two LEDs    | 0053                                    |
+| M21       | The DIP switch: five switches read through the Pico's own pull-ups, on a second breadboard  | 0054                                    |

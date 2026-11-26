@@ -111,28 +111,135 @@ A circuit with a supply:
 - **wires every light from + through one resistor of 220 Ω to 1 kΩ to −**, each button on a light's
   way, with no short when every button is held, red wires on +, black on − and yellow for the rest.
   On the 3 V supply, a blue, white, green, aqua, pink or purple light is refused: take 4.5 V.
+- **may have electrolytic capacitors, each keeping a light lit, two NPN transistors that flash
+  two lights, diodes on lights' ways, and slide switches lighting one light or another** (below).
 
-## A motion sensor (ADR 0043, ADR 0044)
+## Capacitors, transistors, diodes, switches and potentiometers (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0054)
 
-A PIR motion sensor is read on a pin, so it is declared as a button is, in `sensors`, and placed by
-the three holes its female-to-male jumpers go in. The engine draws it lying beside the board, past
-the edge those holes are on, and writes where each jumper goes:
+ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
+(ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
+name of its own and no list at the top of the circuit (ADR 0041). Its value is never written in the
+circuit's own words, as a resistor's is not: point at it by the step that places it.
 
-```ts
-  sensors: [{ id: "pir", name: { en: "motion sensor" }, pin: { kind: "gpio", gpio: 22 } }],
-  // …and in a step:
-  { kind: "pir", sensor: "pir", power: "a2", output: "a13", ground: "a14" },
-```
+- **An electrolytic capacitor**, on a supply, keeps a light lit once its button is let go
+  (ADR 0043):
 
-- **`power` on VBUS**, for its 5 V: `a2` or `b2`, the strip of VBUS, pin 40. Never 3V3.
-- **`output` on its own pin**, which nothing else joins: no resistor, since OUT drives it both ways.
-- **`ground` on ground**: a GND pin's strip or a − rail. Prefer a pin the Pico prints `GND` to pin
-  33, which it prints `AGND`.
-- **All three on one side of the channel**: rows a to e and the top rails, or rows f to j and the
-  bottom rails. The top side has VBUS, GND and GP16 to GP22 and GP26 to GP28, everything it needs.
-  With a second breadboard above, the bottom side.
-- **Its script reads the pin**, high while the sensor sees movement, and its `test` says to wait up
-  to a minute after plugging in for the sensor to settle. A circuit with a supply has no sensor.
+  ```ts
+  { kind: "electrolytic", microfarads: 470, plus: "i5", minus: "i4" },
+  ```
+
+  Its legs are side by side in one row. Its − leg goes straight to −, by a black wire, and its + leg
+  between a button and a light's resistor, so that the button fills it and the light empties it.
+  Its microfarads times that resistor's ohms, over a million, is 0.2 s at least, or the light goes
+  out too fast to see it fade: 470 µF through 1 kΩ is about right. The can is drawn standing over
+  the three rows above its legs, so keep those holes free, and wire its − leg from the row below.
+  On a Pico it has no use yet, and is refused.
+- **A transistor**, on a Pico, lets a pin switch a light (ADR 0044):
+
+  ```ts
+  { kind: "transistor", model: "2N3904", emitter: "e24", base: "e25", collector: "e26" },
+  ```
+
+  Its model is one ratsnest knows: `2N3904`, NPN, or `2N3906`, PNP (ADR 0045). Its legs are side by
+  side in one row, emitter, base and collector from left to right, so that its flat face is towards
+  row j. The light keeps its `pin`, the pin that switches it, and its base goes on that pin through
+  one resistor of 1 kΩ to 10 kΩ. An NPN's emitter goes on ground, and the light between 3V3(OUT) and
+  its collector; a PNP's emitter goes on 3V3(OUT), never VBUS, and the light between its collector and
+  ground, lit while the pin is low. Either way, the light has one resistor of 220 Ω to 1 kΩ. The case
+  stands over the two rows above its legs, so reach each leg from the row below it, or from the row
+  above its case.
+- **Two NPN transistors on a supply flash two lights** (ADR 0046), and are the only use a transistor
+  has there. Each one's emitter goes on −; its light from + to its collector, through one resistor
+  of 220 Ω to 1 kΩ; its base from + through one resistor of 10 kΩ to 100 kΩ; and one electrolytic
+  capacitor from the other transistor's collector to its base, its + leg towards the collector. The
+  base resistor and that capacitor hold the transistor off for about 0.69 times the two, 0.1 s to
+  5 s. A circuit that tests a capacitor places that one in a step of its own and says so in the
+  step's title. Standing everything in row f leaves the rows below for the wiring.
+- **A diode**, on a supply, keeps a light's current one way (ADR 0049):
+
+  ```ts
+  { kind: "diode", model: "1N4148", anode: "h13", cathode: "h18" },
+  ```
+
+  Its model is one ratsnest knows: `1N4148`, a signal diode in orange glass, or `1N4001` or
+  `1N4007`, rectifiers in black; any of them does here. It lies as a resistor does, its legs three
+  holes apart or more, and goes on a light's way with its band, its cathode, towards −: between +
+  and the light's resistor, between the resistor and the light, or between the light and −. Two
+  buttons whose currents meet through a diode each keep apart what the other lights, as
+  `two-buttons-three-lights.ts` shows. Each diode takes about 0.7 V: on the 3 V supply a light with a
+  diode is refused, and on 3.7 V a blue, white, green, aqua, pink or purple one is. Its model goes on
+  a tag beside it, as a resistor's value does, so leave it a row free on one side. On a Pico it has
+  no use yet, and is refused.
+
+- **A ceramic capacitor**, on a Pico, is timed by two pins (ADR 0051):
+
+  ```ts
+  { kind: "ceramic", nanofarads: 100, from: "e26", to: "e27" },
+  ```
+
+  Its value is in nanofarads, two figures at most and 0.01 or more, as the code a real disc prints can
+  say it, `104` for 100 nF: the drawing's disc prints the value, and the page gives the code. It goes
+  in either way round, its legs side by side in one row. One leg goes straight to ground; the other
+  straight to a pin that reads it, and through one resistor of 1 kΩ to 8.2 kΩ to a second pin, which
+  charges it, with nothing else on that leg. Its nanofarads times that resistor's ohms, over a
+  thousand million, is 0.1 ms at least, or the script cannot time it: 100 nF through 4.7 kΩ is about
+  right. Its script sets the charging pin low, waits, sets it high and counts until the reading pin
+  reads high, as `capacitor-timer.ts` does. A step's words may name those two pins, though no
+  component is on them. The disc stands over the two rows above its legs. On a supply it has no use
+  yet, and is refused.
+
+- **A slide switch**, on a supply, lights one light or the other, and stays so when let go
+  (ADR 0052):
+
+  ```ts
+  { kind: "slideSwitch", left: "f14", middle: "f15", right: "f16" },
+  ```
+
+  It has no model: any SPDT slide switch with its legs 2.54 mm apart. Its three legs are side by side
+  in one row, left, middle and right, left to right. Slid one way, it joins its middle leg to its left
+  one; the other way, to its right one. Put its middle leg on +, or anywhere on a light's way, and
+  each outer leg on a light's way of its own, so that each way lights a light the other does not, as
+  `one-light-or-the-other.ts` shows; one resistor on its middle leg may serve both lights. The step's
+  words cannot say which way to slide it, since they name no hole: the test says what one way and the
+  other do. The switch stands over the two rows above its legs, so reach them from the rows below. On
+  a Pico it has no use yet, and is refused.
+
+- **A slide potentiometer**, on a Pico, is read on an analogue pin (ADR 0053):
+
+  ```ts
+  { kind: "slidePotentiometer", ohms: 10000, wiper: "a8", end: "a6", otherEnd: "2:e6" },
+  ```
+
+  Its value is free, from 1 kΩ to 100 kΩ, and 10 kΩ is the usual one. It is too long for one
+  breadboard, so it lies across both: its wiper and the end beside it two holes apart in one row, and
+  its other end in that end's column, 17 rows along, on the other breadboard. Row a of the first
+  board pairs with row e of the second, and row f of the first with row j of the second. Its wiper
+  goes straight to GP26, GP27 or GP28, with nothing else on it, and its ends to 3V3(OUT) and ground,
+  either way round; never its wiper on 3V3(OUT). On the Pico's row c side, `a6` and `a8` are 3V3(OUT)
+  and GP28 already, as `colours-on-a-slider.ts` uses them. Its body lies over the holes between its
+  legs, across their three columns, so put nothing there. Its script reads it with
+  `ADC(Pin(28)).read_u16()`, from 0 to 65535. A step's words may name its wiper's pin. On a supply it
+  has no use yet, and is refused. If the circuit follows a tutorial, say so in its description.
+
+- **A DIP switch**, on a Pico, is read switch by switch (ADR 0054):
+
+  ```ts
+  { kind: "dipSwitch", switches: 5, column: 13, board: 2 },
+  ```
+
+  It has 2 to 8 switches side by side across the channel, their legs in rows e and f, switch 1 in
+  `column` and the rest to its right, its ON side towards row a; `board: 2` puts it on the second
+  breadboard. Each switch goes from ground, on one leg, to a pin of its own, on the other, with
+  nothing else on that pin and never 3V3(OUT): the script pulls each pin up, `Pin(22, Pin.IN,
+  Pin.PULL_UP)`, and a switch on reads 0. A tutorial that wires the switches to 3V3 and its pins to the
+  Pico's own pull-downs is refused, since the Pico 2 W's pull-downs cannot be relied on: wire them to
+  ground instead, and say so in the description. On the second breadboard, the Pico's row c pins are
+  right below it, as `five-switches.ts` uses them. On a supply it has no use yet, and is refused.
+
+A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
+each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So
+put the lights that stand in row f or g further from the board's far end than every button, and keep
+the top half above them free; a light in row h or i may stand past the buttons, under their leaders.
 
 ## Its credit (ADR 0035)
 

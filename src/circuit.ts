@@ -126,13 +126,6 @@ export interface Buzzer {
   readonly pin: GpioPin;
 }
 
-/** A PIR motion sensor, on the pin its OUT goes to (ADR 0043). */
-export interface Sensor {
-  readonly id: string;
-  readonly name: string;
-  readonly pin: GpioPin;
-}
-
 /**
  * What a circuit is: its name, a sentence saying what it does, and what is on its pins, or the supply
  * it has in the Pico's place (ADR 0032).
@@ -147,8 +140,6 @@ export interface ShownCircuit {
   readonly leds: readonly Led[];
   readonly buttons: readonly Button[];
   readonly buzzers: readonly Buzzer[];
-  /** What the script reads, on a Pico: a circuit with a supply has none (ADR 0043). */
-  readonly sensors: readonly Sensor[];
 }
 
 /** One step of building a circuit: a title, perhaps a note, and the parts it places. */

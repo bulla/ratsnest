@@ -210,6 +210,200 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
       fixtures, with a variant for every rule it is refused by
 - [x] 0.2.0, made by `bun run release` and brought to `develop` by pull request (ADR 0030)
 
+### M13: the electrolytic capacitor
+
+M13 is done: the first new part, with the circuit that teaches it (ADR 0038). On a supply, a button
+charges an electrolytic capacitor across a light and its resistor, and once it is let go the light
+fades out. The wiring check holds the capacitor to that one use (ADR 0043), and the drawing stands it
+on its legs, a navy can with its value printed on it and a stripe down its − side.
+
+- [x] The design, by interview: new parts each with the circuit that needs it (ADR 0038), real
+      models from a closed list (ADR 0039), print on the body (ADR 0040), and no name of their own
+      (ADR 0041); and this part's details, worked out alone at the owner's asking (ADR 0043)
+- [x] The format: `{ kind: "electrolytic", microfarads, plus, minus }`, read and checked field by
+      field, and allowed in a circuit with a supply
+- [x] The wiring check's rule: the right way round, its − leg on −, its + leg between a button and a
+      light's resistor, and the two slow enough to see the light fade, 0.2 s at least; and on a Pico,
+      refused, with no use there yet
+- [x] The drawing: a navy can, a pale stripe with minus signs, an aluminium top, a kinked + leg and
+      its value printed upright at every quarter turn, its colours in `tokens.css` and its prints held
+      to 4.5:1; a value tag keeps off it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
+      rated 16 V or more, and the note that it goes in one way round
+- [x] A capacitance written in a circuit's own words refused, as a resistance is (ADR 0011)
+- [x] `examples/fading-light.ts`, in English and French, and a test circuit with a variant for every
+      rule it is refused by
+
+### M14: the NPN transistor
+
+M14 is done: a pin switches a light through a 2N3904, the second new part with the circuit that
+teaches it (ADR 0038, ADR 0044). The pin feeds only the transistor's base through a resistor, and the
+light's current comes from 3V3. The drawing stands a black TO-92 on its legs, `NPN` and its model
+on its flat face and each leg's letter above it.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0044)
+- [x] The models ratsnest knows, in `src/transistors.ts`, the 2N3904 first (ADR 0039)
+- [x] The format: `{ kind: "transistor", model, emitter, base, collector }`, read and checked field
+      by field, and refused in a circuit with a supply
+- [x] The wiring check's rule: its legs in its model's order, its flat face towards row j; the
+      light the right way round; the emitter on ground; the base on the light's pin through one
+      resistor of 1 kΩ to 10 kΩ; the light between 3V3(OUT) and the collector through one of its
+      own; and every transistor switching a light
+- [x] The drawing: a black TO-92 case with its formed legs, its type, model and legs printed upright
+      at every quarter turn, its colours in `tokens.css`, its print held to 4.5:1; a value tag keeps
+      off it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
+      the legs' order and the BC547 that differs, the base resistor's range, and the long leg's note
+- [x] `examples/transistor-switch.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
+### M15: the PNP transistor
+
+M15 is done: a pin switches a light on the high side through a 2N3906, lit while the pin is low, the
+third new part with the circuit that teaches it (ADR 0038, ADR 0045). The NPN's rule became one rule
+read by the model's type, and the drawing, printed `PNP`, is the NPN's.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0045)
+- [x] The 2N3906 among the models ratsnest knows, and each model's look-alike whose legs differ
+- [x] The wiring check's rule, the NPN's read by type: the emitter on 3V3(OUT), and the light
+      between the collector and ground
+- [x] The page's note on a light's long leg, for a light either kind of transistor switches, and the
+      note on a transistor's legs naming its own look-alike, the BC547 or the BC557
+- [x] `examples/high-side-switch.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
+### M16: the capacitor tester and flasher
+
+M16 is done: the owner's circuit, two 2N3904s crosswise on two AA batteries, flashing a red light and
+a yellow one in turn, with the capacitor in one of its two places the one to test (ADR 0046). It
+needed no new part, but a transistor's first use on a supply and a capacitor's second, and a light's
+leader that rises over the parts in its way (ADR 0047).
+
+- [x] The design, worked out alone at the owner's asking (ADR 0046, ADR 0047)
+- [x] A transistor allowed in a circuit with a supply, and its rule there: half of a flasher, its
+      emitter on −, its light on its collector, its base fed from + through 10 kΩ to 100 kΩ, and a
+      capacitor from the other's collector to its base, the two holding it off for 0.1 s to 5 s
+- [x] A capacitor on a supply either between a collector and a base, or keeping a light lit
+- [x] A light's leader lifted over the transistors' cases and the capacitors' cans in its way
+- [x] The flasher's base resistor's range in the page's note
+- [x] `examples/capacitor-tester.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
+### M17: the diode
+
+M17 is done: two buttons on three AA batteries each light a light of their own and a yellow one they
+share, and two 1N4148s keep each button from lighting the other's light (ADR 0049). The wiring check
+learnt a light's way as a chain of diodes, one resistor and the light, from a strip + reaches through
+diodes to one − reaches. Laying the example out needed a light's leader lifted over the lights and
+buttons in its way, each to a lane of its own (ADR 0050).
+
+- [x] The design, worked out alone at the owner's asking (ADR 0049, ADR 0050)
+- [x] The models ratsnest knows, in `src/diodes.ts`: the 1N4148, in glass, and the 1N4001 and
+      1N4007, in black (ADR 0039)
+- [x] The format: `{ kind: "diode", model, anode, cathode }`, read and checked field by field, and
+      allowed in a circuit with a supply
+- [x] The wiring check's rule: no diode from + straight to −; every diode on a light's way, its band
+      towards −, else in backwards or on no light's way; 0.5 V at least left for a light's resistor
+      once its light and its diodes have taken theirs; and on a Pico, refused
+- [x] The drawing: lying, orange glass with a black band or black with a grey one, the band at the
+      cathode, its model on a tag placed as a resistor's value is, its colours in `tokens.css` and
+      each band held to 3:1 on its case
+- [x] A light's leader lifted over the lights and buttons in its way, each to a lane of its own, and
+      no page made before changed
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
+      and the notes on which way round a diode goes and on the models that do
+- [x] `examples/two-buttons-three-lights.ts`, in English and French, and a test circuit with a
+      variant for every rule it is refused by
+
+### M18: the ceramic capacitor
+
+M18 is done: on a Pico, GP16 charges a 100 nF ceramic capacitor through 4.7 kΩ while GP17 reads it,
+and the script prints how long it takes to charge (ADR 0051). The disc prints its value, `100` over
+`nF`, as the can does, and the page gives the code the real one prints, `104`, and how it reads.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0051), the disc's print chosen by the
+      owner on its pull request: its value, not its code
+- [x] The format: `{ kind: "ceramic", nanofarads, from, to }`, read and checked field by field, its
+      value one its code can print, and refused in a circuit with a supply
+- [x] The wiring check's rule: one leg on ground; the other on the pin that reads it and on one
+      resistor of 1 kΩ to 8.2 kΩ from a second pin, nothing else; 0.1 ms at least; and on a supply,
+      refused
+- [x] A step's words free to name a pin the layout wires a part to, and the test step picking the
+      capacitor out
+- [x] The drawing: a mustard disc printed with its value, the number over its unit, upright at every
+      quarter turn, its colours in `tokens.css` and its value held to 4.5:1; a value tag keeps off it,
+      and a light's leader rises over it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line,
+      and the notes on the code and on the resistor's range
+- [x] `examples/capacitor-timer.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
+### M19: the slide switch
+
+M19 is done: on three AA batteries, an SPDT slide switch's middle leg on +, and a red light on its
+left leg's way and a green one on its right's, so that it lights one or the other and stays so when
+let go (ADR 0052). The wiring check of a circuit with a supply now judges each light at every way
+the switches can be set.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0052): no model, since every SPDT slide
+      switch has its legs in the same order, and the slide drawn towards its left leg
+- [x] The format: `{ kind: "slideSwitch", left, middle, right }`, read and checked field by field, in a
+      circuit with a supply
+- [x] The wiring check's rule: its legs side by side; no short at either way it is slid; each outer
+      leg lighting a light of its own; every light, diode, button and capacitor judged at every way
+      the switches can be set; and on a Pico, refused
+- [x] The drawing: a metal shell on a black base, standing on its three legs, its slide on top
+      towards its left leg, its colours in `tokens.css` and the slide held to 3:1 on the shell; a
+      value tag keeps off it, and a light's leader rises over it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line and
+      the note, and the test step picking the switch out
+- [x] `examples/one-light-or-the-other.ts`, in English and French, and a test circuit with a variant
+      for every rule it is refused by
+
+### M20: the slide potentiometer
+
+M20 is done: from a tutorial the owner chose, a 10 kΩ slide potentiometer lies across both
+breadboards, its wiper and the end beside it straight in the strips of GP28 and 3V3(OUT), and the
+script colours two RGB LEDs from its reading (ADR 0053).
+
+- [x] The design, worked out alone at the owner's asking (ADR 0053): no analogue pin kind, the
+      wiper's pin read from the wiring; the legs as the tutorial's drawing places them
+- [x] The format: `{ kind: "slidePotentiometer", ohms, wiper, end, otherEnd }`, read and checked field
+      by field,
+      and refused in a circuit with a supply
+- [x] The wiring check's rule: its shape across both boards; nothing under its body; its wiper on
+      neither 3V3(OUT) nor ground; its ends on 3V3(OUT) and ground; its wiper straight on GP26, GP27 or
+      GP28 alone; 1 kΩ to 100 kΩ; and on a supply, refused
+- [x] The drawing: a dark metal body lying between its legs, its slot and the cap on its knob, its
+      value printed upright on it, its colours in `tokens.css`, the cap held to 3:1 and the value to
+      4.5:1; a value tag keeps off it
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line and
+      the note on its wiper, and the test step picking it out
+- [x] `examples/colours-on-a-slider.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
+### M21: the DIP switch
+
+M21 is done: from a tutorial the owner chose, a five-way DIP switch on a second breadboard, each
+switch from ground to a pin of its own, GP22 to GP18, which the script pulls up inside the Pico and
+reads, printing which switches are on (ADR 0054). The tutorial's switches go to 3V3 and its pins
+rest on the Pico's own pull-downs, which erratum E9 makes unreliable on the Pico 2 W.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0054): the switches to ground and the
+      Pico's own pull-ups, placed by a column as a button is
+- [x] The format: `{ kind: "dipSwitch", switches, column, board }`, 2 to 8 switches, read and checked
+      field by field, and refused in a circuit with a supply
+- [x] The wiring check's rule, switch by switch: no leg on 3V3(OUT), saying why; one leg on ground;
+      the other straight on a GPIO of its own, with nothing else on it; the check for shorts never
+      closing one; and on a supply, refused
+- [x] The drawing: a blue body seen from above, a white slide drawn off in each switch's window, ON and
+      the numbers upright at every quarter turn, its colours in `tokens.css`, the slides held to 3:1
+      and the print to 4.5:1
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's line and
+      the note on how its switches are read, and the test step picking it out
+- [x] `examples/five-switches.ts`, in English and French, and a test circuit with a variant for every
+      rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -435,13 +629,122 @@ every circuit says what its breadboard is set up with, has one `test`, and may c
   then a WebP, which had passed on the commit before, with only comments changed since. The test
   said nothing of where WebKit stopped, and `generate` would have waited for ever too, so every
   browser step now has 15 seconds and fails naming itself.
-- 2026-11-26: A PIR motion sensor, which the owner asked for ahead of the Backlog's parts, after the
-  tutorial they learned it from, with an example that lights an LED for two seconds whenever it sees
-  movement. Two records: the sensor is named, as a button is, since the script reads it on a pin,
-  which amends ADR 0041, and takes its 5 V from VBUS (ADR 0043); and a part on jumpers lies beside
-  the board, past the edge its holes are on (ADR 0044). It is bought as what it is rather than by a
-  model, as ADR 0039 has transistors bought, because its jumpers go on by the names its board prints,
-  whatever order its pins are in. Its pins' names did not fit beside a 2.54 mm header at a size a
-  phone can read, so the header is drawn wider than life, as ADR 0040 allows. The example first took
-  GP28 and the ground beside it, which the Pico prints AGND, and moved to GP22 and pin 28's GND so
-  that its page names a plain GND.
+- 2026-11-23: New parts, by interview: capacitors, transistors and diodes, each with the circuit
+  that teaches it (ADR 0038). Asked whether a new part could go anywhere, held to generic rules, the
+  owner kept the wiring check's promise instead, so each part comes with one use. The order changed
+  twice: the owner first set aside the capacitor's fading light for something more ambitious, the
+  two-transistor flasher that tests a capacitor, from a schematic of their own, and then brought the
+  fading light back as the easier start, with the flasher after both transistors. TO-92 pinouts that
+  differ between models made parts a closed list of real ones (ADR 0039). The interview's own
+  ADR 0041 first had the flasher's words name a capacitor by its value, which ADR 0011 forbids; it
+  points at the step that places it instead. The owner then asked for the work to go on alone, in
+  pull requests stacked one on the next.
+- 2026-11-23: M13, the electrolytic capacitor, worked out alone (ADR 0043). The can was first drawn
+  tall, as real ones are, and stood over the button and over the hole its − leg's wire needed, so it
+  became short, standing over three rows. Laying the example out showed why the drawing's every
+  standing part rises over the rows above it: the − leg's wire comes from the row below, and the
+  button sits to the left. Three colourings were mocked up, and navy kept clear of the black wires
+  and of the − rail's blue. Fritzing's drawing was not set beside it, since this session could not
+  fetch Fritzing's parts. Writing the example's description with its value in it showed that the
+  check on values in a circuit's words knew no unit of capacitance; it knows µF, nF and pF now, and
+  мкФ, нФ and пФ.
+- 2026-11-23: M14, the NPN transistor, worked out alone (ADR 0044). Laying its example out took the
+  longest: a standing part hides the rows above its legs, so each of its three legs can be reached
+  only from the row below, or from the row above its case. In the bottom half every arrangement
+  crossed a wire or a tag, or put a value tag on GP15's chip; the top half, between the top rails,
+  has a row above the case and the rails above that, and needed no wire across the channel. A short
+  resistor's tag landed on the printed column number 30, which the crowding check measures only by
+  its middle point, so the transistor moved a column left and its light's resistor grew a hole. The
+  light runs from 3V3: VBUS's 5 V, which shows best what a transistor is for, would have changed the
+  - rail's legend and the wire colours' rule, and waits for a circuit that needs it.
+- 2026-11-23: M15, the PNP transistor, worked out alone (ADR 0045), on the NPN's case, words and
+  example layout. The NPN's rule was written for the low side, and became one rule read by the
+  model's type rather than a second copy. The PNP's emitter is held to 3V3(OUT) alone, since on VBUS
+  a 3.3 V pin never turns it off. Its example's notes first wrote `3.3 V` and `5 V`, which the check
+  on values refused, as it should.
+- 2026-11-23: M16, the capacitor tester and flasher, worked out alone (ADR 0046, ADR 0047). Its page
+  could not be fetched, so its values were worked out for two AA batteries. Its layout came quickly
+  once every part stood in row f, over the channel and the empty top half, with all the wiring in
+  the rows below: a left base resistor's tag had nowhere to go between its emitter's wire and the
+  printed column number 10, and the left half moved two columns right. The left light's leader ran
+  behind all four standing parts, and now rises over them. The test that asks for every tag on its
+  own assumed a Pico on the supply's layout, as CLAUDE.md warns, and asks a supply's layout through
+  the crowding check now.
+- 2026-11-24: Between milestones, ADR 0048, on the electrolytic capacitor's pull request, whose
+  macOS test job failed twice on "load the drawing", as Linux's had on `develop` just after the
+  pictures were merged. No machine at hand made a view miss its `load`, in more than a hundred
+  pictures, and no log could be read without signing in, so the jobs' times told it: each failure
+  cost one 15 s wait, and the pictures after it were drawn by the same browser. A stuck picture is
+  now begun again on a fresh view, three times in all, which a view made to hang by hand showed
+  drawing at the second. ADR 0048 took the number after the stack's last, since 0044 to 0047 were
+  decided first and are already on the pull requests above this one.
+- 2026-11-24: More new parts, at the owner's asking: a slide switch, a slide potentiometer and a DIP
+  switch leave the roadmap's Later for the Backlog, after the ceramic capacitor, each with the
+  circuit that teaches it. The slider's circuit is the owner's choice, from a tutorial, read from an
+  extract of its page the owner saved: a 45 mm slider across both breadboards, its wiper on GP28,
+  beside two RGB LEDs. Asked which circuit should teach a potentiometer, the owner named the same
+  one, so a rotary potentiometer stays in Later, with a toggle switch. The slide switch goes first,
+  as the easiest start, and the DIP switch last, since its four inputs need four pull-downs or a
+  rule for the Pico's own pull-ups.
+- 2026-11-24: Between milestones: the SVG tests that draw and parse every test circuit at every
+  orientation have 30 seconds, not Bun's 5. One timed out on continuous integration's Mac, at
+  5.7 s, on the pull request that planned the new switches, which changed only the roadmap, and
+  passed when run again. Each takes a second and a half on a fast machine, and every part since M13
+  has added test circuits to them.
+- 2026-11-24: M17, the diode, worked out alone (ADR 0049, ADR 0050). Its rule came first, and the
+  wiring check's one shape of a light's way, a resistor from + to the light, became a chain that + and
+  − reach through diodes; every circuit before it checks as it did. Laying the example out took the
+  longest. Its five labels all run to the board's far end, and a light's lane is fixed by its row, so a
+  light in row f or g and a button across the channel cannot both run clear past each other. A search
+  of the layouts the check passes found none with every leader clear, short of lights in the top half
+  wired across the channel. So a light's leader now rises over lights and buttons too, as ADR 0047
+  had it rise over transistors and capacitors, each lifted leader to a lane of its own. Every
+  example's drawing, at every quarter turn, in both themes and every language, was set beside the
+  same from `develop`, and none changed but for the tokens it carries. A second search then found a
+  layout with every tag clear at every turn, and kept off a light's lens, which the tag placer does
+  not know of. The diode was drawn once, in the two cases its models have, rather than mocked up in
+  several colourings, and Fritzing's was not set beside it, since this session could not fetch
+  Fritzing's parts.
+- 2026-11-24: M18, the ceramic capacitor, worked out alone (ADR 0051), stacked on M17. The disc's
+  print was the roadmap's open question. The code won at first, `104`, since it is what a reader finds
+  in their box; on the pull request the owner chose the value, `100 nF`, as a resistor's and a can's
+  are written, and the page kept the code beside it. Erratum E9 set the charging
+  resistor's top at 8.2 kΩ, as it set a pull-down's, though tutorials take 10 kΩ. The example's words
+  named GP16 and GP17, and the check refused them, since it knew only the pins a component is on; it
+  now knows those the layout wires a part to as well. Its test step picked out nothing, the circuit
+  having no component to watch, and picks out the capacitor now. A resistor's value tag first fell on
+  GP16's chip, and the resistor grew a hole. No example's drawing changed.
+- 2026-11-24: M19, the slide switch, worked out alone (ADR 0052), stacked on M18. The supply check
+  judged every light with every button held, the most any can join, and the first thought was to
+  have a slide switch join its middle leg to both outer legs the same way. That is a state no switch
+  is ever in: it would refuse a resistor shared on the middle leg, which works, and miss a short that
+  only one way makes. So the check now runs at every way the switches can be set, and each light is
+  judged at the first that wires it, which leaves every circuit without a switch checked as it was.
+  The test circuit's first layout put its lights' wires into rail columns 12 and 28, which a rail does
+  not have, its holes being in groups of five. No example's drawing changed.
+- 2026-11-24: M20, the slide potentiometer, worked out alone (ADR 0053), stacked on M19. The extract
+  of the tutorial's page gave the wiring, and its drawing, measured hole by hole, the legs: two at
+  one end, two columns apart, and one 17 rows along, across the two boards' edges. No slider was
+  measured, so the owner checks the real one on the pull request. The roadmap had asked how a
+  circuit names an analogue pin, and the answer was that it need not: the ceramic capacitor had
+  taught the check to find a part's pins by its wiring. Laying it out, the slider's two legs at one
+  end went straight into the strips of 3V3(OUT) and GP28, two columns apart on the Pico's own row,
+  and its other end landed on the second breadboard, a jumper from ground away. The tutorial went
+  into the example's description, since the examples' credit is the skill's, which a test holds, and
+  came out again at the owner's asking: ratsnest names no shop or product, and the example credits
+  no tutorial, though ADR 0053, left as it was, says it does. The Russian note first had a dash
+  Nunito's files lack, and the page test said so. Its kind was `slider` until the owner read it on
+  the pull request: beside `slideSwitch` it could mean either part, so it became
+  `slidePotentiometer`, and the example's French, which had called the whole part its `curseur`, the
+  word its page uses for the wiper, calls it the potentiometer.
+- 2026-11-24: M21, the DIP switch, worked out alone (ADR 0054), stacked on M20, the last of the
+  parts planned in #52. Five pull-downs, as a button has, were the roadmap's first thought, but five
+  resistors a pitch apart leave no room for five value tags, so each switch went to ground and the
+  script pulls its pin up instead, which E9 does not touch. The tutorial's own wiring, to 3V3, is
+  refused with that reason. The first layout put the DIP switch on the first breadboard past the
+  Pico, and no five wires from it reached the Pico's pins without running along each other; on the
+  second breadboard, the Pico's top row is right below it. Its first drawing printed ON beside
+  switch 1, which turned a quarter ran into the switch's window, and ON now sits over the gap
+  between switches 1 and 2. The example credited the tutorial in its description until the owner
+  asked for it to come out: ratsnest names no shop or product, and the description says instead why
+  the switches go to ground, though ADR 0054, left as it was, says the tutorial is credited.

@@ -1,3 +1,4 @@
+import { ceramicCode } from "./ceramics";
 import {
   BUTTON_COLOURS,
   isSupplied,
@@ -6,12 +7,21 @@ import {
   SUPPLY_VOLTS,
   THREE_VOLT_COLOURS,
 } from "./circuit";
-import { parseHole } from "./drawing/breadboard";
+import { DIODE_NAMES } from "./diodes";
+import {
+  DIP_SWITCHES,
+  legsOf,
+  type Part as Placed,
+  parseHole,
+  pinOfStrip,
+} from "./drawing/breadboard";
+import { HEADER_PINS } from "./drawing/geometry";
 import { fileOf } from "./fonts";
 import type { Circuit, Language, Setup, SupplyCircuit, Text } from "./format";
 import { LANGUAGES } from "./language";
 import { isUsableGpio } from "./pins";
 import { pathOf } from "./read";
+import { TRANSISTOR_NAMES } from "./transistors";
 
 /**
  * Every field of a circuit's data checked by the engine itself, because a circuits project may never
@@ -225,14 +235,26 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   buzzer: ["kind", "buzzer", "plus", "minus"],
   rgbLed: ["kind", "led", "power", "dataOut", "ground", "dataIn"],
   ring: ["kind", "led", "dataIn", "power", "ground", "dataOut"],
-  pir: ["kind", "sensor", "power", "output", "ground"],
+  electrolytic: ["kind", "microfarads", "plus", "minus"],
+  transistor: ["kind", "model", "emitter", "base", "collector"],
+  diode: ["kind", "model", "anode", "cathode"],
+  ceramic: ["kind", "nanofarads", "from", "to"],
+  slideSwitch: ["kind", "left", "middle", "right"],
+  slidePotentiometer: ["kind", "ohms", "wiper", "end", "otherEnd"],
+  dipSwitch: ["kind", "switches", "column", "board"],
 };
 
-/**
- * The parts a circuit with a supply may hold: no buzzer, RGB LED, ring or motion sensor, which need a
- * Pico.
- */
-const SUPPLY_PARTS = ["wire", "resistor", "led", "button"];
+/** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
+const SUPPLY_PARTS = [
+  "wire",
+  "resistor",
+  "led",
+  "button",
+  "electrolytic",
+  "transistor",
+  "diode",
+  "slideSwitch",
+];
 
 function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean): void {
   const kind = part.kind;
@@ -320,14 +342,88 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
       fields.hole("plus");
       fields.hole("minus");
       return;
+    case "electrolytic": {
+      const microfarads = fields.required("microfarads", "a value in microfarads");
+      if (
+        microfarads !== undefined &&
+        (typeof microfarads !== "number" || !(microfarads > 0) || !Number.isFinite(microfarads))
+      ) {
+        fields.problem("microfarads", "is not a value in microfarads above 0, such as `470`");
+      }
+      fields.hole("plus");
+      fields.hole("minus");
+      return;
+    }
+    case "transistor":
+      fields.oneOf("model", TRANSISTOR_NAMES);
+      for (const leg of ["emitter", "base", "collector"]) fields.hole(leg);
+      return;
+    case "diode":
+      fields.oneOf("model", DIODE_NAMES);
+      fields.hole("anode");
+      fields.hole("cathode");
+      return;
+    case "ceramic": {
+      const nanofarads = fields.required("nanofarads", "a value in nanofarads");
+      if (
+        nanofarads !== undefined &&
+        (typeof nanofarads !== "number" || !ceramicCode(nanofarads))
+      ) {
+        fields.problem(
+          "nanofarads",
+          "is not a value in nanofarads a ceramic capacitor's code can print: two figures at most, and 0.01 or more, such as `100` or `4.7`",
+        );
+      }
+      fields.hole("from");
+      fields.hole("to");
+      return;
+    }
+    case "slideSwitch":
+      for (const leg of ["left", "middle", "right"]) fields.hole(leg);
+      return;
+    case "slidePotentiometer": {
+      const ohms = fields.required("ohms", "a value in ohms");
+      if (
+        ohms !== undefined &&
+        (typeof ohms !== "number" || !(ohms > 0) || !Number.isFinite(ohms))
+      ) {
+        fields.problem("ohms", "is not a value in ohms above 0");
+      }
+      for (const leg of ["wiper", "end", "otherEnd"]) fields.hole(leg);
+      return;
+    }
+    case "dipSwitch": {
+      const [fewest, most] = DIP_SWITCHES;
+      const switches = fields.required("switches", "how many switches");
+      if (
+        switches !== undefined &&
+        (typeof switches !== "number" ||
+          !Number.isInteger(switches) ||
+          switches < fewest ||
+          switches > most)
+      ) {
+        fields.problem("switches", `is not a whole number from ${fewest} to ${most}`);
+      }
+      const column = fields.required("column", "its first column");
+      const count = typeof switches === "number" ? switches : 1;
+      if (
+        column !== undefined &&
+        (typeof column !== "number" ||
+          !Number.isInteger(column) ||
+          column < 1 ||
+          column + count - 1 > 30)
+      ) {
+        fields.problem("column", "is not a column from which every switch has one, from 1 to 30");
+      }
+      if (Object.hasOwn(part, "board") && part.board !== 2) {
+        fields.problem("board", "is not 2, the second breadboard, or left out for the first");
+      }
+      return;
+    }
     case "rgbLed":
     case "ring":
       reference("led", ids.rgbLeds, "RGB lights");
       for (const leg of ["power", "dataOut", "ground", "dataIn"]) fields.hole(leg);
-      return;
-    case "pir":
-      reference("sensor", ids.sensors, "sensors");
-      for (const leg of ["power", "output", "ground"]) fields.hole(leg);
       return;
   }
 }
@@ -338,7 +434,6 @@ interface Ids {
   readonly rgbLeds: Set<string>;
   readonly buttons: Set<string>;
   readonly buzzers: Set<string>;
-  readonly sensors: Set<string>;
 }
 
 /**
@@ -359,7 +454,6 @@ export function shapeProblems(data: unknown): FieldProblem[] {
   if (supplied) {
     const needsPico: Readonly<Record<string, string>> = {
       buzzers: "a buzzer needs a Pico to drive it",
-      sensors: "a sensor needs a Pico to read it",
       script: "it has no Pico to run a script, and its `test` says what to do instead",
     };
     for (const [key, why] of Object.entries(needsPico)) {
@@ -393,7 +487,6 @@ export function shapeProblems(data: unknown): FieldProblem[] {
         "leds",
         "buttons",
         "buzzers",
-        "sensors",
         "steps",
         "script",
         "test",
@@ -411,7 +504,6 @@ export function shapeProblems(data: unknown): FieldProblem[] {
     rgbLeds: new Set(),
     buttons: new Set(),
     buzzers: new Set(),
-    sensors: new Set(),
   };
   const seen = new Map<string, string>();
   const declare = (fields: Fields, path: string, into: Set<string>) => {
@@ -472,13 +564,6 @@ export function shapeProblems(data: unknown): FieldProblem[] {
       const path = pathOf("buzzers", index);
       fields.only(["id", "name", "pin"], "a buzzer");
       declare(fields, path, ids.buzzers);
-      fields.text("name");
-      pinField(fields, "gpio", path, problems);
-    });
-    circuit.list("sensors", true, (fields, index) => {
-      const path = pathOf("sensors", index);
-      fields.only(["id", "name", "pin"], "a sensor");
-      declare(fields, path, ids.sensors);
       fields.text("name");
       pinField(fields, "gpio", path, problems);
     });
@@ -588,7 +673,6 @@ export function textsOf(circuit: Circuit): [string, Text][] {
     ...names("leds", circuit.leds),
     ...names("buttons", circuit.buttons),
     ...(isSupplied(circuit) ? [] : names("buzzers", circuit.buzzers)),
-    ...(isSupplied(circuit) ? [] : names("sensors", circuit.sensors)),
     ...circuit.steps.flatMap((step, index): [string, Text][] => [
       [pathOf(pathOf("steps", index), "title"), step.title],
       ...(step.note ? [[pathOf(pathOf("steps", index), "note"), step.note] as [string, Text]] : []),
@@ -677,7 +761,9 @@ const HOLE_NAME =
  * a page never names one the drawing does not show, or a GPIO no part of the circuit is on.
  */
 export function wordProblems(circuit: Circuit): FieldProblem[] {
-  // A circuit with a supply has no pin, so every GPIO its words name is one no part is on.
+  // A circuit with a supply has no pin, so every GPIO its words name is one no part is on. On a Pico,
+  // a part is on the pins its components name, and on those its layout wires it to, which a part with
+  // no name of its own, a ceramic capacitor's resistor, has only so (ADR 0051).
   const used = new Set(
     isSupplied(circuit)
       ? []
@@ -685,7 +771,14 @@ export function wordProblems(circuit: Circuit): FieldProblem[] {
           ...(circuit.leds ?? []).map((led) => led.pin.gpio),
           ...(circuit.buttons ?? []).map((button) => button.pin.gpio),
           ...(circuit.buzzers ?? []).map((buzzer) => buzzer.pin.gpio),
-          ...(circuit.sensors ?? []).map((sensor) => sensor.pin.gpio),
+          ...circuit.steps.flatMap((step) =>
+            step.parts.flatMap((part) =>
+              legsOf(part as Placed).flatMap((hole) => {
+                const pin = pinOfStrip(hole);
+                return HEADER_PINS.find((header) => header.number === pin)?.gpio ?? [];
+              }),
+            ),
+          ),
         ],
   );
   const problems: FieldProblem[] = [];
@@ -719,7 +812,7 @@ export function wordProblems(circuit: Circuit): FieldProblem[] {
  * in the page's language (ADR 0011). `3V3`, a pin's name, has no space and a digit after, and passes.
  */
 const VALUE =
-  /(?<![\p{L}\d])\d+(?:[.,]\d+)?\s?(?:k?Ω|к?Ом|[mм]?[AА]|[VВ]|mm|мм|cm|см|kHz|Hz|кГц|Гц|ms|мс)(?![\p{L}\d])/u;
+  /(?<![\p{L}\d])\d+(?:[.,]\d+)?\s?(?:k?Ω|к?Ом|[mм]?[AА]|[VВ]|[µμnp]F|мкФ|нФ|пФ|mm|мм|cm|см|kHz|Hz|кГц|Гц|ms|мс)(?![\p{L}\d])/u;
 
 /** What each language's typography asks of the punctuation in a text (ADR 0011). */
 function typographyProblems(language: string, words: string): string[] {
