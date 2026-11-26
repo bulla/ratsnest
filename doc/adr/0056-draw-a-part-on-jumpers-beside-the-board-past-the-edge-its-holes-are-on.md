@@ -11,7 +11,9 @@ asked for it to be drawn so, as the tutorial they chose draws it: the sensor pas
 its three jumpers running onto the board.
 
 The sensor's board is about 32 mm by 24 mm, half the breadboard's height, and its three pins are
-2.54 mm apart, which is narrower than their names: `GND` at 1.3 mm is 2.95 mm wide in Nunito.
+2.54 mm apart, which is narrower than their names at the size the Pico's pin chips are printed:
+`GND` at 1.3 mm is 2.95 mm wide in Nunito. The dome's square base nearly fills the board, so its
+face has no room for them either.
 
 ## Decision
 
@@ -29,13 +31,16 @@ as two value tags are.
 **Its jumpers are coloured by what they carry**, red to VCC, yellow to OUT and black to GND, as the
 board's own jumpers are, and are drawn over the board's flat jumpers, under the arching ones.
 
-**It has no callout**, being placed as a resistor is (ADR 0041, ADR 0055): its dome and the names
-printed on it say what it is, and the test step picks it out.
+**Its callout leaves its own board**, past the breadboard's edge, where nothing else is, since it is
+named (ADR 0057), and runs past the board's far end with the others.
 
-**Its pins' names are printed beside them, upright at every quarter turn** (ADR 0040), on a strip of
-its board below the dome, and the header is drawn wider than life, 3.6 mm from pin to pin, so that
-each name has room beside its neighbour's at 0° and 180°. Past the bottom edge, the sensor is
-turned round, its pins towards the board, so its pins read in the other order.
+**Its pins are drawn 2.54 mm apart, as they are**: nothing outside the board is drawn to a spacing
+other than its own. **Their names are printed beside them, upright at every quarter turn**
+(ADR 0040), at 1 mm, as small as the Pico's own smallest print, `BOOTSEL` at 0.85 mm to 1.05 mm,
+on a strip of its board below the dome, deep enough to hold `GND` upright on a standing board. The
+strip makes the drawn board about 2 mm taller than the real one, at the owner's choice; its pins and
+its dome are their own size. Past the bottom edge, the sensor is turned round, its pins towards the
+board, so its pins read in the other order.
 
 ## Considered options
 
@@ -47,12 +52,15 @@ turned round, its pins towards the board, so its pins read in the other order.
   anything looks (ADR 0007).
 - **Smaller than life, to keep the picture short**: rejected. Drawn at a quarter of its height it
   would look like a part on the board, which it is not.
-- **Its pins 2.54 mm apart, and their names smaller**: rejected. At 1 mm, the size that fits, the
-  names are too small to read on a phone.
+- **Its pins 2.54 mm apart, their names at 1 mm on a strip that makes the board 2 mm taller**:
+  chosen by the owner. The pins are as they are, and the names as large as the Pico's smallest print.
+- **Its header drawn wider than life, 3.6 mm from pin to pin, its names at 1.3 mm**: rejected by the
+  owner, though it was this record's first draft. A part outside the board is drawn at its own
+  spacing, not stretched to fit its print.
 - **Their names staggered on two rows, the pins 2.54 mm apart**: rejected. A reader matches a name
   to the pin beneath it, and a staggered name stands over its neighbour's.
-- **No names on it, the colours alone**: rejected. The reader plugs each jumper on by the name on the
-  real sensor, and the drawing is what they hold it against.
+- **No names on it, everything its true size**: rejected by the owner. The reader plugs each jumper
+  on by the name on the real sensor, and the drawing is what they hold it against.
 
 ## Consequences
 
@@ -61,4 +69,6 @@ turned round, its pins towards the board, so its pins read in the other order.
   Every pin it needs is on the top side, VBUS and ground among them, so no circuit is turned away
   for it; one that wants it below the channel brings VBUS across, as the ring's example does.
 - **A value tag keeps off its jumpers**, as it keeps off every other jumper.
-- **The header drawn wider than life** puts the jumpers' plugs a little apart, where real ones touch.
+- **Its pins' names are small**, 1 mm, legible on a large screen and only just on a phone; the
+  jumpers' colours and the step's sentence say the same.
+- **The drawn board is about 2 mm taller than the real one**, for the strip its names are printed on.
