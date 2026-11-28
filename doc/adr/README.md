@@ -128,3 +128,5 @@ Each new record adds a row here.
 | [0055](0055-let-the-pico-read-a-pir-motion-sensor-on-a-pin-of-its-own-powered-from-vbus.md)                      | Let the Pico read a PIR motion sensor on a pin of its own, powered from VBUS                       |
 | [0056](0056-draw-a-part-on-jumpers-beside-the-board-past-the-edge-its-holes-are-on.md)                           | Draw a part on jumpers beside the board, past the edge its holes are on                            |
 | [0057](0057-give-every-part-outside-the-breadboard-a-name-written-on-the-part.md)                                | Give every part outside the breadboard a name, written on the part                                 |
+| [0058](0058-let-the-pico-light-an-led-bar-graphs-segments-each-from-a-pin-of-its-own.md)                         | Let the Pico light an LED bar graph's segments, each from a pin of its own                         |
+| [0059](0059-take-a-bar-graphs-resistors-from-a-bussed-resistor-array-its-common-pin-on-ground.md)                | Take a bar graph's resistors from a bussed resistor array, its common pin on ground                |
