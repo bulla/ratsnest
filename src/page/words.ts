@@ -1,5 +1,5 @@
 import { formatNanofarads } from "../ceramics";
-import type { ButtonColour, Supply } from "../circuit";
+import type { ButtonColour, LedColour, Supply } from "../circuit";
 import type { DiodeUse } from "../diodes";
 import type { WireRole } from "../drawing/breadboard";
 import { type Band, formatMicrofarads, formatOhms } from "../drawing/breadboard-svg";
@@ -148,6 +148,35 @@ export interface PageWords {
     second: boolean,
   ) => string;
 
+  /**
+   * An LED bar graph (ADR 0058): how many segments, their colour as this language writes it beside
+   * them, the holes of segment 1's anode and cathode and of the last's, and whether they are on the
+   * second breadboard, which is said once rather than for each hole.
+   */
+  readonly barGraph: (
+    segments: number,
+    colour: string,
+    first: readonly string[],
+    last: readonly string[],
+    second: boolean,
+  ) => string;
+  /**
+   * A resistor array (ADR 0059): its value, written already, how many resistors, the code it
+   * prints, the holes of its common leg and of its first and last resistors' legs, and whether they
+   * are on the second breadboard.
+   */
+  readonly resistorArray: (
+    ohms: string,
+    resistors: number,
+    code: string,
+    common: string,
+    first: string,
+    last: string,
+    second: boolean,
+  ) => string;
+  /** A bar graph's segments' colour, as its sentence and its parts list's line write it beside them. */
+  readonly segmentColour: Readonly<Record<LedColour, string>>;
+
   /** The labels in the drawing's margin, which are plain text. */
   readonly ledLabel: (anode: string) => string;
   readonly buttonLabel: (where: ButtonPlacement) => string;
@@ -187,6 +216,15 @@ export interface PageWords {
   readonly listSlidePotentiometer: (ohms: string, count: number) => string;
   /** DIP switches of one size, and how many (ADR 0054). */
   readonly listDipSwitch: (switches: number, count: number) => string;
+  /** Bar graphs of one size and colour, the colour written already, and how many (ADR 0058). */
+  readonly listBarGraph: (segments: number, colour: string, count: number) => string;
+  /** Resistor arrays of one value and size, the value written already, the code, and how many (ADR 0059). */
+  readonly listResistorArray: (
+    ohms: string,
+    resistors: number,
+    code: string,
+    count: number,
+  ) => string;
   /** Motion sensors, and how many (ADR 0055). */
   readonly listPir: (name: string) => string;
   /** The female-to-male jumpers that join motion sensors to the board, three for each. */
@@ -227,6 +265,10 @@ export interface PageWords {
   readonly slidePotentiometerWiper: (pins: readonly string[]) => string;
   /** That each switch goes from ground to a pin the Pico pulls up, and why not to 3V3 (ADR 0054). */
   readonly dipPullUp: string;
+  /** That each segment of a bar graph is a light, and that its anodes' row is not marked alike (ADR 0058). */
+  readonly barGraphPolarity: string;
+  /** That a resistor array's resistors share the leg under its dot, and how its code says its value (ADR 0059). */
+  readonly resistorArrayCode: (code: string, ohms: string) => string;
   /** That a motion sensor's jumpers go on by its pins' names, and that it settles once powered. */
   readonly pirPins: string;
   /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
@@ -392,6 +434,22 @@ export const ENGLISH_PAGE: PageWords = {
     `A ${ohms} slide potentiometer, lying across both breadboards: its wiper ${englishIn(wiper)}, the end beside it ${englishIn(end)}, and its other end ${englishIn(otherEnd)}.`,
   dipSwitch: (switches, first, last, second) =>
     `A ${switches}-way DIP switch across the channel, its ON side towards row <span class="hole">a</span>: switch 1 in ${englishList(first)}, and switch ${switches} in ${englishList(last)}${second ? ", on the second breadboard" : ""}.`,
+  barGraph: (segments, colour, first, last, second) =>
+    `A ${segments}-segment ${colour} LED bar graph across the channel, its anodes in row <span class="hole">f</span>: segment 1 in ${englishList(first)}, and segment ${segments} in ${englishList(last)}${second ? ", on the second breadboard" : ""}.`,
+  resistorArray: (ohms, resistors, code, common, first, last, second) =>
+    `A ${ohms} resistor array of ${resistors} resistors, marked ${code}, standing in one row: its common leg, under the dot, in ${common}, and its resistors' legs in ${first} to ${last}${second ? ", on the second breadboard" : ""}.`,
+  segmentColour: {
+    red: "red",
+    green: "green",
+    amber: "amber",
+    blue: "blue",
+    yellow: "yellow",
+    pink: "pink",
+    purple: "purple",
+    orange: "orange",
+    aqua: "aqua",
+    white: "white",
+  },
   pir: (name, power, output, ground) =>
     `The ${name}, beside the board, dome up: a red jumper from its VCC pin ${englishTo(power)}, a yellow one from its OUT pin ${englishTo(output)} and a black one from its GND pin ${englishTo(ground)}.`,
 
@@ -442,6 +500,10 @@ export const ENGLISH_PAGE: PageWords = {
     `${ohms} slide ${plural("en", count, { one: "potentiometer", other: "potentiometers" })}, 45 mm long, with two legs at one end and one at the other, and a cap for the knob.`,
   listDipSwitch: (switches, count) =>
     `${switches}-way DIP ${plural("en", count, { one: "switch", other: "switches" })}, with its legs in two rows 7.62 mm apart, to go across the channel.`,
+  listBarGraph: (segments, colour, count) =>
+    `${segments}-segment ${colour} LED bar ${plural("en", count, { one: "graph", other: "graphs" })}, with its legs in two rows 7.62 mm apart, to go across the channel.`,
+  listResistorArray: (ohms, resistors, code, count) =>
+    `${ohms} resistor ${plural("en", count, { one: "array", other: "arrays" })} of ${resistors} resistors, bussed: ${resistors + 1} legs in a row, one of them common to every resistor, marked ${code}.`,
   listPir: (name) =>
     `${capitalised(name)}: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.`,
   listPirJumpers: () =>
@@ -475,6 +537,10 @@ export const ENGLISH_PAGE: PageWords = {
     "A slide switch joins its middle leg to one outer leg or the other, whichever way its slide is pushed, and stays so when let go, where a push button joins its legs only while it is held.",
   slidePotentiometerWiper: (pins) =>
     `Of a slide potentiometer's two legs at one end, its wiper is the one with no leg in line with it at the other end. It goes to an analogue pin, ${englishList(pins).replace(" and ", " or ")}, and the two ends to 3V3(OUT) and ground, either way round. Wired to 3V3(OUT) instead, the wiper would join it to ground at one end of its travel.`,
+  barGraphPolarity:
+    "Each segment of an LED bar graph is a light of its own: its anode goes towards its pin, and its cathode towards ground, through a resistor. Not every bar graph marks which row of legs is its anodes'. Put in the wrong way round, it stays dark and takes no harm: turn it round.",
+  resistorArrayCode: (code, ohms) =>
+    `The resistors of a resistor array share the leg under its dot, which goes to ground. Its value is printed on it as a code, after an A for that shared leg: two figures and then how many zeros follow them. ${code} is ${ohms} for each resistor.`,
   pirPins:
     "A motion sensor's board names its three pins, beside them or under its dome: VCC or +, OUT or SIG, and GND. Push each jumper onto the pin of its name, whatever order they are in: it differs from one sensor to another. Once powered, it takes up to a minute to settle.",
   dipPullUp:
@@ -678,6 +744,22 @@ export const FRENCH_PAGE: PageWords = {
     `Un potentiomètre à glissière de ${ohms}, couché à cheval sur les deux plaques${NNBSP}: son curseur ${frenchIn(wiper)}, l’extrémité à côté ${frenchIn(end)}, et son autre extrémité ${frenchIn(otherEnd)}.`,
   dipSwitch: (switches, first, last, second) =>
     `Un interrupteur DIP à ${switches} voies à cheval sur la rainure centrale, son côté ON vers la rangée <span class="hole">a</span>${NNBSP}: l’interrupteur 1 en ${frenchList(first)}, et l’interrupteur ${switches} en ${frenchList(last)}${second ? ", sur la seconde plaque" : ""}.`,
+  barGraph: (segments, colour, first, last, second) =>
+    `Un bargraphe à LED de ${segments} segments ${colour} à cheval sur la rainure centrale, ses anodes sur la rangée <span class="hole">f</span>${NNBSP}: le segment 1 en ${frenchList(first)}, et le segment ${segments} en ${frenchList(last)}${second ? ", sur la seconde plaque" : ""}.`,
+  resistorArray: (ohms, resistors, code, common, first, last, second) =>
+    `Un réseau de ${resistors} résistances de ${ohms}, marqué ${code}, debout sur une rangée${NNBSP}: sa patte commune, sous le point, en ${common}, et les pattes de ses résistances de ${first} à ${last}${second ? ", sur la seconde plaque" : ""}.`,
+  segmentColour: {
+    red: "rouges",
+    green: "verts",
+    amber: "ambre",
+    blue: "bleus",
+    yellow: "jaunes",
+    pink: "roses",
+    purple: "violets",
+    orange: "orange",
+    aqua: "turquoise",
+    white: "blancs",
+  },
   pir: (name, power, output, ground) =>
     `${the("sensor", name)}, à côté de la plaque, dôme en haut${NNBSP}: un fil rouge de sa broche VCC ${frenchTo(power)}, un fil jaune de sa broche OUT ${frenchTo(output)} et un fil noir de sa broche GND ${frenchTo(ground)}.`,
 
@@ -733,6 +815,10 @@ export const FRENCH_PAGE: PageWords = {
     `${plural("fr", count, { one: "Potentiomètre à glissière", many: "Potentiomètres à glissière", other: "Potentiomètres à glissière" })} de ${ohms}, de 45 mm de long, à deux pattes à un bout et une à l’autre, avec un capuchon pour le bouton.`,
   listDipSwitch: (switches, count) =>
     `${plural("fr", count, { one: "Interrupteur", many: "Interrupteurs", other: "Interrupteurs" })} DIP à ${switches} voies, ses pattes sur deux rangées espacées de 7,62 mm, pour se mettre à cheval sur la rainure centrale.`,
+  listBarGraph: (segments, colour, count) =>
+    `${plural("fr", count, { one: "Bargraphe", many: "Bargraphes", other: "Bargraphes" })} à LED de ${segments} segments ${colour}, ses pattes sur deux rangées espacées de 7,62 mm, pour se mettre à cheval sur la rainure centrale.`,
+  listResistorArray: (ohms, resistors, code, count) =>
+    `${plural("fr", count, { one: "Réseau", many: "Réseaux", other: "Réseaux" })} de ${resistors} résistances de ${ohms} à patte commune${NNBSP}: ${resistors + 1} pattes en rangée, dont une commune à toutes les résistances, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
   listPir: (name) =>
     `${capitalised(name)}${NNBSP}: un module PIR à trois broches, VCC, OUT et GND, alimenté en 5 V. Sa broche OUT donne 3,3 V tant qu’il voit du mouvement.`,
   listPirJumpers: () =>
@@ -776,6 +862,9 @@ export const FRENCH_PAGE: PageWords = {
     "Un interrupteur à glissière relie sa patte du milieu à l’une ou l’autre de ses pattes extérieures, selon le côté où l’on pousse sa glissière, et reste ainsi une fois lâché, là où un bouton poussoir ne relie ses pattes que tant qu’on le maintient enfoncé.",
   slidePotentiometerWiper: (pins) =>
     `Des deux pattes d’un même bout d’un potentiomètre à glissière, le curseur est celle qui n’a aucune patte dans son alignement à l’autre bout. Il va sur une broche analogique, ${frenchList(pins).replace(" et ", " ou ")}, et les deux extrémités sur le 3V3(OUT) et la masse, dans un sens ou dans l’autre. Relié au 3V3(OUT), le curseur le relierait à la masse à un bout de sa course.`,
+  barGraphPolarity: `Chaque segment d’un bargraphe à LED est une LED à part entière${NNBSP}: son anode va du côté de sa broche, et sa cathode vers la masse, à travers une résistance. Tous les bargraphes ne marquent pas la rangée de leurs anodes. Monté à l’envers, il reste éteint, mais il n’est pas abîmé${NNBSP}: retournez-le.`,
+  resistorArrayCode: (code, ohms) =>
+    `Les résistances d’un réseau partagent la patte sous son point, qui va à la masse. Sa valeur y est imprimée en code, après un A pour cette patte commune${NNBSP}: deux chiffres, puis le nombre de zéros qui les suivent. ${code} vaut ${ohms} pour chaque résistance.`,
   pirPins: `La carte d’un détecteur de mouvement nomme ses trois broches, à côté d’elles ou sous son dôme${NNBSP}: VCC ou +, OUT ou SIG, et GND. Branchez chaque fil sur la broche de son nom, quel que soit leur ordre${NNBSP}: il change d’un détecteur à l’autre. Une fois alimenté, il lui faut jusqu’à une minute pour se stabiliser.`,
   dipPullUp:
     "Chaque interrupteur d’un interrupteur DIP relie ses deux pattes tant qu’il est en marche. Une patte va à la masse et l’autre à une broche à elle, que le script tire vers le haut à l’intérieur du Pico, si bien qu’elle lit 1 tant que son interrupteur est à l’arrêt et 0 tant qu’il est en marche. Relié au 3V3(OUT), chaque broche aurait besoin d’une résistance de tirage vers le bas, et celles du Pico 2 W ne suffisent pas à la maintenir au niveau bas.",
@@ -894,6 +983,10 @@ const russianIn = (place: Place): string =>
 const russianPositions = (count: number): string =>
   plural("ru", count, { one: "позицию", few: "позиции", many: "позиций", other: "позиции" });
 
+/** A bar graph's segments, as *на* takes them after a number: *на 2 сегмента*, *на 5 сегментов* (ADR 0058). */
+const russianSegments = (count: number): string =>
+  plural("ru", count, { one: "сегмент", few: "сегмента", many: "сегментов", other: "сегмента" });
+
 const russianList = (items: readonly string[]): string =>
   items.length <= 1
     ? items.join("")
@@ -973,6 +1066,22 @@ export const RUSSIAN_PAGE: PageWords = {
     `DIP-переключатель на ${switches} ${russianPositions(switches)} поперёк центральной канавки, стороной ON к ряду <span class="hole">a</span>: переключатель 1 в ${russianList(first)}, переключатель ${switches} в ${russianList(last)}${second ? ", на второй плате" : ""}.`,
   slidePotentiometer: (ohms, wiper, end, otherEnd) =>
     `Ползунковый потенциометр ${ohms}, поперёк обеих плат: движок ${russianIn(wiper)}, вывод рядом с ним ${russianIn(end)}, другой вывод ${russianIn(otherEnd)}.`,
+  barGraph: (segments, colour, first, last, second) =>
+    `Светодиодная шкала на ${segments} ${colour} ${russianSegments(segments)} поперёк центральной канавки, аноды в ряду <span class="hole">f</span>: сегмент 1 в ${russianList(first)}, сегмент ${segments} в ${russianList(last)}${second ? ", на второй плате" : ""}.`,
+  resistorArray: (ohms, resistors, code, common, first, last, second) =>
+    `Резисторная сборка из ${resistors} резисторов по ${ohms}, маркировка ${code}, вертикально в один ряд: общий вывод, под точкой, в ${common}, выводы резисторов с ${first} по ${last}${second ? ", на второй плате" : ""}.`,
+  segmentColour: {
+    red: "красных",
+    green: "зелёных",
+    amber: "янтарных",
+    blue: "синих",
+    yellow: "жёлтых",
+    pink: "розовых",
+    purple: "фиолетовых",
+    orange: "оранжевых",
+    aqua: "бирюзовых",
+    white: "белых",
+  },
   pir: (name, power, output, ground) =>
     `${name}, рядом с платой, куполом вверх: красная перемычка от вывода VCC ${russianIn(power)}, жёлтая от вывода OUT ${russianIn(output)} и чёрная от вывода GND ${russianIn(ground)}.`,
 
@@ -1022,6 +1131,10 @@ export const RUSSIAN_PAGE: PageWords = {
     `Ползунковый потенциометр ${ohms}, длиной 45 мм: два вывода с одного конца и один с другого, с колпачком для ручки.`,
   listDipSwitch: (switches) =>
     `DIP-переключатель на ${switches} ${russianPositions(switches)}: ножки в два ряда на расстоянии 7,62 мм, чтобы встать поперёк центральной канавки.`,
+  listBarGraph: (segments, colour) =>
+    `Светодиодная шкала на ${segments} ${colour} ${russianSegments(segments)}: ножки в два ряда на расстоянии 7,62 мм, чтобы встать поперёк центральной канавки.`,
+  listResistorArray: (ohms, resistors, code) =>
+    `Резисторная сборка из ${resistors} резисторов по ${ohms} с общим выводом: ${resistors + 1} выводов в ряд, один из них общий для всех резисторов, маркировка ${code}.`,
   listPir: (name) =>
     `${capitalised(name)}: модуль PIR с тремя выводами, VCC, OUT и GND, питание 5 В. Пока он видит движение, на OUT 3,3 В.`,
   listPirJumpers: () =>
@@ -1053,6 +1166,10 @@ export const RUSSIAN_PAGE: PageWords = {
     "Ползунковый переключатель соединяет среднюю ножку с одной или другой крайней, смотря куда сдвинут ползунок, и остаётся так, когда его отпускают, а кнопка соединяет свои ножки, только пока её держат.",
   slidePotentiometerWiper: (pins) =>
     `Из двух выводов на одном конце ползункового потенциометра движком служит тот, напротив которого на другом конце вывода нет. Он идёт на аналоговый вывод ${russianList(pins).replace(" и ", " или ")}, а крайние выводы идут на 3V3(OUT) и землю, в любом порядке. Подключённый к 3V3(OUT), движок замкнул бы его на землю в одном конце хода.`,
+  barGraphPolarity:
+    "Каждый сегмент светодиодной шкалы: отдельный светодиод. Его анод идёт к своему выводу, катод через резистор к земле. Не на всех шкалах отмечено, в каком ряду аноды. Вставленная наоборот, шкала не горит, но и не портится: переверните её.",
+  resistorArrayCode: (code, ohms) =>
+    `Резисторы сборки делят общий вывод под точкой, он идёт на землю. Номинал напечатан на корпусе кодом после буквы A, которая означает общий вывод: две цифры, затем число нулей после них. ${code} означает ${ohms} на каждый резистор.`,
   pirPins:
     "На плате датчика движения подписаны три вывода, рядом с ними или под куполом: VCC или +, OUT или SIG, и GND. Надевайте каждую перемычку на вывод с её подписью, в каком бы порядке они ни шли: у разных датчиков он разный. После включения датчику нужно до минуты, чтобы успокоиться.",
   dipPullUp:

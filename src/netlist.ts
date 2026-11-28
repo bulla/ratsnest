@@ -3,6 +3,7 @@ import type { Layout, LedColour, Supply } from "./circuit";
 import { isRing, type ShownCircuit, SUPPLY_VOLTS, THREE_VOLT_COLOURS } from "./circuit";
 import { DIODE_VOLTS } from "./diodes";
 import {
+  barGraphLegsOf,
   buttonHole,
   coveredBy,
   coveredBySlidePotentiometer,
@@ -17,6 +18,7 @@ import {
   type Part,
   parseHole,
   type Row,
+  resistorArrayLegsOf,
   rowsOf,
   SLIDE_POTENTIOMETER_LENGTH_MM,
   sideOf,
@@ -249,6 +251,10 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${part.switches}-way DIP switch in columns ${part.column} to ${part.column + part.switches - 1}${part.board === 2 ? " of the second breadboard" : ""}`;
     case "pir":
       return `the ${part.name}`;
+    case "barGraph":
+      return `the ${part.segments}-segment bar graph in columns ${part.column} to ${part.column + part.segments - 1}${part.board === 2 ? " of the second breadboard" : ""}`;
+    case "resistorArray":
+      return `the ${formatOhms(part.ohms)} resistor array with its common leg in ${part.common}`;
   }
 }
 
@@ -902,6 +908,94 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     });
   }
 
+  // An LED bar graph, each of its segments a light on a pin of its own (ADR 0058): its anode straight
+  // on one GPIO, and its cathode to ground through one resistor, a plain one or one of a resistor
+  // array's, whose common leg is on ground (ADR 0059).
+  const arrays = parts.filter(
+    (part): part is Extract<Part, { kind: "resistorArray" }> => part.kind === "resistorArray",
+  );
+  const arrayLegsUsed = new Set<Hole>();
+  const lit = new Map<string, string>();
+  for (const graph of parts) {
+    if (graph.kind !== "barGraph") continue;
+    barGraphLegsOf(graph).forEach(([anodeLeg, cathodeLeg], index) => {
+      const name = `segment ${index + 1} of ${describe(graph, circuit)}`;
+      const anode = net(anodeLeg);
+      const cathode = net(cathodeLeg);
+      const gpios = (node: string) => pinsIn(node).filter((pin) => pin.kind === "gpio");
+      if (anode === ground || (gpios(anode).length === 0 && gpios(cathode).length > 0)) {
+        problems.push(
+          `${name} is in backwards: its anodes go in row f, each straight on a pin, and its cathodes in row e, towards ground`,
+        );
+        return;
+      }
+      const pins = gpios(anode);
+      const [pin] = pins;
+      if (!pin || pins.length !== 1) {
+        problems.push(
+          `${name} has its anode on ${pins.length === 0 ? "no pin" : pins.map((p) => p.label).join(" and ")}: it goes straight to one pin of its own`,
+        );
+        return;
+      }
+      const before = lit.get(pin.label);
+      if (before !== undefined) {
+        problems.push(`${name} shares ${pin.label} with ${before}: each has a pin of its own`);
+        return;
+      }
+      lit.set(pin.label, name);
+      if ((terminals.get(anode) ?? 0) !== 2) {
+        problems.push(`${name} has something else on ${pin.label}: only the segment goes there`);
+      }
+      if (cathode === ground) {
+        problems.push(`${name} has no resistor between its cathode and ground`);
+        return;
+      }
+      const plain = between(cathode, ground);
+      const ofArrays = arrays.flatMap((array) => {
+        const [common, ...legs] = resistorArrayLegsOf(array);
+        return common !== undefined && net(common) === ground
+          ? legs.filter((leg) => net(leg) === cathode).map((leg) => ({ array, leg }))
+          : [];
+      });
+      if (plain.length + ofArrays.length !== 1 || terminals.get(cathode) !== 2) {
+        problems.push(
+          `${name} is not wired from its cathode through one resistor to ground: a resistor, or one of a resistor array's whose common leg is on ground`,
+        );
+        return;
+      }
+      const [resistor] = plain;
+      const [arrayLeg] = ofArrays;
+      if (resistor) accounted.add(resistor);
+      if (arrayLeg) arrayLegsUsed.add(arrayLeg.leg);
+      const ohms = resistor?.ohms ?? arrayLeg?.array.ohms ?? 0;
+      if (!inRange({ ohms }, LIGHT_OHMS_RANGE)) {
+        problems.push(
+          `${name}'s resistor is ${formatOhms(ohms)}, outside ${LIGHT_OHMS_RANGE.map(formatOhms).join(" to ")}`,
+        );
+      }
+    });
+  }
+
+  // A resistor array's one use is a bar graph's resistors (ADR 0059): its common leg on ground, and
+  // each resistor's leg on a segment's cathode.
+  for (const array of arrays) {
+    const [common, ...legs] = resistorArrayLegsOf(array);
+    const name = describe(array, circuit);
+    if (common === undefined || net(common) !== ground) {
+      problems.push(
+        `${name} has its common leg off ground: the leg with the dot goes to ground, and each other leg to a segment of a bar graph`,
+      );
+      continue;
+    }
+    legs.forEach((leg, index) => {
+      if (!arrayLegsUsed.has(leg)) {
+        problems.push(
+          `resistor ${index + 1} of ${name}, in ${leg}, is not a bar graph segment's: each of its legs goes to a segment's cathode, with nothing else there`,
+        );
+      }
+    });
+  }
+
   for (const transistor of transistors) {
     if (!switching.has(transistor)) {
       problems.push(
@@ -1066,8 +1160,9 @@ function supplyWiringProblems(
     }
   }
 
-  // A ceramic capacitor's one use is on a Pico, which times it (ADR 0051), and a slide
-  // potentiometer's and a DIP switch's too, which it reads (ADR 0053, ADR 0054).
+  // A ceramic capacitor's one use is on a Pico, which times it (ADR 0051), a slide potentiometer's
+  // and a DIP switch's too, which it reads (ADR 0053, ADR 0054), and a bar graph's and a resistor
+  // array's, whose segments it lights (ADR 0058, ADR 0059).
   for (const part of parts) {
     if (part.kind === "ceramic") {
       problems.push(
@@ -1082,6 +1177,16 @@ function supplyWiringProblems(
     if (part.kind === "dipSwitch") {
       problems.push(
         `${describe(part, circuit)} has no use ratsnest knows on a supply: a DIP switch is read by a Pico's pins (ADR 0054)`,
+      );
+    }
+    if (part.kind === "barGraph") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a supply: a bar graph's segments are lit by a Pico's pins (ADR 0058)`,
+      );
+    }
+    if (part.kind === "resistorArray") {
+      problems.push(
+        `${describe(part, circuit)} has no use ratsnest knows on a supply: a resistor array takes a bar graph's segments to ground, on a Pico (ADR 0059)`,
       );
     }
   }

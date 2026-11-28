@@ -954,3 +954,52 @@ describe("a page with a DIP switch (ADR 0054)", () => {
     }
   });
 });
+
+describe("a page with a bar graph and a resistor array (ADR 0058, ADR 0059)", () => {
+  const id = "bar-graph-through-a-resistor-array";
+  const { circuit, layout } = FIXTURES[id];
+  const inLanguage = (language: "en" | "fr" | "ru") =>
+    words(steps(wiringPage(circuit, layout, FILES, { language })));
+
+  it("says which way round the bar graph goes, and where its first and last segments' legs are", () => {
+    expect(inLanguage("en")).toContain(
+      "A 2-segment red LED bar graph across the channel, its anodes in row f: segment 1 in f25 and e25, and segment 2 in f26 and e26.",
+    );
+  });
+
+  it("says where the array's common leg and its resistors' legs go, and the code it is marked with", () => {
+    expect(inLanguage("en")).toContain(
+      "A 330 Ω resistor array of 2 resistors, marked A331, standing in one row: its common leg, under the dot, in a24, and its resistors' legs in a25 to a26.",
+    );
+  });
+
+  it("lists them, by size, colour, value and code", () => {
+    expect(inLanguage("en")).toContain(
+      "2-segment red LED bar graph, with its legs in two rows 7.62 mm apart, to go across the channel.",
+    );
+    expect(inLanguage("en")).toContain(
+      "330 Ω resistor array of 2 resistors, bussed: 3 legs in a row, one of them common to every resistor, marked A331.",
+    );
+  });
+
+  it("notes which way round a segment goes, what resistor it takes, and how the array's code says its value", () => {
+    const html = page(id);
+    expect(html).toContain(PAGE_WORDS.en.barGraphPolarity);
+    expect(html).toContain("Any resistor from 220 Ω to 1 kΩ works for a light.");
+    expect(html).toContain("A331 is 330 Ω for each resistor.");
+  });
+
+  it("picks the bar graph out in its test step, since the reader watches it light", () => {
+    expect(page(id)).toContain('data-g="step-1 test" data-kind="barGraph"');
+  });
+
+  it("says it in French and Russian, every character in Nunito's files", () => {
+    expect(inLanguage("fr")).toContain("Un bargraphe à LED de 2 segments rouges");
+    expect(inLanguage("ru")).toContain("Светодиодная шкала на 2 красных сегмента");
+    expect(inLanguage("ru")).toContain("Резисторная сборка из 2 резисторов по 330 Ом");
+    for (const language of ["fr", "ru"] as const) {
+      const html = wiringPage(circuit, layout, FILES, { language });
+      expect([...written(html)].filter((c) => !fileOf(c))).toEqual([]);
+    }
+  });
+});

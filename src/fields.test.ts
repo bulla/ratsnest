@@ -673,3 +673,50 @@ describe("a motion sensor (ADR 0055)", () => {
     );
   });
 });
+
+describe("a bar graph's and a resistor array's fields (ADR 0058, ADR 0059)", () => {
+  const id = "bar-graph-through-a-resistor-array";
+  const placed = (index: number, part: Record<string, unknown>) =>
+    changed((data) => ((step(data, index).parts as Record<string, unknown>[])[0] = part), id);
+  const graph = (part: Record<string, unknown>) => placed(0, part);
+  const array = (part: Record<string, unknown>) => placed(1, part);
+
+  it("takes a bar graph of 2 to 10 segments, in a light's colour, from a column every segment has one from", () => {
+    expect(said(graph({ kind: "barGraph", segments: 2, colour: "red", column: 25 }))).toEqual([]);
+    expect(said(graph({ kind: "barGraph", segments: 11, colour: "red", column: 15 }))).toContain(
+      "steps[0].parts[0].segments is not a whole number from 2 to 10",
+    );
+    expect(
+      said(graph({ kind: "barGraph", segments: 5, colour: "rgb", column: 15 })),
+    ).toContainEqual(expect.stringContaining("steps[0].parts[0].colour is not one of"));
+    expect(said(graph({ kind: "barGraph", segments: 5, colour: "red", column: 27 }))).toContain(
+      "steps[0].parts[0].column is not a column from which every segment has one, from 1 to 30",
+    );
+    expect(
+      said(graph({ kind: "barGraph", segments: 2, colour: "red", column: 25, board: 1 })),
+    ).toContain(
+      "steps[0].parts[0].board is not 2, the second breadboard, or left out for the first",
+    );
+  });
+
+  it("takes a resistor array of a value its code can say, its common leg in a row with room for the others", () => {
+    expect(said(array({ kind: "resistorArray", ohms: 330, resistors: 2, common: "a24" }))).toEqual(
+      [],
+    );
+    expect(
+      said(array({ kind: "resistorArray", ohms: 332, resistors: 2, common: "a24" })),
+    ).toContainEqual(
+      expect.stringContaining(
+        "steps[1].parts[0].ohms is not a value in ohms a resistor array's code",
+      ),
+    );
+    expect(
+      said(array({ kind: "resistorArray", ohms: 330, resistors: 1, common: "a24" })),
+    ).toContain("steps[1].parts[0].resistors is not a whole number from 2 to 10");
+    for (const common of ["a29", "top-25"]) {
+      expect(said(array({ kind: "resistorArray", ohms: 330, resistors: 2, common }))).toContain(
+        "steps[1].parts[0].common is not a hole in a row with a hole for every resistor's leg to its right, in columns up to 30",
+      );
+    }
+  });
+});

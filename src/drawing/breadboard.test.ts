@@ -36,6 +36,8 @@ import {
   PIR_MM,
   pirJumperPaths,
   pirLayoutOf,
+  RESISTOR_ARRAY_MM,
+  resistorArrayBoxOf,
   resistorBands,
   tagOf,
   wirePath,
@@ -888,5 +890,68 @@ describe("a motion sensor beside the board, on its jumpers (ADR 0056)", () => {
     }
     // Upright on a standing board, the widest name fits across the strip it is printed on.
     expect(Math.max(...gaps)).toBeLessThan(PIR_MM.strip - 0.3);
+  });
+});
+
+describe("a bar graph across the channel and a resistor array standing over its cathodes (ADR 0058, ADR 0059)", () => {
+  const parts = FIXTURES["bar-graph-through-a-resistor-array"].layout.steps.flatMap((step) => [
+    ...step.parts,
+  ]);
+  const graph = parts.find((part) => part.kind === "barGraph") as Part;
+  const array = parts.find((part) => part.kind === "resistorArray") as Extract<
+    Part,
+    { kind: "resistorArray" }
+  >;
+  const drawn = (orientation: 0 | 90 | 180 | 270) =>
+    drawBreadboard({
+      orientation,
+      parts: [
+        { part: graph, group: "step-1" },
+        { part: array, group: "step-2" },
+      ],
+      tags: [],
+      ledColour: () => "red",
+      buttonColour: () => "red",
+      title: "A bar graph",
+      description: "A bar graph.",
+    });
+
+  it("has the bar graph's anodes in row f and its cathodes in row e, segment by segment", () => {
+    expect(legsOf(graph)).toEqual(["f25", "e25", "f26", "e26"]);
+    expect(legsOf({ kind: "barGraph", segments: 2, colour: "red", column: 5, board: 2 })).toEqual([
+      "2:f5",
+      "2:e5",
+      "2:f6",
+      "2:e6",
+    ]);
+  });
+
+  it("has the array's common leg first and its resistors' legs to its right, on its board", () => {
+    expect(legsOf(array)).toEqual(["a24", "a25", "a26"]);
+    expect(legsOf({ kind: "resistorArray", ohms: 330, resistors: 2, common: "2:d14" })).toEqual([
+      "2:d14",
+      "2:d15",
+      "2:d16",
+    ]);
+  });
+
+  it("draws each segment dark, lit only by the test step's glow", () => {
+    expect([
+      ...drawn(0).matchAll(/class="glow" rx="0.15" fill="var\(--color-led-red\)"/g),
+    ]).toHaveLength(2);
+  });
+
+  it("prints the array's code upright at every quarter turn, across the narrower side of its body", () => {
+    expect(drawn(0)).toContain(">A331</text>");
+    for (const turn of [90, 180, 270] as const) expect(drawn(turn)).toContain(">A331</text></g>");
+    const box = resistorArrayBoxOf(array);
+    expect(widthOf("A331", RESISTOR_ARRAY_MM.print, 900)).toBeLessThan(Math.min(box.w, box.h) - 1);
+  });
+
+  it("stands the array over the two rows above its legs, and no further", () => {
+    const box = resistorArrayBoxOf(array);
+    const hole = holeCentre("a24");
+    expect(box.y + box.h).toBeLessThan(hole.y);
+    expect(box.y).toBeGreaterThan(hole.y - 3 * 2.54);
   });
 });

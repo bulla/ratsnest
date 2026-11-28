@@ -21,8 +21,9 @@ export const SUPPLY_CREDIT = SKILL_SUPPLY_CREDIT.en;
  * fifteenth a slide switch that lights one light or the other, on a supply (ADR 0052), the
  * sixteenth a slide potentiometer that the Pico reads on an analogue pin, across two breadboards
  * (ADR 0053), the seventeenth a DIP switch whose switches go from ground to pins the Pico pulls
- * up (ADR 0054), and the eighteenth a motion sensor beside the board, on jumpers, that lights a
- * light (ADR 0055, ADR 0056).
+ * up (ADR 0054), the eighteenth a motion sensor beside the board, on jumpers, that lights a
+ * light (ADR 0055, ADR 0056), and the nineteenth an LED bar graph whose segments each go to a pin of
+ * their own and to ground through a resistor array (ADR 0058, ADR 0059).
  */
 export const FIXTURE_IDS = [
   "two-lights",
@@ -43,6 +44,7 @@ export const FIXTURE_IDS = [
   "slide-potentiometer-read-by-an-analogue-pin",
   "switches-read-by-pull-ups",
   "motion-sensor-and-light",
+  "bar-graph-through-a-resistor-array",
 ] as const;
 
 export type FixtureId = (typeof FIXTURE_IDS)[number];
@@ -1045,6 +1047,43 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       script:
         "from machine import Pin\nfrom time import sleep\n\nred_led = Pin(15, Pin.OUT)\nmotion_sensor = Pin(22, Pin.IN)\n\ntry:\n    while True:\n        if motion_sensor.value():\n            red_led.value(1)\n            sleep(2)\n            red_led.value(0)\n            while motion_sensor.value():\n                sleep(0.05)\n        sleep(0.05)\nfinally:\n    red_led.value(0)",
       test: "Wait a minute for the sensor to settle, then wave a hand over its dome: the red LED lights for two seconds. Press Stop in Thonny to end the script.",
+    },
+  },
+  "bar-graph-through-a-resistor-array": {
+    circuit: {
+      name: "A bar graph on GP14 and GP15",
+      description:
+        "An LED bar graph of two red segments, each lit by a pin of its own, GP15 and GP14, through a resistor array to ground.",
+      credit: CREDIT,
+      leds: [],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "The bar graph, across the channel",
+          parts: [{ kind: "barGraph", segments: 2, colour: "red", column: 25 }],
+        },
+        {
+          title: "The resistor array, above its cathodes",
+          parts: [{ kind: "resistorArray", ohms: 330, resistors: 2, common: "a24" }],
+        },
+        {
+          title: "Its common leg to ground",
+          parts: [{ kind: "wire", from: "b19", to: "b24", role: "ground" }],
+        },
+        {
+          title: "Each anode to its pin",
+          parts: [
+            { kind: "wire", from: "j21", to: "j25", role: "signal" },
+            { kind: "wire", from: "i20", to: "i26", role: "signal" },
+          ],
+        },
+      ],
+      script:
+        "from machine import Pin\nfrom time import sleep\n\nsegments = [Pin(15, Pin.OUT), Pin(14, Pin.OUT)]\n\nwhile True:\n    for segment in segments:\n        segment.toggle()\n        sleep(0.5)",
+      test: "The bar graph's two segments light and go out in turn.",
     },
   },
 };

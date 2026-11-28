@@ -101,6 +101,18 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   lists it by its name, with its three jumpers; and notes that they go on by the names printed on
   it. `examples/motion-light.ts` lights an LED for two seconds whenever
   it sees movement.
+- An LED bar graph, `{ kind: "barGraph", segments, colour, column, board }`, 2 to 10 segments of a
+  light's colour across the channel, their anodes in row f, and a bussed resistor array,
+  `{ kind: "resistorArray", ohms, resistors, common }`, standing in one row, its common leg in
+  `common` and its resistors' legs to its right, in a circuit on a Pico. `rnest check` holds each
+  segment as a light, its anode straight on a GPIO of its own and its cathode to ground through one
+  resistor of 220 Ω to 1 kΩ, a plain one or one of an array's whose common leg is on ground, and
+  holds every resistor of an array to a segment, with a value its code can print. The page draws the
+  bar graph from above, a dark body with a window over each segment lit in its colour in the test
+  step, and the array standing, a yellow body with its code, `A331`, and a dot over its common leg;
+  says where their legs go, lists them, and notes which way round a segment goes and how the code
+  says the value. On a supply both are refused. `examples/level-meter.ts` lights a five-segment bar
+  graph like a level meter.
 
 ## [0.2.0] - 2026-11-23
 
