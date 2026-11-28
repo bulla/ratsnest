@@ -130,3 +130,6 @@ Each new record adds a row here.
 | [0057](0057-give-every-part-outside-the-breadboard-a-name-written-on-the-part.md)                                | Give every part outside the breadboard a name, written on the part                                 |
 | [0058](0058-let-the-pico-light-an-led-bar-graphs-segments-each-from-a-pin-of-its-own.md)                         | Let the Pico light an LED bar graph's segments, each from a pin of its own                         |
 | [0059](0059-take-a-bar-graphs-resistors-from-a-bussed-resistor-array-its-common-pin-on-ground.md)                | Take a bar graph's resistors from a bussed resistor array, its common pin on ground                |
+| [0060](0060-let-the-pico-write-on-a-character-lcd-through-its-i2c-backpack-powered-from-vbus.md)                 | Let the Pico write on a character LCD through its I2C backpack, powered from VBUS                  |
+| [0061](0061-lay-a-part-with-its-pins-at-one-end-along-the-board-its-jumpers-round-that-end.md)                   | Lay a part with its pins at one end along the board, its jumpers round that end                    |
+| [0062](0062-let-a-circuit-name-the-libraries-its-script-needs-and-where-to-fetch-each-file.md)                   | Let a circuit name the libraries its script needs, and where to fetch each file                    |

@@ -21,6 +21,7 @@ import { HEADER_PINS } from "./drawing/geometry";
 import { fileOf } from "./fonts";
 import type { Circuit, Language, Setup, SupplyCircuit, Text } from "./format";
 import { LANGUAGES } from "./language";
+import { fileNameOf, isAddress, isModuleFile } from "./libraries";
 import { isUsableGpio } from "./pins";
 import { pathOf } from "./read";
 import { resistorArrayCode } from "./resistor-arrays";
@@ -264,6 +265,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   barGraph: ["kind", "segments", "colour", "column", "board"],
   resistorArray: ["kind", "ohms", "resistors", "common"],
   pir: ["kind", "name", "power", "output", "ground"],
+  lcd: ["kind", "name", "power", "ground", "data", "clock"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
@@ -408,6 +410,10 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
       fields.text("name");
       for (const leg of ["power", "output", "ground"]) fields.hole(leg);
       return;
+    case "lcd":
+      fields.text("name");
+      for (const leg of ["power", "ground", "data", "clock"]) fields.hole(leg);
+      return;
     case "slidePotentiometer": {
       const ohms = fields.required("ohms", "a value in ohms");
       if (
@@ -519,6 +525,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
     const needsPico: Readonly<Record<string, string>> = {
       buzzers: "a buzzer needs a Pico to drive it",
       script: "it has no Pico to run a script, and its `test` says what to do instead",
+      libraries: "it has no script to need a library",
     };
     for (const [key, why] of Object.entries(needsPico)) {
       if (Object.hasOwn(data, key)) {
@@ -553,6 +560,7 @@ export function shapeProblems(data: unknown): FieldProblem[] {
         "buzzers",
         "steps",
         "script",
+        "libraries",
         "test",
       ],
       "a circuit",
@@ -646,9 +654,64 @@ export function shapeProblems(data: unknown): FieldProblem[] {
     circuit.problem("steps", "is empty: a circuit has a step at least");
   }
 
-  if (!supplied) circuit.text("script");
+  if (!supplied) {
+    circuit.text("script");
+    librariesProblems(data, circuit);
+  }
   circuit.text("test");
   return problems;
+}
+
+/**
+ * The libraries a circuit's script needs (ADR 0062): each a name, the address of its page and of each
+ * of its files, every address `https://`, every file a MicroPython module, and no two files with one
+ * name, since each is saved on the Pico under its own.
+ */
+function librariesProblems(data: Record_, circuit: Fields): void {
+  const saved = new Map<string, string>();
+  circuit.list("libraries", true, (fields, index) => {
+    const path = pathOf("libraries", index);
+    fields.only(["name", "url", "files"], "a library");
+    fields.string("name");
+    const url = fields.string("url");
+    if (url !== undefined && !isAddress(url)) {
+      fields.problem("url", "is not an address starting `https://`, where the library's page is");
+    }
+    const files = fields.required("files", "a list of its files' addresses");
+    if (files === undefined) return;
+    if (!Array.isArray(files) || files.length === 0) {
+      fields.problem("files", "is not a list with an address in it, one for each of its files");
+      return;
+    }
+    files.forEach((file, fileIndex) => {
+      const at = pathOf(pathOf(path, "files"), fileIndex);
+      if (typeof file !== "string" || !isAddress(file)) {
+        fields.problem(
+          pathOf("files", fileIndex),
+          "is not an address starting `https://`, where the file's text is",
+        );
+        return;
+      }
+      const name = fileNameOf(file);
+      if (!isModuleFile(name)) {
+        fields.problem(
+          pathOf("files", fileIndex),
+          `ends in \`${name}\`, which is not a MicroPython file: the reader saves it under the last part of its address, \`lcd_api.py\``,
+        );
+        return;
+      }
+      const before = saved.get(name);
+      if (before) {
+        fields.problem(
+          pathOf("files", fileIndex),
+          `is saved as \`${name}\`, as ${before} is: two files with one name cannot both be on the Pico`,
+        );
+      } else saved.set(name, at);
+    });
+  });
+  if (Array.isArray(data.libraries) && data.libraries.length === 0) {
+    circuit.problem("libraries", "is empty: leave it out when the script needs none");
+  }
 }
 
 /** What a board can be set up with (ADR 0037), each a `kind` of the format's `Setup`. */
@@ -742,7 +805,7 @@ export function textsOf(circuit: Circuit): [string, Text][] {
       ...(step.note ? [[pathOf(pathOf("steps", index), "note"), step.note] as [string, Text]] : []),
       // The name of each part outside the board, which it carries itself (ADR 0057).
       ...step.parts.flatMap((part, partIndex): [string, Text][] =>
-        part.kind === "pir"
+        part.kind === "pir" || part.kind === "lcd"
           ? [
               [
                 pathOf(pathOf(pathOf(pathOf("steps", index), "parts"), partIndex), "name"),

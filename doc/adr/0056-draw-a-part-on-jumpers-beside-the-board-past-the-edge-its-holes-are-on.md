@@ -1,6 +1,6 @@
 # ADR 0056: Draw a part on jumpers beside the board, past the edge its holes are on
 
-**Status:** Accepted · 2026-11-26
+**Status:** Accepted · 2026-11-26 · Amended by ADR-0061 (a part with its pins at one end lies along the board)
 
 ## Context
 

@@ -27,6 +27,7 @@ const BORN_IN_FORMAT_2 = [
   "capacitor-tester.ts",
   "capacitor-timer.ts",
   "colours-on-a-slider.ts",
+  "counting-screen.ts",
   "fading-light.ts",
   "five-switches.ts",
   "high-side-switch.ts",

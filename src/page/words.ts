@@ -138,6 +138,11 @@ export interface PageWords {
    */
   readonly pir: (name: string, power: Place, output: Place, ground: Place) => string;
   /**
+   * A character LCD beside the board (ADR 0060, ADR 0061): where the jumper on each of its backpack's
+   * pins goes, in the order the backpack has them, and the jumper's colour.
+   */
+  readonly lcd: (name: string, ground: Place, power: Place, data: Place, clock: Place) => string;
+  /**
    * A DIP switch (ADR 0054): how many switches, the holes of switch 1's two legs and of the last's,
    * and whether they are on the second breadboard, which is said once rather than for each hole.
    */
@@ -184,6 +189,7 @@ export interface PageWords {
   readonly rgbLedLabel: (dataIn: string) => string;
   /** A motion sensor's label: the hole its OUT jumper goes in (ADR 0057). */
   readonly pirLabel: (output: string) => string;
+  readonly lcdLabel: (data: string) => string;
 
   /** The first step and the last, which every circuit has. */
   readonly picoTitle: string;
@@ -227,8 +233,13 @@ export interface PageWords {
   ) => string;
   /** Motion sensors, and how many (ADR 0055). */
   readonly listPir: (name: string) => string;
-  /** The female-to-male jumpers that join motion sensors to the board, three for each. */
-  readonly listPirJumpers: (count: number) => string;
+  /** Character LCDs with an I2C backpack, one line each, by name (ADR 0060). */
+  readonly listLcd: (name: string) => string;
+  /**
+   * The female-to-male jumpers that join the parts beside the board to it: three for each motion
+   * sensor and four for each LCD.
+   */
+  readonly listJumpers: (sensors: number, screens: number) => string;
   /** Ceramic capacitors of one value, written already, the code they print, and how many (ADR 0051). */
   readonly listCeramic: (nanofarads: string, code: string, count: number) => string;
   readonly listWire: (colour: string, count: number) => string;
@@ -271,6 +282,13 @@ export interface PageWords {
   readonly resistorArrayCode: (code: string, ohms: string) => string;
   /** That a motion sensor's jumpers go on by its pins' names, and that it settles once powered. */
   readonly pirPins: string;
+  /** That an LCD's jumpers go on by its pins' names, its address on the bus, and its contrast dial. */
+  readonly lcdPins: string;
+  /**
+   * That the script needs a library the Pico does not have (ADR 0062), its name linked already, and
+   * each of its files', which the reader saves on the Pico.
+   */
+  readonly library: (name: string, files: readonly string[]) => string;
   /** The diodes ratsnest knows, every one of which does on a light's way (ADR 0049). */
   readonly diodeAlike: (models: readonly string[]) => string;
   /** That a ceramic capacitor goes either way round, and how its code says its value (ADR 0051). */
@@ -452,12 +470,15 @@ export const ENGLISH_PAGE: PageWords = {
   },
   pir: (name, power, output, ground) =>
     `The ${name}, beside the board, dome up: a red jumper from its VCC pin ${englishTo(power)}, a yellow one from its OUT pin ${englishTo(output)} and a black one from its GND pin ${englishTo(ground)}.`,
+  lcd: (name, ground, power, data, clock) =>
+    `The ${name}, beside the board, screen up: a black jumper from its GND pin ${englishTo(ground)}, a red one from its VCC pin ${englishTo(power)}, a blue one from its SDA pin ${englishTo(data)} and a yellow one from its SCL pin ${englishTo(clock)}.`,
 
   ledLabel: (anode) => `long leg in ${anode}`,
   buttonLabel: (where) => ENGLISH_PLACEMENT[where],
   buzzerLabel: (plus) => `+ leg in ${plus}`,
   rgbLedLabel: (dataIn) => `data in at ${dataIn}`,
   pirLabel: (output) => `OUT to ${output}`,
+  lcdLabel: (data) => `SDA to ${data}`,
 
   picoTitle: "Put the Pico across the middle",
   picoBody: (pinOne, lands, orientation) =>
@@ -506,8 +527,13 @@ export const ENGLISH_PAGE: PageWords = {
     `${ohms} resistor ${plural("en", count, { one: "array", other: "arrays" })} of ${resistors} resistors, bussed: ${resistors + 1} legs in a row, one of them common to every resistor, marked ${code}, often with a J after it for its tolerance.`,
   listPir: (name) =>
     `${capitalised(name)}: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.`,
-  listPirJumpers: () =>
-    "Female-to-male jumpers, about 20 cm: a red, a yellow and a black one for each motion sensor, to go on its pins.",
+  listLcd: (name) =>
+    `${capitalised(name)}: a character LCD of two rows of 16, with an I2C backpack whose four pins are GND, VCC, SDA and SCL, that runs on 5 V.`,
+  listJumpers: (sensors, screens) =>
+    `Female-to-male jumpers, about 20 cm: ${englishList([
+      ...(sensors > 0 ? ["a red, a yellow and a black one for each motion sensor"] : []),
+      ...(screens > 0 ? ["a black, a red, a blue and a yellow one for each screen"] : []),
+    ])}, to go on their pins.`,
   listCeramic: (nanofarads, code, count) =>
     `${nanofarads} ceramic ${plural("en", count, { one: "capacitor", other: "capacitors" })}, marked ${code}.`,
   listWire: (colour, count) =>
@@ -541,6 +567,12 @@ export const ENGLISH_PAGE: PageWords = {
     "Each segment of an LED bar graph is a light of its own: its anode goes towards its pin, and its cathode towards ground, through a resistor. Its flat corner, and the writing on that side, mark its cathodes' side. Put in the wrong way round, it stays dark and takes no harm: turn it round.",
   resistorArrayCode: (code, ohms) =>
     `The resistors of a resistor array share the leg under its dot, which goes to ground. Its value is printed on it as a code, after an A for that shared leg: two figures and then how many zeros follow them. ${code} is ${ohms} for each resistor.`,
+  lcdPins:
+    "An LCD's backpack names its four pins beside them: GND, VCC, SDA and SCL. Push each jumper onto the pin of its name, whatever order they are in. Its address on the bus is 0x27 on most backpacks and 0x3F on some, which a scan of the bus shows. If the screen shows nothing, or a row of blocks, turn the blue dial on the backpack's back with a small screwdriver, a little at a time, until the letters show.",
+  library: (name, files) =>
+    files.length === 1
+      ? `This script needs the ${name} library, which the Pico does not have. Open its file, ${files[0]}, copy all of it into a new tab in Thonny, and save it on the Raspberry Pi Pico under the same name, before you run the script.`
+      : `This script needs the ${name} library, which the Pico does not have. Open each of its files, ${englishList(files)}, copy all of it into a new tab in Thonny, and save it on the Raspberry Pi Pico under the same name, before you run the script.`,
   pirPins:
     "A motion sensor's board names its three pins, beside them or under its dome: VCC or +, OUT or SIG, and GND. Push each jumper onto the pin of its name, whatever order they are in: it differs from one sensor to another. Once powered, it takes up to a minute to settle.",
   dipPullUp:
@@ -762,12 +794,15 @@ export const FRENCH_PAGE: PageWords = {
   },
   pir: (name, power, output, ground) =>
     `${the("sensor", name)}, à côté de la plaque, dôme en haut${NNBSP}: un fil rouge de sa broche VCC ${frenchTo(power)}, un fil jaune de sa broche OUT ${frenchTo(output)} et un fil noir de sa broche GND ${frenchTo(ground)}.`,
+  lcd: (name, ground, power, data, clock) =>
+    `${the("sensor", name)}, à côté de la plaque, écran vers le haut${NNBSP}: un fil noir de sa broche GND ${frenchTo(ground)}, un fil rouge de sa broche VCC ${frenchTo(power)}, un fil bleu de sa broche SDA ${frenchTo(data)} et un fil jaune de sa broche SCL ${frenchTo(clock)}.`,
 
   ledLabel: (anode) => `grande patte en ${anode}`,
   buttonLabel: (where) => FRENCH_LABEL[where],
   buzzerLabel: (plus) => `patte + en ${plus}`,
   rgbLedLabel: (dataIn) => `entrée en ${dataIn}`,
   pirLabel: (output) => `OUT en ${output}`,
+  lcdLabel: (data) => `SDA en ${data}`,
 
   picoTitle: "Placez le Pico à cheval sur la rainure centrale",
   picoBody: (pinOne, lands, orientation) =>
@@ -821,8 +856,13 @@ export const FRENCH_PAGE: PageWords = {
     `${plural("fr", count, { one: "Réseau", many: "Réseaux", other: "Réseaux" })} de ${resistors} résistances de ${ohms} à patte commune${NNBSP}: ${resistors + 1} pattes en rangée, dont une commune à toutes les résistances, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}, souvent suivi d’un J pour sa tolérance.`,
   listPir: (name) =>
     `${capitalised(name)}${NNBSP}: un module PIR à trois broches, VCC, OUT et GND, alimenté en 5 V. Sa broche OUT donne 3,3 V tant qu’il voit du mouvement.`,
-  listPirJumpers: () =>
-    `Fils de connexion femelle-mâle, d’environ 20 cm${NNBSP}: un rouge, un jaune et un noir pour chaque détecteur de mouvement, à brancher sur ses broches.`,
+  listLcd: (name) =>
+    `${capitalised(name)}${NNBSP}: un afficheur LCD de deux lignes de 16 caractères, avec un module I2C dont les quatre broches sont GND, VCC, SDA et SCL, alimenté en 5 V.`,
+  listJumpers: (sensors, screens) =>
+    `Fils de connexion femelle-mâle, d’environ 20 cm${NNBSP}: ${frenchList([
+      ...(sensors > 0 ? ["un rouge, un jaune et un noir pour chaque détecteur de mouvement"] : []),
+      ...(screens > 0 ? ["un noir, un rouge, un bleu et un jaune pour chaque écran"] : []),
+    ])}, à brancher sur leurs broches.`,
   listCeramic: (nanofarads, code, count) =>
     `${plural("fr", count, { one: "Condensateur céramique", many: "Condensateurs céramiques", other: "Condensateurs céramiques" })} de ${nanofarads}, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
   listWire: (colour, count) => {
@@ -865,6 +905,11 @@ export const FRENCH_PAGE: PageWords = {
   barGraphPolarity: `Chaque segment d’un bargraphe à LED est une LED à part entière${NNBSP}: son anode va du côté de sa broche, et sa cathode vers la masse, à travers une résistance. Son coin biseauté, et l’inscription de ce côté, marquent le côté de ses cathodes. Monté à l’envers, il reste éteint, mais il n’est pas abîmé${NNBSP}: retournez-le.`,
   resistorArrayCode: (code, ohms) =>
     `Les résistances d’un réseau partagent la patte sous son point, qui va à la masse. Sa valeur y est imprimée en code, après un A pour cette patte commune${NNBSP}: deux chiffres, puis le nombre de zéros qui les suivent. ${code} vaut ${ohms} pour chaque résistance.`,
+  lcdPins: `Le module I2C d’un écran nomme ses quatre broches à côté d’elles${NNBSP}: GND, VCC, SDA et SCL. Branchez chaque fil sur la broche de son nom, quel que soit leur ordre. Son adresse sur le bus est 0x27 sur la plupart des modules et 0x3F sur certains, ce qu’un balayage du bus montre. Si l’écran n’affiche rien, ou une rangée de pavés, tournez la molette bleue au dos du module avec un petit tournevis, un peu à la fois, jusqu’à voir les lettres.`,
+  library: (name, files) =>
+    files.length === 1
+      ? `Ce script a besoin de la bibliothèque ${name}, que le Pico n’a pas. Ouvrez son fichier, ${files[0]}, copiez-le en entier dans un nouvel onglet de Thonny et enregistrez-le sur le Raspberry Pi Pico sous le même nom, avant de lancer le script.`
+      : `Ce script a besoin de la bibliothèque ${name}, que le Pico n’a pas. Ouvrez chacun de ses fichiers, ${frenchList(files)}, copiez-le en entier dans un nouvel onglet de Thonny et enregistrez-le sur le Raspberry Pi Pico sous le même nom, avant de lancer le script.`,
   pirPins: `La carte d’un détecteur de mouvement nomme ses trois broches, à côté d’elles ou sous son dôme${NNBSP}: VCC ou +, OUT ou SIG, et GND. Branchez chaque fil sur la broche de son nom, quel que soit leur ordre${NNBSP}: il change d’un détecteur à l’autre. Une fois alimenté, il lui faut jusqu’à une minute pour se stabiliser.`,
   dipPullUp:
     "Chaque interrupteur d’un interrupteur DIP relie ses deux pattes tant qu’il est en marche. Une patte va à la masse et l’autre à une broche à elle, que le script tire vers le haut à l’intérieur du Pico, si bien qu’elle lit 1 tant que son interrupteur est à l’arrêt et 0 tant qu’il est en marche. Relié au 3V3(OUT), chaque broche aurait besoin d’une résistance de tirage vers le bas, et celles du Pico 2 W ne suffisent pas à la maintenir au niveau bas.",
@@ -1084,12 +1129,15 @@ export const RUSSIAN_PAGE: PageWords = {
   },
   pir: (name, power, output, ground) =>
     `${name}, рядом с платой, куполом вверх: красная перемычка от вывода VCC ${russianIn(power)}, жёлтая от вывода OUT ${russianIn(output)} и чёрная от вывода GND ${russianIn(ground)}.`,
+  lcd: (name, ground, power, data, clock) =>
+    `${name}, рядом с платой, экраном вверх: чёрная перемычка от вывода GND ${russianIn(ground)}, красная от вывода VCC ${russianIn(power)}, синяя от вывода SDA ${russianIn(data)} и жёлтая от вывода SCL ${russianIn(clock)}.`,
 
   ledLabel: (anode) => `длинная ножка в ${anode}`,
   buttonLabel: (where) => RUSSIAN_LABEL[where],
   buzzerLabel: (plus) => `ножка + в ${plus}`,
   rgbLedLabel: (dataIn) => `вход данных в ${dataIn}`,
   pirLabel: (output) => `OUT в ${output}`,
+  lcdLabel: (data) => `SDA в ${data}`,
 
   picoTitle: "Установите Pico поперёк середины",
   picoBody: (pinOne, lands, orientation) =>
@@ -1137,8 +1185,13 @@ export const RUSSIAN_PAGE: PageWords = {
     `Резисторная сборка из ${resistors} резисторов по ${ohms} с общим выводом: ${resistors + 1} выводов в ряд, один из них общий для всех резисторов, маркировка ${code}, часто с буквой J после неё, обозначающей допуск.`,
   listPir: (name) =>
     `${capitalised(name)}: модуль PIR с тремя выводами, VCC, OUT и GND, питание 5 В. Пока он видит движение, на OUT 3,3 В.`,
-  listPirJumpers: () =>
-    "Перемычка мама-папа, около 20 см: красная, жёлтая и чёрная на каждый датчик движения, для его выводов.",
+  listLcd: (name) =>
+    `${capitalised(name)}: символьный ЖК-дисплей на две строки по 16 символов, с модулем I2C, у которого четыре вывода, GND, VCC, SDA и SCL, питание 5 В.`,
+  listJumpers: (sensors, screens) =>
+    `Перемычка мама-папа, около 20 см: ${russianList([
+      ...(sensors > 0 ? ["красная, жёлтая и чёрная на каждый датчик движения"] : []),
+      ...(screens > 0 ? ["чёрная, красная, синяя и жёлтая на каждый экран"] : []),
+    ])}, для их выводов.`,
   listCeramic: (nanofarads, code) => `Керамический конденсатор ${nanofarads}, маркировка ${code}.`,
   listWire: (colour) => `Перемычка ${colour}, короткая.`,
   listLongWire: (colour) => `Перемычка ${colour}, длинная и гибкая: около 10 см.`,
@@ -1170,6 +1223,12 @@ export const RUSSIAN_PAGE: PageWords = {
     "Каждый сегмент светодиодной шкалы: отдельный светодиод. Его анод идёт к своему выводу, катод через резистор к земле. Срезанный угол корпуса и надпись на этой стороне отмечают сторону катодов. Вставленная наоборот, шкала не горит, но и не портится: переверните её.",
   resistorArrayCode: (code, ohms) =>
     `Резисторы сборки делят общий вывод под точкой, он идёт на землю. Номинал напечатан на корпусе кодом после буквы A, которая означает общий вывод: две цифры, затем число нулей после них. ${code} означает ${ohms} на каждый резистор.`,
+  lcdPins:
+    "На модуле I2C экрана подписаны четыре вывода: GND, VCC, SDA и SCL. Надевайте каждую перемычку на вывод с её подписью, в каком бы порядке они ни шли. Адрес модуля на шине 0x27, у некоторых 0x3F, и его покажет сканирование шины. Если экран ничего не показывает или показывает ряд прямоугольников, понемногу поворачивайте маленькой отвёрткой синий регулятор на обратной стороне модуля, пока не появятся буквы.",
+  library: (name, files) =>
+    files.length === 1
+      ? `Этому скрипту нужна библиотека ${name}, которой на Pico нет. Откройте её файл, ${files[0]}, скопируйте его целиком в новую вкладку Thonny и сохраните на Raspberry Pi Pico под тем же именем, прежде чем запускать скрипт.`
+      : `Этому скрипту нужна библиотека ${name}, которой на Pico нет. Откройте каждый её файл, ${russianList(files)}, скопируйте его целиком в новую вкладку Thonny и сохраните на Raspberry Pi Pico под тем же именем, прежде чем запускать скрипт.`,
   pirPins:
     "На плате датчика движения подписаны три вывода, рядом с ними или под куполом: VCC или +, OUT или SIG, и GND. Надевайте каждую перемычку на вывод с её подписью, в каком бы порядке они ни шли: у разных датчиков он разный. После включения датчику нужно до минуты, чтобы успокоиться.",
   dipPullUp:

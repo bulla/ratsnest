@@ -333,6 +333,20 @@ pre code {
   white-space: pre;
 }
 
+/* A library the script needs, above it (ADR 0062): its name and each of its files linked, a file's
+   name in the code's own type, as it is saved on the Pico. */
+.library {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-ink-muted);
+}
+
+.library .file {
+  font-family: var(--font-code);
+  font-size: 0.88em;
+  white-space: nowrap;
+}
+
 .notes {
   margin: 0;
   padding-left: 1.125rem;

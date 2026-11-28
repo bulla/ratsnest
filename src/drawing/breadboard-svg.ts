@@ -202,6 +202,18 @@ export const BAR_GRAPH_TOKENS = { body: "bar-graph", window: "bar-graph-window" 
 /** The colours of a resistor array's body, and of the code and the dot printed on it (ADR 0059). */
 export const RESISTOR_ARRAY_TOKENS = { body: "resistor-array", ink: "resistor-array-ink" } as const;
 
+/**
+ * The colours of a character LCD (ADR 0060): its frame, its screen with its backlight off and on, and
+ * its sixteen by two character cells, and the blue of the jumper on its SDA pin (ADR 0061).
+ */
+export const LCD_TOKENS = {
+  bezel: "lcd-bezel",
+  screen: "lcd-screen",
+  lit: "lcd-screen-lit",
+  cell: "lcd-cell",
+  data: "wire-data",
+} as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
@@ -214,6 +226,7 @@ export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(DIP_SWITCH_TOKENS),
   ...Object.values(BAR_GRAPH_TOKENS),
   ...Object.values(RESISTOR_ARRAY_TOKENS),
+  ...Object.values(LCD_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -1056,8 +1069,9 @@ function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: num
       if (other.kind === "dipSwitch" && overlap(box, dipBoxOf(other))) return false;
       if (other.kind === "barGraph" && overlap(box, barGraphBoxOf(other))) return false;
       if (other.kind === "resistorArray" && overlap(box, resistorArrayBoxOf(other))) return false;
-      if (other.kind === "pir") {
-        for (const path of pirJumperPaths(other)) {
+      if (other.kind === "pir" || other.kind === "lcd") {
+        const paths = other.kind === "pir" ? pirJumperPaths(other) : lcdJumperPaths(other);
+        for (const path of paths) {
           for (let i = 1; i < path.length; i++) {
             if (segmentTouches(path[i - 1] as Point, path[i] as Point, 0.6, box)) return false;
           }
@@ -2375,6 +2389,272 @@ function drawPir(part: PirPart): string {
   return out.join("");
 }
 
+/**
+ * A 16×2 character LCD with an I2C backpack (ADR 0060), at its size: its board, the four mounting
+ * holes at its corners, its screen's frame and window, and its sixteen by two character cells, each
+ * five dots by eight; and past its left-hand end the backpack's header, its four pins 2.54 mm apart,
+ * their names printed beside them on its board, between its end and the frame (ADR 0061).
+ */
+export const LCD_MM = {
+  width: 80,
+  height: 36,
+  hole: { inset: 2.5, radius: 1.5 },
+  bezel: { width: 71.2, height: 24.2 },
+  window: { width: 64.5, height: 14.5 },
+  cell: { width: 2.95, height: 5.55, pitchX: 3.55, pitchY: 5.94 },
+  /** The screen's own sixteen pins, along its top edge from its left end, which the backpack is on. */
+  pads: { count: 16, from: 8, y: 2.5 },
+  /** How far the backpack's header stands out past the board's left end. */
+  header: 2.5,
+  pitch: PIN_PITCH_MM,
+  /** The size its pins' names are printed at, upright at every quarter turn. */
+  print: 1,
+  plug: { width: 2.4, length: 4.5 },
+  /** How far past the breadboard's edge the LCD's nearer edge lies: room for its jumpers' lanes. */
+  gap: 10,
+  /** The first lane's distance from the breadboard's edge, and the lanes' pitch. */
+  lanes: { first: 2.2, pitch: 1.6 },
+  /** How far past the plugs' ends the innermost jumper turns, and how round its corners are. */
+  turn: 1.5,
+  corner: 1.1,
+} as const;
+
+type LcdPart = Extract<Part, { kind: "lcd" }>;
+
+/** Its backpack's pins, from the top as its screen is read: GND, VCC, SDA and SCL. */
+const LCD_PINS = [
+  ["ground", "GND"],
+  ["power", "VCC"],
+  ["data", "SDA"],
+  ["clock", "SCL"],
+] as const;
+
+/** The colour of the jumper on each of its pins: red and black, and blue and yellow (ADR 0061). */
+const LCD_JUMPER: Record<(typeof LCD_PINS)[number][0], string> = {
+  ground: WIRE_TOKEN.ground,
+  power: WIRE_TOKEN.power,
+  data: LCD_TOKENS.data,
+  clock: WIRE_TOKEN.signal,
+};
+
+/** Where an LCD lies, where its pins are, and the line each of their jumpers is drawn along. */
+export interface LcdLayout {
+  /** Its board, past the breadboard's edge. */
+  readonly box: Box;
+  readonly side: "top" | "bottom";
+  readonly pins: readonly {
+    readonly leg: (typeof LCD_PINS)[number][0];
+    readonly label: string;
+    readonly y: number;
+    /** Its jumper's corners, from its plug's end to its hole. */
+    readonly path: readonly Point[];
+  }[];
+}
+
+/**
+ * Where an LCD lies (ADR 0061): along the board, past the edge its holes are on, its far end with the
+ * board's, never turned round. Its jumpers leave their plugs away from it, turn towards the board,
+ * run along between it and the board each in a lane of its own, the lane nearest the board to the
+ * hole nearest the near end, and turn into their holes; the one in the lane nearest the board turns
+ * furthest out, so that the lanes do not cross.
+ */
+export function lcdLayoutOf(part: LcdPart): LcdLayout {
+  const side = sideOf(part.power);
+  const towards = side === "bottom" ? -1 : 1;
+  const near = side === "bottom" ? BREADBOARD_HEIGHT_MM : 0;
+  const x = BREADBOARD_WIDTH_MM - LCD_MM.width;
+  const y = side === "bottom" ? near + LCD_MM.gap : near - LCD_MM.gap - LCD_MM.height;
+  const middle = y + LCD_MM.height / 2;
+  const end = x - LCD_MM.header - LCD_MM.plug.length;
+  const byHole = LCD_PINS.map(([leg], index) => ({ leg, index, x: holeCentre(part[leg]).x })).sort(
+    (a, b) => a.x - b.x || a.index - b.index,
+  );
+  const laneOf = new Map(byHole.map((each, lane) => [each.leg, lane]));
+  return {
+    box: { x, y, w: LCD_MM.width, h: LCD_MM.height },
+    side,
+    pins: LCD_PINS.map(([leg, label], index) => {
+      const pinY = middle + (index - 1.5) * LCD_MM.pitch;
+      const lane = laneOf.get(leg) ?? 0;
+      const laneY = near - towards * (LCD_MM.lanes.first + lane * LCD_MM.lanes.pitch);
+      const turnX = end - LCD_MM.turn - (LCD_PINS.length - 1 - lane) * LCD_MM.lanes.pitch;
+      const hole = holeCentre(part[leg]);
+      return {
+        leg,
+        label,
+        y: pinY,
+        path: [
+          { x: end, y: pinY },
+          { x: turnX, y: pinY },
+          { x: turnX, y: laneY },
+          { x: hole.x, y: laneY },
+          hole,
+        ],
+      };
+    }),
+  };
+}
+
+/** A line through its corners, each rounded off by a curve, as a jumper laid along it bends. */
+function roundedPath(points: readonly Point[], radius: number): string {
+  const [first, ...rest] = points;
+  if (!first) return "";
+  let d = `M${n(first.x)} ${n(first.y)}`;
+  for (let i = 0; i < rest.length; i++) {
+    const at = rest[i] as Point;
+    const before = points[i] as Point;
+    const after = rest[i + 1];
+    if (!after) {
+      d += ` L${n(at.x)} ${n(at.y)}`;
+      break;
+    }
+    const into = Math.hypot(at.x - before.x, at.y - before.y);
+    const out = Math.hypot(after.x - at.x, after.y - at.y);
+    const r = Math.min(radius, into / 2, out / 2);
+    const from = {
+      x: at.x - ((at.x - before.x) / (into || 1)) * r,
+      y: at.y - ((at.y - before.y) / (into || 1)) * r,
+    };
+    const to = {
+      x: at.x + ((after.x - at.x) / (out || 1)) * r,
+      y: at.y + ((after.y - at.y) / (out || 1)) * r,
+    };
+    d += ` L${n(from.x)} ${n(from.y)} Q${n(at.x)} ${n(at.y)} ${n(to.x)} ${n(to.y)}`;
+  }
+  return d;
+}
+
+/** The lines an LCD's jumpers are drawn along, for a value tag to keep off. */
+export function lcdJumperPaths(part: LcdPart): Point[][] {
+  return lcdLayoutOf(part).pins.map((pin) => [...pin.path]);
+}
+
+/**
+ * A character LCD lying beside the board, screen up (ADR 0060, ADR 0061), seen from above: its green
+ * board with a mounting hole at each corner and its screen's sixteen pins along its top, the black
+ * frame and the blue window of its screen, its character cells, lit in the test step, its backpack's
+ * header past its left-hand end, its pins' names printed upright beside them, a black plug on each
+ * pin, and a jumper from each plug round its end to its hole.
+ */
+function drawLcd(part: LcdPart): string {
+  const layout = lcdLayoutOf(part);
+  const { box } = layout;
+  const centre = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
+  const out: string[] = [
+    rect(
+      box.x,
+      box.y,
+      box.w,
+      box.h,
+      `rx="0.9" fill="${token("board")}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.25"`,
+    ),
+  ];
+  const { inset, radius } = LCD_MM.hole;
+  for (const x of [box.x + inset, box.x + box.w - inset]) {
+    for (const y of [box.y + inset, box.y + box.h - inset]) {
+      out.push(
+        circle(x, y, radius, `fill="${token("board-metal")}"`),
+        circle(x, y, radius * 0.6, `fill="${token("board-chip")}"`),
+      );
+    }
+  }
+  for (let pad = 0; pad < LCD_MM.pads.count; pad++) {
+    const x = box.x + LCD_MM.pads.from + pad * LCD_MM.pitch;
+    out.push(
+      circle(x, box.y + LCD_MM.pads.y, 0.75, `fill="${token("board-pad")}"`),
+      circle(x, box.y + LCD_MM.pads.y, 0.32, `fill="${token("board-chip")}"`),
+    );
+  }
+  const bezel = LCD_MM.bezel;
+  out.push(
+    rect(
+      centre.x - bezel.width / 2,
+      centre.y - bezel.height / 2,
+      bezel.width,
+      bezel.height,
+      `rx="0.6" fill="${token(LCD_TOKENS.bezel)}"`,
+    ),
+  );
+  const window = [
+    centre.x - LCD_MM.window.width / 2,
+    centre.y - LCD_MM.window.height / 2,
+    LCD_MM.window.width,
+    LCD_MM.window.height,
+  ] as const;
+  out.push(
+    rect(...window, `rx="0.3" fill="${token(LCD_TOKENS.screen)}"`),
+    rect(...window, `class="glow" rx="0.3" fill="${token(LCD_TOKENS.lit)}"`),
+  );
+  const { cell } = LCD_MM;
+  const cellsWidth = 15 * cell.pitchX + cell.width;
+  const cellsHeight = cell.pitchY + cell.height;
+  for (let row = 0; row < 2; row++) {
+    for (let column = 0; column < 16; column++) {
+      out.push(
+        rect(
+          centre.x - cellsWidth / 2 + column * cell.pitchX,
+          centre.y - cellsHeight / 2 + row * cell.pitchY,
+          cell.width,
+          cell.height,
+          `fill="${token(LCD_TOKENS.cell)}"`,
+        ),
+      );
+    }
+  }
+  // The window's glass catches the light along its top.
+  out.push(
+    rect(
+      window[0] + 0.6,
+      window[1] + 0.5,
+      window[2] - 1.2,
+      0.5,
+      `rx="0.25" fill="${token("shine")}" fill-opacity="0.18"`,
+    ),
+  );
+  // The backpack's header past the board's left-hand end, a black plug on each of its pins, and the
+  // names printed on the board beside them.
+  const first = layout.pins[0]?.y ?? centre.y;
+  const last = layout.pins[layout.pins.length - 1]?.y ?? centre.y;
+  out.push(
+    rect(
+      box.x - LCD_MM.header,
+      first - LCD_MM.pitch / 2,
+      LCD_MM.header,
+      last - first + LCD_MM.pitch,
+      `rx="0.2" fill="${token("board-chip")}"`,
+    ),
+  );
+  const nameX = (box.x + centre.x - bezel.width / 2) / 2;
+  for (const pin of layout.pins) {
+    out.push(
+      rect(
+        box.x - LCD_MM.header - LCD_MM.plug.length,
+        pin.y - LCD_MM.plug.width / 2,
+        LCD_MM.plug.length,
+        LCD_MM.plug.width,
+        `rx="0.3" fill="${token("board-chip")}"`,
+      ),
+      word(
+        nameX,
+        pin.y,
+        pin.label,
+        `font-size="${LCD_MM.print}" font-weight="800" fill="${token("board-silk")}"`,
+      ),
+    );
+  }
+  for (const pin of layout.pins) {
+    const hole = holeCentre(part[pin.leg]);
+    const colour = token(LCD_JUMPER[pin.leg]);
+    const d = roundedPath(pin.path, LCD_MM.corner);
+    out.push(
+      `<path d="${d}" fill="none" stroke="${colour}" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>`,
+      circle(hole.x, hole.y, 0.72, `fill="${colour}"`),
+      circle(hole.x, hole.y, 0.32, `fill="${token("lead")}"`),
+    );
+  }
+  return out.join("");
+}
+
 // --- Labels in the margin. ---
 
 /**
@@ -2601,9 +2881,10 @@ function anchorOf(part: Part): { left: number; right: number; y: number } | unde
         y: nearestBetweenRows(centre),
       };
     }
-    case "pir": {
+    case "pir":
+    case "lcd": {
       // Its own board, past the breadboard's edge, where nothing else is (ADR 0056).
-      const { box } = pirLayoutOf(part);
+      const { box } = part.kind === "pir" ? pirLayoutOf(part) : lcdLayoutOf(part);
       return { left: box.x - 0.2, right: box.x + box.w + 0.2, y: box.y + box.h / 2 };
     }
     case "ring": {
@@ -2619,6 +2900,9 @@ function anchorOf(part: Part): { left: number; right: number; y: number } | unde
       return undefined;
   }
 }
+
+/** A part beside the board, on jumpers (ADR 0056, ADR 0061), whose jumpers lie over the flat ones. */
+const isBeside = (part: Part): boolean => part.kind === "pir" || part.kind === "lcd";
 
 /** Where the labels start: a little past the board's right-hand edge. */
 const MARGIN_X = BREADBOARD_WIDTH_MM + 3;
@@ -2864,6 +3148,9 @@ function drawPart(
     case "pir":
       body = drawPir(part);
       break;
+    case "lcd":
+      body = drawLcd(part);
+      break;
   }
   const label =
     drawn.label && leader && place
@@ -2938,7 +3225,11 @@ function drawTurned(drawing: Breadboard): string {
     arches.some((part) => archesOverTop(part) === top) ? ARCH_LIFT_MM + 1.5 : 0;
   // A motion sensor beside the board (ADR 0056) takes the picture past the edge it lies past.
   const sensors = drawing.parts.flatMap(({ part }) =>
-    part.kind === "pir" ? [pirLayoutOf(part).box] : [],
+    part.kind === "pir"
+      ? [pirLayoutOf(part).box]
+      : part.kind === "lcd"
+        ? [lcdLayoutOf(part).box]
+        : [],
   );
   // A second board above the first (scratchpi's ADR 0226) is room enough for an arch over the top edge.
   const top = Math.min(
@@ -2991,9 +3282,9 @@ function drawTurned(drawing: Breadboard): string {
   // Wires are laid over everything else, the way they are on the bench, a sensor's long jumpers
   // over the flat ones (ADR 0056), and an arching one is over them too.
   const ordered = [
-    ...drawing.parts.filter(({ part }) => part.kind !== "wire" && part.kind !== "pir"),
+    ...drawing.parts.filter(({ part }) => part.kind !== "wire" && !isBeside(part)),
     ...drawing.parts.filter(({ part }) => part.kind === "wire" && !part.arch),
-    ...drawing.parts.filter(({ part }) => part.kind === "pir"),
+    ...drawing.parts.filter(({ part }) => isBeside(part)),
     ...drawing.parts.filter(({ part }) => part.kind === "wire" && part.arch),
   ];
   return (
@@ -3107,6 +3398,15 @@ export function crowdingProblems(
           {
             name: `the motion sensor with its OUT in ${printedName(part.output)}`,
             box: pirLayoutOf(part).box,
+            sensor: true,
+          },
+        ];
+      }
+      if (part.kind === "lcd") {
+        return [
+          {
+            name: `the LCD with its SDA in ${printedName(part.data)}`,
+            box: lcdLayoutOf(part).box,
             sensor: true,
           },
         ];

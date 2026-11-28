@@ -79,7 +79,7 @@ describe("a file's format (ADR 0015)", () => {
 describe("a file's fields (ADR 0016)", () => {
   it("are only a circuit's, so a misspelt one is caught", () => {
     expect(said(changed((data) => (data.descripton = { en: "Typo" })))).toEqual([
-      "descripton is not a field of a circuit: it has `format`, `setup`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `steps`, `script` or `test`",
+      "descripton is not a field of a circuit: it has `format`, `setup`, `name`, `description`, `credit`, `leds`, `buttons`, `buzzers`, `steps`, `script`, `libraries` or `test`",
     ]);
   });
 
@@ -546,6 +546,24 @@ describe("a circuit with a supply (ADR 0032)", () => {
     expect(said(pir)[0]).toStartWith("steps[0].parts[4].kind is `pir`, which needs a Pico");
   });
 
+  it("has no screen, and no library, with no Pico to drive one or run a script (ADR 0060, ADR 0062)", () => {
+    const lcd = supplied((data) =>
+      (step(data, 0).parts as unknown[]).push({
+        kind: "lcd",
+        name: { en: "LCD" },
+        power: "a2",
+        ground: "a14",
+        data: "a15",
+        clock: "a16",
+      }),
+    );
+    expect(said(lcd)[0]).toStartWith("steps[0].parts[4].kind is `lcd`, which needs a Pico");
+    const libraries = supplied((data) => (data.libraries = []));
+    expect(said(libraries)).toContain(
+      "libraries is not a field of a circuit with a supply: it has no script to need a library (ADR 0032)",
+    );
+  });
+
   it("says what a working circuit does in `test`", () => {
     expect(said(supplied((data) => delete data.test))).toEqual([
       "the circuit has no `test`, a text",
@@ -671,6 +689,72 @@ describe("a motion sensor (ADR 0055)", () => {
     expect(said(sensing((data) => (part(data, 1, 0).output = "a12")))).toContain(
       "steps[1].title.en names GP22, which no part of the circuit is on",
     );
+  });
+});
+
+describe("a character LCD (ADR 0060)", () => {
+  const screen = (change: (data: Record<string, unknown>) => void) =>
+    changed(change, "screen-on-i2c");
+
+  it("is placed by the four holes its jumpers go in, and has a name of its own", () => {
+    expect(said(screen(() => {}))).toEqual([]);
+    expect(said(screen((data) => (part(data, 2, 0).data = "j31")))).toEqual([
+      "steps[2].parts[0].data is not a hole on a half-size breadboard: holes are named as it prints them, `a21` or `top-19`, and `2:f5` on a second one",
+    ]);
+    expect(said(screen((data) => delete part(data, 2, 0).clock))).toEqual([
+      "steps[2].parts[0] has no `clock`, a hole",
+    ]);
+    expect(said(screen((data) => delete part(data, 2, 0).name))).toEqual([
+      "steps[2].parts[0] has no `name`, a text",
+    ]);
+    expect(said(screen((data) => (part(data, 2, 0).sda = "j20")))).toEqual([
+      "steps[2].parts[0].sda is not a field of a lcd: it has `kind`, `name`, `power`, `ground`, `data` or `clock`",
+    ]);
+  });
+});
+
+describe("the libraries a script needs (ADR 0062)", () => {
+  const library = (change: (library: Record<string, unknown>) => void) =>
+    changed(
+      (data) => change((data.libraries as Record<string, unknown>[])[0] as Record<string, unknown>),
+      "screen-on-i2c",
+    );
+  const LCD_API = "https://raw.githubusercontent.com/T-622/RPI-PICO-I2C-LCD/main/lcd_api.py";
+
+  it("are a name, a page and the address of each file, every one https", () => {
+    expect(said(library(() => {}))).toEqual([]);
+    expect(said(library((it) => (it.url = "http://github.com/T-622/RPI-PICO-I2C-LCD")))).toEqual([
+      "libraries[0].url is not an address starting `https://`, where the library's page is",
+    ]);
+    expect(said(library((it) => (it.files = [LCD_API.replace("https", "ftp")])))).toEqual([
+      "libraries[0].files[0] is not an address starting `https://`, where the file's text is",
+    ]);
+    expect(said(library((it) => delete it.name))).toEqual(["libraries[0] has no `name`, a string"]);
+    expect(said(library((it) => (it.files = []))).join("\n")).toContain(
+      "libraries[0].files is not a list with an address in it",
+    );
+    expect(said(library((it) => (it.version = "1")))).toEqual([
+      "libraries[0].version is not a field of a library: it has `name`, `url` or `files`",
+    ]);
+  });
+
+  it("are files MicroPython imports, each saved under its own name", () => {
+    expect(
+      said(library((it) => (it.files = ["https://github.com/T-622/RPI-PICO-I2C-LCD"]))),
+    ).toEqual([
+      "libraries[0].files[0] ends in `RPI-PICO-I2C-LCD`, which is not a MicroPython file: the reader saves it under the last part of its address, `lcd_api.py`",
+    ]);
+    expect(
+      said(library((it) => (it.files = [LCD_API, LCD_API.replace("T-622", "someone")]))),
+    ).toEqual([
+      "libraries[0].files[1] is saved as `lcd_api.py`, as libraries[0].files[0] is: two files with one name cannot both be on the Pico",
+    ]);
+  });
+
+  it("are left out when there are none, and a circuit with a supply has none", () => {
+    expect(said(changed((data) => (data.libraries = []), "screen-on-i2c"))).toEqual([
+      "libraries is empty: leave it out when the script needs none",
+    ]);
   });
 });
 

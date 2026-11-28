@@ -4,6 +4,7 @@ import type {
   Circuit,
   GpioPin,
   LedColour,
+  Library,
   RgbPin,
   SupplyCircuit,
   SupplySetup,
@@ -155,6 +156,8 @@ export interface Layout {
   readonly steps: readonly LayoutStep[];
   /** A MicroPython script for Thonny that exercises every part, on a Pico: a supply has none. */
   readonly script?: string;
+  /** The libraries the script needs that the Pico does not carry (ADR 0062). */
+  readonly libraries?: readonly Library[];
   /**
    * What a working circuit does once it is tested, said to the person watching the board: what the
    * script does, on a Pico, and what to do once the supply is connected, on a supply (ADR 0032).

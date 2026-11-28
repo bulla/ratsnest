@@ -431,6 +431,32 @@ take two wires past the Pico, not five.
 - [x] `examples/level-meter.ts`, in English and French, and a test circuit with a variant for every
       rule it is refused by
 
+### M23: the character LCD, and a circuit's libraries
+
+M23 is done: from a tutorial the owner chose, a 16 by 2 character LCD beside the board, written to
+over I2C through the backpack on its back, on the tutorial's own pins, GP14 and GP15, with VBUS for
+its 5 V (ADR 0060). It lies along the board, its jumpers round its left-hand end (ADR 0061), and its
+script's library, which the Pico does not carry, is named in the circuit and linked from the page
+(ADR 0062).
+
+- [x] The design, worked out alone (ADR 0060 to ADR 0062): placed as the motion sensor is, by its
+      jumpers' holes and its name; the drawing along the board, which amends ADR 0056; and
+      `libraries`, a field of its own rather than a note's words
+- [x] The format: `{ kind: "lcd", name, power, ground, data, clock }` and `libraries`, read and
+      checked field by field, every address `https://` and every file a MicroPython module, both
+      refused in a circuit with a supply
+- [x] The wiring check's rule: VCC on VBUS, GND on ground, SDA and SCL each straight on a GPIO of its
+      own, an I2C bus's SDA and the same bus's SCL, and never a pin the ADC shares, which cannot take
+      the backpack's 5 V
+- [x] The drawing: the LCD at its size, its blue screen lit in the test step, its sixteen by two
+      cells, its backpack's header past its left-hand end with its pins named upright at 1 mm, and its
+      jumpers in lanes, the nearest the board to the nearest hole; a new token for the SDA jumper's blue
+- [x] The page's words in English, French and Russian: the step's sentence, the parts list's lines,
+      the note on its address and its contrast, the test step picking it out, and the line above the
+      script that links the library and each of its files
+- [x] `examples/counting-screen.ts`, in English and French, and a test circuit with a variant for
+      every rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -815,3 +841,13 @@ take two wires past the Pico, not five.
   were turned round. And the tutorial's array is black, printed `A331J`, which the drawing's yellow
   array, printed `A331`, stands for; the owner liked the drawing as it was, so it stays yellow, and
   the parts list says a J may follow the code.
+- 2026-11-28: M23, the character LCD and a circuit's libraries, worked out alone (ADR 0060 to
+  ADR 0062), after a tutorial the owner chose, read whole this time. Its screen's backpack pulls SDA
+  and SCL up to 5 V, which the RP2350's pins take but for the three the ADC shares, so the check
+  refuses those; and a script given a pair from two buses fails with no word of the wiring, so the
+  check holds both to one bus. Drawn with its pins towards the board, as the motion sensor is, it
+  would have stood 80 mm past the board, its screen on its side, so it lies along it, as the
+  tutorial draws it, and its jumpers come round its left-hand end, the lanes in their holes' order
+  so that none crosses over the board; they cross by its end instead, as on the bench. The owner
+  asked for the library to be linked as the tutorial links it, which a circuit's words cannot do,
+  so it became a field of its own, the first that sends a reader off the page.

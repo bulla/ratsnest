@@ -25,7 +25,9 @@ export function shownIn(
   const steps = circuit.steps.map((step) => ({
     title: say(step.title),
     ...(step.note ? { note: say(step.note) } : {}),
-    parts: step.parts.map((part) => (part.kind === "pir" ? named(part) : part)),
+    parts: step.parts.map((part) =>
+      part.kind === "pir" || part.kind === "lcd" ? named(part) : part,
+    ),
   }));
   const shown = {
     name: say(circuit.name),
@@ -47,6 +49,11 @@ export function shownIn(
   }
   return {
     circuit: { ...shown, buzzers: (circuit.buzzers ?? []).map(named) },
-    layout: { steps, script: say(circuit.script), test: say(circuit.test) },
+    layout: {
+      steps,
+      script: say(circuit.script),
+      ...(circuit.libraries ? { libraries: circuit.libraries } : {}),
+      test: say(circuit.test),
+    },
   };
 }

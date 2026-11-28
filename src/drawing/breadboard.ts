@@ -397,6 +397,20 @@ export type Part =
       readonly power: Hole;
       readonly output: Hole;
       readonly ground: Hole;
+    }
+  /**
+   * A 16×2 character LCD with an I2C backpack (ADR 0060), lying beside the board along it and joined
+   * to it by four female-to-male jumpers on its GND, VCC, SDA and SCL pins: these are the holes their
+   * other ends go in, all on one side of the channel, past which it is drawn (ADR 0061).
+   */
+  | {
+      readonly kind: "lcd";
+      /** What the page calls it, in its language: every part outside the board is named (ADR 0057). */
+      readonly name: string;
+      readonly power: Hole;
+      readonly ground: Hole;
+      readonly data: Hole;
+      readonly clock: Hole;
     };
 
 /** The rows a button's legs can be in: across the channel, or on one half of the board. */
@@ -476,6 +490,8 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.dataIn, part.power, part.ground, part.dataOut];
     case "pir":
       return [part.power, part.output, part.ground];
+    case "lcd":
+      return [part.ground, part.power, part.data, part.clock];
   }
 }
 

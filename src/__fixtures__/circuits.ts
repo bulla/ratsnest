@@ -44,6 +44,7 @@ export const FIXTURE_IDS = [
   "slide-potentiometer-read-by-an-analogue-pin",
   "switches-read-by-pull-ups",
   "motion-sensor-and-light",
+  "screen-on-i2c",
   "bar-graph-through-a-resistor-array",
 ] as const;
 
@@ -1047,6 +1048,55 @@ export const FIXTURES: Record<FixtureId, Fixture> = {
       script:
         "from machine import Pin\nfrom time import sleep\n\nred_led = Pin(15, Pin.OUT)\nmotion_sensor = Pin(22, Pin.IN)\n\ntry:\n    while True:\n        if motion_sensor.value():\n            red_led.value(1)\n            sleep(2)\n            red_led.value(0)\n            while motion_sensor.value():\n                sleep(0.05)\n        sleep(0.05)\nfinally:\n    red_led.value(0)",
       test: "Wait a minute for the sensor to settle, then wave a hand over its dome: the red LED lights for two seconds. Press Stop in Thonny to end the script.",
+    },
+  },
+  "screen-on-i2c": {
+    circuit: {
+      name: "A screen on I2C",
+      description:
+        "A character LCD beside the board, written to over I2C1 on GP14 and GP15, its power from VBUS.",
+      credit: CREDIT,
+      leds: [],
+      buttons: [],
+      buzzers: [],
+    },
+    layout: {
+      steps: [
+        {
+          title: "Take VBUS over the board",
+          parts: [{ kind: "wire", from: "a2", to: "a23", role: "power", arch: true }],
+        },
+        {
+          title: "Bring VBUS across the channel",
+          parts: [{ kind: "wire", from: "e23", to: "f23", role: "power" }],
+        },
+        {
+          title: "LCD on GP14 and GP15",
+          parts: [
+            {
+              kind: "lcd",
+              name: "LCD",
+              ground: "j19",
+              power: "j23",
+              data: "j20",
+              clock: "j21",
+            },
+          ],
+        },
+      ],
+      script:
+        'from machine import I2C, Pin\nfrom pico_i2c_lcd import I2cLcd\n\ni2c = I2C(1, sda=Pin(14), scl=Pin(15), freq=400000)\nlcd = I2cLcd(i2c, 0x27, 2, 16)\nlcd.putstr("Hello, world!")',
+      libraries: [
+        {
+          name: "RPI-PICO-I2C-LCD",
+          url: "https://github.com/T-622/RPI-PICO-I2C-LCD",
+          files: [
+            "https://raw.githubusercontent.com/T-622/RPI-PICO-I2C-LCD/main/lcd_api.py",
+            "https://raw.githubusercontent.com/T-622/RPI-PICO-I2C-LCD/main/pico_i2c_lcd.py",
+          ],
+        },
+      ],
+      test: "The screen writes Hello, world! on its top row.",
     },
   },
   "bar-graph-through-a-resistor-array": {
