@@ -450,12 +450,86 @@ describe("a motion sensor beside the board (ADR 0055, ADR 0056)", () => {
   });
 });
 
+describe("a character LCD beside the board, through its I2C backpack (ADR 0060)", () => {
+  const SCREEN = FIXTURES["screen-on-i2c"].circuit;
+  const LAYOUT = FIXTURES["screen-on-i2c"].layout;
+  const isLcd = (part: Part) => part.kind === "lcd";
+  const lcd = LAYOUT.steps.flatMap((step) => [...step.parts]).find(isLcd);
+  if (lcd?.kind !== "lcd") throw new Error("The screen's test circuit has no LCD");
+  const moved = (next: Partial<typeof lcd>, more: Part[] = []) =>
+    edited(LAYOUT, (parts) => [...replace(parts, isLcd, { ...lcd, ...next }), ...more]);
+
+  it("takes VBUS, ground and I2C1's SDA and SCL, GP14 and GP15, on jumpers into the bottom half", () => {
+    expect(lcd).toEqual({
+      kind: "lcd",
+      name: "LCD",
+      ground: "j19",
+      power: "j23",
+      data: "j20",
+      clock: "j21",
+    });
+    expect(wiringProblems(SCREEN, LAYOUT)).toEqual([]);
+  });
+
+  it("finds it without VBUS, or its GND off ground", () => {
+    expect(wiringProblems(SCREEN, moved({ power: "j24" }))).toContain(
+      "the LCD has its VCC on nothing: it goes on VBUS, the 5 V it runs on",
+    );
+    expect(wiringProblems(SCREEN, moved({ ground: "j22" }))).toContain(
+      "the LCD has its GND on nothing: it goes on ground",
+    );
+  });
+
+  it("finds its SDA and SCL swapped, each on the other's pin", () => {
+    expect(wiringProblems(SCREEN, moved({ data: "j21", clock: "j20" }))).toEqual([
+      "the LCD has its SDA on GP15, which is an I2C SCL pin: its SDA goes on an SDA pin, an even-numbered GPIO, such as GP14",
+      "the LCD has its SCL on GP14, which is an I2C SDA pin: its SCL goes on an SCL pin, an odd-numbered GPIO, such as GP15",
+    ]);
+  });
+
+  it("finds its SDA and SCL on two buses", () => {
+    // GP13, pin 17, is I2C0's SCL, and GP14 I2C1's SDA.
+    const layout = moved({ clock: "j18" });
+    expect(wiringProblems(SCREEN, layout)).toEqual([
+      "the LCD has its SDA on I2C1's GP14 and its SCL on I2C0's GP13: both go on one bus, such as GP14 and GP15",
+    ]);
+  });
+
+  it("finds SDA or SCL on a pin the ADC shares, which cannot take its backpack's 5 V", () => {
+    // GP26 and GP27, pins 31 and 32, are I2C1's SDA and SCL, but the ADC's too: brought past the
+    // Pico and across the channel.
+    const layout = moved({ data: "j25", clock: "j26" }, [
+      { kind: "wire", from: "b11", to: "b25", role: "signal" },
+      { kind: "wire", from: "e25", to: "f25", role: "signal" },
+      { kind: "wire", from: "a10", to: "a26", role: "signal" },
+      { kind: "wire", from: "e26", to: "f26", role: "signal" },
+    ]);
+    expect(wiringProblems(SCREEN, layout)).toEqual([
+      "the LCD has its SDA on GP26, which the ADC shares and which cannot take the 5 V its backpack pulls SDA up to: put it on another I2C pin",
+      "the LCD has its SCL on GP27, which the ADC shares and which cannot take the 5 V its backpack pulls SCL up to: put it on another I2C pin",
+    ]);
+  });
+
+  it("finds something else on its SDA, as a second part on the bus would be", () => {
+    const shared = moved({}, [{ kind: "resistor", ohms: 4700, from: "i20", to: "i26" }]);
+    expect(wiringProblems(SCREEN, shared)).toContain(
+      "the LCD has something else on its SDA: only its pin, GP14, goes there",
+    );
+  });
+
+  it("finds its jumpers on both sides of the channel", () => {
+    expect(wiringProblems(SCREEN, moved({ ground: "a19" }))).toEqual([
+      "the LCD has its jumpers on both sides of the channel: it lies past the edge they are on, so they go in rows a to e and the top rails, or in rows f to j and the bottom rails",
+    ]);
+  });
+});
+
 describe("a jumper that arches over the board (scratchpi's ADR 0166)", () => {
   const FOUR = FIXTURES["d-pad"].circuit;
   const arches = (layout: Layout) =>
     layout.steps.flatMap((step) => step.parts).filter((p) => p.kind === "wire" && p.arch);
 
-  it("is how a d-pad reaches BTN1 and BTN4, and a ring and a button 5 V, and nothing else", () => {
+  it("is how a d-pad reaches BTN1 and BTN4, and a ring and a screen 5 V, and nothing else", () => {
     expect(arches(FIXTURES["d-pad"].layout)).toEqual([
       { kind: "wire", from: "j18", to: "j25", role: "signal", arch: true },
       { kind: "wire", from: "b21", to: "b28", role: "signal", arch: true },
@@ -466,7 +540,11 @@ describe("a jumper that arches over the board (scratchpi's ADR 0166)", () => {
     expect(arches(FIXTURES["ring-and-button"].layout)).toEqual([
       { kind: "wire", from: "a2", to: "a28", role: "power", arch: true },
     ]);
-    const arching = new Set(["d-pad", "rgb-led-and-d-pad", "ring-and-button"]);
+    // A screen's 5 V, over the Pico to the far side of it, where its jumper crosses the channel (ADR 0060).
+    expect(arches(FIXTURES["screen-on-i2c"].layout)).toEqual([
+      { kind: "wire", from: "a2", to: "a23", role: "power", arch: true },
+    ]);
+    const arching = new Set(["d-pad", "rgb-led-and-d-pad", "ring-and-button", "screen-on-i2c"]);
     for (const id of FIXTURE_IDS)
       if (!arching.has(id)) expect(arches(FIXTURES[id].layout)).toEqual([]);
   });

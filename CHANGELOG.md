@@ -113,6 +113,19 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   says where their legs go, lists them, and notes which way round a segment goes and how the code
   says the value. On a supply both are refused. `examples/level-meter.ts` lights a five-segment bar
   graph like a level meter.
+- A character LCD with an I2C backpack, `{ kind: "lcd", name, power, ground, data, clock }`, in a
+  circuit on a Pico: its name, and the holes its four female-to-male jumpers go in, from its VCC,
+  GND, SDA and SCL pins. `rnest check` holds VCC on VBUS, GND on ground, and SDA and SCL each straight
+  on a GPIO of their own, an I2C bus's SDA and the same bus's SCL, never GP26 to GP28, which cannot
+  take the 5 V its backpack pulls them up to. The page draws it lying along the board, past the edge
+  its holes are on, screen up, its backpack's pins named past its left-hand end and its jumpers
+  black, red, blue and yellow coming round that end in lanes of their own; its screen lights in the
+  test step. It says where each jumper goes, lists it with its four jumpers, and notes its address
+  and its contrast dial. `examples/counting-screen.ts` greets and counts on it, on GP14 and GP15.
+- `libraries`, in a circuit on a Pico: the libraries its script needs that the Pico does not carry,
+  each its name, its page and the address of each of its files, every one `https://`, each file a
+  `.py` or `.mpy`. The page says above the script to save each file on the Pico under its own name,
+  and links the library and each file.
 
 ## [0.2.0] - 2026-11-23
 

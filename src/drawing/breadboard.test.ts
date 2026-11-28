@@ -31,7 +31,10 @@ import {
   DISC_MM,
   drawBreadboard,
   formatOhms,
+  LCD_MM,
   labelEndOf,
+  lcdJumperPaths,
+  lcdLayoutOf,
   leaderOf,
   PIR_MM,
   pirJumperPaths,
@@ -890,6 +893,139 @@ describe("a motion sensor beside the board, on its jumpers (ADR 0056)", () => {
     }
     // Upright on a standing board, the widest name fits across the strip it is printed on.
     expect(Math.max(...gaps)).toBeLessThan(PIR_MM.strip - 0.3);
+  });
+});
+
+describe("a character LCD along the board, its jumpers round its end (ADR 0061)", () => {
+  type Lcd = Extract<Part, { kind: "lcd" }>;
+  const bottom: Lcd = {
+    kind: "lcd",
+    name: "LCD",
+    ground: "j19",
+    power: "j23",
+    data: "j20",
+    clock: "j21",
+  };
+  const top: Lcd = {
+    kind: "lcd",
+    name: "LCD",
+    ground: "a19",
+    power: "a2",
+    data: "a16",
+    clock: "a15",
+  };
+  const drawing = (parts: Part[]): Breadboard => ({
+    parts: parts.map((part) => ({ part, group: "step-1" })),
+    tags: [],
+    ledColour: () => "red",
+    buttonColour: () => "red",
+    title: "A breadboard",
+    description: "A breadboard.",
+  });
+
+  it("lies along the board past the edge its holes are on, its far end with the board's, never turned round", () => {
+    const below = lcdLayoutOf(bottom);
+    expect(below.side).toBe("bottom");
+    expect(below.box).toEqual({
+      x: BREADBOARD_WIDTH_MM - LCD_MM.width,
+      y: BREADBOARD_HEIGHT_MM + LCD_MM.gap,
+      w: LCD_MM.width,
+      h: LCD_MM.height,
+    });
+    const above = lcdLayoutOf(top);
+    expect(above.side).toBe("top");
+    expect(above.box.y + above.box.h).toBe(-LCD_MM.gap);
+    // Its backpack's pins read GND, VCC, SDA and SCL from the top, past either edge.
+    for (const layout of [below, above]) {
+      expect(layout.pins.map((pin) => pin.label)).toEqual(["GND", "VCC", "SDA", "SCL"]);
+      const ys = layout.pins.map((pin) => pin.y);
+      for (let i = 1; i < ys.length; i++) {
+        expect((ys[i] ?? 0) - (ys[i - 1] ?? 0)).toBeCloseTo(LCD_MM.pitch, 6);
+      }
+    }
+  });
+
+  it("runs each jumper from its plug, past the left-hand end, to its hole", () => {
+    const layout = lcdLayoutOf(bottom);
+    const paths = lcdJumperPaths(bottom);
+    expect(paths.map((path) => path.at(-1))).toEqual(
+      ["j19", "j23", "j20", "j21"].map((hole) => holeCentre(hole)),
+    );
+    const end = layout.box.x - LCD_MM.header - LCD_MM.plug.length;
+    for (const [index, pin] of layout.pins.entries()) {
+      expect(paths[index]?.[0]).toEqual({ x: end, y: pin.y });
+    }
+    // Every turn is past the Pico's cable's end of the picture, which reaches 14 mm past the board.
+    for (const path of paths) for (const point of path) expect(point.x).toBeGreaterThan(-12);
+  });
+
+  it("keeps its lanes in its holes' order, so that no jumper crosses another over the board", () => {
+    const paths = lcdJumperPaths(bottom);
+    // Each jumper's lane is the y it runs along, between the board and the LCD.
+    const lanes = paths.map((path) => ({ lane: path[2]?.y ?? 0, hole: path.at(-1)?.x ?? 0 }));
+    const byHole = [...lanes].sort((a, b) => a.hole - b.hole);
+    for (let i = 1; i < byHole.length; i++) {
+      // The nearer a jumper's hole to the near end, the nearer the board its lane.
+      expect(byHole[i]?.lane ?? 0).toBeGreaterThan(byHole[i - 1]?.lane ?? 0);
+    }
+    for (const { lane } of lanes) {
+      expect(lane).toBeGreaterThan(BREADBOARD_HEIGHT_MM);
+      expect(lane).toBeLessThan(BREADBOARD_HEIGHT_MM + LCD_MM.gap - 1);
+    }
+  });
+
+  it("is drawn with its pins' names, its SDA jumper blue, inside the picture", () => {
+    const svg = drawBreadboard(drawing([bottom]));
+    for (const name of ["GND", "VCC", "SDA", "SCL"]) expect(svg).toContain(`>${name}</text>`);
+    for (const colour of ["wire-power", "wire-signal", "wire-ground", "wire-data"]) {
+      expect(svg).toContain(`stroke="var(--color-${colour})"`);
+    }
+    const [x, y, w, h] = (/viewBox="([^"]+)"/.exec(svg)?.[1] ?? "").split(" ").map(Number);
+    const { box } = lcdLayoutOf(bottom);
+    expect((y ?? 0) + (h ?? 0)).toBeGreaterThan(box.y + box.h);
+    expect(x).toBeLessThan(
+      Math.min(
+        ...lcdJumperPaths(bottom)
+          .flat()
+          .map((point) => point.x),
+      ),
+    );
+    expect(w).toBeGreaterThan(0);
+  });
+
+  it("has its pins' names clear of each other at every quarter turn, and of its screen's frame", () => {
+    const widths = ["GND", "VCC", "SDA", "SCL"].map((name) => widthOf(name, LCD_MM.print, 800));
+    // Standing, the names sit side by side, a pitch apart.
+    for (let i = 1; i < widths.length; i++) {
+      expect(LCD_MM.pitch - ((widths[i] ?? 0) + (widths[i - 1] ?? 0)) / 2).toBeGreaterThan(0.15);
+    }
+    // Lying, each fits between its board's end and the frame.
+    const margin = (LCD_MM.width - LCD_MM.bezel.width) / 2;
+    expect(Math.max(...widths)).toBeLessThan(margin - 0.6);
+  });
+
+  it("is refused lying on a motion sensor past the same edge, at every quarter turn", () => {
+    const sensor: Part = {
+      kind: "pir",
+      name: "motion sensor",
+      power: "bottom+3",
+      output: "j5",
+      ground: "bottom-4",
+    };
+    for (const orientation of [0, 90, 180, 270] as const) {
+      expect(crowdingProblems([bottom, sensor], orientation)).toEqual([
+        "the LCD with its SDA in j20 is on the motion sensor with its OUT in j5",
+      ]);
+    }
+    expect(crowdingProblems([bottom], 0)).toEqual([]);
+  });
+
+  it("has its callout leave its own board, being named (ADR 0057)", () => {
+    const { box } = lcdLayoutOf(bottom);
+    expect(leaderOf(bottom, [bottom], [bottom])?.dot).toEqual({
+      x: box.x + box.w + 0.2,
+      y: box.y + box.h / 2,
+    });
   });
 });
 

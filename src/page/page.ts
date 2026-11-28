@@ -27,7 +27,9 @@ import {
 } from "../drawing/breadboard-svg";
 import { HEADER_PINS, headerPinOfGpio } from "../drawing/geometry";
 import { CYRILLIC, FONT_FAMILY, type FontFile, isCyrillic, LATIN, widthOf } from "../fonts";
+import type { Library } from "../format";
 import { DEFAULT_LANGUAGE, type Language } from "../language";
+import { fileNameOf } from "../libraries";
 import {
   ANALOGUE_GPIOS,
   BASE_OHMS_RANGE,
@@ -256,6 +258,14 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
     }
     case "pir":
       return words.pir(escaped(part.name), at(part.power), at(part.output), at(part.ground));
+    case "lcd":
+      return words.lcd(
+        escaped(part.name),
+        at(part.ground),
+        at(part.power),
+        at(part.data),
+        at(part.clock),
+      );
     case "barGraph": {
       const legs = barGraphLegsOf(part).map((pair) =>
         pair.map((leg) => holeHtml(leg, words, names.pico)),
@@ -299,6 +309,8 @@ function labelOf(part: Part, names: Names, words: PageWords): DrawnPart["label"]
       return { title: names.led(part.led), detail: words.rgbLedLabel(printedName(part.dataIn)) };
     case "pir":
       return { title: part.name, detail: words.pirLabel(printedName(part.output)) };
+    case "lcd":
+      return { title: part.name, detail: words.lcdLabel(printedName(part.data)) };
     default:
       return undefined;
   }
@@ -310,15 +322,16 @@ const isComponent = (part: Part) =>
   part.kind === "buzzer" ||
   part.kind === "rgbLed" ||
   part.kind === "ring" ||
-  part.kind === "pir";
+  part.kind === "pir" ||
+  part.kind === "lcd";
 
 /**
  * The parts the test step picks out: the components a reader watches and presses, a ceramic
  * capacitor, which is what its circuit's script times (ADR 0051), a slide switch, a slide
  * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054), and a bar graph,
- * whose segments the reader watches light (ADR 0058). A motion sensor,
- * which the reader moves in front of, is a component, named as every part outside the board is
- * (ADR 0057).
+ * whose segments the reader watches light (ADR 0058). A motion sensor, which the reader moves in
+ * front of, and an LCD, which the reader reads, are components, named as every part outside the board
+ * is (ADR 0057).
  */
 const isTested = (part: Part) =>
   isComponent(part) ||
@@ -480,8 +493,14 @@ function partsListHtml(
   // (ADR 0055).
   const sensors = parts.flatMap((p) => (p.kind === "pir" ? [p] : []));
   for (const sensor of sensors) items.push([1, words.listPir(escaped(sensor.name))]);
-  if (sensors.length > 0) {
-    items.push([3 * sensors.length, words.listPirJumpers(3 * sensors.length)]);
+  // Each LCD by its name, and the four jumpers each one takes (ADR 0060).
+  const screens = parts.flatMap((p) => (p.kind === "lcd" ? [p] : []));
+  for (const screen of screens) items.push([1, words.listLcd(escaped(screen.name))]);
+  if (sensors.length + screens.length > 0) {
+    items.push([
+      3 * sensors.length + 4 * screens.length,
+      words.listJumpers(sensors.length, screens.length),
+    ]);
   }
   const microfarads = [
     ...new Set(parts.flatMap((p) => (p.kind === "electrolytic" ? [p.microfarads] : []))),
@@ -589,6 +608,7 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     notes.push(words.resistorArrayCode(resistorArrayCode(array) ?? "", words.ohms(array)));
   }
   if (parts.some((p) => p.kind === "pir")) notes.push(words.pirPins);
+  if (parts.some((p) => p.kind === "lcd")) notes.push(words.lcdPins);
   const [ceramic] = nanofaradsOf(parts);
   if (ceramic !== undefined) {
     const [low, high] = CHARGE_OHMS_RANGE;
@@ -643,6 +663,17 @@ function drawingOf(circuit: ShownCircuit, layout: Layout, inputs: PageInputs): s
     ].join(" "),
   });
 }
+
+/** A link that leaves the page, to a library's page or one of its files (ADR 0062). */
+const link = (address: string, text: string): string =>
+  `<a href="${escaped(address)}" rel="noreferrer">${escaped(text)}</a>`;
+
+/** The sentence above the script that says to save a library on the Pico, and links it (ADR 0062). */
+const libraryHtml = (library: Library, words: PageWords): string =>
+  words.library(
+    link(library.url, library.name),
+    library.files.map((file) => `<span class="file">${link(file, fileNameOf(file))}</span>`),
+  );
 
 /** The whole document for one circuit, laid out as its layout says, in one language. */
 export function wiringPage(
@@ -758,7 +789,12 @@ ${
         <h2 id="script-title">${escaped(words.script)}</h2>
         <button class="copy" type="button" data-copies="script" data-copied="${escaped(words.copied)}" data-selected="${escaped(words.selected)}">${escaped(words.copy)}</button>
       </div>
-      <pre id="script"><code>${escaped(layout.script)}</code></pre>
+${(layout.libraries ?? [])
+  .map(
+    (library) => `      <p class="library">${libraryHtml(library, words)}</p>
+`,
+  )
+  .join("")}      <pre id="script"><code>${escaped(layout.script)}</code></pre>
 `
 }
       <ul class="notes">${notesHtml(circuit, parts, words)}</ul>

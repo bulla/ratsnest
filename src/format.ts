@@ -325,6 +325,30 @@ export interface PirPart {
   readonly ground: Hole;
 }
 
+/**
+ * A 16×2 character LCD with an I2C backpack (ADR 0060), lying beside the board, screen up, and joined
+ * to it by four female-to-male jumpers pushed onto its backpack's pins, which it names GND, VCC, SDA
+ * and SCL: these are the holes their other ends go in, all on one side of the channel, past which the
+ * drawing lays it along the board (ADR 0061). It takes 5 V from VBUS, and its SDA and SCL go each on
+ * a GPIO of their own, one of the Pico's I2C pairs.
+ */
+export interface LcdPart {
+  readonly kind: "lcd";
+  /**
+   * What the page calls it, `LCD`, as every part outside the board has a name of its own (ADR 0057):
+   * its label past the board's end, its step's sentence and its parts list's line.
+   */
+  readonly name: Text;
+  /** Where the jumper on its VCC pin goes: VBUS, for its 5 V. */
+  readonly power: Hole;
+  /** Where the jumper on its GND pin goes: ground. */
+  readonly ground: Hole;
+  /** Where the jumper on its SDA pin goes: an I2C bus's SDA pin, GP14 on I2C1 for one. */
+  readonly data: Hole;
+  /** Where the jumper on its SCL pin goes: the same bus's SCL pin, GP15 on I2C1 for one. */
+  readonly clock: Hole;
+}
+
 /** Anything plugged into the breadboard. */
 export type Part =
   | Wire
@@ -343,7 +367,8 @@ export type Part =
   | DipSwitchPart
   | BarGraphPart
   | ResistorArrayPart
-  | PirPart;
+  | PirPart
+  | LcdPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the
@@ -445,6 +470,25 @@ export interface PicoCircuit extends CircuitBase {
   readonly buzzers?: readonly Buzzer[];
   /** A MicroPython script for Thonny that exercises every part, in each language's own names. */
   readonly script: Text;
+  /**
+   * The libraries its script imports that MicroPython does not carry (ADR 0062), which the page
+   * says to save on the Pico before running it, linking each of their files.
+   */
+  readonly libraries?: readonly Library[];
+}
+
+/**
+ * A library a script needs that the Pico does not carry (ADR 0062): its name, the address of its
+ * page, and the address of each file the reader saves on the Pico, which is saved under the last part
+ * of its address, `lcd_api.py`. None of them is a text: they are the same in every language.
+ */
+export interface Library {
+  /** Its name, as its author writes it: `RPI-PICO-I2C-LCD`. */
+  readonly name: string;
+  /** Its page, `https://…`. */
+  readonly url: string;
+  /** Each of its files' raw text, `https://…/lcd_api.py`, one `.py` or `.mpy` file each. */
+  readonly files: readonly string[];
 }
 
 /**

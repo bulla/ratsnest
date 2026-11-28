@@ -259,9 +259,10 @@ describe("a d-pad's page, its two jumpers arching over the board (scratchpi's AD
     expect(words(html)).toContain("Fils de connexion jaunes, longs et souples");
   });
 
-  it("is, with the two circuits that build on it, the only one with a jumper off the board", () => {
+  it("is, with the two circuits that build on it and a screen's, the only one with a jumper off the board", () => {
+    const arching = ["d-pad", "rgb-led-and-d-pad", "ring-and-button", "screen-on-i2c"];
     for (const id of FIXTURE_IDS) {
-      if (id === "d-pad" || id === "rgb-led-and-d-pad" || id === "ring-and-button") continue;
+      if (arching.includes(id)) continue;
       expect(page(id)).not.toContain("arching over the board");
     }
   });
@@ -409,7 +410,7 @@ describe("a motion sensor's page, the sensor beside the board (ADR 0055, ADR 005
       '<span class="count">1</span><span>Motion sensor: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.</span>',
     );
     expect(html).toContain(
-      '<span class="count">3</span><span>Female-to-male jumpers, about 20 cm: a red, a yellow and a black one for each motion sensor, to go on its pins.</span>',
+      '<span class="count">3</span><span>Female-to-male jumpers, about 20 cm: a red, a yellow and a black one for each motion sensor, to go on their pins.</span>',
     );
     expect(html).toContain("Push each jumper onto the pin of its name");
     // Only its own page has one.
@@ -472,6 +473,90 @@ describe("a motion sensor's page, the sensor beside the board (ADR 0055, ADR 005
     expect(prose).not.toMatch(/\s[:;?!]/);
     const lacking = new Set([...written(html)].filter((c) => !fileOf(c)));
     expect([...lacking]).toEqual([]);
+  });
+});
+
+describe("a screen's page, the LCD beside the board (ADR 0060, ADR 0061)", () => {
+  const ID = "screen-on-i2c";
+
+  it("says where each of its four jumpers goes, in its backpack's order", () => {
+    expect(steps(page(ID))).toContain(
+      'The LCD, beside the board, screen up: a black jumper from its GND pin to <span class="hole">j19</span> (GND, pin 18), a red one from its VCC pin to <span class="hole">j23</span>, a blue one from its SDA pin to <span class="hole">j20</span> (GP14, pin 19) and a yellow one from its SCL pin to <span class="hole">j21</span> (GP15, pin 20).',
+    );
+  });
+
+  it("lists the screen and its four jumpers, and says how to find its address and its contrast", () => {
+    const html = page(ID);
+    expect(html).toContain(
+      '<span class="count">1</span><span>LCD: a character LCD of two rows of 16, with an I2C backpack whose four pins are GND, VCC, SDA and SCL, that runs on 5 V.</span>',
+    );
+    expect(html).toContain(
+      '<span class="count">4</span><span>Female-to-male jumpers, about 20 cm: a black, a red, a blue and a yellow one for each screen, to go on their pins.</span>',
+    );
+    expect(html).toContain("0x27 on most backpacks and 0x3F on some");
+    expect(html).toContain("turn the blue dial on the backpack's back");
+  });
+
+  it("labels it by its name, and is picked out by the test", () => {
+    const html = page(ID);
+    for (const label of ["GND", "GP14", "GP15"]) expect(html).toContain(`>${label}</text>`);
+    expect(html).toContain('class="callout-title">LCD</text>');
+    expect(html).toContain('class="callout-detail">SDA to j20</text>');
+    expect(html).toContain('data-g="step-3 test" data-kind="lcd">');
+  });
+
+  it("says it in French", () => {
+    expect(words(steps(frenchPage(ID)))).toContain(
+      "Le LCD, à côté de la plaque, écran vers le haut",
+    );
+  });
+});
+
+describe("a library the script needs, above the script (ADR 0062)", () => {
+  const ID = "screen-on-i2c";
+
+  it("is named and linked, each of its files by the name it is saved under", () => {
+    const html = page(ID);
+    expect(html).toContain(
+      '<p class="library">This script needs the <a href="https://github.com/T-622/RPI-PICO-I2C-LCD" rel="noreferrer">RPI-PICO-I2C-LCD</a> library, which the Pico does not have. Open each of its files, <span class="file"><a href="https://raw.githubusercontent.com/T-622/RPI-PICO-I2C-LCD/main/lcd_api.py" rel="noreferrer">lcd_api.py</a></span> and <span class="file"><a href="https://raw.githubusercontent.com/T-622/RPI-PICO-I2C-LCD/main/pico_i2c_lcd.py" rel="noreferrer">pico_i2c_lcd.py</a></span>, copy all of it into a new tab in Thonny, and save it on the Raspberry Pi Pico under the same name, before you run the script.</p>',
+    );
+    // Above the script, which it is about.
+    expect(html.indexOf('class="library"')).toBeLessThan(html.indexOf('<pre id="script">'));
+  });
+
+  it("says a library of one file as one", () => {
+    const { circuit, layout } = FIXTURES[ID];
+    const one = {
+      ...layout,
+      libraries: [
+        {
+          name: "ssd1306",
+          url: "https://github.com/micropython/micropython-lib",
+          files: ["https://example.org/ssd1306.py"],
+        },
+      ],
+    };
+    expect(wiringPage(circuit, one, FILES)).toContain(
+      'Open its file, <span class="file"><a href="https://example.org/ssd1306.py" rel="noreferrer">ssd1306.py</a></span>, copy all of it',
+    );
+  });
+
+  it("is on no page whose circuit names none, and no link leaves any other page", () => {
+    for (const id of FIXTURE_IDS) {
+      if (id === ID) continue;
+      expect(page(id)).not.toContain('class="library"');
+      expect(page(id)).not.toContain("<a href=");
+    }
+  });
+
+  it("is said in French and Russian", () => {
+    expect(words(frenchPage(ID))).toContain(
+      "Ce script a besoin de la bibliothèque RPI-PICO-I2C-LCD, que le Pico n’a pas.",
+    );
+    const { circuit, layout } = FIXTURES[ID];
+    expect(words(wiringPage(circuit, layout, FILES, { language: "ru" }))).toContain(
+      "Этому скрипту нужна библиотека RPI-PICO-I2C-LCD, которой на Pico нет.",
+    );
   });
 });
 

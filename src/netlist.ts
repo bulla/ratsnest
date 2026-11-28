@@ -98,6 +98,16 @@ export const TIMING_SECONDS = 0.0001;
 export const SLIDE_POTENTIOMETER_OHMS_RANGE = [1000, 100000] as const;
 /** The GPIOs a Pico 2 W can read a voltage on, its analogue inputs (ADR 0053). */
 export const ANALOGUE_GPIOS = [26, 27, 28] as const;
+
+/**
+ * The I2C bus and the line a GPIO can carry (ADR 0060): they come in pairs, round the two buses, an
+ * even GPIO its bus's SDA and the odd one after it its SCL, GP0 and GP1 on I2C0, GP2 and GP3 on I2C1.
+ */
+export const i2cOf = (gpio: number): { readonly bus: 0 | 1; readonly role: "SDA" | "SCL" } => ({
+  bus: Math.floor(gpio / 2) % 2 === 0 ? 0 : 1,
+  role: gpio % 2 === 0 ? "SDA" : "SCL",
+});
+
 /**
  * What a light's resistor needs left of a supply's voltage, at the least, once the light and the diodes
  * on its way have taken theirs (ADR 0049): below it, a light glows too dimly to be sure of.
@@ -250,6 +260,7 @@ function describe(part: Part, circuit: ShownCircuit): string {
     case "dipSwitch":
       return `the ${part.switches}-way DIP switch in columns ${part.column} to ${part.column + part.switches - 1}${part.board === 2 ? " of the second breadboard" : ""}`;
     case "pir":
+    case "lcd":
       return `the ${part.name}`;
     case "barGraph":
       return `the ${part.segments}-segment bar graph in columns ${part.column} to ${part.column + part.segments - 1}${part.board === 2 ? " of the second breadboard" : ""}`;
@@ -364,7 +375,8 @@ function shapeProblems(part: Part, name: string): string[] {
       const inOrder = columns.every((column, i) => column === (columns[0] ?? 0) + i * step);
       return along && inOrder ? [] : [`${name} needs its four legs side by side in one row`];
     }
-    case "pir": {
+    case "pir":
+    case "lcd": {
       // On jumpers, its holes can be anywhere on one side of the channel, past whose edge it lies,
       // on the first board, whose edges it lies past (ADR 0056).
       const legs = legsOf(part);
@@ -475,7 +487,8 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   // where there is one (ADR 0056).
   if (usesSecondBoard(parts)) {
     for (const part of parts) {
-      if (part.kind === "pir" && legsOf(part).every((leg) => sideOf(leg) === "top")) {
+      const beside = part.kind === "pir" || part.kind === "lcd";
+      if (beside && legsOf(part).every((leg) => sideOf(leg) === "top")) {
         problems.push(
           `${describe(part, circuit)} would lie over the second breadboard: put its jumpers below the channel, in rows f to j or the bottom rails`,
         );
@@ -861,6 +874,68 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
+  // A character LCD through its I2C backpack (ADR 0060): VCC on VBUS, GND on ground, and SDA and SCL
+  // each straight on a GPIO of their own, an I2C bus's SDA and the same bus's SCL, and neither on a
+  // pin the ADC shares, which cannot take the 5 V the backpack pulls them up to.
+  for (const screen of parts) {
+    if (screen.kind !== "lcd") continue;
+    const name = describe(screen, circuit);
+    const on = (node: string) =>
+      node === ground
+        ? "ground"
+        : pinsIn(node)
+            .map((pin) => pin.label)
+            .join(" and ") || "nothing";
+    if (net(screen.power) !== vbus) {
+      problems.push(
+        `${name} has its VCC on ${on(net(screen.power))}: it goes on ${FIVE_VOLT_LABEL}, the 5 V it runs on`,
+      );
+    }
+    if (net(screen.ground) !== ground) {
+      problems.push(`${name} has its GND on ${on(net(screen.ground))}: it goes on ground`);
+    }
+    const gpios: Partial<Record<"SDA" | "SCL", number>> = {};
+    for (const [leg, role] of [
+      ["data", "SDA"],
+      ["clock", "SCL"],
+    ] as const) {
+      const node = net(screen[leg]);
+      const pins = pinsIn(node).filter((pin) => pin.kind === "gpio");
+      const [pin] = pins;
+      if (!pin || pin.gpio === undefined || pins.length !== 1 || node === ground) {
+        problems.push(`${name} has its ${role} on ${on(node)}: it goes straight to one GPIO`);
+        continue;
+      }
+      if ((terminals.get(node) ?? 0) !== 2) {
+        problems.push(
+          `${name} has something else on its ${role}: only its pin, ${pin.label}, goes there`,
+        );
+        continue;
+      }
+      if ((ANALOGUE_GPIOS as readonly number[]).includes(pin.gpio)) {
+        problems.push(
+          `${name} has its ${role} on ${pin.label}, which the ADC shares and which cannot take the 5 V its backpack pulls ${role} up to: put it on another I2C pin`,
+        );
+        continue;
+      }
+      if (i2cOf(pin.gpio).role !== role) {
+        problems.push(
+          `${name} has its ${role} on ${pin.label}, which is an I2C ${i2cOf(pin.gpio).role} pin: its ${role} goes on an ${role} pin, an ${role === "SDA" ? "even" : "odd"}-numbered GPIO, such as ${role === "SDA" ? "GP14" : "GP15"}`,
+        );
+        continue;
+      }
+      gpios[role] = pin.gpio;
+    }
+    if (gpios.SDA !== undefined && gpios.SCL !== undefined) {
+      const [data, clock] = [i2cOf(gpios.SDA), i2cOf(gpios.SCL)];
+      if (data.bus !== clock.bus) {
+        problems.push(
+          `${name} has its SDA on I2C${data.bus}'s GP${gpios.SDA} and its SCL on I2C${clock.bus}'s GP${gpios.SCL}: both go on one bus, such as GP${gpios.SDA} and GP${gpios.SDA + 1}`,
+        );
+      }
+    }
+  }
+
   // A DIP switch, each of its switches read by a pin of its own (ADR 0054): one leg straight on
   // ground and the other straight on a GPIO, which the script pulls up inside the Pico, since its
   // pull-downs cannot be relied on (erratum E9).
@@ -1046,7 +1121,8 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
   // Wires in the colour of what they carry. A red one carries 3V3, or the 5 V of VBUS where
   // a part takes it (scratchpi's ADR 0222): anywhere else, VBUS on a red wire is a mistake.
   const takesFiveVolts = parts.some(
-    (part) => part.kind === "rgbLed" || part.kind === "ring" || part.kind === "pir",
+    (part) =>
+      part.kind === "rgbLed" || part.kind === "ring" || part.kind === "pir" || part.kind === "lcd",
   );
   for (const part of parts) {
     if (part.kind !== "wire") continue;

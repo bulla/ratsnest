@@ -31,7 +31,8 @@ capacitor tester and flasher after them (M16), the diode, two buttons sharing a 
 (M17), the ceramic capacitor, two pins timing it, the fifth (M18), the slide switch, one light or
 the other, the sixth (M19), the slide potentiometer, read across both breadboards, the seventh
 (M20), the DIP switch, its switches read through the Pico's own pull-ups, the eighth (M21), and
-the LED bar graph and the resistor array, a segment lit from each pin, the ninth (M22).
+the LED bar graph and the resistor array, a segment lit from each pin, the ninth (M22), and the
+character LCD on I2C, its script's library linked from its page, the tenth (M23).
 M6 waits on the owner, for a reader of Russian; the roadmap's Open points say what it needs, in
 [`doc/ROADMAP.md`](doc/ROADMAP.md).
 
@@ -238,7 +239,9 @@ there.
 │                        `colours-on-a-slider.ts`, with a slide potentiometer (ADR 0053), and
 │                        `five-switches.ts`, with a DIP switch (ADR 0054), `motion-light.ts`,
 │                        with a motion sensor beside the board (ADR 0055), and `level-meter.ts`,
-│                        with a bar graph and a resistor array (ADR 0058, ADR 0059): ratsnest's own,
+│                        with a bar graph and a resistor array (ADR 0058, ADR 0059), and
+│                        `counting-screen.ts`, with an LCD and its library (ADR 0060 to ADR 0062):
+│                        ratsnest's own,
 │                        checked like anyone's, and in
 │                        `format-1/` the files the migration to format 2 is tested on, one for each
 │                        example older than format 2, left out of the type check (ADR 0014,
@@ -275,6 +278,8 @@ there.
 │   │                    (ADR 0039, ADR 0049)
 │   ├── ceramics.ts      A ceramic capacitor's value, and the code a real disc prints (ADR 0051)
 │   ├── resistor-arrays.ts  A resistor array's value, and the code a real one prints (ADR 0059)
+│   ├── libraries.ts     A library's addresses, and the name each of its files is saved under
+│   │                    (ADR 0062)
 │   ├── __fixtures__/    The tests' circuits: scratchpi's seven, renamed by what they hold, and one
 │   │                    on a supply, and the `circuit` skill's default credits, read from the skill
 │   ├── drawing/         The Pico, the breadboard and a supply's cell, drawn: CC BY-SA 4.0, unlike

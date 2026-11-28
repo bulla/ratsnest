@@ -53,7 +53,8 @@
 
 .breadboard-drawing.testing [data-kind="led"] .glow,
 .breadboard-drawing.testing [data-kind="rgbLed"] .glow,
-.breadboard-drawing.testing [data-kind="barGraph"] .glow {
+.breadboard-drawing.testing [data-kind="barGraph"] .glow,
+.breadboard-drawing.testing [data-kind="lcd"] .glow {
   opacity: 1;
 }
 

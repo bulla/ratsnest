@@ -30,7 +30,8 @@ ceramic capacitor, two pins timing it, M18 (ADR 0051), the slide switch, one lig
 M19 (ADR 0052), the slide potentiometer, the Pico reading it across both breadboards, M20
 (ADR 0053), and the DIP switch, five switches through the Pico's own pull-ups, M21 (ADR 0054). The
 LED bar graph and the resistor array, five segments each lit from a pin of its own, are M22
-(ADR 0058, ADR 0059).
+(ADR 0058, ADR 0059), and the character LCD on I2C, its script's library linked from its page, M23
+(ADR 0060 to ADR 0062).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -82,7 +83,9 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   switch's blue body, its slides drawn off, and the motion sensor beside the board, its pins'
   names printed at 1 mm on a strip that makes it about 2 mm taller than life (ADR 0055 to ADR 0057),
   and the bar graph's dark body, its segments lit only in the test step, and the resistor array
-  standing, yellow, printed `A331` with a dot over its common leg (ADR 0058, ADR 0059), mocked up and chosen while the owner had the work go on alone, so the owner signs
+  standing, yellow, printed `A331` with a dot over its common leg (ADR 0058, ADR 0059), and the LCD
+  lying along the board, its screen blue, its jumpers coming round its left-hand end in lanes, SDA's
+  blue (ADR 0060, ADR 0061), mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
   reader.
@@ -115,7 +118,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   the DIP switch's five switches, which are M13 to M21 (ADR 0043 to ADR 0047, ADR 0049 to ADR 0054).
   A PIR motion sensor came after them, at the owner's asking: read on a pin of its own, and drawn
   beside the board on its jumpers (ADR 0055, ADR 0056). The LED bar graph and the resistor array
-  followed, at the owner's asking, M22 (ADR 0058, ADR 0059).
+  followed, at the owner's asking, M22 (ADR 0058, ADR 0059), and the character LCD on I2C, with a
+  circuit's libraries, M23 (ADR 0060 to ADR 0062).
   The next comes from Later when a circuit needs it, and brings, as each of those did, its part's
   drawing, its kind in the format and the field checks, one rule in the wiring check, the step's
   sentence and the parts list's line in English, French and Russian, an example and a test circuit,
@@ -142,6 +146,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   them, which ADR 0004 would have to allow, is a record of its own.
 - **More parts, each when a circuit needs it** (ADR 0038): rotary potentiometers, toggle switches,
   relays, light-dependent resistors, MOSFETs, Zener and Schottky diodes, and film capacitors
+- **A second part on the LCD's I2C bus**, as the tutorial's temperature sensor shares it: the check
+  now refuses anything else on SDA or SCL (ADR 0060), and the first such part brings that use.
 - **The bar graph lit from the DIP switch**, at the owner's asking: both on the second breadboard,
   each switch lighting its segment, the tutorial's later activities (ADR 0054, ADR 0058).
 - **A full-size breadboard**, probably drawn standing up, and **other boards**: the rest of the Pico
@@ -184,3 +190,4 @@ file's Log.
 | M20       | The slide potentiometer: the Pico reads it across both breadboards, and colours two LEDs    | 0053                                    |
 | M21       | The DIP switch: five switches read through the Pico's own pull-ups, on a second breadboard  | 0054                                    |
 | M22       | The LED bar graph and the resistor array: five segments, each lit from a pin of its own     | 0058, 0059                              |
+| M23       | The character LCD on I2C, beside the board, and the libraries a script needs, linked        | 0060, 0061, 0062                        |

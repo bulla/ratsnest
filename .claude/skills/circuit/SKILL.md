@@ -281,6 +281,49 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   them; the Pico's own bottom row has room for two wires past it, not five. On a supply both are
   refused.
 
+- **A character LCD**, on a Pico, is written to over I2C through its backpack (ADR 0060):
+
+  ```ts
+  {
+    kind: "lcd",
+    name: { en: "LCD", fr: "écran LCD" },
+    ground: "j19",
+    power: "j23",
+    data: "j20",
+    clock: "j21",
+  },
+  ```
+
+  It lies beside the board, along it, and is named on the part, as the motion sensor is
+  (ADR 0057). Its four female-to-male jumpers go in these holes: `power`, from its VCC pin, on VBUS;
+  `ground`, from its GND pin, on ground; `data`, from its SDA pin, and `clock`, from its SCL pin,
+  each straight on a GPIO of its own, an I2C pair: SDA on an even GPIO and SCL on the odd one of the
+  same bus, GP14 and GP15 on I2C1, GP16 and GP17 or GP0 and GP1 on I2C0, never GP26 to GP28. All four
+  go on one side of the channel (ADR 0056), and the drawing lays it along the board past that edge,
+  its jumpers coming round its left-hand end (ADR 0061). On the bottom side, GND, GP14 and GP15 are
+  side by side, pins 18 to 20, in `j19` to `j21`, and VBUS comes over the Pico on an arching jumper
+  and across the channel, as `counting-screen.ts` does. Its script needs a library: name it in
+  `libraries`, below. On a supply it is refused.
+
+A script that imports a library the Pico does not carry names it in `libraries`, after `script`
+(ADR 0062): its name as its author writes it, the address of its page, and the address of each file
+the reader saves on the Pico, the raw text, whose last part is the name it is saved under. The page
+says to save each file before running the script, and links them. Take the addresses from the
+tutorial the person follows, or from the library's own page, never guessed.
+
+  ```ts
+  libraries: [
+    {
+      name: "RPI-PICO-I2C-LCD",
+      url: "https://github.com/T-622/RPI-PICO-I2C-LCD",
+      files: [
+        "https://raw.githubusercontent.com/T-622/RPI-PICO-I2C-LCD/main/lcd_api.py",
+        "https://raw.githubusercontent.com/T-622/RPI-PICO-I2C-LCD/main/pico_i2c_lcd.py",
+      ],
+    },
+  ],
+  ```
+
 A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
 each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So
 put the lights that stand in row f or g further from the board's far end than every button, and keep
