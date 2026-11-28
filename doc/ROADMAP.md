@@ -77,7 +77,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   capacitor's, the transistors', the flasher's lifted leader, the diode's two cases, the leaders
   lifted over lights and buttons, the ceramic capacitor's disc, the slide switch's shell, its slide
   drawn towards its left leg, the slide potentiometer's body, its value printed on it, and the DIP
-  switch's blue body, its slides drawn off, mocked up and chosen while the owner had the work go on alone, so the owner signs
+  switch's blue body, its slides drawn off, and the motion sensor beside the board, its pins'
+  names printed at 1 mm on a strip that makes it about 2 mm taller than life (ADR 0055 to ADR 0057), mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
   reader.
@@ -108,6 +109,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   the capacitor tester and flasher, the diode's two buttons and three lights, the ceramic
   capacitor's timer, the slide switch's one light or the other, the slide potentiometer's colours and
   the DIP switch's five switches, which are M13 to M21 (ADR 0043 to ADR 0047, ADR 0049 to ADR 0054).
+  A PIR motion sensor came after them, at the owner's asking: read on a pin of its own, and drawn
+  beside the board on its jumpers (ADR 0055, ADR 0056).
   The next comes from Later when a circuit needs it, and brings, as each of those did, its part's
   drawing, its kind in the format and the field checks, one rule in the wiring check, the step's
   sentence and the parts list's line in English, French and Russian, an example and a test circuit,

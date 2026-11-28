@@ -359,6 +359,97 @@ describe("the ring, standing in row j (scratchpi's ADR 0234, 0238)", () => {
   });
 });
 
+describe("a motion sensor beside the board (ADR 0055, ADR 0056)", () => {
+  const SENSOR = FIXTURES["motion-sensor-and-light"].circuit;
+  const LAYOUT = FIXTURES["motion-sensor-and-light"].layout;
+  const isPir = (part: Part) => part.kind === "pir";
+  const pir = LAYOUT.steps.flatMap((step) => [...step.parts]).find(isPir);
+  if (pir?.kind !== "pir") throw new Error("The motion sensor's test circuit has no sensor");
+  const moved = (next: Partial<typeof pir>) =>
+    edited(LAYOUT, (parts) => replace(parts, isPir, { ...pir, ...next }));
+
+  it("takes VBUS, ground and a pin of its own, on jumpers into the top half", () => {
+    expect(pir).toEqual({
+      kind: "pir",
+      name: "motion sensor",
+      power: "a2",
+      output: "a13",
+      ground: "a14",
+    });
+    expect(wiringProblems(SENSOR, LAYOUT)).toEqual([]);
+  });
+
+  it("finds it on 3V3, which is too little for it", () => {
+    expect(wiringProblems(SENSOR, moved({ power: "a6" }))).toEqual([
+      "the motion sensor has its VCC on 3V3(OUT): it goes on VBUS, the 5 V it runs on",
+    ]);
+  });
+
+  it("finds its VCC and OUT swapped, which would put VBUS where its pin should be", () => {
+    const problems = wiringProblems(SENSOR, moved({ power: "a13", output: "a2" }));
+    expect(problems).toContain(
+      "the motion sensor has its VCC on GP22: it goes on VBUS, the 5 V it runs on",
+    );
+    expect(problems).toContain(
+      "the motion sensor has its OUT on VBUS: it goes straight to one GPIO",
+    );
+  });
+
+  it("finds its OUT and GND the wrong way round", () => {
+    const problems = wiringProblems(SENSOR, moved({ output: "a14", ground: "a13" }));
+    expect(problems).toContain("the motion sensor has its GND on GP22: it goes on ground");
+    expect(problems).toContain(
+      "the motion sensor has its OUT on ground: it goes straight to one GPIO",
+    );
+  });
+
+  it("finds its OUT on two pins, or sharing its pin with something else", () => {
+    const joined = edited(LAYOUT, (parts) => [
+      ...parts,
+      { kind: "wire", from: "b13", to: "b15", role: "signal" },
+    ]);
+    expect(wiringProblems(SENSOR, joined)).toContain(
+      "the motion sensor has its OUT on GP21 and GP22: it goes straight to one GPIO",
+    );
+    const shared = edited(LAYOUT, (parts) => [
+      ...parts,
+      { kind: "resistor", ohms: 4700, from: "b13", to: "b9" },
+    ]);
+    expect(wiringProblems(SENSOR, shared)).toContain(
+      "the motion sensor has something else on its OUT: only its pin, GP22, goes there",
+    );
+  });
+
+  it("lets a red wire carry VBUS, which it takes", () => {
+    const layout = edited(LAYOUT, (parts) => [
+      ...replace(parts, isPir, { ...pir, power: "top+3" }),
+      { kind: "wire", from: "a2", to: "top+2", role: "power" },
+    ]);
+    expect(wiringProblems(SENSOR, layout)).toEqual([]);
+  });
+
+  it("finds its jumpers on both sides of the channel, with no one edge to lie past", () => {
+    expect(wiringProblems(SENSOR, moved({ ground: "i19" }))).toEqual([
+      "the motion sensor has its jumpers on both sides of the channel: it lies past the edge they are on, so they go in rows a to e and the top rails, or in rows f to j and the bottom rails",
+    ]);
+  });
+
+  it("finds it past the top edge when a second board is there, or with a jumper in that board", () => {
+    const second: Part = { kind: "wire", from: "2:j3", to: "2:j5", role: "signal" };
+    expect(
+      wiringProblems(
+        SENSOR,
+        edited(LAYOUT, (parts) => [...parts, second]),
+      ),
+    ).toContain(
+      "the motion sensor would lie over the second breadboard: put its jumpers below the channel, in rows f to j or the bottom rails",
+    );
+    expect(wiringProblems(SENSOR, moved({ output: "2:j13" }))).toContain(
+      "the motion sensor has its jumpers in the second breadboard",
+    );
+  });
+});
+
 describe("a jumper that arches over the board (scratchpi's ADR 0166)", () => {
   const FOUR = FIXTURES["d-pad"].circuit;
   const arches = (layout: Layout) =>

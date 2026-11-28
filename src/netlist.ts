@@ -11,6 +11,7 @@ import {
   holeAt,
   holeCentre,
   holeOfPin,
+  isOnSecondBoard,
   isUnderPico,
   legsOf,
   type Part,
@@ -18,8 +19,10 @@ import {
   type Row,
   rowsOf,
   SLIDE_POTENTIOMETER_LENGTH_MM,
+  sideOf,
   stripOf,
   supplyLeadsOf,
+  usesSecondBoard,
 } from "./drawing/breadboard";
 import { formatMicrofarads, formatOhms } from "./drawing/breadboard-svg";
 import { HEADER_PINS, type HeaderPin, headerPinOfGpio, PIN_PITCH_MM } from "./drawing/geometry";
@@ -244,6 +247,8 @@ function describe(part: Part, circuit: ShownCircuit): string {
       return `the ${formatOhms(part.ohms)} slide potentiometer with its wiper in ${part.wiper}`;
     case "dipSwitch":
       return `the ${part.switches}-way DIP switch in columns ${part.column} to ${part.column + part.switches - 1}${part.board === 2 ? " of the second breadboard" : ""}`;
+    case "pir":
+      return `the ${part.name}`;
   }
 }
 
@@ -353,6 +358,22 @@ function shapeProblems(part: Part, name: string): string[] {
       const inOrder = columns.every((column, i) => column === (columns[0] ?? 0) + i * step);
       return along && inOrder ? [] : [`${name} needs its four legs side by side in one row`];
     }
+    case "pir": {
+      // On jumpers, its holes can be anywhere on one side of the channel, past whose edge it lies,
+      // on the first board, whose edges it lies past (ADR 0056).
+      const legs = legsOf(part);
+      if (legs.some(isOnSecondBoard)) return [`${name} has its jumpers in the second breadboard`];
+      const sides = new Set(legs.map(sideOf));
+      const strips = new Set(legs.map(stripOf));
+      return [
+        ...(sides.size === 1
+          ? []
+          : [
+              `${name} has its jumpers on both sides of the channel: it lies past the edge they are on, so they go in rows a to e and the top rails, or in rows f to j and the bottom rails`,
+            ]),
+        ...(strips.size === legs.length ? [] : [`${name} has two jumpers in one strip`]),
+      ];
+    }
     case "button": {
       const [left, right] = part.columns;
       const [first, second] = rowsOf(part);
@@ -442,6 +463,17 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
       : coveredBySlidePotentiometer(part)) {
       const under = taken.get(hole);
       if (under) problems.push(`${under} has a leg in ${hole}, under ${describe(part, circuit)}`);
+    }
+  }
+  // A motion sensor lies past the edge its holes are on, and above the board is the second board's,
+  // where there is one (ADR 0056).
+  if (usesSecondBoard(parts)) {
+    for (const part of parts) {
+      if (part.kind === "pir" && legsOf(part).every((leg) => sideOf(leg) === "top")) {
+        problems.push(
+          `${describe(part, circuit)} would lie over the second breadboard: put its jumpers below the channel, in rows f to j or the bottom rails`,
+        );
+      }
     }
   }
   if (problems.length > 0) return problems;
@@ -789,6 +821,40 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
     }
   }
 
+  // A PIR motion sensor (ADR 0055): VCC on VBUS, the 5 V it runs on, GND on ground, and OUT straight
+  // on one GPIO, with nothing else on it, which reads high while it sees movement. No resistor: OUT
+  // is driven both ways.
+  const vbusPin = HEADER_PINS.find((pin) => pin.label === FIVE_VOLT_LABEL);
+  const vbus = vbusPin ? nets.find(pinNode(vbusPin)) : "";
+  for (const sensor of parts) {
+    if (sensor.kind !== "pir") continue;
+    const name = describe(sensor, circuit);
+    const on = (node: string) =>
+      node === ground
+        ? "ground"
+        : pinsIn(node)
+            .map((pin) => pin.label)
+            .join(" and ") || "nothing";
+    if (net(sensor.power) !== vbus) {
+      problems.push(
+        `${name} has its VCC on ${on(net(sensor.power))}: it goes on ${FIVE_VOLT_LABEL}, the 5 V it runs on`,
+      );
+    }
+    if (net(sensor.ground) !== ground) {
+      problems.push(`${name} has its GND on ${on(net(sensor.ground))}: it goes on ground`);
+    }
+    const out = net(sensor.output);
+    const pins = pinsIn(out).filter((pin) => pin.kind === "gpio");
+    const [pin] = pins;
+    if (!pin || pins.length !== 1 || out === ground) {
+      problems.push(`${name} has its OUT on ${on(out)}: it goes straight to one GPIO`);
+    } else if ((terminals.get(out) ?? 0) !== 2) {
+      problems.push(
+        `${name} has something else on its OUT: only its pin, ${pin.label}, goes there`,
+      );
+    }
+  }
+
   // A DIP switch, each of its switches read by a pin of its own (ADR 0054): one leg straight on
   // ground and the other straight on a GPIO, which the script pulls up inside the Pico, since its
   // pull-downs cannot be relied on (erratum E9).
@@ -885,7 +951,9 @@ export function wiringProblems(circuit: ShownCircuit, layout: Layout): string[] 
 
   // Wires in the colour of what they carry. A red one carries 3V3, or the 5 V of VBUS where
   // a part takes it (scratchpi's ADR 0222): anywhere else, VBUS on a red wire is a mistake.
-  const takesFiveVolts = parts.some((part) => part.kind === "rgbLed" || part.kind === "ring");
+  const takesFiveVolts = parts.some(
+    (part) => part.kind === "rgbLed" || part.kind === "ring" || part.kind === "pir",
+  );
   for (const part of parts) {
     if (part.kind !== "wire") continue;
     const pins = pinsIn(net(part.from));

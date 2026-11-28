@@ -277,6 +277,28 @@ export interface DipSwitchPart {
   readonly board?: 2;
 }
 
+/**
+ * A PIR motion sensor module (ADR 0055), lying beside the board, dome up, and joined to it by three
+ * female-to-male jumpers pushed onto its pins, which its board names VCC, OUT and GND: these are the
+ * holes their other ends go in, all on one side of the channel, past which the drawing lays it
+ * (ADR 0056). It takes 5 V from VBUS, and its OUT goes on one GPIO of its own, which reads high
+ * while it sees movement.
+ */
+export interface PirPart {
+  readonly kind: "pir";
+  /**
+   * What the page calls it, `motion sensor`, as every part outside the board has a name of its own
+   * (ADR 0057): its label past the board's end, its step's sentence and its parts list's line.
+   */
+  readonly name: Text;
+  /** Where the jumper on its VCC pin goes: VBUS, for its 5 V. */
+  readonly power: Hole;
+  /** Where the jumper on its OUT pin goes: the pin that reads it. */
+  readonly output: Hole;
+  /** Where the jumper on its GND pin goes: ground. */
+  readonly ground: Hole;
+}
+
 /** Anything plugged into the breadboard. */
 export type Part =
   | Wire
@@ -292,7 +314,8 @@ export type Part =
   | CeramicPart
   | SlideSwitchPart
   | SlidePotentiometerPart
-  | DipSwitchPart;
+  | DipSwitchPart
+  | PirPart;
 
 /**
  * One step of building the circuit: a title, perhaps a note, and the parts it places. Neither the

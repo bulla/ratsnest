@@ -251,6 +251,8 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
         part.board === 2,
       );
     }
+    case "pir":
+      return words.pir(escaped(part.name), at(part.power), at(part.output), at(part.ground));
   }
 }
 
@@ -266,6 +268,8 @@ function labelOf(part: Part, names: Names, words: PageWords): DrawnPart["label"]
     case "rgbLed":
     case "ring":
       return { title: names.led(part.led), detail: words.rgbLedLabel(printedName(part.dataIn)) };
+    case "pir":
+      return { title: part.name, detail: words.pirLabel(printedName(part.output)) };
     default:
       return undefined;
   }
@@ -276,12 +280,15 @@ const isComponent = (part: Part) =>
   part.kind === "button" ||
   part.kind === "buzzer" ||
   part.kind === "rgbLed" ||
-  part.kind === "ring";
+  part.kind === "ring" ||
+  part.kind === "pir";
 
 /**
  * The parts the test step picks out: the components a reader watches and presses, a ceramic
- * capacitor, which is what its circuit's script times (ADR 0051), and a slide switch, a slide
- * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054).
+ * capacitor, which is what its circuit's script times (ADR 0051), a slide switch, a slide
+ * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054). A motion sensor,
+ * which the reader moves in front of, is a component, named as every part outside the board is
+ * (ADR 0057).
  */
 const isTested = (part: Part) =>
   isComponent(part) ||
@@ -413,6 +420,13 @@ function partsListHtml(
     const count = parts.filter((p) => p.kind === "dipSwitch" && p.switches === switches).length;
     items.push([count, words.listDipSwitch(switches, count)]);
   }
+  // Each motion sensor by its name (ADR 0057), and the three jumpers each one takes to the board
+  // (ADR 0055).
+  const sensors = parts.flatMap((p) => (p.kind === "pir" ? [p] : []));
+  for (const sensor of sensors) items.push([1, words.listPir(escaped(sensor.name))]);
+  if (sensors.length > 0) {
+    items.push([3 * sensors.length, words.listPirJumpers(3 * sensors.length)]);
+  }
   const microfarads = [
     ...new Set(parts.flatMap((p) => (p.kind === "electrolytic" ? [p.microfarads] : []))),
   ].sort((a, b) => a - b);
@@ -507,6 +521,7 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     notes.push(words.slidePotentiometerWiper(ANALOGUE_GPIOS.map((gpio) => `GP${gpio}`)));
   }
   if (parts.some((p) => p.kind === "dipSwitch")) notes.push(words.dipPullUp);
+  if (parts.some((p) => p.kind === "pir")) notes.push(words.pirPins);
   const [ceramic] = nanofaradsOf(parts);
   if (ceramic !== undefined) {
     const [low, high] = CHARGE_OHMS_RANGE;

@@ -114,7 +114,7 @@ A circuit with a supply:
 - **may have electrolytic capacitors, each keeping a light lit, two NPN transistors that flash
   two lights, diodes on lights' ways, and slide switches lighting one light or another** (below).
 
-## Capacitors, transistors, diodes, switches and potentiometers (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0054)
+## Capacitors, transistors, diodes, switches, potentiometers and sensors (ADR 0038 to ADR 0041, ADR 0043 to ADR 0047, ADR 0049 to ADR 0056)
 
 ratsnest knows a new part only in the use its example teaches, and refuses it anywhere else
 (ADR 0038). A part goes in its step as a resistor does, its legs named by what they are, with no
@@ -235,6 +235,29 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   Pico's own pull-downs is refused, since the Pico 2 W's pull-downs cannot be relied on: wire them to
   ground instead, and say so in the description. On the second breadboard, the Pico's row c pins are
   right below it, as `five-switches.ts` uses them. On a supply it has no use yet, and is refused.
+- **A PIR motion sensor**, on a Pico, is read on a pin of its own (ADR 0055):
+
+  ```ts
+  {
+    kind: "pir",
+    name: { en: "motion sensor", fr: "détecteur de mouvement" },
+    power: "a2",
+    output: "a13",
+    ground: "a14",
+  },
+  ```
+
+  Every part outside the breadboard has a `name`, in each of the circuit's languages, written on the
+  part (ADR 0057): its label, its step's sentence and its parts list's line call it by it. It lies
+  beside the board, and its three female-to-male jumpers go in these holes: `power`, from
+  its VCC pin, on VBUS for its 5 V, `a2` or `b2`, never 3V3; `output`, from its OUT pin, straight on
+  one GPIO with nothing else on it, and no resistor; `ground`, from its GND pin, on ground, better a
+  pin the Pico prints `GND` than pin 33, `AGND`. All three go on one side of the channel, rows a to e
+  and the top rails or rows f to j and the bottom rails, since the drawing lays it past that edge
+  (ADR 0056); the top side has VBUS, GND and GP16 to GP22 and GP26 to GP28. With a second breadboard
+  above, the bottom side. The script reads the pin, `Pin(22, Pin.IN)`, high while it sees movement,
+  and the `test` says to wait up to a minute after plugging in for it to settle. On a supply it is
+  refused.
 
 A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
 each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So

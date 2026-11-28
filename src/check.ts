@@ -49,11 +49,12 @@ export function checkSource(source: string, file: string): Checked {
 
   // Every word the engine places, clear at every quarter turn the page can be drawn at (ADR 0003),
   // in every language the circuit has, since a value is as wide as its language writes it (ADR 0011).
-  const parts = circuit.steps.flatMap((step) => step.parts);
-  // A problem met in some of the circuit's languages only says which.
+  // A problem met in some of the circuit's languages only says which. Each language's parts are the
+  // circuit's shown in it, since a part outside the board carries its own name (ADR 0057).
   const languages = languagesOf(circuit);
   const met = new Map<string, Set<string>>();
   for (const each of languages) {
+    const parts = shownIn(circuit, each).layout.steps.flatMap((step) => step.parts);
     for (const orientation of ORIENTATIONS) {
       for (const problem of crowdingProblems(
         parts,

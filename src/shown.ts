@@ -20,10 +20,12 @@ export function shownIn(
 ): { readonly circuit: ShownCircuit; readonly layout: Layout } {
   const say = (text: Text) => inLanguage(text, language);
   const named = <T extends { readonly name: Text }>(part: T) => ({ ...part, name: say(part.name) });
+  // A part outside the board carries its own name, which is taken into the language as a
+  // component's is (ADR 0057).
   const steps = circuit.steps.map((step) => ({
     title: say(step.title),
     ...(step.note ? { note: say(step.note) } : {}),
-    parts: step.parts,
+    parts: step.parts.map((part) => (part.kind === "pir" ? named(part) : part)),
   }));
   const shown = {
     name: say(circuit.name),

@@ -33,6 +33,7 @@ import {
   rowY,
   SECOND_BOARD_Y_MM,
   SLIDE_POTENTIOMETER_BODY_MM,
+  sideOf,
   slidePotentiometerBoxOf,
   supplyLeadsOf,
   usesSecondBoard,
@@ -1039,6 +1040,13 @@ function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: num
       if (other.kind === "slidePotentiometer" && overlap(box, slidePotentiometerBoxOf(other)))
         return false;
       if (other.kind === "dipSwitch" && overlap(box, dipBoxOf(other))) return false;
+      if (other.kind === "pir") {
+        for (const path of pirJumperPaths(other)) {
+          for (let i = 1; i < path.length; i++) {
+            if (segmentTouches(path[i - 1] as Point, path[i] as Point, 0.6, box)) return false;
+          }
+        }
+      }
       for (const hole of legsOf(other)) if (inside(holeCentre(hole), 0.8)) return false;
     }
     return true;
@@ -2017,6 +2025,216 @@ function drawRing(part: Extract<Part, { kind: "ring" }>): string {
   );
 }
 
+// --- A part on jumpers, beside the board (ADR 0056). ---
+
+/**
+ * A PIR motion sensor module (ADR 0055), at its size: its board, the square base of its dome, and a
+ * strip below it where its pins' names are printed, deep enough for `GND` upright on a standing board,
+ * which makes the board about 2 mm taller than life (ADR 0056). Its pins are 2.54 mm apart, as they
+ * are, and their names as small as the Pico's own smallest print, so that each fits beside its
+ * neighbour's; the plug of each jumper stands out past its board's edge.
+ */
+export const PIR_MM = {
+  width: 32.4,
+  height: 26.4,
+  base: 23,
+  dome: 11,
+  strip: 2.8,
+  pitch: PIN_PITCH_MM,
+  /** The size its pins' names are printed at, upright at every quarter turn. */
+  print: 1,
+  plug: { width: 2.4, length: 4.5 },
+  /** How far past the breadboard's edge the edge its pins are at lies. */
+  gap: 9,
+} as const;
+
+type PirPart = Extract<Part, { kind: "pir" }>;
+
+/** Its pins along its edge, read with them towards you and its dome up: VCC, OUT and GND. */
+const PIR_PINS = [
+  ["power", "VCC"],
+  ["output", "OUT"],
+  ["ground", "GND"],
+] as const;
+
+/** What a jumper on one of its pins carries, which is the jumper's colour. */
+const PIR_ROLE: Record<(typeof PIR_PINS)[number][0], WireRole> = {
+  power: "power",
+  output: "signal",
+  ground: "ground",
+};
+
+/** Where a motion sensor lies, and where its pins and their jumpers' plugs are. */
+export interface PirLayout {
+  /** Its board, past the breadboard's edge. */
+  readonly box: Box;
+  /** The edge of the breadboard it lies past, the side of the channel its holes are on. */
+  readonly side: "top" | "bottom";
+  /** The y its pins are at, the edge of its board nearer the breadboard. */
+  readonly edge: number;
+  /** +1 when the breadboard is below it, −1 when above: the way its pins point. */
+  readonly toward: 1 | -1;
+  readonly pins: readonly {
+    readonly leg: (typeof PIR_PINS)[number][0];
+    readonly label: string;
+    readonly x: number;
+  }[];
+}
+
+/**
+ * Where a motion sensor lies (ADR 0056): past the edge its holes are on, its pins towards the board,
+ * its middle over theirs, moved along only as far as keeps it within the board's length. Past the
+ * bottom edge it is turned round, so its pins read GND, OUT and VCC from the left.
+ */
+export function pirLayoutOf(part: PirPart): PirLayout {
+  const side = sideOf(part.power);
+  const xs = legsOf(part).map((leg) => holeCentre(leg).x);
+  const middle = xs.reduce((sum, x) => sum + x, 0) / xs.length;
+  const x = Math.min(Math.max(middle - PIR_MM.width / 2, 0), BREADBOARD_WIDTH_MM - PIR_MM.width);
+  const toward = side === "top" ? 1 : -1;
+  const edge = side === "top" ? -PIR_MM.gap : BREADBOARD_HEIGHT_MM + PIR_MM.gap;
+  const centre = x + PIR_MM.width / 2;
+  const order = side === "top" ? PIR_PINS : [...PIR_PINS].reverse();
+  return {
+    box: {
+      x,
+      y: side === "top" ? edge - PIR_MM.height : edge,
+      w: PIR_MM.width,
+      h: PIR_MM.height,
+    },
+    side,
+    edge,
+    toward,
+    pins: order.map(([leg, label], index) => ({
+      leg,
+      label,
+      x: centre + (index - 1) * PIR_MM.pitch,
+    })),
+  };
+}
+
+/** A jumper from the end of its plug on one of the sensor's pins to its hole, as a cubic curve. */
+function pirJumperCurve(
+  layout: PirLayout,
+  pin: PirLayout["pins"][number],
+  hole: Point,
+): [Point, Point, Point, Point] {
+  const start = { x: pin.x, y: layout.edge + layout.toward * PIR_MM.plug.length };
+  const half = (hole.y - start.y) / 2;
+  return [start, { x: start.x, y: start.y + half }, { x: hole.x, y: hole.y - half }, hole];
+}
+
+/** The lines a motion sensor's jumpers are drawn along, for a value tag to keep off. */
+export function pirJumperPaths(part: PirPart): Point[][] {
+  const layout = pirLayoutOf(part);
+  return layout.pins.map((pin) => {
+    const [p0, p1, p2, p3] = pirJumperCurve(layout, pin, holeCentre(part[pin.leg]));
+    return Array.from({ length: 41 }, (_, i) => {
+      const t = i / 40;
+      const u = 1 - t;
+      const at = (k: "x" | "y") =>
+        u * u * u * p0[k] + 3 * u * u * t * p1[k] + 3 * u * t * t * p2[k] + t * t * t * p3[k];
+      return { x: at("x"), y: at("y") };
+    });
+  });
+}
+
+/**
+ * A PIR motion sensor lying beside the board, dome up (ADR 0055, ADR 0056), seen from above: its
+ * green board with a mounting hole at each side, the white dome on its square base, its pins' names
+ * printed upright on the strip by its pins, a black plug on each pin, and a jumper from each plug to
+ * its hole, red to VCC, yellow to OUT and black to GND.
+ */
+function drawPir(part: PirPart): string {
+  const layout = pirLayoutOf(part);
+  const { box, edge, toward } = layout;
+  // A distance from the edge its pins are at, away from the breadboard, as a y.
+  const away = (distance: number) => edge - toward * distance;
+  const centre = box.x + box.w / 2;
+  const domeY = away(PIR_MM.strip + PIR_MM.base / 2);
+  const tab = (box.w - PIR_MM.base) / 2;
+  const out: string[] = [
+    rect(
+      box.x,
+      box.y,
+      box.w,
+      box.h,
+      `rx="0.9" fill="${token("board")}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.25"`,
+    ),
+  ];
+  for (const x of [box.x + tab / 2, box.x + box.w - tab / 2]) {
+    out.push(
+      circle(x, domeY, 1.25, `fill="${token("board-metal")}"`),
+      circle(x, domeY, 0.8, `fill="${token("board-chip")}"`),
+    );
+  }
+  const baseTop = Math.min(away(PIR_MM.strip), away(PIR_MM.strip + PIR_MM.base));
+  out.push(
+    rect(
+      centre - PIR_MM.base / 2,
+      baseTop,
+      PIR_MM.base,
+      PIR_MM.base,
+      `rx="0.8" fill="${token("led-white")}" stroke="${token("breadboard-edge")}" stroke-width="0.25"`,
+    ),
+    circle(centre + 0.7, domeY + 0.9, PIR_MM.dome, `fill="${token("shade")}" fill-opacity="0.12"`),
+    circle(
+      centre,
+      domeY,
+      PIR_MM.dome,
+      `fill="${token("led-white")}" stroke="${token("breadboard-edge")}" stroke-width="0.3"`,
+    ),
+  );
+  // The dome's lens is moulded in facets: rings about its middle, and spokes between them.
+  const facet = `fill="none" stroke="${token("shade")}" stroke-opacity="0.1" stroke-width="0.22"`;
+  out.push(circle(centre, domeY, 3.6, facet), circle(centre, domeY, 7.4, facet));
+  for (let spoke = 0; spoke < 8; spoke += 1) {
+    const angle = (spoke * Math.PI) / 4 + Math.PI / 8;
+    const [dx, dy] = [Math.cos(angle), Math.sin(angle)];
+    out.push(
+      line(
+        centre + dx * 3.6,
+        domeY + dy * 3.6,
+        centre + dx * PIR_MM.dome,
+        domeY + dy * PIR_MM.dome,
+        facet,
+      ),
+    );
+  }
+  out.push(circle(centre - 3.8, domeY - 3.8, 2.4, `fill="${token("shine")}" fill-opacity="0.55"`));
+  const plugTop = Math.min(edge, edge + toward * PIR_MM.plug.length);
+  for (const pin of layout.pins) {
+    out.push(
+      word(
+        pin.x,
+        away(PIR_MM.strip / 2),
+        pin.label,
+        `font-size="${PIR_MM.print}" font-weight="800" fill="${token("board-silk")}"`,
+      ),
+      rect(
+        pin.x - PIR_MM.plug.width / 2,
+        plugTop,
+        PIR_MM.plug.width,
+        PIR_MM.plug.length,
+        `rx="0.3" fill="${token("board-chip")}"`,
+      ),
+    );
+  }
+  for (const pin of layout.pins) {
+    const hole = holeCentre(part[pin.leg]);
+    const [p0, p1, p2, p3] = pirJumperCurve(layout, pin, hole);
+    const colour = token(WIRE_TOKEN[PIR_ROLE[pin.leg]]);
+    const d = `M${n(p0.x)} ${n(p0.y)} C${n(p1.x)} ${n(p1.y)} ${n(p2.x)} ${n(p2.y)} ${n(p3.x)} ${n(p3.y)}`;
+    out.push(
+      `<path d="${d}" fill="none" stroke="${colour}" stroke-width="1.15" stroke-linecap="round"/>`,
+      `<path d="${d}" transform="translate(0.22 0)" fill="none" stroke="${token("shine")}" stroke-opacity="0.22" stroke-width="0.28" stroke-dasharray="0 1.2 1000"/>`,
+      circle(hole.x, hole.y, 0.72, `fill="${colour}"`),
+      circle(hole.x, hole.y, 0.32, `fill="${token("lead")}"`),
+    );
+  }
+  return out.join("");
+}
+
 // --- Labels in the margin. ---
 
 /**
@@ -2240,6 +2458,11 @@ function anchorOf(part: Part): { left: number; right: number; y: number } | unde
         right: mid + RGB_LENS_RADIUS_MM + 0.2,
         y: nearestBetweenRows(centre),
       };
+    }
+    case "pir": {
+      // Its own board, past the breadboard's edge, where nothing else is (ADR 0056).
+      const { box } = pirLayoutOf(part);
+      return { left: box.x - 0.2, right: box.x + box.w + 0.2, y: box.y + box.h / 2 };
     }
     case "ring": {
       // The header's ends: the ring itself hangs below the board, past the margin.
@@ -2490,6 +2713,9 @@ function drawPart(
     case "dipSwitch":
       body = drawDipSwitch(part);
       break;
+    case "pir":
+      body = drawPir(part);
+      break;
   }
   const label =
     drawn.label && leader && place
@@ -2562,13 +2788,21 @@ function drawTurned(drawing: Breadboard): string {
   );
   const over = (top: boolean) =>
     arches.some((part) => archesOverTop(part) === top) ? ARCH_LIFT_MM + 1.5 : 0;
+  // A motion sensor beside the board (ADR 0056) takes the picture past the edge it lies past.
+  const sensors = drawing.parts.flatMap(({ part }) =>
+    part.kind === "pir" ? [pirLayoutOf(part).box] : [],
+  );
   // A second board above the first (scratchpi's ADR 0226) is room enough for an arch over the top edge.
-  const top = second ? SECOND_BOARD_Y_MM - 3 : -3 - over(true);
+  const top = Math.min(
+    second ? SECOND_BOARD_Y_MM - 3 : -3 - over(true),
+    ...sensors.map((box) => box.y - 3),
+  );
   // A ring laid out below the board (scratchpi's ADR 0238) is room enough for an arch under it.
   const rings = drawing.parts.flatMap(({ part }) => (part.kind === "ring" ? [part] : []));
   const bottom = Math.max(
     BREADBOARD_HEIGHT_MM + 3 + over(false),
     ...rings.map((ring) => ringCentreOf(ring).y + RING_MM.outer + 3),
+    ...sensors.map((box) => box.y + box.h + 3),
   );
   const height = bottom - top;
   const labelled = drawing.parts.filter((drawn) => drawn.label).map((drawn) => drawn.part);
@@ -2606,11 +2840,12 @@ function drawTurned(drawing: Breadboard): string {
     turn === 0
       ? { x: flatLeft, y: flatTop, w: width + left - flatLeft, h: flatBottom - flatTop }
       : turnedView({ x: left, y: top, w: far - left, h: height }, [...places.values()]);
-  // Wires are laid over everything else, the way they are on the bench, and an arching one is
-  // over them too.
+  // Wires are laid over everything else, the way they are on the bench, a sensor's long jumpers
+  // over the flat ones (ADR 0056), and an arching one is over them too.
   const ordered = [
-    ...drawing.parts.filter(({ part }) => part.kind !== "wire"),
+    ...drawing.parts.filter(({ part }) => part.kind !== "wire" && part.kind !== "pir"),
     ...drawing.parts.filter(({ part }) => part.kind === "wire" && !part.arch),
+    ...drawing.parts.filter(({ part }) => part.kind === "pir"),
     ...drawing.parts.filter(({ part }) => part.kind === "wire" && part.arch),
   ];
   return (
@@ -2714,6 +2949,37 @@ export function crowdingProblems(
       for (let j = i + 1; j < words.length; j++) {
         const [a, b] = [words[i], words[j]];
         if (a && b && overlap(a.box, b.box)) problems.push(`${a.name} is on ${b.name}`);
+      }
+    }
+    // A motion sensor beside the board, on another, or on the ring that hangs past the same edge
+    // (ADR 0056): neither has anywhere else to go.
+    const beside = parts.flatMap((part) => {
+      if (part.kind === "pir") {
+        return [
+          {
+            name: `the motion sensor with its OUT in ${printedName(part.output)}`,
+            box: pirLayoutOf(part).box,
+            sensor: true,
+          },
+        ];
+      }
+      if (part.kind !== "ring") return [];
+      const centre = ringCentreOf(part);
+      const r = RING_MM.outer;
+      return [
+        {
+          name: `the ring with its data in in ${printedName(part.dataIn)}`,
+          box: { x: centre.x - r, y: centre.y - r, w: 2 * r, h: 2 * r },
+          sensor: false,
+        },
+      ];
+    });
+    for (let i = 0; i < beside.length; i++) {
+      for (let j = i + 1; j < beside.length; j++) {
+        const [a, b] = [beside[i], beside[j]];
+        if (a && b && (a.sensor || b.sensor) && overlap(a.box, b.box)) {
+          problems.push(`${a.name} is on ${b.name}`);
+        }
       }
     }
     return problems;

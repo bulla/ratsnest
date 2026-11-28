@@ -91,6 +91,16 @@ belongs to: Added, Changed, Deprecated, Removed, Fixed or Security.
   slide in each switch's window, ON along its top edge and the switches' numbers along its bottom,
   says which way round it goes and where its first and last switches' legs are, lists it, and notes
   how its switches are read. On a supply it is refused.
+- A PIR motion sensor, `{ kind: "pir", name, power, output, ground }`, in a circuit on a Pico: its
+  name, in each of the circuit's languages, which every part outside the breadboard has, and the
+  holes its three female-to-male jumpers go in, from its VCC, OUT and GND pins. `rnest check` holds
+  VCC on VBUS, GND on ground and OUT straight on one GPIO with nothing else on it, its jumpers all on
+  one side of the channel, and below it when a second breadboard is used. The page draws it lying
+  beside the board, past the edge its holes are on, dome up, its pins 2.54 mm apart and named, its
+  jumpers red, yellow and black, and its label past the board's end; says where each jumper goes;
+  lists it by its name, with its three jumpers; and notes that they go on by the names printed on
+  it. `examples/motion-light.ts` lights an LED for two seconds whenever
+  it sees movement.
 
 ## [0.2.0] - 2026-11-23
 

@@ -125,3 +125,6 @@ Each new record adds a row here.
 | [0052](0052-let-a-slide-switch-light-one-light-or-the-other-on-a-supply.md)                                      | Let a slide switch light one light or the other, on a supply                                       |
 | [0053](0053-let-the-pico-read-a-slide-potentiometer-lying-across-both-breadboards.md)                            | Let the Pico read a slide potentiometer, lying across both breadboards                             |
 | [0054](0054-let-the-pico-read-a-dip-switchs-switches-each-from-ground-through-its-own-pull-up.md)                | Let the Pico read a DIP switch's switches, each from ground through its own pull-up                |
+| [0055](0055-let-the-pico-read-a-pir-motion-sensor-on-a-pin-of-its-own-powered-from-vbus.md)                      | Let the Pico read a PIR motion sensor on a pin of its own, powered from VBUS                       |
+| [0056](0056-draw-a-part-on-jumpers-beside-the-board-past-the-edge-its-holes-are-on.md)                           | Draw a part on jumpers beside the board, past the edge its holes are on                            |
+| [0057](0057-give-every-part-outside-the-breadboard-a-name-written-on-the-part.md)                                | Give every part outside the breadboard a name, written on the part                                 |

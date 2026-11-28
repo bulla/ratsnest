@@ -1,6 +1,6 @@
 # ADR 0041: Place a new part in its step as a resistor is, with no name of its own
 
-**Status:** Accepted · 2026-11-23
+**Status:** Accepted · 2026-11-23 · Amended by ADR-0057 (a part outside the board has a name of its own, written on the part)
 
 ## Context
 

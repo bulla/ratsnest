@@ -242,6 +242,7 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   slideSwitch: ["kind", "left", "middle", "right"],
   slidePotentiometer: ["kind", "ohms", "wiper", "end", "otherEnd"],
   dipSwitch: ["kind", "switches", "column", "board"],
+  pir: ["kind", "name", "power", "output", "ground"],
 };
 
 /** The parts a circuit with a supply may hold: no buzzer, RGB LED or ring, which need a Pico. */
@@ -380,6 +381,11 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
     }
     case "slideSwitch":
       for (const leg of ["left", "middle", "right"]) fields.hole(leg);
+      return;
+    case "pir":
+      // Every part outside the board has a name of its own (ADR 0057).
+      fields.text("name");
+      for (const leg of ["power", "output", "ground"]) fields.hole(leg);
       return;
     case "slidePotentiometer": {
       const ohms = fields.required("ohms", "a value in ohms");
@@ -676,6 +682,17 @@ export function textsOf(circuit: Circuit): [string, Text][] {
     ...circuit.steps.flatMap((step, index): [string, Text][] => [
       [pathOf(pathOf("steps", index), "title"), step.title],
       ...(step.note ? [[pathOf(pathOf("steps", index), "note"), step.note] as [string, Text]] : []),
+      // The name of each part outside the board, which it carries itself (ADR 0057).
+      ...step.parts.flatMap((part, partIndex): [string, Text][] =>
+        part.kind === "pir"
+          ? [
+              [
+                pathOf(pathOf(pathOf(pathOf("steps", index), "parts"), partIndex), "name"),
+                part.name,
+              ],
+            ]
+          : [],
+      ),
     ]),
     ...(isSupplied(circuit) ? [] : [["script", circuit.script] as [string, Text]]),
     ["test", circuit.test],
