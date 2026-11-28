@@ -9,11 +9,13 @@ import {
 } from "./circuit";
 import { DIODE_NAMES } from "./diodes";
 import {
+  BAR_GRAPH_SEGMENTS,
   DIP_SWITCHES,
   legsOf,
   type Part as Placed,
   parseHole,
   pinOfStrip,
+  RESISTOR_ARRAY_RESISTORS,
 } from "./drawing/breadboard";
 import { HEADER_PINS } from "./drawing/geometry";
 import { fileOf } from "./fonts";
@@ -21,6 +23,7 @@ import type { Circuit, Language, Setup, SupplyCircuit, Text } from "./format";
 import { LANGUAGES } from "./language";
 import { isUsableGpio } from "./pins";
 import { pathOf } from "./read";
+import { resistorArrayCode } from "./resistor-arrays";
 import { TRANSISTOR_NAMES } from "./transistors";
 
 /**
@@ -227,6 +230,22 @@ function pinField(fields: Fields, kind: "gpio" | "rgb", path: string, problems: 
   pinProblems(pinFields, kind);
 }
 
+/** A whole number of things a part has, from the fewest to the most it can have, or undefined. */
+function count(
+  fields: Fields,
+  key: string,
+  what: string,
+  [fewest, most]: readonly [number, number],
+): number | undefined {
+  const value = fields.required(key, what);
+  if (value === undefined) return undefined;
+  if (typeof value !== "number" || !Number.isInteger(value) || value < fewest || value > most) {
+    fields.problem(key, `is not a whole number from ${fewest} to ${most}`);
+    return undefined;
+  }
+  return value;
+}
+
 const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   wire: ["kind", "from", "to", "role", "arch"],
   resistor: ["kind", "ohms", "from", "to"],
@@ -242,6 +261,8 @@ const PART_FIELDS: Readonly<Record<string, readonly string[]>> = {
   slideSwitch: ["kind", "left", "middle", "right"],
   slidePotentiometer: ["kind", "ohms", "wiper", "end", "otherEnd"],
   dipSwitch: ["kind", "switches", "column", "board"],
+  barGraph: ["kind", "segments", "colour", "column", "board"],
+  resistorArray: ["kind", "ohms", "resistors", "common"],
   pir: ["kind", "name", "power", "output", "ground"],
 };
 
@@ -423,6 +444,43 @@ function partProblems(part: Record_, fields: Fields, ids: Ids, supplied: boolean
       }
       if (Object.hasOwn(part, "board") && part.board !== 2) {
         fields.problem("board", "is not 2, the second breadboard, or left out for the first");
+      }
+      return;
+    }
+    case "barGraph": {
+      const segments = count(fields, "segments", "how many segments", BAR_GRAPH_SEGMENTS);
+      fields.oneOf("colour", LED_COLOURS);
+      const column = fields.required("column", "its first column");
+      if (
+        column !== undefined &&
+        (typeof column !== "number" ||
+          !Number.isInteger(column) ||
+          column < 1 ||
+          column + (segments ?? 1) - 1 > 30)
+      ) {
+        fields.problem("column", "is not a column from which every segment has one, from 1 to 30");
+      }
+      if (Object.hasOwn(part, "board") && part.board !== 2) {
+        fields.problem("board", "is not 2, the second breadboard, or left out for the first");
+      }
+      return;
+    }
+    case "resistorArray": {
+      const ohms = fields.required("ohms", "a value in ohms");
+      if (ohms !== undefined && (typeof ohms !== "number" || !resistorArrayCode(ohms))) {
+        fields.problem(
+          "ohms",
+          "is not a value in ohms a resistor array's code can print: two figures and the zeros after them, 10 or more, such as `330` or `1000`",
+        );
+      }
+      const resistors = count(fields, "resistors", "how many resistors", RESISTOR_ARRAY_RESISTORS);
+      fields.hole("common");
+      const common = typeof part.common === "string" ? parseHole(part.common) : undefined;
+      if (common && (common.kind !== "main" || common.column + (resistors ?? 1) > 30)) {
+        fields.problem(
+          "common",
+          "is not a hole in a row with a hole for every resistor's leg to its right, in columns up to 30",
+        );
       }
       return;
     }

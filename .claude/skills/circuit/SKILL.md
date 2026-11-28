@@ -259,6 +259,28 @@ circuit's own words, as a resistor's is not: point at it by the step that places
   and the `test` says to wait up to a minute after plugging in for it to settle. On a supply it is
   refused.
 
+- **An LED bar graph and a resistor array**, on a Pico, light a segment from each pin (ADR 0058,
+  ADR 0059):
+
+  ```ts
+  { kind: "barGraph", segments: 5, colour: "red", column: 15, board: 2 },
+  { kind: "resistorArray", ohms: 330, resistors: 5, common: "2:d14" },
+  ```
+
+  The bar graph has 2 to 10 segments side by side across the channel, in one of a light's colours,
+  segment 1 in `column` and the rest to its right, each with its anode in row f and its cathode in
+  row e, the side a real one marks with its flat corner and its writing, which a step's note can
+  point the reader to; `board: 2` puts it on the second breadboard. Each anode goes straight to a pin of its own,
+  with nothing else on it, and each cathode to ground through one resistor of 220 Ω to 1 kΩ: a plain
+  resistor, or one of a resistor array's. The array stands in one row, its common leg, under its
+  dot, in `common`, and one leg for each resistor to its right, a hole apart: put it in the cathodes'
+  half, its resistors' legs in their strips, and wire its common strip to ground from a hole below
+  it, since its body stands over the two rows above its legs. Its `ohms` is one its code can print,
+  two figures and zeros, `330` for `A331`. Every resistor of an array goes to a segment. On the
+  second breadboard, the Pico's row c pins are right below the anodes, as `level-meter.ts` uses
+  them; the Pico's own bottom row has room for two wires past it, not five. On a supply both are
+  refused.
+
 A light's leader rises over the lights, buttons, transistors and capacitors between it and its label,
 each to a lane of its own (ADR 0047, ADR 0050), but a button's runs straight along the channel. So
 put the lights that stand in row f or g further from the board's far end than every button, and keep

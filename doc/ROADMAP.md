@@ -28,7 +28,9 @@ transistors M14 and M15 (ADR 0044, ADR 0045), the owner's capacitor tester and f
 (ADR 0046, ADR 0047), the diode, two buttons sharing a light, M17 (ADR 0049, ADR 0050), the
 ceramic capacitor, two pins timing it, M18 (ADR 0051), the slide switch, one light or the other,
 M19 (ADR 0052), the slide potentiometer, the Pico reading it across both breadboards, M20
-(ADR 0053), and the DIP switch, five switches through the Pico's own pull-ups, M21 (ADR 0054).
+(ADR 0053), and the DIP switch, five switches through the Pico's own pull-ups, M21 (ADR 0054). The
+LED bar graph and the resistor array, five segments each lit from a pin of its own, are M22
+(ADR 0058, ADR 0059).
 ratsnest is to be a builder of wiring guides: a command-line tool that reads a circuit, written as data in a project of its own,
 and makes one self-contained page showing how to build it on a breadboard with a Pico 2 W
 (ADR 0004, ADR 0014). It ships as one executable per platform (ADR 0016), versioned by strict
@@ -78,7 +80,9 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   lifted over lights and buttons, the ceramic capacitor's disc, the slide switch's shell, its slide
   drawn towards its left leg, the slide potentiometer's body, its value printed on it, and the DIP
   switch's blue body, its slides drawn off, and the motion sensor beside the board, its pins'
-  names printed at 1 mm on a strip that makes it about 2 mm taller than life (ADR 0055 to ADR 0057), mocked up and chosen while the owner had the work go on alone, so the owner signs
+  names printed at 1 mm on a strip that makes it about 2 mm taller than life (ADR 0055 to ADR 0057),
+  and the bar graph's dark body, its segments lit only in the test step, and the resistor array
+  standing, yellow, printed `A331` with a dot over its common leg (ADR 0058, ADR 0059), mocked up and chosen while the owner had the work go on alone, so the owner signs
   each off on its pull request, the colourings and the looks turned down in their records. The
   Russian they added, their sentences, parts list lines and notes, joins the table above for its
   reader.
@@ -110,7 +114,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   capacitor's timer, the slide switch's one light or the other, the slide potentiometer's colours and
   the DIP switch's five switches, which are M13 to M21 (ADR 0043 to ADR 0047, ADR 0049 to ADR 0054).
   A PIR motion sensor came after them, at the owner's asking: read on a pin of its own, and drawn
-  beside the board on its jumpers (ADR 0055, ADR 0056).
+  beside the board on its jumpers (ADR 0055, ADR 0056). The LED bar graph and the resistor array
+  followed, at the owner's asking, M22 (ADR 0058, ADR 0059).
   The next comes from Later when a circuit needs it, and brings, as each of those did, its part's
   drawing, its kind in the format and the field checks, one rule in the wiring check, the step's
   sentence and the parts list's line in English, French and Russian, an example and a test circuit,
@@ -137,9 +142,8 @@ checklist moves to `HISTORY.md` when it lands. M6 waits on the owner.
   them, which ADR 0004 would have to allow, is a record of its own.
 - **More parts, each when a circuit needs it** (ADR 0038): rotary potentiometers, toggle switches,
   relays, light-dependent resistors, MOSFETs, Zener and Schottky diodes, and film capacitors
-- **The LED bar graph and the resistor array**, at the owner's asking: a bar graph's segments lit
-  through a resistor array, from GP9 to GP13, and then from the DIP switch. Each comes with a
-  circuit that needs it (ADR 0038).
+- **The bar graph lit from the DIP switch**, at the owner's asking: both on the second breadboard,
+  each switch lighting its segment, the tutorial's later activities (ADR 0054, ADR 0058).
 - **A full-size breadboard**, probably drawn standing up, and **other boards**: the rest of the Pico
   family first (ADR 0002, ADR 0003)
 - **Solid 2**, when something on a page has to change after it is made, such as a page that picks the
@@ -179,3 +183,4 @@ file's Log.
 | M19       | The slide switch: one light or the other, which stays lit when let go                       | 0052                                    |
 | M20       | The slide potentiometer: the Pico reads it across both breadboards, and colours two LEDs    | 0053                                    |
 | M21       | The DIP switch: five switches read through the Pico's own pull-ups, on a second breadboard  | 0054                                    |
+| M22       | The LED bar graph and the resistor array: five segments, each lit from a pin of its own     | 0058, 0059                              |

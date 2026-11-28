@@ -3,11 +3,13 @@ import type { ButtonColour, LedColour } from "../circuit";
 import { DIODES } from "../diodes";
 import { widthOf } from "../fonts";
 import { isStanding, type Orientation, turned } from "../orientation";
+import { resistorArrayCode } from "../resistor-arrays";
 import { PIE_WEDGES, wedgePath } from "../rgb";
 import { TRANSISTORS, type TransistorLeg } from "../transistors";
 import {
   BREADBOARD_HEIGHT_MM,
   BREADBOARD_WIDTH_MM,
+  barGraphLegsOf,
   buttonHole,
   CHANNEL_Y_MM,
   COLUMNS,
@@ -29,6 +31,7 @@ import {
   ROWS,
   type Row,
   railY,
+  resistorArrayLegsOf,
   rowsOf,
   rowY,
   SECOND_BOARD_Y_MM,
@@ -190,6 +193,15 @@ export const DIP_SWITCH_TOKENS = {
   ink: "dip-switch-ink",
 } as const;
 
+/**
+ * The colours of an LED bar graph's body and of its segments' windows while they are dark, which a
+ * segment's own colour lights in the test step (ADR 0058).
+ */
+export const BAR_GRAPH_TOKENS = { body: "bar-graph", window: "bar-graph-window" } as const;
+
+/** The colours of a resistor array's body, and of the code and the dot printed on it (ADR 0059). */
+export const RESISTOR_ARRAY_TOKENS = { body: "resistor-array", ink: "resistor-array-ink" } as const;
+
 /** Every `--color-*` the drawing reads, so the token tests can hold them still. */
 export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SUPPLY_TOKENS),
@@ -200,6 +212,8 @@ export const BREADBOARD_TOKENS: readonly string[] = [
   ...Object.values(SLIDE_SWITCH_TOKENS),
   ...Object.values(SLIDE_POTENTIOMETER_TOKENS),
   ...Object.values(DIP_SWITCH_TOKENS),
+  ...Object.values(BAR_GRAPH_TOKENS),
+  ...Object.values(RESISTOR_ARRAY_TOKENS),
   "breadboard",
   "breadboard-edge",
   "breadboard-hole",
@@ -1040,6 +1054,8 @@ function placeTag(part: Lying, others: readonly Part[]): { at: Point; lines: num
       if (other.kind === "slidePotentiometer" && overlap(box, slidePotentiometerBoxOf(other)))
         return false;
       if (other.kind === "dipSwitch" && overlap(box, dipBoxOf(other))) return false;
+      if (other.kind === "barGraph" && overlap(box, barGraphBoxOf(other))) return false;
+      if (other.kind === "resistorArray" && overlap(box, resistorArrayBoxOf(other))) return false;
       if (other.kind === "pir") {
         for (const path of pirJumperPaths(other)) {
           for (let i = 1; i < path.length; i++) {
@@ -1890,6 +1906,130 @@ function drawDipSwitch(part: Extract<Part, { kind: "dipSwitch" }>): string {
 }
 
 /**
+ * An LED bar graph across the channel, seen from above (ADR 0040, ADR 0058): a dark body between its
+ * two rows of legs, whose ends show past its edges, the corner beside segment 1's cathode cut off,
+ * for the flat corner that marks a real one's cathodes' side, and a window over each segment, dark until the test step lights it in the
+ * segment's colour. It prints nothing: its segments say what it is.
+ */
+export const BAR_GRAPH_MM = {
+  side: 1.15,
+  inset: 0.6,
+  window: { w: 1.6, h: 4.4 },
+  corner: 1,
+} as const;
+
+/** The box a bar graph's body lies over, between its two rows of legs. */
+export function barGraphBoxOf(part: Extract<Part, { kind: "barGraph" }>): Box {
+  const legs = barGraphLegsOf(part);
+  const first = holeCentre(legs[0]?.[1] ?? "e1");
+  const last = holeCentre(legs[legs.length - 1]?.[0] ?? "f1");
+  return {
+    x: first.x - BAR_GRAPH_MM.side,
+    y: first.y + BAR_GRAPH_MM.inset,
+    w: last.x - first.x + 2 * BAR_GRAPH_MM.side,
+    h: last.y - first.y - 2 * BAR_GRAPH_MM.inset,
+  };
+}
+
+function drawBarGraph(part: Extract<Part, { kind: "barGraph" }>): string {
+  const box = barGraphBoxOf(part);
+  const middle = box.y + box.h / 2;
+  const lead = `stroke="${token("lead")}" stroke-width="0.55"`;
+  const fill = token(`led-${part.colour}`);
+  const { w, h } = BAR_GRAPH_MM.window;
+  const segments = barGraphLegsOf(part).map(([anode, cathode]) => {
+    const [a, k] = [holeCentre(anode), holeCentre(cathode)];
+    const window = [a.x - w / 2, middle - h / 2, w, h] as const;
+    return {
+      legs:
+        line(k.x, k.y, k.x, box.y, lead) +
+        legEnd(k.x, k.y) +
+        line(a.x, a.y, a.x, box.y + box.h, lead) +
+        legEnd(a.x, a.y),
+      face:
+        rect(...window, `rx="0.15" fill="${token(BAR_GRAPH_TOKENS.window)}"`) +
+        rect(...window, `rx="0.15" fill="${fill}" fill-opacity="0.3"`) +
+        rect(...window, `class="glow" rx="0.15" fill="${fill}"`) +
+        rect(
+          a.x - w / 2 + 0.25,
+          middle - h / 2 + 0.3,
+          0.35,
+          h - 0.6,
+          `class="lit" rx="0.15" fill="${token("shine")}"`,
+        ),
+    };
+  });
+  // Its outline, the corner at segment 1's cathode, top left, cut off: the cathodes' side.
+  const { x, y } = box;
+  const [right, bottom, c] = [box.x + box.w, box.y + box.h, BAR_GRAPH_MM.corner];
+  const outline = `M${n(x + c)} ${n(y)}H${n(right)}V${n(bottom)}H${n(x)}V${n(y + c)}Z`;
+  return (
+    segments.map((each) => each.legs).join("") +
+    `<path d="${outline}" fill="${token(BAR_GRAPH_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16" stroke-linejoin="round"/>` +
+    segments.map((each) => each.face).join("")
+  );
+}
+
+/**
+ * A bussed resistor array, standing in one row and seen from the side, as a transistor is
+ * (ADR 0040, ADR 0059): a yellow body over its legs, larger than life so that what is printed on it
+ * reads, its code across it, `A331`, and a dot over its common leg, upright at every quarter turn and
+ * the same in every language. It stands over the two rows above its legs.
+ */
+export const RESISTOR_ARRAY_MM = { side: 1.1, lift: 0.8, height: 4.6, print: 1.15 } as const;
+
+/** The box a resistor array's body stands over on the board's own drawing. */
+export function resistorArrayBoxOf(part: Extract<Part, { kind: "resistorArray" }>): Box {
+  const legs = resistorArrayLegsOf(part);
+  const first = holeCentre(legs[0] ?? part.common);
+  const last = holeCentre(legs[legs.length - 1] ?? part.common);
+  return {
+    x: first.x - RESISTOR_ARRAY_MM.side,
+    y: first.y - RESISTOR_ARRAY_MM.lift - RESISTOR_ARRAY_MM.height,
+    w: last.x - first.x + 2 * RESISTOR_ARRAY_MM.side,
+    h: RESISTOR_ARRAY_MM.height,
+  };
+}
+
+function drawResistorArray(part: Extract<Part, { kind: "resistorArray" }>): string {
+  const box = resistorArrayBoxOf(part);
+  const bottom = box.y + box.h;
+  const lead = `stroke="${token("lead")}" stroke-width="0.45"`;
+  const ink = token(RESISTOR_ARRAY_TOKENS.ink);
+  const legs = resistorArrayLegsOf(part).map((hole) => {
+    const at = holeCentre(hole);
+    return line(at.x, at.y, at.x, bottom, lead) + legEnd(at.x, at.y);
+  });
+  const common = holeCentre(part.common);
+  const code = resistorArrayCode(part.ohms) ?? "";
+  return (
+    legs.join("") +
+    rect(
+      box.x,
+      box.y,
+      box.w,
+      box.h,
+      `rx="0.9" fill="${token(RESISTOR_ARRAY_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16"`,
+    ) +
+    // Its top edge catches the light, as a dipped coating does.
+    rect(
+      box.x + 0.5,
+      box.y + 0.35,
+      box.w - 1,
+      0.4,
+      `rx="0.2" fill="${token("shine")}" fill-opacity="0.25"`,
+    ) +
+    circle(common.x, box.y + 1.25, 0.42, `fill="${ink}"`) +
+    word(
+      box.x + box.w / 2 + PIN_PITCH_MM / 2,
+      box.y + box.h / 2 + 0.5,
+      code,
+      `font-size="${RESISTOR_ARRAY_MM.print}" font-weight="900" fill="${ink}"`,
+    )
+  );
+}
+
+/**
  * A 10 mm addressable RGB LED (scratchpi's ADR 0222), standing up: four leads, data out's kinked as the
  * longest, a frosted lens over them, and its pie of red, green and blue showing through
  * (scratchpi's ADR 0224). Its glow is white, all three at once, when the step that tests it is picked.
@@ -2354,6 +2494,8 @@ function standingBoxOf(part: Part): Box | undefined {
       return discBoxOf(part);
     case "slideSwitch":
       return slideBoxOf(part);
+    case "resistorArray":
+      return resistorArrayBoxOf(part);
     case "led": {
       const a = holeCentre(part.anode);
       const mid = (a.x + holeCentre(part.cathode).x) / 2;
@@ -2712,6 +2854,12 @@ function drawPart(
       break;
     case "dipSwitch":
       body = drawDipSwitch(part);
+      break;
+    case "barGraph":
+      body = drawBarGraph(part);
+      break;
+    case "resistorArray":
+      body = drawResistorArray(part);
       break;
     case "pir":
       body = drawPir(part);

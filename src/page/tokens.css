@@ -137,6 +137,15 @@
   --color-dip-switch-window: #16181c;
   --color-dip-switch-slide: #f1f1ec;
   --color-dip-switch-ink: #ffffff;
+  /* An LED bar graph (ADR 0058): its dark body, and its segments' windows while they are dark, which
+     a segment's own colour, drawn over at 0.3 and lit whole in the test step, sits on. The body is not
+     read, so it is set apart from the board by its outline alone. */
+  --color-bar-graph: #2a2b2e;
+  --color-bar-graph-window: #4a4b4f;
+  /* A resistor array (ADR 0059): its yellow body, set apart from the bar graph's dark one, and its
+     code and dot printed on it, which are read, so they clear 4.5:1. */
+  --color-resistor-array: #e3b22c;
+  --color-resistor-array-ink: #1d1a12;
   /* A carbon resistor's body, and the resistor colour code. Band N is digit N, black 0 to white
      9, and gold is the 5% tolerance band. A code, not a palette: a reader reads the value off the
      part by these. */

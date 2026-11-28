@@ -3,11 +3,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BUTTON_COLOURS, LED_COLOURS } from "../circuit";
 import {
+  BAR_GRAPH_TOKENS,
   BREADBOARD_TOKENS,
   CERAMIC_TOKENS,
   DIODE_TOKENS,
   DIP_SWITCH_TOKENS,
   ELECTROLYTIC_TOKENS,
+  RESISTOR_ARRAY_TOKENS,
   SLIDE_POTENTIOMETER_TOKENS,
   SLIDE_SWITCH_TOKENS,
   SUPPLY_TOKENS,
@@ -251,6 +253,14 @@ describe.each(SCOPES)("the %s scale", (scope) => {
     expect(
       contrastRatio(colour(DIP_SWITCH_TOKENS.ink, scope), colour(DIP_SWITCH_TOKENS.body, scope)),
     ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("prints a resistor array's code legibly on its body, and sets it apart from a bar graph's (ADR 0058, ADR 0059)", () => {
+    const body = colour(RESISTOR_ARRAY_TOKENS.body, scope);
+    expect(contrastRatio(colour(RESISTOR_ARRAY_TOKENS.ink, scope), body)).toBeGreaterThanOrEqual(
+      4.5,
+    );
+    expect(contrastRatio(body, colour(BAR_GRAPH_TOKENS.body, scope))).toBeGreaterThanOrEqual(3);
   });
 
   it("sets a slide potentiometer's knob apart from its body at 3:1, and prints its value legibly on it (ADR 0053)", () => {

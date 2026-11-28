@@ -404,6 +404,33 @@ rest on the Pico's own pull-downs, which erratum E9 makes unreliable on the Pico
 - [x] `examples/five-switches.ts`, in English and French, and a test circuit with a variant for every
       rule it is refused by
 
+### M22: the LED bar graph and the resistor array
+
+M22 is done: from a tutorial the owner chose, a five-segment LED bar graph on a second breadboard,
+each segment lit by a pin of its own, GP21 to GP17, and taken to ground through one resistor of a
+bussed resistor array, whose common leg goes to ground (ADR 0058, ADR 0059). The tutorial's pins,
+GP13 to GP9, are on the Pico's row beside the first breadboard's bottom half, where two free rows
+take two wires past the Pico, not five.
+
+- [x] The design, worked out alone at the owner's asking (ADR 0058, ADR 0059): the bar graph placed
+      by a column as a DIP switch is, its anodes in row f, and the array by its common leg
+- [x] The format: `{ kind: "barGraph", segments, colour, column, board }`, 2 to 10 segments, and
+      `{ kind: "resistorArray", ohms, resistors, common }`, 2 to 10 resistors of a value its code can
+      print, read and checked field by field, and refused in a circuit with a supply
+- [x] The wiring check's rule, segment by segment: the anode straight on a GPIO of its own, with
+      nothing else on it; the cathode to ground through one resistor of a light's range, a plain one or
+      one of an array's whose common leg is on ground; a segment in backwards refused saying so; every
+      resistor of an array on a segment; and on a supply, both refused
+- [x] The drawing: the bar graph from above, a dark body with its corner cut beside segment 1's
+      cathode, for a real one's flat corner, and a window over each segment, lit in its colour only in the test step; the array
+      standing, a yellow body, `A331` across it and a dot over its common leg, upright at every
+      quarter turn; their colours in `tokens.css`, the array's print held to 4.5:1
+- [x] The page's words in English, French and Russian: the steps' sentences, the parts list's lines,
+      the notes on which way round a segment goes and on the array's code, and the test step picking
+      the bar graph out
+- [x] `examples/level-meter.ts`, in English and French, and a test circuit with a variant for every
+      rule it is refused by
+
 ## Log
 
 - 2026-11-20: Repo created, empty. `CLAUDE.md`, the roadmap, this file, the records' practice and
@@ -771,3 +798,20 @@ rest on the Pico's own pull-downs, which erratum E9 makes unreliable on the Pico
   its print. Its pins are 2.54 mm apart again, their names at 1 mm, as small as the Pico's own
   smallest print, on a strip that makes the drawn board about 2 mm taller than the real one, which
   the owner chose over leaving the names off.
+- 2026-11-28: M22, the LED bar graph and the resistor array, worked out alone (ADR 0058, ADR 0059),
+  after a tutorial the owner chose, which this session could not read: its site was out of the
+  network's reach, so its parts and pins came from what other pages said of it, five segments on
+  GP13 to GP9 and a resistor array to ground. Those pins are on the Pico's bottom row, and the first
+  breadboard has two free rows below the Pico, so the bar graph went to the second breadboard, as
+  the DIP switch had, its five wires straight down to GP21 to GP17. The array's code, `A331`, first
+  ran past its body's edges at a quarter turn; it is printed smaller on a body a little taller, and a
+  test holds it inside. The example was first called Bar graph, which the engine's own words use,
+  and the test that the engine names no example caught it; it is called Level meter, for what its
+  script does.
+- 2026-11-28: The tutorial read at last, once the owner opened the session to the internet. Its
+  pins, its 330 Ω array and its wiring were as the other pages had said; two things were not. A
+  bar graph's flat corner, with the writing on that side, marks its cathodes, where the drawing had
+  cut the corner on the anodes' side and the note had said the anodes' row is seldom marked: both
+  were turned round. And the tutorial's array is black, printed `A331J`, which the drawing's yellow
+  array, printed `A331`, stands for; the owner liked the drawing as it was, so it stays yellow, and
+  the parts list says a J may follow the code.

@@ -278,6 +278,32 @@ export interface DipSwitchPart {
 }
 
 /**
+ * An LED bar graph across the channel, its legs in rows e and f (ADR 0058): `segments` of them, from
+ * 2 to 10, side by side, segment 1 in `column` and the rest to its right, each an LED of `colour` with
+ * its anode in row f and its cathode in row e.
+ */
+export interface BarGraphPart {
+  readonly kind: "barGraph";
+  readonly segments: number;
+  readonly colour: LedColour;
+  readonly column: number;
+  /** `2` puts it on the second breadboard, snapped onto the first one's top edge. */
+  readonly board?: 2;
+}
+
+/**
+ * A bussed resistor array, standing in one row (ADR 0059): `resistors` of `ohms` each, from 2 to 10,
+ * each between a leg of its own and one common leg, marked with a dot, in `common`. The resistors'
+ * legs follow it to its right, a hole apart. Its value is in ohms, two figures and zeros, `330`.
+ */
+export interface ResistorArrayPart {
+  readonly kind: "resistorArray";
+  readonly ohms: number;
+  readonly resistors: number;
+  readonly common: Hole;
+}
+
+/**
  * A PIR motion sensor module (ADR 0055), lying beside the board, dome up, and joined to it by three
  * female-to-male jumpers pushed onto its pins, which its board names VCC, OUT and GND: these are the
  * holes their other ends go in, all on one side of the channel, past which the drawing lays it
@@ -315,6 +341,8 @@ export type Part =
   | SlideSwitchPart
   | SlidePotentiometerPart
   | DipSwitchPart
+  | BarGraphPart
+  | ResistorArrayPart
   | PirPart;
 
 /**

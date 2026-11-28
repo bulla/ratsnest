@@ -1,7 +1,8 @@
 import { ceramicCode } from "../ceramics";
-import type { ButtonColour, Layout, PlainLed, ShownCircuit } from "../circuit";
+import type { ButtonColour, Layout, LedColour, PlainLed, ShownCircuit } from "../circuit";
 import { DIODE_NAMES, DIODES, type DiodeName } from "../diodes";
 import {
+  barGraphLegsOf,
   dipLegsOf,
   type Hole,
   holeAt,
@@ -12,6 +13,7 @@ import {
   pinOfStrip,
   placementOf,
   printedName,
+  resistorArrayLegsOf,
   supplyLeadsOf,
   usesSecondBoard,
 } from "../drawing/breadboard";
@@ -34,6 +36,7 @@ import {
   LIGHT_OHMS_RANGE,
 } from "../netlist";
 import { isStanding, type Orientation } from "../orientation";
+import { resistorArrayCode } from "../resistor-arrays";
 import { DEFAULT_THEME, type Theme } from "../theme";
 import { TRANSISTORS, type TransistorName } from "../transistors";
 import { ENGLISH_PAGE, FRENCH_PAGE, type PageWords, type Place, RUSSIAN_PAGE } from "./words";
@@ -253,6 +256,32 @@ function sentenceOf(part: Part, names: Names, words: PageWords): string {
     }
     case "pir":
       return words.pir(escaped(part.name), at(part.power), at(part.output), at(part.ground));
+    case "barGraph": {
+      const legs = barGraphLegsOf(part).map((pair) =>
+        pair.map((leg) => holeHtml(leg, words, names.pico)),
+      );
+      return words.barGraph(
+        part.segments,
+        words.segmentColour[part.colour],
+        legs[0] ?? [],
+        legs[legs.length - 1] ?? [],
+        part.board === 2,
+      );
+    }
+    case "resistorArray": {
+      const [common = part.common, ...legs] = resistorArrayLegsOf(part).map((leg) =>
+        holeHtml(leg, words, names.pico),
+      );
+      return words.resistorArray(
+        words.ohms(part.ohms),
+        part.resistors,
+        resistorArrayCode(part.ohms) ?? "",
+        common,
+        legs[0] ?? "",
+        legs[legs.length - 1] ?? "",
+        isOnSecondBoard(part.common),
+      );
+    }
   }
 }
 
@@ -286,7 +315,8 @@ const isComponent = (part: Part) =>
 /**
  * The parts the test step picks out: the components a reader watches and presses, a ceramic
  * capacitor, which is what its circuit's script times (ADR 0051), a slide switch, a slide
- * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054). A motion sensor,
+ * potentiometer and a DIP switch, which the reader slides (ADR 0052 to ADR 0054), and a bar graph,
+ * whose segments the reader watches light (ADR 0058). A motion sensor,
  * which the reader moves in front of, is a component, named as every part outside the board is
  * (ADR 0057).
  */
@@ -295,7 +325,8 @@ const isTested = (part: Part) =>
   part.kind === "ceramic" ||
   part.kind === "slideSwitch" ||
   part.kind === "slidePotentiometer" ||
-  part.kind === "dipSwitch";
+  part.kind === "dipSwitch" ||
+  part.kind === "barGraph";
 
 /** The steps' groups: `step-1` for the first of the layout's own, after the Pico. */
 const stepGroup = (index: number) => `step-${index + 1}`;
@@ -420,6 +451,31 @@ function partsListHtml(
     const count = parts.filter((p) => p.kind === "dipSwitch" && p.switches === switches).length;
     items.push([count, words.listDipSwitch(switches, count)]);
   }
+  const graphs = [
+    ...new Set(parts.flatMap((p) => (p.kind === "barGraph" ? [`${p.segments} ${p.colour}`] : []))),
+  ];
+  for (const graph of graphs) {
+    const [segments, colour] = graph.split(" ") as [string, LedColour];
+    const count = parts.filter(
+      (p) => p.kind === "barGraph" && `${p.segments} ${p.colour}` === graph,
+    ).length;
+    items.push([count, words.listBarGraph(Number(segments), words.segmentColour[colour], count)]);
+  }
+  const arrays = [
+    ...new Set(
+      parts.flatMap((p) => (p.kind === "resistorArray" ? [`${p.ohms} ${p.resistors}`] : [])),
+    ),
+  ];
+  for (const array of arrays) {
+    const [ohms, resistors] = array.split(" ").map(Number) as [number, number];
+    const count = parts.filter(
+      (p) => p.kind === "resistorArray" && `${p.ohms} ${p.resistors}` === array,
+    ).length;
+    items.push([
+      count,
+      words.listResistorArray(words.ohms(ohms), resistors, resistorArrayCode(ohms) ?? "", count),
+    ]);
+  }
   // Each motion sensor by its name (ADR 0057), and the three jumpers each one takes to the board
   // (ADR 0055).
   const sensors = parts.flatMap((p) => (p.kind === "pir" ? [p] : []));
@@ -521,6 +577,17 @@ function notesHtml(circuit: ShownCircuit, parts: readonly Part[], words: PageWor
     notes.push(words.slidePotentiometerWiper(ANALOGUE_GPIOS.map((gpio) => `GP${gpio}`)));
   }
   if (parts.some((p) => p.kind === "dipSwitch")) notes.push(words.dipPullUp);
+  if (parts.some((p) => p.kind === "barGraph")) {
+    notes.push(words.barGraphPolarity);
+    if (!parts.some((p) => p.kind === "led")) {
+      const [low, high] = LIGHT_OHMS_RANGE;
+      notes.push(words.anyResistor(words.ohms(low), words.ohms(high)));
+    }
+  }
+  const [array] = parts.flatMap((p) => (p.kind === "resistorArray" ? [p.ohms] : []));
+  if (array !== undefined) {
+    notes.push(words.resistorArrayCode(resistorArrayCode(array) ?? "", words.ohms(array)));
+  }
   if (parts.some((p) => p.kind === "pir")) notes.push(words.pirPins);
   const [ceramic] = nanofaradsOf(parts);
   if (ceramic !== undefined) {

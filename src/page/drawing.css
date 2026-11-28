@@ -52,12 +52,14 @@
 }
 
 .breadboard-drawing.testing [data-kind="led"] .glow,
-.breadboard-drawing.testing [data-kind="rgbLed"] .glow {
+.breadboard-drawing.testing [data-kind="rgbLed"] .glow,
+.breadboard-drawing.testing [data-kind="barGraph"] .glow {
   opacity: 1;
 }
 
 .breadboard-drawing.testing [data-kind="led"] .lit,
-.breadboard-drawing.testing [data-kind="rgbLed"] .lit {
+.breadboard-drawing.testing [data-kind="rgbLed"] .lit,
+.breadboard-drawing.testing [data-kind="barGraph"] .lit {
   opacity: 0.4;
 }
 

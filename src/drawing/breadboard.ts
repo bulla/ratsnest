@@ -1,3 +1,4 @@
+import type { LedColour } from "../circuit";
 import type { DiodeName } from "../diodes";
 import type { TransistorName } from "../transistors";
 import { PIN_EDGE_INSET_MM, PIN_PITCH_MM, PIN_TOP_INSET_MM, PINS_PER_SIDE } from "./geometry";
@@ -361,6 +362,30 @@ export type Part =
       readonly board?: 2;
     }
   /**
+   * An LED bar graph across the channel, its legs in rows e and f (ADR 0058): `segments` of them side
+   * by side, segment 1 in `column` and the rest to its right, each an LED of `colour`, its anode in
+   * row f and its cathode in row e.
+   */
+  | {
+      readonly kind: "barGraph";
+      readonly segments: number;
+      readonly colour: LedColour;
+      readonly column: number;
+      /** `2` puts it on the second breadboard, as a button can be (ADR 0028). */
+      readonly board?: 2;
+    }
+  /**
+   * A bussed resistor array standing in one row (ADR 0059): its common leg, marked with a dot, in
+   * `common`, and one leg for each of its `resistors` to its right, a hole apart, each resistor of
+   * `ohms` between its own leg and the common one.
+   */
+  | {
+      readonly kind: "resistorArray";
+      readonly ohms: number;
+      readonly resistors: number;
+      readonly common: Hole;
+    }
+  /**
    * A PIR motion sensor module (ADR 0055), lying beside the board and joined to it by three
    * female-to-male jumpers on its VCC, OUT and GND pins: these are the holes their other ends go
    * in, all on one side of the channel, past which it is drawn (ADR 0056).
@@ -443,6 +468,10 @@ export function legsOf(part: Part): readonly Hole[] {
       return [part.wiper, part.end, part.otherEnd];
     case "dipSwitch":
       return dipLegsOf(part).flat();
+    case "barGraph":
+      return barGraphLegsOf(part).flat();
+    case "resistorArray":
+      return resistorArrayLegsOf(part);
     case "ring":
       return [part.dataIn, part.power, part.ground, part.dataOut];
     case "pir":
@@ -475,6 +504,41 @@ export function dipLegsOf(part: {
     buttonHole(part, "e", part.column + k),
     buttonHole(part, "f", part.column + k),
   ]);
+}
+
+/** The fewest and the most segments an LED bar graph can have side by side (ADR 0058). */
+export const BAR_GRAPH_SEGMENTS = [2, 10] as const;
+
+/**
+ * A bar graph's legs, segment by segment from segment 1: each segment's anode in row f, below the
+ * channel, and its cathode in row e, above it, on the board it is on.
+ */
+export function barGraphLegsOf(part: {
+  readonly segments: number;
+  readonly column: number;
+  readonly board?: 2;
+}): [Hole, Hole][] {
+  return Array.from({ length: part.segments }, (_, k) => [
+    buttonHole(part, "f", part.column + k),
+    buttonHole(part, "e", part.column + k),
+  ]);
+}
+
+/** The fewest and the most resistors a resistor array can have (ADR 0059). */
+export const RESISTOR_ARRAY_RESISTORS = [2, 10] as const;
+
+/**
+ * A resistor array's legs, its common leg first and then each resistor's, a hole apart to its right,
+ * in its common leg's row. A common leg in no row has no others.
+ */
+export function resistorArrayLegsOf(part: {
+  readonly resistors: number;
+  readonly common: Hole;
+}): Hole[] {
+  const at = parseHole(part.common);
+  if (at?.kind !== "main") return [part.common];
+  const board = at.board === 2 ? SECOND : "";
+  return Array.from({ length: part.resistors + 1 }, (_, k) => `${board}${at.row}${at.column + k}`);
 }
 
 /**

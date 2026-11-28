@@ -1366,3 +1366,93 @@ describe("a DIP switch, each switch from ground to a pin the Pico pulls up (ADR 
     );
   });
 });
+
+describe("a bar graph's segments, each on a pin and through a resistor array to ground (ADR 0058, ADR 0059)", () => {
+  const { circuit, layout } = FIXTURES["bar-graph-through-a-resistor-array"];
+  const problems = (edit: (parts: Part[]) => Part[]) =>
+    wiringProblems(circuit, edited(layout, edit));
+  const wire = (from: string, next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "wire" && p.from === from, next);
+  const array = (next: Part | null) => (parts: Part[]) =>
+    replace(parts, (p) => p.kind === "resistorArray", next);
+  const graph = "the 2-segment bar graph in columns 25 to 26";
+  const resistors = "the 330 Ω resistor array with its common leg in a24";
+
+  it("takes one whose segments each go from a pin of their own through the array to ground", () => {
+    expect(wiringProblems(circuit, layout)).toEqual([]);
+  });
+
+  it("finds a segment in backwards, its cathode on a pin", () => {
+    expect(
+      problems(wire("j21", { kind: "wire", from: "b21", to: "c25", role: "signal" })),
+    ).toContain(
+      `segment 1 of ${graph} is in backwards: its anodes go in row f, each straight on a pin, and its cathodes in row e, towards ground`,
+    );
+  });
+
+  it("finds two segments on one pin", () => {
+    expect(
+      problems(wire("i20", { kind: "wire", from: "i21", to: "i26", role: "signal" })),
+    ).toContain(
+      `segment 2 of ${graph} shares GP15 with segment 1 of ${graph}: each has a pin of its own`,
+    );
+  });
+
+  it("finds an array whose common leg is off ground, and the segments it leaves without a way down", () => {
+    const found = problems(wire("b19", null));
+    expect(found).toContain(
+      `${resistors} has its common leg off ground: the leg with the dot goes to ground, and each other leg to a segment of a bar graph`,
+    );
+    expect(found).toContain(
+      `segment 1 of ${graph} is not wired from its cathode through one resistor to ground: a resistor, or one of a resistor array's whose common leg is on ground`,
+    );
+  });
+
+  it("finds a resistor of the array on no segment", () => {
+    const found = problems(
+      array({ kind: "resistorArray", ohms: 330, resistors: 3, common: "a24" }),
+    );
+    expect(found).toContain(
+      `resistor 3 of ${resistors}, in a27, is not a bar graph segment's: each of its legs goes to a segment's cathode, with nothing else there`,
+    );
+  });
+
+  it("holds the array to a light's resistor", () => {
+    expect(
+      problems(array({ kind: "resistorArray", ohms: 100, resistors: 2, common: "a24" })),
+    ).toContain(`segment 1 of ${graph}'s resistor is 100 Ω, outside 220 Ω to 1 kΩ`);
+  });
+
+  it("takes a plain resistor on a segment, as on a light", () => {
+    const plain = problems((parts) =>
+      replace(
+        replace(parts, (p) => p.kind === "resistorArray", null),
+        (p) => p.kind === "wire" && p.from === "b19",
+        null,
+      ).concat([
+        { kind: "resistor", ohms: 330, from: "a25", to: "top-25" },
+        { kind: "resistor", ohms: 330, from: "a26", to: "top-27" },
+        { kind: "wire", from: "a19", to: "top-19", role: "ground" },
+      ]),
+    );
+    expect(plain).toEqual([]);
+  });
+
+  it("finds them on a supply, where they have no use yet", () => {
+    const { circuit: supplied, layout: suppliedLayout } = FIXTURES["two-lights-on-a-supply"];
+    const found = wiringProblems(
+      supplied,
+      edited(suppliedLayout, (parts) => [
+        ...parts,
+        { kind: "barGraph", segments: 2, colour: "red", column: 27 },
+        { kind: "resistorArray", ohms: 330, resistors: 2, common: "a26" },
+      ]),
+    );
+    expect(found).toContain(
+      "the 2-segment bar graph in columns 27 to 28 has no use ratsnest knows on a supply: a bar graph's segments are lit by a Pico's pins (ADR 0058)",
+    );
+    expect(found).toContain(
+      "the 330 Ω resistor array with its common leg in a26 has no use ratsnest knows on a supply: a resistor array takes a bar graph's segments to ground, on a Pico (ADR 0059)",
+    );
+  });
+});
