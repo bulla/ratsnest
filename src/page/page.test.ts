@@ -978,7 +978,7 @@ describe("a page with a bar graph and a resistor array (ADR 0058, ADR 0059)", ()
       "2-segment red LED bar graph, with its legs in two rows 7.62 mm apart, to go across the channel.",
     );
     expect(inLanguage("en")).toContain(
-      "330 Ω resistor array of 2 resistors, bussed: 3 legs in a row, one of them common to every resistor, marked A331.",
+      "330 Ω resistor array of 2 resistors, bussed: 3 legs in a row, one of them common to every resistor, marked A331, often with a J after it for its tolerance.",
     );
   });
 

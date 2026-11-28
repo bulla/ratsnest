@@ -1907,8 +1907,8 @@ function drawDipSwitch(part: Extract<Part, { kind: "dipSwitch" }>): string {
 
 /**
  * An LED bar graph across the channel, seen from above (ADR 0040, ADR 0058): a dark body between its
- * two rows of legs, whose ends show past its edges, the corner beside segment 1's anode cut off, as
- * on many real ones, and a window over each segment, dark until the test step lights it in the
+ * two rows of legs, whose ends show past its edges, the corner beside segment 1's cathode cut off,
+ * for the flat corner that marks a real one's cathodes' side, and a window over each segment, dark until the test step lights it in the
  * segment's colour. It prints nothing: its segments say what it is.
  */
 export const BAR_GRAPH_MM = {
@@ -1959,10 +1959,10 @@ function drawBarGraph(part: Extract<Part, { kind: "barGraph" }>): string {
         ),
     };
   });
-  // Its outline, the corner at segment 1's anode, bottom left, cut off.
+  // Its outline, the corner at segment 1's cathode, top left, cut off: the cathodes' side.
   const { x, y } = box;
   const [right, bottom, c] = [box.x + box.w, box.y + box.h, BAR_GRAPH_MM.corner];
-  const outline = `M${n(x)} ${n(y)}H${n(right)}V${n(bottom)}H${n(x + c)}L${n(x)} ${n(bottom - c)}Z`;
+  const outline = `M${n(x + c)} ${n(y)}H${n(right)}V${n(bottom)}H${n(x)}V${n(y + c)}Z`;
   return (
     segments.map((each) => each.legs).join("") +
     `<path d="${outline}" fill="${token(BAR_GRAPH_TOKENS.body)}" stroke="${token("shade")}" stroke-opacity="0.35" stroke-width="0.16" stroke-linejoin="round"/>` +

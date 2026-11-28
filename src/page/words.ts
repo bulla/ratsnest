@@ -503,7 +503,7 @@ export const ENGLISH_PAGE: PageWords = {
   listBarGraph: (segments, colour, count) =>
     `${segments}-segment ${colour} LED bar ${plural("en", count, { one: "graph", other: "graphs" })}, with its legs in two rows 7.62 mm apart, to go across the channel.`,
   listResistorArray: (ohms, resistors, code, count) =>
-    `${ohms} resistor ${plural("en", count, { one: "array", other: "arrays" })} of ${resistors} resistors, bussed: ${resistors + 1} legs in a row, one of them common to every resistor, marked ${code}.`,
+    `${ohms} resistor ${plural("en", count, { one: "array", other: "arrays" })} of ${resistors} resistors, bussed: ${resistors + 1} legs in a row, one of them common to every resistor, marked ${code}, often with a J after it for its tolerance.`,
   listPir: (name) =>
     `${capitalised(name)}: a PIR module with three pins, VCC, OUT and GND, that runs on 5 V. Its OUT gives 3.3 V while it sees movement.`,
   listPirJumpers: () =>
@@ -538,7 +538,7 @@ export const ENGLISH_PAGE: PageWords = {
   slidePotentiometerWiper: (pins) =>
     `Of a slide potentiometer's two legs at one end, its wiper is the one with no leg in line with it at the other end. It goes to an analogue pin, ${englishList(pins).replace(" and ", " or ")}, and the two ends to 3V3(OUT) and ground, either way round. Wired to 3V3(OUT) instead, the wiper would join it to ground at one end of its travel.`,
   barGraphPolarity:
-    "Each segment of an LED bar graph is a light of its own: its anode goes towards its pin, and its cathode towards ground, through a resistor. Not every bar graph marks which row of legs is its anodes'. Put in the wrong way round, it stays dark and takes no harm: turn it round.",
+    "Each segment of an LED bar graph is a light of its own: its anode goes towards its pin, and its cathode towards ground, through a resistor. Its flat corner, and the writing on that side, mark its cathodes' side. Put in the wrong way round, it stays dark and takes no harm: turn it round.",
   resistorArrayCode: (code, ohms) =>
     `The resistors of a resistor array share the leg under its dot, which goes to ground. Its value is printed on it as a code, after an A for that shared leg: two figures and then how many zeros follow them. ${code} is ${ohms} for each resistor.`,
   pirPins:
@@ -818,7 +818,7 @@ export const FRENCH_PAGE: PageWords = {
   listBarGraph: (segments, colour, count) =>
     `${plural("fr", count, { one: "Bargraphe", many: "Bargraphes", other: "Bargraphes" })} à LED de ${segments} segments ${colour}, ses pattes sur deux rangées espacées de 7,62 mm, pour se mettre à cheval sur la rainure centrale.`,
   listResistorArray: (ohms, resistors, code, count) =>
-    `${plural("fr", count, { one: "Réseau", many: "Réseaux", other: "Réseaux" })} de ${resistors} résistances de ${ohms} à patte commune${NNBSP}: ${resistors + 1} pattes en rangée, dont une commune à toutes les résistances, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}.`,
+    `${plural("fr", count, { one: "Réseau", many: "Réseaux", other: "Réseaux" })} de ${resistors} résistances de ${ohms} à patte commune${NNBSP}: ${resistors + 1} pattes en rangée, dont une commune à toutes les résistances, ${plural("fr", count, { one: "marqué", many: "marqués", other: "marqués" })} ${code}, souvent suivi d’un J pour sa tolérance.`,
   listPir: (name) =>
     `${capitalised(name)}${NNBSP}: un module PIR à trois broches, VCC, OUT et GND, alimenté en 5 V. Sa broche OUT donne 3,3 V tant qu’il voit du mouvement.`,
   listPirJumpers: () =>
@@ -862,7 +862,7 @@ export const FRENCH_PAGE: PageWords = {
     "Un interrupteur à glissière relie sa patte du milieu à l’une ou l’autre de ses pattes extérieures, selon le côté où l’on pousse sa glissière, et reste ainsi une fois lâché, là où un bouton poussoir ne relie ses pattes que tant qu’on le maintient enfoncé.",
   slidePotentiometerWiper: (pins) =>
     `Des deux pattes d’un même bout d’un potentiomètre à glissière, le curseur est celle qui n’a aucune patte dans son alignement à l’autre bout. Il va sur une broche analogique, ${frenchList(pins).replace(" et ", " ou ")}, et les deux extrémités sur le 3V3(OUT) et la masse, dans un sens ou dans l’autre. Relié au 3V3(OUT), le curseur le relierait à la masse à un bout de sa course.`,
-  barGraphPolarity: `Chaque segment d’un bargraphe à LED est une LED à part entière${NNBSP}: son anode va du côté de sa broche, et sa cathode vers la masse, à travers une résistance. Tous les bargraphes ne marquent pas la rangée de leurs anodes. Monté à l’envers, il reste éteint, mais il n’est pas abîmé${NNBSP}: retournez-le.`,
+  barGraphPolarity: `Chaque segment d’un bargraphe à LED est une LED à part entière${NNBSP}: son anode va du côté de sa broche, et sa cathode vers la masse, à travers une résistance. Son coin biseauté, et l’inscription de ce côté, marquent le côté de ses cathodes. Monté à l’envers, il reste éteint, mais il n’est pas abîmé${NNBSP}: retournez-le.`,
   resistorArrayCode: (code, ohms) =>
     `Les résistances d’un réseau partagent la patte sous son point, qui va à la masse. Sa valeur y est imprimée en code, après un A pour cette patte commune${NNBSP}: deux chiffres, puis le nombre de zéros qui les suivent. ${code} vaut ${ohms} pour chaque résistance.`,
   pirPins: `La carte d’un détecteur de mouvement nomme ses trois broches, à côté d’elles ou sous son dôme${NNBSP}: VCC ou +, OUT ou SIG, et GND. Branchez chaque fil sur la broche de son nom, quel que soit leur ordre${NNBSP}: il change d’un détecteur à l’autre. Une fois alimenté, il lui faut jusqu’à une minute pour se stabiliser.`,
@@ -1134,7 +1134,7 @@ export const RUSSIAN_PAGE: PageWords = {
   listBarGraph: (segments, colour) =>
     `Светодиодная шкала на ${segments} ${colour} ${russianSegments(segments)}: ножки в два ряда на расстоянии 7,62 мм, чтобы встать поперёк центральной канавки.`,
   listResistorArray: (ohms, resistors, code) =>
-    `Резисторная сборка из ${resistors} резисторов по ${ohms} с общим выводом: ${resistors + 1} выводов в ряд, один из них общий для всех резисторов, маркировка ${code}.`,
+    `Резисторная сборка из ${resistors} резисторов по ${ohms} с общим выводом: ${resistors + 1} выводов в ряд, один из них общий для всех резисторов, маркировка ${code}, часто с буквой J после неё, обозначающей допуск.`,
   listPir: (name) =>
     `${capitalised(name)}: модуль PIR с тремя выводами, VCC, OUT и GND, питание 5 В. Пока он видит движение, на OUT 3,3 В.`,
   listPirJumpers: () =>
@@ -1167,7 +1167,7 @@ export const RUSSIAN_PAGE: PageWords = {
   slidePotentiometerWiper: (pins) =>
     `Из двух выводов на одном конце ползункового потенциометра движком служит тот, напротив которого на другом конце вывода нет. Он идёт на аналоговый вывод ${russianList(pins).replace(" и ", " или ")}, а крайние выводы идут на 3V3(OUT) и землю, в любом порядке. Подключённый к 3V3(OUT), движок замкнул бы его на землю в одном конце хода.`,
   barGraphPolarity:
-    "Каждый сегмент светодиодной шкалы: отдельный светодиод. Его анод идёт к своему выводу, катод через резистор к земле. Не на всех шкалах отмечено, в каком ряду аноды. Вставленная наоборот, шкала не горит, но и не портится: переверните её.",
+    "Каждый сегмент светодиодной шкалы: отдельный светодиод. Его анод идёт к своему выводу, катод через резистор к земле. Срезанный угол корпуса и надпись на этой стороне отмечают сторону катодов. Вставленная наоборот, шкала не горит, но и не портится: переверните её.",
   resistorArrayCode: (code, ohms) =>
     `Резисторы сборки делят общий вывод под точкой, он идёт на землю. Номинал напечатан на корпусе кодом после буквы A, которая означает общий вывод: две цифры, затем число нулей после них. ${code} означает ${ohms} на каждый резистор.`,
   pirPins:

@@ -23,8 +23,8 @@ export default {
         fr: "Le bargraphe, à cheval sur la rainure d’une seconde plaque",
       },
       note: {
-        en: "Snap a second half-size breadboard onto the top edge of the first, column 1 over column 1: they are made to join along their long sides. The bar graph's anodes go towards the Pico.",
-        fr: "Emboîtez une seconde plaque d’essai demi-taille sur le bord du haut de la première, la colonne 1 au-dessus de la colonne 1 : elles sont faites pour s’emboîter par leurs grands côtés. Les anodes du bargraphe vont du côté du Pico.",
+        en: "Snap a second half-size breadboard onto the top edge of the first, column 1 over column 1: they are made to join along their long sides. Its flat corner, and the writing on that side, go away from the Pico: they mark its cathodes.",
+        fr: "Emboîtez une seconde plaque d’essai demi-taille sur le bord du haut de la première, la colonne 1 au-dessus de la colonne 1 : elles sont faites pour s’emboîter par leurs grands côtés. Son coin biseauté, et l’inscription de ce côté, vont à l’opposé du Pico : ils marquent ses cathodes.",
       },
       parts: [{ kind: "barGraph", segments: 5, colour: "red", column: 15, board: 2 }],
     },

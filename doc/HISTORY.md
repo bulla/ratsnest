@@ -422,7 +422,7 @@ take two wires past the Pico, not five.
       one of an array's whose common leg is on ground; a segment in backwards refused saying so; every
       resistor of an array on a segment; and on a supply, both refused
 - [x] The drawing: the bar graph from above, a dark body with its corner cut beside segment 1's
-      anode and a window over each segment, lit in its colour only in the test step; the array
+      cathode, for a real one's flat corner, and a window over each segment, lit in its colour only in the test step; the array
       standing, a yellow body, `A331` across it and a dot over its common leg, upright at every
       quarter turn; their colours in `tokens.css`, the array's print held to 4.5:1
 - [x] The page's words in English, French and Russian: the steps' sentences, the parts list's lines,
@@ -808,3 +808,10 @@ take two wires past the Pico, not five.
   test holds it inside. The example was first called Bar graph, which the engine's own words use,
   and the test that the engine names no example caught it; it is called Level meter, for what its
   script does.
+- 2026-11-28: The tutorial read at last, once the owner opened the session to the internet. Its
+  pins, its 330 Ω array and its wiring were as the other pages had said; two things were not. A
+  bar graph's flat corner, with the writing on that side, marks its cathodes, where the drawing had
+  cut the corner on the anodes' side and the note had said the anodes' row is seldom marked: both
+  were turned round. And the tutorial's array is black, printed `A331J`, which the drawing's yellow
+  array, printed `A331`, stands for; the owner liked the drawing as it was, so it stays yellow, and
+  the parts list says a J may follow the code.

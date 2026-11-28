@@ -269,7 +269,8 @@ circuit's own words, as a resistor's is not: point at it by the step that places
 
   The bar graph has 2 to 10 segments side by side across the channel, in one of a light's colours,
   segment 1 in `column` and the rest to its right, each with its anode in row f and its cathode in
-  row e; `board: 2` puts it on the second breadboard. Each anode goes straight to a pin of its own,
+  row e, the side a real one marks with its flat corner and its writing, which a step's note can
+  point the reader to; `board: 2` puts it on the second breadboard. Each anode goes straight to a pin of its own,
   with nothing else on it, and each cathode to ground through one resistor of 220 Ω to 1 kΩ: a plain
   resistor, or one of a resistor array's. The array stands in one row, its common leg, under its
   dot, in `common`, and one leg for each resistor to its right, a hole apart: put it in the cathodes'

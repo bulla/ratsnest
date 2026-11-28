@@ -7,8 +7,9 @@
 The owner's tutorial lights its bar graph's segments through a resistor array (ADR 0058): one
 standing body with a row of legs a pitch apart, five resistors each between a leg of their own and
 one common leg, which is marked with a dot. This kind is called bussed; an isolated array, whose
-resistors each have two legs of their own, is the other. The tutorial's has five resistors, one for
-each segment, and so six legs.
+resistors each have two legs of their own, is the other. The tutorial's is black, with five
+resistors of 330 Ω, one for each segment, and so six legs; it prints `A331J` along its face, its
+dot just before the `A`, over the common leg, which goes to ground and to no segment.
 
 A real array prints its value as a code, as a ceramic capacitor does (ADR 0051): two figures and how
 many zeros follow them, `331` for 330 Ω, after a letter that says its kind, `A` for bussed, and
@@ -35,7 +36,8 @@ above its legs, so a wire to its common strip goes in below it.
 **The page says it**: the step's sentence, "A 330 Ω resistor array of 5 resistors, marked A331,
 standing in one row: its common leg, under the dot, in d14, and its resistors' legs in d15 to d19, on
 the second breadboard."; the parts list's line, "330 Ω resistor array of 5 resistors, bussed: 6 legs
-in a row, one of them common to every resistor, marked A331."; and a note on the code, that `A331` is
+in a row, one of them common to every resistor, marked A331, often with a J after it for its
+tolerance."; and a note on the code, that `A331` is
 330 Ω for each resistor, two figures and how many zeros follow them after an A for the shared leg,
 which goes to ground.
 
@@ -53,8 +55,12 @@ which goes to ground.
   the code is what they look for; the page gives the value beside it, as a ceramic capacitor's does.
 - **Drawn from above**: rejected. Seen from above, an array is 2.5 mm thick and a print across it
   would not fit upright at a quarter turn.
-- **A black body**: rejected. Black arrays are as common, but the bar graph's body beside it is dark,
-  and yellow sets the two apart.
+- **A black body**, as the tutorial's is: rejected. The bar graph's body beside it is dark, yellow
+  sets the two apart, and the owner kept it on seeing both. What tells the array apart is its print
+  and its dot, which a black one has alike.
+- **Its tolerance printed too, `A331J`**: rejected. Five characters do not fit upright across the
+  body at a quarter turn, and the tolerance is not what a reader looks for; the parts list says the
+  letter may follow.
 
 ## Consequences
 

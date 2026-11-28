@@ -935,6 +935,20 @@ describe("a bar graph across the channel and a resistor array standing over its 
     ]);
   });
 
+  it("cuts the corner of its body on its cathodes' side, as a real one's flat corner is", () => {
+    const outline =
+      /<path d="M([\d.-]+) ([\d.-]+)H[\d.-]+V[\d.-]+H([\d.-]+)V([\d.-]+)Z" fill="var\(--color-bar-graph\)"/.exec(
+        drawn(0),
+      );
+    expect(outline).not.toBeNull();
+    const [, startX, top, left, cutY] = (outline ?? []).map(Number) as number[];
+    // The cut runs from the left edge, below the top, to the top edge, right of the left: by the
+    // cathodes in row e, above the channel.
+    expect(startX).toBeGreaterThan(left as number);
+    expect(cutY).toBeGreaterThan(top as number);
+    expect(top).toBeLessThan(CHANNEL_Y_MM);
+  });
+
   it("draws each segment dark, lit only by the test step's glow", () => {
     expect([
       ...drawn(0).matchAll(/class="glow" rx="0.15" fill="var\(--color-led-red\)"/g),
